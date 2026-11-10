@@ -1,0 +1,145 @@
+<?php
+
+use App\Http\Controllers\Auth\InvitationController;
+use App\Http\Requests\Auth\AcceptInvitationRequest;
+use App\Models\Employee;
+use App\Notifications\Invitation;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia as Assert;
+
+use function Pest\Laravel\get;
+use function Pest\Laravel\post;
+use function Pest\Laravel\travel;
+
+covers(InvitationController::class, AcceptInvitationRequest::class, Invitation::class);
+
+/**
+ * Invite a new Employee and return the token from their invitation email.
+ */
+function inviteAndCaptureToken(Employee $employee): string
+{
+    Notification::fake();
+
+    $employee->sendInvitation();
+
+    $token = null;
+    Notification::assertSentTo($employee, Invitation::class, function (Invitation $invitation) use (&$token) {
+        $token = $invitation->token;
+
+        return true;
+    });
+
+    return (string) $token;
+}
+
+it('emails a newly added Employee an invitation', function () {
+    $employee = Employee::factory()->invited()->create();
+
+    inviteAndCaptureToken($employee);
+});
+
+it('shows the set-password page from the invitation link', function () {
+    $employee = Employee::factory()->invited()->create();
+    $token = inviteAndCaptureToken($employee);
+
+    get(route('invitation.show', ['token' => $token, 'email' => $employee->email]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('auth/AcceptInvitation')
+            ->where('email', $employee->email)
+            ->where('token', $token)
+            ->has('passwordRules'),
+        );
+});
+
+it('lets the invited Employee set a password, verifying their email, then sign in', function () {
+    $employee = Employee::factory()->invited()->create();
+    $token = inviteAndCaptureToken($employee);
+
+    post(route('invitation.store'), [
+        'token' => $token,
+        'email' => $employee->email,
+        'password' => 'a-new-password',
+        'password_confirmation' => 'a-new-password',
+    ])->assertRedirect(route('login'));
+
+    expect($employee->refresh()->hasVerifiedEmail())->toBeTrue();
+
+    post(route('login.store'), ['email' => $employee->email, 'password' => 'a-new-password'])
+        ->assertRedirect(route('dashboard'));
+});
+
+it('keeps the invitation valid for a week', function () {
+    $employee = Employee::factory()->invited()->create();
+    $token = inviteAndCaptureToken($employee);
+
+    travel(6)->days();
+
+    post(route('invitation.store'), [
+        'token' => $token,
+        'email' => $employee->email,
+        'password' => 'a-new-password',
+        'password_confirmation' => 'a-new-password',
+    ])->assertRedirect(route('login'));
+});
+
+it('refuses an expired invitation', function () {
+    $employee = Employee::factory()->invited()->create();
+    $token = inviteAndCaptureToken($employee);
+
+    travel(8)->days();
+
+    post(route('invitation.store'), [
+        'token' => $token,
+        'email' => $employee->email,
+        'password' => 'a-new-password',
+        'password_confirmation' => 'a-new-password',
+    ])->assertSessionHasErrors('email');
+
+    expect($employee->refresh()->hasVerifiedEmail())->toBeFalse();
+});
+
+it('refuses a made-up token', function () {
+    $employee = Employee::factory()->invited()->create();
+
+    post(route('invitation.store'), [
+        'token' => 'not-a-real-token',
+        'email' => $employee->email,
+        'password' => 'a-new-password',
+        'password_confirmation' => 'a-new-password',
+    ])->assertSessionHasErrors('email');
+});
+
+it('requires the password to be confirmed', function () {
+    $employee = Employee::factory()->invited()->create();
+    $token = inviteAndCaptureToken($employee);
+
+    post(route('invitation.store'), [
+        'token' => $token,
+        'email' => $employee->email,
+        'password' => 'a-new-password',
+        'password_confirmation' => 'something-else',
+    ])->assertSessionHasErrors('password');
+});
+
+it('sends an email with a link to set a password that expires in a week', function () {
+    $employee = Employee::factory()->invited()->create(['email' => 'cara@acme.test']);
+    $token = inviteAndCaptureToken($employee);
+
+    $mail = (new Invitation($token))->toMail($employee);
+
+    expect($mail->subject)->toBe('You have been invited to '.config('app.name'))
+        ->and($mail->actionText)->toBe('Set password')
+        ->and($mail->actionUrl)->toBe(route('invitation.show', ['token' => $token, 'email' => 'cara@acme.test']))
+        ->and(Str::of(implode(' ', $mail->outroLines))->contains('7 days'))->toBeTrue();
+});
+
+it('requires a token, a valid email and a password', function () {
+    post(route('invitation.store'), [])->assertSessionHasErrors(['token', 'email', 'password']);
+
+    post(route('invitation.store'), ['token' => 'x', 'email' => 'not-an-email', 'password' => 'a-new-password', 'password_confirmation' => 'a-new-password'])
+        ->assertSessionHasErrors(['email' => 'The email field must be a valid email address.']);
+
+    post(route('invitation.store'), ['token' => ['x'], 'email' => ['a@acme.test'], 'password' => 'a-new-password', 'password_confirmation' => 'a-new-password'])
+        ->assertSessionHasErrors(['token' => 'The token field must be a string.', 'email' => 'The email field must be a string.']);
+});

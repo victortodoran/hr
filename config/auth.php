@@ -95,6 +95,15 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // Invitations reuse the reset-token table but stay valid for a week,
+        // since a new Employee may not open the email straight away.
+        'invites' => [
+            'provider' => 'employees',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60 * 24 * 7,
+            'throttle' => 0,
+        ],
     ],
 
     /*

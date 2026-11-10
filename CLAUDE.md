@@ -17,3 +17,7 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 ### Code review
 
 Run code-review subagents at low effort unless I say otherwise.
+
+### Mutation testing
+
+New domain code under `app/` must keep the mutation score at 80% or above (`composer test:mutate`, enforced in CI). Locally, run it with coverage: `herd coverage vendor/bin/pest --mutate --everything --path=app --ignore=...` (copy the ignore list from the `test:mutate` script). Give new test files `covers()`. Use `// @pest-mutate-ignore (reason)` only for mutants that make no observable difference, never to skip writing a test.
