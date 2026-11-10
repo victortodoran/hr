@@ -2,7 +2,6 @@
 import { Head, usePage } from '@inertiajs/vue3';
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import DeleteAccount from '@/components/DeleteAccount.vue';
 import Heading from '@/components/Heading.vue';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
@@ -69,6 +68,4 @@ const employee = computed(() => page.props.auth.employee);
             </div>
         </div>
     </div>
-
-    <DeleteAccount />
 </template>
