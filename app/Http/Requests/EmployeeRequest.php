@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
@@ -13,6 +14,17 @@ use Illuminate\Validation\Rule;
  */
 class EmployeeRequest extends FormRequest
 {
+    /**
+     * Emails are compared and stored in lowercase, so capitals never make
+     * two addresses different.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('email'))) {
+            $this->merge(['email' => Str::lower($this->input('email'))]);
+        }
+    }
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
