@@ -9,5 +9,11 @@ parameters:
         - config/
         - database/
         - routes/
+        - tests/
 
-    level: 7
+    level: 8
+
+    # Pest's arch() DSL resolves preset()/expect() through magic methods that
+    # PHPStan can't type. The file is itself a static check, so it is skipped.
+    excludePaths:
+        - tests/Unit/ArchitectureTest.php

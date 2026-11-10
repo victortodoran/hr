@@ -52,5 +52,10 @@ jobs:
       - name: Setup Application
         run: composer setup
 
+      - name: Audit dependencies
+        run: |
+          composer audit
+          npm audit --audit-level=high
+
       - name: Run CI Checks
         run: composer ci:check
