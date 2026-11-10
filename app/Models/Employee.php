@@ -41,6 +41,7 @@ use Laravel\Passkeys\Passkeys;
  * @property Carbon|null $leaving_date
  * @property int|null $manager_id
  * @property bool $is_top
+ * @property int|null $effective_manager_id Only on Employees queried with withEffectiveManager()
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -101,6 +102,38 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function manager(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'manager_id');
+    }
+
+    /**
+     * The Employee they effectively report to: their Manager, or while that
+     * Manager has left, the first Employee up the chain who hasn't. Only
+     * loads on Employees queried with withEffectiveManager().
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function effectiveManager(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'effective_manager_id');
+    }
+
+    /**
+     * The Employee's Reporting Chain: their effective Manager, that
+     * Manager's effective Manager, and so on up to the top Employee.
+     *
+     * @return Collection<int, Employee>
+     */
+    public function reportingChain(): Collection
+    {
+        $chain = collect();
+        $managerId = self::query()->withEffectiveManager()->whereKey($this->id)->value('effective_manager_id');
+
+        while ($managerId !== null) {
+            $manager = self::query()->withEffectiveManager()->with('department')->whereKey($managerId)->firstOrFail();
+            $chain->push($manager);
+            $managerId = $manager->effective_manager_id;
+        }
+
+        return $chain;
     }
 
     /**
@@ -225,6 +258,48 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
         $query->whereDate('start_date', '<=', today())
             ->whereNull('leaving_date')
             ->whereHas('roles.permissions', fn (Builder $grants) => $grants->where('permission', Permission::ManageRoles));
+    }
+
+    /**
+     * Limit the query to Employees who are current today.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function current(Builder $query): void
+    {
+        $query->whereDate('start_date', '<=', today())
+            ->where(fn (Builder $query) => $query->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today()));
+    }
+
+    /**
+     * Add each Employee's effective_manager_id: walking up from their stored
+     * Manager, the first Employee who hasn't left. It is worked out when read,
+     * so nothing needs reassigning when a Manager leaves. The walk only climbs
+     * past Managers who have left, so it ends at the one row that's picked.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function withEffectiveManager(Builder $query): void
+    {
+        if ($query->getQuery()->columns === null) {
+            $query->select('employees.*');
+        }
+
+        $query->selectRaw(<<<'SQL'
+            (
+                WITH RECURSIVE up AS (
+                    SELECT managers.id, managers.manager_id, managers.leaving_date
+                    FROM employees AS managers WHERE managers.id = employees.manager_id
+                    UNION ALL
+                    SELECT managers.id, managers.manager_id, managers.leaving_date
+                    FROM employees AS managers JOIN up ON managers.id = up.manager_id
+                    WHERE up.leaving_date < ?
+                )
+                SELECT id FROM up WHERE up.leaving_date IS NULL OR up.leaving_date >= ? LIMIT 1
+            ) AS effective_manager_id
+            SQL, [today()->toDateString(), today()->toDateString()]);
     }
 
     /**

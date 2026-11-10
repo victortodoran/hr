@@ -3,6 +3,7 @@
 use App\Enums\Permission;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeInvitationController;
 use App\Http\Controllers\RoleController;
@@ -33,6 +34,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('employees/{employee}/invitation', [EmployeeInvitationController::class, 'store'])->middleware('can:resendInvitation,employee')->name('employees.invitation.store');
     Route::post('employees/{employee}/top', [TopEmployeeController::class, 'store'])->middleware('can:becomeTop,employee')->name('employees.top.store');
+
+    Route::middleware('can:'.Permission::ViewDirectory->value)->group(function () {
+        Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');
+        Route::get('directory/{employee}', [DirectoryController::class, 'show'])->name('directory.show');
+    });
 
     Route::middleware('can:'.Permission::ManageDepartments->value)->group(function () {
         Route::get('departments', [DepartmentController::class, 'index'])->name('departments.index');
