@@ -6,6 +6,7 @@ import {
     FolderGit2,
     LayoutGrid,
     ShieldCheck,
+    Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
@@ -23,6 +24,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as departments } from '@/routes/departments';
+import { index as directory } from '@/routes/directory';
 import { index as roles } from '@/routes/roles';
 import type { NavItem } from '@/types';
 
@@ -34,6 +36,9 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    ...(page.props.auth.can.includes('view-directory')
+        ? [{ title: 'Directory', href: directory(), icon: Users }]
+        : []),
     ...(page.props.auth.can.includes('manage-departments')
         ? [{ title: 'Departments', href: departments(), icon: Building2 }]
         : []),
