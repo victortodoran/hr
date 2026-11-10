@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Permission;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Requests\EmployeeRequest;
 use App\Models\Employee;
@@ -160,4 +161,23 @@ it('does not resend an invitation to a Former Employee', function () {
     actingAs(employeeWhoManagesEmployees())
         ->post(route('employees.invitation.store', $cara))
         ->assertForbidden();
+});
+
+it('refuses a Leaving Date for the last Employee who could manage Roles, until someone else can', function () {
+    $ada = reportingEmployee(['name' => 'Ada']);
+    $adminRole = giveRole($ada, [Permission::ManageRoles->value => null, Permission::ManageEmployees->value => null]);
+
+    actingAs($ada)
+        ->patch(route('employees.update', $ada), recordWith($ada, ['leaving_date' => '2026-06-30']))
+        ->assertSessionHasErrors(['leaving_date' => 'Ada is the last Employee who can manage Roles. Give manage roles to another current Employee before setting a Leaving Date.']);
+
+    expect($ada->refresh()->leaving_date)->toBeNull();
+
+    $adminRole->employees()->attach(Employee::factory()->create(['manager_id' => $ada->manager_id]));
+
+    actingAs($ada)
+        ->patch(route('employees.update', $ada), recordWith($ada, ['leaving_date' => '2026-06-30']))
+        ->assertSessionHasNoErrors();
+
+    expect($ada->refresh()->leaving_date?->toDateString())->toBe('2026-06-30');
 });
