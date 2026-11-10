@@ -21,6 +21,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
@@ -118,6 +119,23 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
             EmploymentStatus::Former => 'You can no longer sign in because you have left the company.',
             EmploymentStatus::Current => null,
         };
+    }
+
+    /**
+     * Whether the other Employee is one of this Employee's Reports: anywhere
+     * below them in the reporting line. A Manager who has left still links the chain, so their Reports
+     * stay below the next Manager up.
+     */
+    public function hasInReports(Employee $other): bool
+    {
+        return DB::scalar(<<<'SQL'
+            WITH RECURSIVE chain AS (
+                SELECT manager_id FROM employees WHERE id = ?
+                UNION
+                SELECT employees.manager_id FROM employees JOIN chain ON employees.id = chain.manager_id
+            )
+            SELECT EXISTS (SELECT 1 FROM chain WHERE manager_id = ?)
+            SQL, [$other->id, $this->id]) === true;
     }
 
     /**

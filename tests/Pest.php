@@ -18,7 +18,7 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)->in('Feature');
-pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Departments', 'Feature/Employees', 'Feature/Install', 'Feature/Lifecycle');
+pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Departments', 'Feature/Employees', 'Feature/Install', 'Feature/Lifecycle', 'Feature/ReportingLine');
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +48,15 @@ function employeeWith(array $grants, array $attributes = []): Employee
 function employeeWhoManagesEmployees(): Employee
 {
     return employeeWith([Permission::ManageEmployees->value => null]);
+}
+
+/**
+ * An Employee who manages the company (including naming the top Employee)
+ * as well as Employees, like the starter Admin.
+ */
+function employeeWhoManagesTheCompany(): Employee
+{
+    return employeeWith([Permission::ManageCompany->value => null, Permission::ManageEmployees->value => null]);
 }
 
 /**

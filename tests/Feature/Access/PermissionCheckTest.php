@@ -54,11 +54,31 @@ it('uses the widest Scope across all of an Employee\'s Roles', function () {
     actingAs($ana)->get("/_test/employees/{$colleague->id}")->assertOk();
 });
 
-it('does not yet let Scope reports cover other Employees', function () {
-    $ben = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Reports]);
-    $colleague = Employee::factory()->create();
+/*
+ * Dana (top)
+ * ├── Ben ── Cara ── Dev
+ * └── Eve
+ */
+it('lets Scope reports cover direct and indirect Reports, and nobody else', function () {
+    $dana = Employee::factory()->top()->create();
+    $ben = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Reports], ['manager_id' => $dana->id]);
+    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
+    $dev = Employee::factory()->create(['manager_id' => $cara->id]);
+    $eve = Employee::factory()->create(['manager_id' => $dana->id]);
 
-    actingAs($ben)->get("/_test/employees/{$colleague->id}")->assertForbidden();
+    actingAs($ben)->get("/_test/employees/{$cara->id}")->assertOk();
+    actingAs($ben)->get("/_test/employees/{$dev->id}")->assertOk();
+    actingAs($ben)->get("/_test/employees/{$ben->id}")->assertForbidden();
+    actingAs($ben)->get("/_test/employees/{$dana->id}")->assertForbidden();
+    actingAs($ben)->get("/_test/employees/{$eve->id}")->assertForbidden();
+});
+
+it('keeps covering Reports below a Manager who has left, through the next Manager up', function () {
+    $ben = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Reports], ['manager_id' => Employee::factory()->top()->create()->id]);
+    $fay = Employee::factory()->former()->create(['manager_id' => $ben->id]);
+    $cara = Employee::factory()->create(['manager_id' => $fay->id]);
+
+    actingAs($ben)->get("/_test/employees/{$cara->id}")->assertOk();
 });
 
 it('allows a company-wide Permission only to Employees holding it', function () {

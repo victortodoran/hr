@@ -37,6 +37,7 @@ it('shows an Employee\'s record on the edit page, without themselves as a possib
                 'status' => 'current',
                 'is_top' => false,
                 'can_resend_invitation' => false,
+                'can_become_top' => false,
             ])
             ->where('managers', fn (Collection $managers): bool => $managers->pluck('id')->contains($ben->id)
                 && ! $managers->pluck('id')->contains($cara->id))

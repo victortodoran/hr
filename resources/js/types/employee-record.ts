@@ -20,4 +20,5 @@ export type EmployeeRecord = {
     status: EmploymentStatus;
     is_top: boolean;
     can_resend_invitation: boolean;
+    can_become_top: boolean;
 };

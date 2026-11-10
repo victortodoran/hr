@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeInvitationController;
+use App\Http\Controllers\TopEmployeeController;
 use App\Models\Employee;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::post('employees/{employee}/invitation', [EmployeeInvitationController::class, 'store'])->middleware('can:resendInvitation,employee')->name('employees.invitation.store');
+    Route::post('employees/{employee}/top', [TopEmployeeController::class, 'store'])->middleware('can:becomeTop,employee')->name('employees.top.store');
 
     Route::middleware('can:'.Permission::ManageDepartments->value)->group(function () {
         Route::get('departments', [DepartmentController::class, 'index'])->name('departments.index');

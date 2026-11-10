@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Form, Head, setLayoutProps } from '@inertiajs/vue3';
+import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 import EmployeeInvitationController from '@/actions/App/Http/Controllers/EmployeeInvitationController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
+import MakeTopEmployee from '@/components/employees/MakeTopEmployee.vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ const props = defineProps<{
     employee: EmployeeRecord;
     departments: Choice[];
     managers: ManagerChoice[];
+    reportsNeedingAManager: Choice[];
 }>();
 
 const statusBadges = {
@@ -35,10 +37,34 @@ setLayoutProps({
     <div class="flex max-w-xl flex-col gap-8 p-4">
         <div class="flex items-start justify-between gap-4">
             <Heading :title="employee.name" description="Employee record" />
-            <Badge :variant="statusBadges[employee.status].variant">
-                {{ statusBadges[employee.status].label }}
-            </Badge>
+            <div class="flex flex-col items-end gap-2">
+                <Badge :variant="statusBadges[employee.status].variant">
+                    {{ statusBadges[employee.status].label }}
+                </Badge>
+                <Badge v-if="employee.is_top" variant="secondary"
+                    >Top Employee</Badge
+                >
+            </div>
         </div>
+
+        <div
+            v-if="reportsNeedingAManager.length > 0"
+            class="grid gap-2 rounded-lg border border-amber-300 p-4 text-sm dark:border-amber-500/40"
+        >
+            <p class="font-medium">
+                {{ employee.name }} has left, but these Employees still report
+                to them. Pick them a new Manager:
+            </p>
+            <ul class="list-inside list-disc">
+                <li v-for="report in reportsNeedingAManager" :key="report.id">
+                    <Link :href="edit(report.id)" class="underline">{{
+                        report.name
+                    }}</Link>
+                </li>
+            </ul>
+        </div>
+
+        <MakeTopEmployee v-if="employee.can_become_top" :employee="employee" />
 
         <div
             v-if="employee.can_resend_invitation"
