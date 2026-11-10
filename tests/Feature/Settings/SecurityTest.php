@@ -39,6 +39,34 @@ class SecurityTest extends TestCase
             );
     }
 
+    public function test_security_page_lists_only_the_employees_own_passkeys()
+    {
+        $this->skipUnlessFortifyHas(Features::passkeys());
+
+        $employee = Employee::factory()->create();
+        $colleague = Employee::factory()->create();
+        $employee->passkeys()->create(['name' => 'Work laptop', 'credential_id' => 'cred-1', 'credential' => []]);
+        $colleague->passkeys()->create(['name' => 'Colleague phone', 'credential_id' => 'cred-2', 'credential' => []]);
+
+        $this->actingAs($employee)
+            ->withSession(['auth.password_confirmed_at' => time()])
+            ->get(route('security.edit'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('passkeys', 1)
+                ->where('passkeys.0.name', 'Work laptop'),
+            );
+    }
+
+    public function test_deleting_an_employee_deletes_their_passkeys()
+    {
+        $employee = Employee::factory()->create();
+        $employee->passkeys()->create(['name' => 'Work laptop', 'credential_id' => 'cred-1', 'credential' => []]);
+
+        $employee->delete();
+
+        $this->assertDatabaseMissing('passkeys', ['credential_id' => 'cred-1']);
+    }
+
     public function test_security_page_requires_password_confirmation_when_enabled()
     {
         $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());

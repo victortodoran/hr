@@ -8,6 +8,9 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * The sessions.user_id column keeps its name because Laravel's database
+     * session driver requires it; it holds an Employee's id.
      */
     public function up(): void
     {
@@ -29,7 +32,6 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            // Laravel's database session driver requires this column to be named user_id.
             $table->foreignId('user_id')->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
