@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Department;
 use App\Models\Employee;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -27,6 +28,7 @@ class EmployeeFactory extends Factory
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            'department_id' => Department::factory(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
@@ -34,6 +36,18 @@ class EmployeeFactory extends Factory
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
         ];
+    }
+
+    /**
+     * An Employee who has been added but hasn't accepted their invitation:
+     * no usable password and an unverified email.
+     */
+    public function invited(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => null,
+            'password' => Str::random(40),
+        ]);
     }
 
     /**
