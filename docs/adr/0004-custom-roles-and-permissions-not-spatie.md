@@ -1,0 +1,3 @@
+# Roles and Permissions are our own code, not spatie/laravel-permission
+
+Every Permission in a Role carries a Scope (own, reports or everyone), and checks like "can Ben view Cara's Pay?" depend on whether Cara is one of Ben's Reports. spatie/laravel-permission has no concept of Scope, so it would only cover who holds which Role, while the Scope logic would be squeezed into Permission names like `view pay.reports`. We build a few small tables (Roles, the Permissions in each Role with their Scope, and which Employees hold which Roles) and check them through Laravel policies. That also makes recording every change in the Access Log straightforward. Don't replace this with the package without a plan for Scope.
