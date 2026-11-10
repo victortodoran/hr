@@ -29,7 +29,7 @@ class EmployeeFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'department_id' => Department::factory(),
-            'start_date' => fake()->dateTimeBetween('-5 years', '-1 week')->format('Y-m-d'),
+            'start_date' => today()->subDays(fake()->numberBetween(7, 5 * 365))->toDateString(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
@@ -48,6 +48,38 @@ class EmployeeFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
             'password' => Str::random(40),
+        ]);
+    }
+
+    /**
+     * An Employee whose Start Date is still ahead.
+     */
+    public function future(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'start_date' => today()->addMonth()->toDateString(),
+        ]);
+    }
+
+    /**
+     * An Employee whose Leaving Date has passed.
+     */
+    public function former(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'start_date' => today()->subYears(2)->toDateString(),
+            'leaving_date' => today()->subMonth()->toDateString(),
+        ]);
+    }
+
+    /**
+     * The single Employee at the top of the company, with no Manager.
+     */
+    public function top(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_top' => true,
+            'manager_id' => null,
         ]);
     }
 

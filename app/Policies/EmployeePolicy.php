@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Models\Employee;
 
@@ -29,10 +30,12 @@ class EmployeePolicy
 
     /**
      * An invitation can be resent only while the Employee has yet to set a
-     * password.
+     * password, and never once they have left.
      */
     public function resendInvitation(Employee $actor, Employee $employee): bool
     {
-        return $actor->can(Permission::ManageEmployees->value) && $employee->hasPendingInvitation();
+        return $actor->can(Permission::ManageEmployees->value)
+            && $employee->hasPendingInvitation()
+            && $employee->employmentStatus() !== EmploymentStatus::Former;
     }
 }

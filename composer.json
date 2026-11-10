@@ -79,7 +79,7 @@
         ],
         "test:mutate": [
             "Composer\\Config::disableProcessTimeout",
-            "pest --mutate --everything --min=80 --path=app --ignore=app/Http/Controllers/Settings,app/Http/Requests/Settings,app/Actions/Fortify,app/Concerns,app/Http/Middleware,app/Providers/AppServiceProvider.php,app/Providers/FortifyServiceProvider.php,app/Http/Controllers/Controller.php"
+            "pest --mutate --everything --min=80 --path=app --ignore=app/Http/Controllers/Settings,app/Http/Requests/Settings,app/Actions/Fortify,app/Concerns,app/Http/Middleware/HandleAppearance.php,app/Http/Middleware/HandleInertiaRequests.php,app/Providers/AppServiceProvider.php,app/Providers/FortifyServiceProvider.php,app/Http/Controllers/Controller.php"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

@@ -132,7 +132,7 @@ it('shows the add page with the Departments and possible Managers to choose from
         ->assertInertia(fn (Assert $page) => $page
             ->component('employees/Create')
             ->where('departments', fn (Collection $departments): bool => $departments->contains(fn (array $department): bool => $department === ['id' => $finance->id, 'name' => 'Finance']))
-            ->where('managers', fn (Collection $managers): bool => $managers->contains(fn (array $manager): bool => $manager === ['id' => $ben->id, 'name' => 'Ben Ford'])),
+            ->where('managers', fn (Collection $managers): bool => $managers->contains(fn (array $manager): bool => $manager === ['id' => $ben->id, 'name' => 'Ben Ford', 'status' => 'current'])),
         );
 });
 

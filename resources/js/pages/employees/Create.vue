@@ -6,7 +6,7 @@ import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { create } from '@/routes/employees';
-import type { Choice } from '@/types';
+import type { Choice, ManagerChoice } from '@/types';
 
 defineOptions({
     layout: {
@@ -16,7 +16,7 @@ defineOptions({
 
 defineProps<{
     departments: Choice[];
-    managers: Choice[];
+    managers: ManagerChoice[];
 }>();
 </script>
 
