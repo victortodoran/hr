@@ -11,13 +11,13 @@ class DashboardTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guests_are_redirected_to_the_login_page()
+    public function test_guests_are_redirected_to_the_login_page(): void
     {
         $response = $this->get(route('dashboard'));
         $response->assertRedirect(route('login'));
     }
 
-    public function test_authenticated_employees_can_visit_the_dashboard()
+    public function test_authenticated_employees_can_visit_the_dashboard(): void
     {
         $employee = Employee::factory()->create();
         $this->actingAs($employee);
@@ -26,7 +26,7 @@ class DashboardTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_pages_receive_the_signed_in_employee()
+    public function test_pages_receive_the_signed_in_employee(): void
     {
         $employee = Employee::factory()->create(['name' => 'Cara Lopez']);
 
