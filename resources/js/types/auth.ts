@@ -12,6 +12,8 @@ export type Employee = {
 
 export type Auth = {
     employee: Employee;
+    /** Company-wide Permissions the signed-in Employee holds. */
+    can: string[];
 };
 
 export type Passkey = {

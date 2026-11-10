@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,11 +36,14 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $employee = $request->user();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'employee' => $request->user(),
+                'employee' => $employee,
+                'can' => fn (): array => $employee instanceof Employee ? $employee->companyWidePermissions() : [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
