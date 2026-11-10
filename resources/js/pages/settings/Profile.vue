@@ -3,7 +3,7 @@ import { Form, Head, usePage } from '@inertiajs/vue3';
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import DeleteUser from '@/components/DeleteUser.vue';
+import DeleteAccount from '@/components/DeleteAccount.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ defineOptions({
 });
 
 const page = usePage();
-const user = computed(() => page.props.auth.user);
+const employee = computed(() => page.props.auth.employee);
 </script>
 
 <template>
@@ -50,7 +50,7 @@ const user = computed(() => page.props.auth.user);
                     id="name"
                     class="mt-1 block w-full"
                     name="name"
-                    :default-value="user.name"
+                    :default-value="employee.name"
                     required
                     autocomplete="name"
                     placeholder="Full name"
@@ -65,7 +65,7 @@ const user = computed(() => page.props.auth.user);
                     type="email"
                     class="mt-1 block w-full"
                     name="email"
-                    :default-value="user.email"
+                    :default-value="employee.email"
                     required
                     autocomplete="username"
                     placeholder="Email address"
@@ -73,7 +73,9 @@ const user = computed(() => page.props.auth.user);
                 <InputError class="mt-2" :message="errors.email" />
             </div>
 
-            <div v-if="page.props.mustVerifyEmail && !user.email_verified_at">
+            <div
+                v-if="page.props.mustVerifyEmail && !employee.email_verified_at"
+            >
                 <p class="-mt-4 text-sm text-muted-foreground">
                     Your email address is unverified.
                     <Link
@@ -101,5 +103,5 @@ const user = computed(() => page.props.auth.user);
         </Form>
     </div>
 
-    <DeleteUser />
+    <DeleteAccount />
 </template>

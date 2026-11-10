@@ -8,12 +8,15 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * The user_id column keeps its name because laravel/passkeys requires it;
+     * it references an Employee.
      */
     public function up(): void
     {
         Schema::create('passkeys', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('employees')->cascadeOnDelete();
             $table->string('name');
             $table->string('credential_id')->unique();
             $table->json('credential');
