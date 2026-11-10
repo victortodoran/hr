@@ -38,39 +38,17 @@ class ProfileUpdateTest extends TestCase
         $this->assertSame('cara@acme.test', $employee->email);
     }
 
-    public function test_employee_can_delete_their_account(): void
+    public function test_employees_cannot_delete_their_own_account(): void
     {
         $employee = Employee::factory()->create();
 
-        $response = $this
-            ->actingAs($employee)
-            ->delete(route('profile.destroy'), [
+        $this->actingAs($employee)
+            ->delete('/settings/profile', [
                 'password' => 'password',
-            ]);
+            ])
+            ->assertMethodNotAllowed();
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('home'));
-
-        $this->assertGuest();
-        $this->assertNull($employee->fresh());
-    }
-
-    public function test_correct_password_must_be_provided_to_delete_account(): void
-    {
-        $employee = Employee::factory()->create();
-
-        $response = $this
-            ->actingAs($employee)
-            ->from(route('profile.edit'))
-            ->delete(route('profile.destroy'), [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrors('password')
-            ->assertRedirect(route('profile.edit'));
-
+        $this->assertAuthenticatedAs($employee);
         $this->assertNotNull($employee->fresh());
     }
 }
