@@ -15,10 +15,11 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property string $name
+ * @property bool $is_given_to_new_employees
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name'])] // @pest-mutate-ignore (class attributes never show as covered)
+#[Fillable(['name', 'is_given_to_new_employees'])] // @pest-mutate-ignore (class attributes never show as covered)
 class Role extends Model
 {
     /** @use HasFactory<RoleFactory> */

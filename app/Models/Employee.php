@@ -31,6 +31,8 @@ use Laravel\Passkeys\Passkeys;
  * @property string $name
  * @property string $email
  * @property int $department_id
+ * @property Carbon $start_date
+ * @property int|null $manager_id
  * @property bool $is_top
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -41,7 +43,7 @@ use Laravel\Passkeys\Passkeys;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'department_id'])] // @pest-mutate-ignore (class attributes never show as covered)
+#[Fillable(['name', 'email', 'password', 'department_id', 'start_date', 'manager_id'])] // @pest-mutate-ignore (class attributes never show as covered)
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])] // @pest-mutate-ignore (class attributes never show as covered)
 class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -59,6 +61,7 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'email_verified_at' => 'datetime', // @pest-mutate-ignore (only read through hasVerifiedEmail, which works uncast)
             'password' => 'hashed',
             'is_top' => 'boolean', // @pest-mutate-ignore (PostgreSQL already returns a boolean)
+            'start_date' => 'date',
             'two_factor_confirmed_at' => 'datetime', // @pest-mutate-ignore (starter-kit two-factor code)
         ];
     }
@@ -69,6 +72,24 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * The Employee they report to; only the top Employee has none.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'manager_id');
+    }
+
+    /**
+     * Whether the Employee has yet to set their password from the invitation.
+     */
+    public function hasPendingInvitation(): bool
+    {
+        return ! $this->hasVerifiedEmail();
     }
 
     /**

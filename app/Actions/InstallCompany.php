@@ -41,6 +41,7 @@ class InstallCompany
                 'email' => $email,
                 'password' => Str::random(40), // @pest-mutate-ignore (an unusable placeholder until the invitation is accepted)
                 'department_id' => Department::query()->create(['name' => $department])->id,
+                'start_date' => today(),
             ]);
             $employee->is_top = true;
             $employee->save();
@@ -68,26 +69,26 @@ class InstallCompany
         }
 
         $starters = [
-            'Admin' => $admin,
-            'Manager' => [
+            'Admin' => ['grants' => $admin, 'givenToNewEmployees' => false],
+            'Manager' => ['grants' => [
                 Permission::ViewEmployeeRecords->value => Scope::Reports,
                 Permission::ViewAssignments->value => Scope::Reports,
                 Permission::ManageAssignments->value => Scope::Reports,
                 Permission::ViewProjects->value => null,
-            ],
-            'Employee' => [
+            ], 'givenToNewEmployees' => false],
+            'Employee' => ['grants' => [
                 Permission::ViewDirectory->value => null,
                 Permission::ViewEmployeeRecords->value => Scope::Own,
                 Permission::ViewAssignments->value => Scope::Own,
                 Permission::ViewPay->value => Scope::Own,
-            ],
+            ], 'givenToNewEmployees' => true],
         ];
 
         $roles = [];
-        foreach ($starters as $name => $grants) {
-            $role = Role::query()->create(['name' => $name]);
+        foreach ($starters as $name => $starter) {
+            $role = Role::query()->create(['name' => $name, 'is_given_to_new_employees' => $starter['givenToNewEmployees']]);
 
-            foreach ($grants as $permission => $scope) {
+            foreach ($starter['grants'] as $permission => $scope) {
                 $role->permissions()->create(['permission' => $permission, 'scope' => $scope]);
             }
 

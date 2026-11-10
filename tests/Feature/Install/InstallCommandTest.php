@@ -14,7 +14,7 @@ use Illuminate\Testing\PendingCommand;
 
 use function Pest\Laravel\artisan;
 
-covers(InstallCommand::class, InstallCompany::class, CompanySettings::class);
+covers(InstallCommand::class, InstallCompany::class, CompanySettings::class, Role::class);
 
 /**
  * Run hr:install with the given options and return the pending command
@@ -56,6 +56,8 @@ it('sets up the company, first Department and top Employee', function () {
 
     expect($dana->name)->toBe('Dana Owner')
         ->and($dana->is_top)->toBeTrue()
+        ->and($dana->manager_id)->toBeNull()
+        ->and($dana->start_date->isToday())->toBeTrue()
         ->and($dana->department?->name)->toBe('Operations')
         ->and($dana->hasVerifiedEmail())->toBeFalse();
 
@@ -99,8 +101,14 @@ it('creates the starter Employee Role: directory, plus own records, Assignments 
         ->and($gate->allows(Permission::ViewAssignments->value, $cara))->toBeTrue()
         ->and($gate->allows(Permission::ViewPay->value, $cara))->toBeTrue()
         ->and($gate->allows(Permission::ViewEmployeeRecords->value, $colleague))->toBeFalse()
-        ->and($gate->allows(Permission::ManageEmployees->value, $cara))->toBeFalse()
+        ->and($gate->allows(Permission::ManageEmployees->value))->toBeFalse()
         ->and($gate->allows(Permission::ManageRoles->value))->toBeFalse();
+});
+
+it('marks only the starter Employee Role as given to new Employees', function () {
+    install(installOptions())->assertSuccessful();
+
+    expect(Role::query()->where('is_given_to_new_employees', true)->pluck('name')->all())->toBe(['Employee']);
 });
 
 it('creates the starter Manager Role: Reports\' records and Assignments, plus Projects', function () {

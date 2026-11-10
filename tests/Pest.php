@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Models\Employee;
 use App\Models\Role;
@@ -17,7 +18,7 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)->in('Feature');
-pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Departments', 'Feature/Install');
+pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Departments', 'Feature/Employees', 'Feature/Install');
 
 /*
 |--------------------------------------------------------------------------
@@ -39,6 +40,14 @@ function employeeWith(array $grants, array $attributes = []): Employee
     giveRole($employee, $grants);
 
     return $employee;
+}
+
+/**
+ * An Employee who may add and edit any Employee, such as someone in HR.
+ */
+function employeeWhoManagesEmployees(): Employee
+{
+    return employeeWith([Permission::ManageEmployees->value => null]);
 }
 
 /**

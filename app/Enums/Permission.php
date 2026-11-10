@@ -31,7 +31,6 @@ enum Permission: string
     {
         return match ($this) {
             self::ViewEmployeeRecords,
-            self::ManageEmployees,
             self::ViewAssignments,
             self::ManageAssignments,
             self::ViewPay,
