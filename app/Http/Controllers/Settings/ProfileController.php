@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
-use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\Employee;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -25,24 +24,6 @@ class ProfileController extends Controller
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
         ]);
-    }
-
-    /**
-     * Update the Employee's profile information.
-     */
-    public function update(ProfileUpdateRequest $request, #[CurrentUser] Employee $employee): RedirectResponse
-    {
-        $employee->fill($request->validated());
-
-        if ($employee->isDirty('email')) {
-            $employee->email_verified_at = null;
-        }
-
-        $employee->save();
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
-
-        return to_route('profile.edit');
     }
 
     /**

@@ -21,44 +21,21 @@ class ProfileUpdateTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_profile_information_can_be_updated(): void
+    public function test_employees_cannot_change_their_own_name_or_email(): void
     {
-        $employee = Employee::factory()->create();
+        $employee = Employee::factory()->create(['name' => 'Cara Lane', 'email' => 'cara@acme.test']);
 
-        $response = $this
-            ->actingAs($employee)
-            ->patch(route('profile.update'), [
-                'name' => 'Test Employee',
-                'email' => 'test@example.com',
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('profile.edit'));
+        $this->actingAs($employee)
+            ->patch('/settings/profile', [
+                'name' => 'Someone Else',
+                'email' => 'someone@example.com',
+            ])
+            ->assertMethodNotAllowed();
 
         $employee->refresh();
 
-        $this->assertSame('Test Employee', $employee->name);
-        $this->assertSame('test@example.com', $employee->email);
-        $this->assertNull($employee->email_verified_at);
-    }
-
-    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
-    {
-        $employee = Employee::factory()->create();
-
-        $response = $this
-            ->actingAs($employee)
-            ->patch(route('profile.update'), [
-                'name' => 'Test Employee',
-                'email' => $employee->email,
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('profile.edit'));
-
-        $this->assertNotNull($employee->refresh()->email_verified_at);
+        $this->assertSame('Cara Lane', $employee->name);
+        $this->assertSame('cara@acme.test', $employee->email);
     }
 
     public function test_employee_can_delete_their_account(): void
