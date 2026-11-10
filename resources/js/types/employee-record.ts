@@ -1,6 +1,12 @@
+export type EmploymentStatus = 'future' | 'current' | 'former';
+
 export type Choice = {
     id: number;
     name: string;
+};
+
+export type ManagerChoice = Choice & {
+    status: EmploymentStatus;
 };
 
 export type EmployeeRecord = {
@@ -10,6 +16,8 @@ export type EmployeeRecord = {
     department_id: number;
     manager_id: number | null;
     start_date: string;
+    leaving_date: string | null;
+    status: EmploymentStatus;
     is_top: boolean;
-    has_pending_invitation: boolean;
+    can_resend_invitation: boolean;
 };

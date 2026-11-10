@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Notifications\Invitation;
@@ -32,6 +33,7 @@ use Laravel\Passkeys\Passkeys;
  * @property string $email
  * @property int $department_id
  * @property Carbon $start_date
+ * @property Carbon|null $leaving_date
  * @property int|null $manager_id
  * @property bool $is_top
  * @property Carbon|null $email_verified_at
@@ -43,7 +45,7 @@ use Laravel\Passkeys\Passkeys;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'department_id', 'start_date', 'manager_id'])] // @pest-mutate-ignore (class attributes never show as covered)
+#[Fillable(['name', 'email', 'password', 'department_id', 'start_date', 'leaving_date', 'manager_id'])] // @pest-mutate-ignore (class attributes never show as covered)
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])] // @pest-mutate-ignore (class attributes never show as covered)
 class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -62,6 +64,7 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'password' => 'hashed',
             'is_top' => 'boolean', // @pest-mutate-ignore (PostgreSQL already returns a boolean)
             'start_date' => 'date',
+            'leaving_date' => 'date',
             'two_factor_confirmed_at' => 'datetime', // @pest-mutate-ignore (starter-kit two-factor code)
         ];
     }
@@ -82,6 +85,26 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function manager(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'manager_id');
+    }
+
+    /**
+     * Whether the Employee is future, current or former today.
+     */
+    public function employmentStatus(): EmploymentStatus
+    {
+        return EmploymentStatus::on(today(), $this->start_date, $this->leaving_date);
+    }
+
+    /**
+     * Why the Employee may not sign in today, or null when they may.
+     */
+    public function signInRefusal(): ?string
+    {
+        return match ($this->employmentStatus()) {
+            EmploymentStatus::Future => 'You can sign in from your Start Date, '.$this->start_date->format('j F Y').'.',
+            EmploymentStatus::Former => 'You can no longer sign in because you have left the company.',
+            EmploymentStatus::Current => null,
+        };
     }
 
     /**

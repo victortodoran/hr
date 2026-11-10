@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 class AddEmployee
 {
     /**
-     * @param  array{name: string, email: string, department_id: int, manager_id: int, start_date: Carbon|string}  $details
+     * @param  array{name: string, email: string, department_id: int, manager_id: int, start_date: Carbon|string, leaving_date?: Carbon|string|null}  $details
      */
     public function add(array $details): Employee
     {

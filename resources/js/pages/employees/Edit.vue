@@ -4,16 +4,23 @@ import EmployeeController from '@/actions/App/Http/Controllers/EmployeeControlle
 import EmployeeInvitationController from '@/actions/App/Http/Controllers/EmployeeInvitationController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import Heading from '@/components/Heading.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { edit } from '@/routes/employees';
-import type { Choice, EmployeeRecord } from '@/types';
+import type { Choice, EmployeeRecord, ManagerChoice } from '@/types';
 
 const props = defineProps<{
     employee: EmployeeRecord;
     departments: Choice[];
-    managers: Choice[];
+    managers: ManagerChoice[];
 }>();
+
+const statusBadges = {
+    future: { label: 'Future Employee', variant: 'secondary' },
+    current: { label: 'Current Employee', variant: 'default' },
+    former: { label: 'Former Employee', variant: 'outline' },
+} as const;
 
 setLayoutProps({
     breadcrumbs: [
@@ -26,10 +33,15 @@ setLayoutProps({
     <Head :title="employee.name" />
 
     <div class="flex max-w-xl flex-col gap-8 p-4">
-        <Heading :title="employee.name" description="Employee record" />
+        <div class="flex items-start justify-between gap-4">
+            <Heading :title="employee.name" description="Employee record" />
+            <Badge :variant="statusBadges[employee.status].variant">
+                {{ statusBadges[employee.status].label }}
+            </Badge>
+        </div>
 
         <div
-            v-if="employee.has_pending_invitation"
+            v-if="employee.can_resend_invitation"
             class="flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4"
         >
             <p class="text-sm text-muted-foreground">

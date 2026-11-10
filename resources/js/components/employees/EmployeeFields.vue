@@ -9,11 +9,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { Choice, EmployeeRecord } from '@/types';
+import type { Choice, EmployeeRecord, ManagerChoice } from '@/types';
 
 defineProps<{
     departments: Choice[];
-    managers: Choice[];
+    managers: ManagerChoice[];
     errors: Record<string, string | undefined>;
     employee?: EmployeeRecord;
 }>();
@@ -92,6 +92,12 @@ defineProps<{
                         :value="String(manager.id)"
                     >
                         {{ manager.name }}
+                        <span
+                            v-if="manager.status === 'future'"
+                            class="text-muted-foreground"
+                        >
+                            (Future Employee)
+                        </span>
                     </SelectItem>
                 </SelectContent>
             </Select>
@@ -111,6 +117,35 @@ defineProps<{
                 required
             />
             <InputError :message="errors.start_date" />
+        </div>
+
+        <div class="grid gap-2">
+            <Label for="leaving_date">Leaving Date</Label>
+            <template v-if="employee?.is_top">
+                <p class="text-sm text-muted-foreground">
+                    Name a new top Employee before the current one can leave.
+                </p>
+            </template>
+            <template v-else>
+                <Input
+                    id="leaving_date"
+                    type="date"
+                    name="leaving_date"
+                    :default-value="employee?.leaving_date ?? undefined"
+                    :readonly="employee?.status === 'former'"
+                />
+                <p
+                    v-if="employee?.status === 'former'"
+                    class="text-sm text-muted-foreground"
+                >
+                    This Leaving Date has passed, so it can't be changed.
+                </p>
+                <p v-else class="text-sm text-muted-foreground">
+                    Optional. Their last working day; they can't sign in after
+                    it.
+                </p>
+            </template>
+            <InputError :message="errors.leaving_date" />
         </div>
     </div>
 </template>
