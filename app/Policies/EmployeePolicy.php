@@ -38,4 +38,17 @@ class EmployeePolicy
             && $employee->hasPendingInvitation()
             && $employee->employmentStatus() !== EmploymentStatus::Former;
     }
+
+    /**
+     * Naming the top Employee needs manage company, and only a current
+     * Employee who isn't already top and has no Leaving Date can take the
+     * spot, since the top Employee can't leave without a successor.
+     */
+    public function becomeTop(Employee $actor, Employee $employee): bool
+    {
+        return $actor->can(Permission::ManageCompany->value)
+            && ! $employee->is_top
+            && $employee->leaving_date === null
+            && $employee->employmentStatus() === EmploymentStatus::Current;
+    }
 }

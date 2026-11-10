@@ -58,7 +58,9 @@ class EmployeeController extends Controller
                 'status' => $employee->employmentStatus()->value,
                 'is_top' => $employee->is_top,
                 'can_resend_invitation' => $actor->can('resendInvitation', $employee),
+                'can_become_top' => $actor->can('becomeTop', $employee),
             ],
+            'reportsNeedingAManager' => $this->reportsNeedingAManager($employee),
             ...$this->choices($employee),
         ]);
     }
@@ -73,6 +75,28 @@ class EmployeeController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Employee updated.')]);
 
         return to_route('employees.edit', $employee);
+    }
+
+    /**
+     * When the Employee has left, the Employees who still report to them
+     * and need a new Manager.
+     *
+     * @return array<int, array{id: int, name: string}>
+     */
+    private function reportsNeedingAManager(Employee $employee): array
+    {
+        if ($employee->employmentStatus() !== EmploymentStatus::Former) {
+            return [];
+        }
+
+        return Employee::query()
+            ->where('manager_id', $employee->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'start_date', 'leaving_date'])
+            ->reject(fn (Employee $report): bool => $report->employmentStatus() === EmploymentStatus::Former)
+            ->map(fn (Employee $report): array => ['id' => $report->id, 'name' => $report->name])
+            ->values()
+            ->all();
     }
 
     /**

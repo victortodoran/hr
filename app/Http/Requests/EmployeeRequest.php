@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\EmploymentStatus;
 use App\Models\Department;
 use App\Models\Employee;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -40,7 +41,7 @@ class EmployeeRequest extends FormRequest
             'department_id' => ['required', 'integer', Rule::exists(Department::class, 'id')],
             'manager_id' => $employee?->is_top
                 ? ['prohibited']
-                : ['required', 'integer', Rule::exists(Employee::class, 'id'), Rule::notIn([$employee?->id])],
+                : ['bail', 'required', 'integer', Rule::exists(Employee::class, 'id'), Rule::notIn([$employee?->id]), $this->noLoopUnder($employee)],
             'start_date' => ['required', 'date'],
             'leaving_date' => match (true) {
                 $employee?->is_top === true => ['prohibited'], // @pest-mutate-ignore (adding has no Employee yet, and PHP reads a property of null as null)
@@ -48,6 +49,19 @@ class EmployeeRequest extends FormRequest
                 default => ['nullable', 'date', 'after_or_equal:start_date'],
             },
         ];
+    }
+
+    /**
+     * Refuses a new Manager who reports to the Employee, directly or not,
+     * since that would turn the reporting line into a loop.
+     */
+    private function noLoopUnder(?Employee $employee): Closure
+    {
+        return function (string $attribute, mixed $managerId, Closure $fail) use ($employee): void {
+            if ($employee !== null && $employee->hasInReports(Employee::query()->whereKey($managerId)->firstOrFail())) {
+                $fail(__('That would make a loop: the new Manager reports to this Employee.'));
+            }
+        };
     }
 
     /**

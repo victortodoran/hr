@@ -29,13 +29,13 @@ enum Scope: string
 
     /**
      * Whether this Scope, held by the acting Employee, covers the target.
-     * The reports Scope covers nobody until the reporting line exists.
+     * Reports are everyone below the acting Employee in the reporting line.
      */
     public function covers(Employee $actor, Employee $target): bool
     {
         return match ($this) {
             self::Own => $actor->is($target),
-            self::Reports => false,
+            self::Reports => $actor->hasInReports($target),
             self::Everyone => true,
         };
     }
