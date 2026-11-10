@@ -24,6 +24,14 @@ enum Permission: string
     case ManageCompany = 'manage-company';
 
     /**
+     * The Permission's name as people read it, such as "Manage roles".
+     */
+    public function label(): string
+    {
+        return ucfirst(str_replace('-', ' ', $this->value));
+    }
+
+    /**
      * Whether this Permission is about Employees and so carries a Scope.
      * The others always apply company-wide.
      */

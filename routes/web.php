@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeInvitationController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RoleHolderController;
 use App\Http\Controllers\TopEmployeeController;
 use App\Models\Employee;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +39,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('departments', [DepartmentController::class, 'store'])->name('departments.store');
         Route::patch('departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
         Route::delete('departments/{department}', [DepartmentController::class, 'destroy'])->name('departments.destroy');
+    });
+
+    Route::middleware('can:'.Permission::ManageRoles->value)->group(function () {
+        Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::patch('roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+        Route::post('roles/{role}/holders', [RoleHolderController::class, 'store'])->name('roles.holders.store');
+        Route::delete('roles/{role}/holders/{employee}', [RoleHolderController::class, 'destroy'])->name('roles.holders.destroy');
     });
 });
 

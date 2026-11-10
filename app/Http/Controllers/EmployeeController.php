@@ -29,12 +29,12 @@ class EmployeeController extends Controller
     /**
      * Add an Employee and invite them to set their password.
      */
-    public function store(EmployeeRequest $request, AddEmployee $addEmployee): RedirectResponse
+    public function store(#[CurrentUser] Employee $actor, EmployeeRequest $request, AddEmployee $addEmployee): RedirectResponse
     {
         /** @var array{name: string, email: string, department_id: int, manager_id: int, start_date: string} $details */
         $details = $request->validated();
 
-        $employee = $addEmployee->add($details);
+        $employee = $addEmployee->add($actor, $details);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Employee added. An invitation has been sent to :email.', ['email' => $employee->email])]);
 

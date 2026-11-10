@@ -46,7 +46,7 @@ class EmployeeRequest extends FormRequest
             'leaving_date' => match (true) {
                 $employee?->is_top === true => ['prohibited'], // @pest-mutate-ignore (adding has no Employee yet, and PHP reads a property of null as null)
                 $employee?->employmentStatus() === EmploymentStatus::Former => [Rule::in([$employee->leaving_date?->toDateString()])], // @pest-mutate-ignore (a Former Employee always has a Leaving Date)
-                default => ['nullable', 'date', 'after_or_equal:start_date'],
+                default => ['nullable', 'date', 'after_or_equal:start_date', $this->keepsSomeoneWhoCanManageRoles($employee)],
             },
         ];
     }
@@ -60,6 +60,23 @@ class EmployeeRequest extends FormRequest
         return function (string $attribute, mixed $managerId, Closure $fail) use ($employee): void {
             if ($employee !== null && $employee->hasInReports(Employee::query()->whereKey($managerId)->firstOrFail())) {
                 $fail(__('That would make a loop: the new Manager reports to this Employee.'));
+            }
+        };
+    }
+
+    /**
+     * Refuses a Leaving Date for the last Employee who can manage Roles,
+     * since the company would lose the ability to change access.
+     */
+    private function keepsSomeoneWhoCanManageRoles(?Employee $employee): Closure
+    {
+        return function (string $attribute, mixed $leavingDate, Closure $fail) use ($employee): void {
+            $lastingRoleManagers = Employee::query()->lastingRoleManagers();
+
+            if ($employee !== null
+                && (clone $lastingRoleManagers)->whereKey($employee->id)->exists()
+                && ! $lastingRoleManagers->whereKeyNot($employee->id)->exists()) {
+                $fail(__(':name is the last Employee who can manage Roles. Give manage roles to another current Employee before setting a Leaving Date.', ['name' => $employee->name]));
             }
         };
     }
