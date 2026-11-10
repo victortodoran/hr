@@ -14,18 +14,25 @@ use Illuminate\Support\Str;
  */
 class AddEmployee
 {
+    public function __construct(private ChangeAccess $changeAccess) {}
+
     /**
+     * Every Role given is recorded in the Access Log against the actor.
+     *
      * @param  array{name: string, email: string, department_id: int, manager_id: int, start_date: Carbon|string, leaving_date?: Carbon|string|null}  $details
      */
-    public function add(array $details): Employee
+    public function add(Employee $actor, array $details): Employee
     {
-        $employee = DB::transaction(function () use ($details): Employee {
+        $employee = DB::transaction(function () use ($details, $actor): Employee {
             $employee = Employee::query()->create([
                 ...$details,
                 'password' => Str::random(40), // @pest-mutate-ignore (an unusable placeholder until the invitation is accepted)
             ]);
 
-            $employee->roles()->attach(Role::query()->where('is_given_to_new_employees', true)->pluck('id'));
+            Role::query()
+                ->where('is_given_to_new_employees', true)
+                ->get()
+                ->each(fn (Role $role) => $this->changeAccess->giveRole($actor, $role, $employee));
 
             return $employee;
         });

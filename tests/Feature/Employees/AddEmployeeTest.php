@@ -1,10 +1,13 @@
 <?php
 
 use App\Actions\AddEmployee;
+use App\Actions\ChangeAccess;
+use App\Enums\AccessChange;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Requests\EmployeeRequest;
+use App\Models\AccessLogEntry;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Role;
@@ -17,7 +20,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
 
-covers(EmployeeController::class, EmployeeRequest::class, EmployeePolicy::class, AddEmployee::class, Employee::class);
+covers(EmployeeController::class, EmployeeRequest::class, EmployeePolicy::class, AddEmployee::class, ChangeAccess::class, Employee::class);
 
 beforeEach(fn () => Notification::fake());
 
@@ -66,6 +69,22 @@ it('gives the new Employee every Role marked for new Employees, and no others', 
     $cara = Employee::query()->where('email', 'cara@acme.test')->sole();
 
     expect($cara->roles->pluck('id')->sort()->values()->all())->toBe([$employeeRole->id, $handbook->id]);
+});
+
+it('logs each Role given to a new Employee, with who added them', function () {
+    $employeeRole = Role::factory()->create(['name' => 'Employee', 'is_given_to_new_employees' => true]);
+    $hr = employeeWhoManagesEmployees();
+
+    actingAs($hr)->post(route('employees.store'), newEmployeeDetails());
+
+    $cara = Employee::query()->where('email', 'cara@acme.test')->sole();
+    $entry = AccessLogEntry::query()->sole();
+
+    expect($entry->change)->toBe(AccessChange::RoleGiven)
+        ->and($entry->actor_id)->toBe($hr->id)
+        ->and($entry->role_id)->toBe($employeeRole->id)
+        ->and($entry->role_name)->toBe('Employee')
+        ->and($entry->employee_id)->toBe($cara->id);
 });
 
 it('lets the invited Employee set a password from the invite', function () {

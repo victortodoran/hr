@@ -32,3 +32,10 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # TypeScript 7 (the native compiler) breaks Vue's SFC compiler and vue-tsc; revisit once Vue supports it.
+      - dependency-name: "typescript"
+        versions: [">=7"]
+      # Keep the Node types on the major in .nvmrc; bump both together by hand.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
