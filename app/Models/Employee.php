@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Notifications\Invitation;
 use Database\Factories\EmployeeFactory;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -85,6 +86,17 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function sendInvitation(): void
     {
         $this->notify(new Invitation(Password::broker('invites')->createToken($this)));
+    }
+
+    /**
+     * Whether the token is from the Employee's invitation and has not expired.
+     */
+    public function hasValidInvitation(string $token): bool
+    {
+        /** @var PasswordBroker $invites */
+        $invites = Password::broker('invites');
+
+        return $invites->tokenExists($this, $token);
     }
 
     /**

@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import AlertError from '@/components/AlertError.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
+import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/invitation';
+import { login } from '@/routes';
 
 defineOptions({
     layout: {
@@ -20,6 +23,7 @@ const props = defineProps<{
     token: string;
     email: string;
     passwordRules: string;
+    isValid: boolean;
 }>();
 
 const inputEmail = ref(props.email);
@@ -28,7 +32,21 @@ const inputEmail = ref(props.email);
 <template>
     <Head title="Set your password" />
 
+    <div v-if="!isValid" class="grid gap-6">
+        <AlertError
+            title="This invitation link no longer works"
+            :errors="[
+                'It is invalid or has expired. Ask HR to send a new one.',
+            ]"
+        />
+        <div class="text-center text-sm text-muted-foreground">
+            Already set your password?
+            <TextLink :href="login()">Log in</TextLink>
+        </div>
+    </div>
+
     <Form
+        v-else
         v-bind="store.form()"
         :transform="(data) => ({ ...data, token, email })"
         :reset-on-success="['password', 'password_confirmation']"

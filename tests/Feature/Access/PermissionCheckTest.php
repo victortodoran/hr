@@ -3,12 +3,13 @@
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Models\Employee;
+use App\Models\RolePermission;
 use App\Providers\AccessServiceProvider;
 use Illuminate\Support\Facades\Route;
 
 use function Pest\Laravel\actingAs;
 
-covers(AccessServiceProvider::class, Employee::class);
+covers(AccessServiceProvider::class, Employee::class, Permission::class, Scope::class, RolePermission::class);
 
 /*
  * No domain pages exist yet, so these routes stand in for any page guarded

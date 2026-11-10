@@ -19,13 +19,18 @@ use Inertia\Response;
 class InvitationController extends Controller
 {
     /**
-     * Show the set-password page for an invitation link.
+     * Show the set-password page for an invitation link, or say straight
+     * away that the link no longer works.
      */
     public function show(Request $request, string $token): Response
     {
+        $email = $request->string('email')->toString();
+        $invitee = Employee::query()->where('email', $email)->first();
+
         return Inertia::render('auth/AcceptInvitation', [
             'token' => $token,
-            'email' => $request->string('email')->toString(),
+            'email' => $email,
+            'isValid' => $invitee?->hasValidInvitation($token) ?? false,
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ]);
     }

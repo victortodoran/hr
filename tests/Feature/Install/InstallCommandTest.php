@@ -14,7 +14,7 @@ use Illuminate\Testing\PendingCommand;
 
 use function Pest\Laravel\artisan;
 
-covers(InstallCommand::class, InstallCompany::class);
+covers(InstallCommand::class, InstallCompany::class, CompanySettings::class);
 
 /**
  * Run hr:install with the given options and return the pending command

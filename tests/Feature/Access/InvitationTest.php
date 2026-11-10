@@ -12,7 +12,7 @@ use function Pest\Laravel\get;
 use function Pest\Laravel\post;
 use function Pest\Laravel\travel;
 
-covers(InvitationController::class, AcceptInvitationRequest::class, Invitation::class);
+covers(InvitationController::class, AcceptInvitationRequest::class, Invitation::class, Employee::class);
 
 /**
  * Invite a new Employee and return the token from their invitation email.
@@ -48,9 +48,29 @@ it('shows the set-password page from the invitation link', function () {
             ->component('auth/AcceptInvitation')
             ->where('email', $employee->email)
             ->where('token', $token)
+            ->where('isValid', true)
             ->has('passwordRules'),
         );
 });
+
+it('tells the person straight away when the invitation link no longer works', function (Closure $linkFor) {
+    $employee = Employee::factory()->invited()->create();
+
+    get($linkFor($employee))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('auth/AcceptInvitation')
+            ->where('isValid', false),
+        );
+})->with([
+    'expired' => [function (Employee $employee): string {
+        $token = inviteAndCaptureToken($employee);
+        travel(8)->days();
+
+        return route('invitation.show', ['token' => $token, 'email' => $employee->email]);
+    }],
+    'made-up token' => [fn (Employee $employee): string => route('invitation.show', ['token' => 'not-a-real-token', 'email' => $employee->email])],
+    'someone else\'s email' => [fn (Employee $employee): string => route('invitation.show', ['token' => inviteAndCaptureToken($employee), 'email' => 'nobody@acme.test'])],
+]);
 
 it('lets the invited Employee set a password, verifying their email, then sign in', function () {
     $employee = Employee::factory()->invited()->create();
