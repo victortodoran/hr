@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Models\User;
+use App\Models\Employee;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -24,22 +24,22 @@ class VerificationNotificationTest extends TestCase
     {
         Notification::fake();
 
-        $user = User::factory()->unverified()->create();
+        $employee = Employee::factory()->unverified()->create();
 
-        $this->actingAs($user)
+        $this->actingAs($employee)
             ->post(route('verification.send'))
             ->assertRedirect(route('home'));
 
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Notification::assertSentTo($employee, VerifyEmail::class);
     }
 
     public function test_does_not_send_verification_notification_if_email_is_verified(): void
     {
         Notification::fake();
 
-        $user = User::factory()->create();
+        $employee = Employee::factory()->create();
 
-        $this->actingAs($user)
+        $this->actingAs($employee)
             ->post(route('verification.send'))
             ->assertRedirect(route('dashboard', absolute: false));
 

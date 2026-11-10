@@ -13,11 +13,11 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from '@/components/ui/sidebar';
-import UserInfo from '@/components/UserInfo.vue';
-import UserMenuContent from '@/components/UserMenuContent.vue';
+import EmployeeInfo from '@/components/EmployeeInfo.vue';
+import EmployeeMenuContent from '@/components/EmployeeMenuContent.vue';
 
 const page = usePage();
-const user = computed(() => page.props.auth.user);
+const employee = computed(() => page.props.auth.employee);
 const { isMobile, state } = useSidebar();
 </script>
 
@@ -31,7 +31,7 @@ const { isMobile, state } = useSidebar();
                         class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                         data-test="sidebar-menu-button"
                     >
-                        <UserInfo :user="user" />
+                        <EmployeeInfo :employee="employee" />
                         <ChevronsUpDown class="ml-auto size-4" />
                     </SidebarMenuButton>
                 </DropdownMenuTrigger>
@@ -47,7 +47,7 @@ const { isMobile, state } = useSidebar();
                     align="end"
                     :side-offset="4"
                 >
-                    <UserMenuContent :user="user" />
+                    <EmployeeMenuContent :employee="employee" />
                 </DropdownMenuContent>
             </DropdownMenu>
         </SidebarMenuItem>

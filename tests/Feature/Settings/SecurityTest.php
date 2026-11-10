@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Settings;
 
-use App\Models\User;
+use App\Models\Employee;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -25,9 +25,9 @@ class SecurityTest extends TestCase
             'confirmPassword' => true,
         ]);
 
-        $user = User::factory()->create();
+        $employee = Employee::factory()->create();
 
-        $this->actingAs($user)
+        $this->actingAs($employee)
             ->withSession(['auth.password_confirmed_at' => time()])
             ->get(route('security.edit'))
             ->assertInertia(fn (Assert $page) => $page
@@ -43,14 +43,14 @@ class SecurityTest extends TestCase
     {
         $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 
-        $user = User::factory()->create();
+        $employee = Employee::factory()->create();
 
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,
         ]);
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($employee)
             ->get(route('security.edit'));
 
         $response->assertRedirect(route('password.confirm'));
@@ -62,9 +62,9 @@ class SecurityTest extends TestCase
 
         config(['fortify.features' => []]);
 
-        $user = User::factory()->create();
+        $employee = Employee::factory()->create();
 
-        $this->actingAs($user)
+        $this->actingAs($employee)
             ->withSession(['auth.password_confirmed_at' => time()])
             ->get(route('security.edit'))
             ->assertOk()
@@ -80,10 +80,10 @@ class SecurityTest extends TestCase
 
     public function test_password_can_be_updated()
     {
-        $user = User::factory()->create();
+        $employee = Employee::factory()->create();
 
         $response = $this
-            ->actingAs($user)
+            ->actingAs($employee)
             ->from(route('security.edit'))
             ->put(route('user-password.update'), [
                 'current_password' => 'password',
@@ -95,15 +95,15 @@ class SecurityTest extends TestCase
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('security.edit'));
 
-        $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+        $this->assertTrue(Hash::check('new-password', $employee->refresh()->password));
     }
 
     public function test_correct_password_must_be_provided_to_update_password()
     {
-        $user = User::factory()->create();
+        $employee = Employee::factory()->create();
 
         $response = $this
-            ->actingAs($user)
+            ->actingAs($employee)
             ->from(route('security.edit'))
             ->put(route('user-password.update'), [
                 'current_password' => 'wrong-password',

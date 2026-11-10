@@ -15,7 +15,7 @@ use Inertia\Response;
 class ProfileController extends Controller
 {
     /**
-     * Show the user's profile settings page.
+     * Show the Employee's profile settings page.
      */
     public function edit(Request $request): Response
     {
@@ -26,7 +26,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile information.
+     * Update the Employee's profile information.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
@@ -44,15 +44,15 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's profile.
+     * Delete the Employee's profile.
      */
     public function destroy(ProfileDeleteRequest $request): RedirectResponse
     {
-        $user = $request->user();
+        $employee = $request->user();
 
         Auth::logout();
 
-        $user->delete();
+        $employee->delete();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
