@@ -117,6 +117,25 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * The company-wide Permissions (those without a Scope) the Employee's
+     * Roles grant, so pages can offer only what the Employee may use.
+     *
+     * @return array<int, string>
+     */
+    public function companyWidePermissions(): array
+    {
+        return RolePermission::query()
+            ->whereIn('role_id', $this->roles()->select('roles.id'))
+            ->distinct()
+            ->orderBy('permission')
+            ->pluck('permission')
+            ->reject(fn (Permission $permission): bool => $permission->isScoped())
+            ->map(fn (Permission $permission): string => $permission->value)
+            ->values()
+            ->all();
+    }
+
+    /**
      * Every grant of the Permission across the Employee's Roles.
      *
      * @return Collection<int, RolePermission>

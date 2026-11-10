@@ -17,7 +17,7 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)->in('Feature');
-pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Install');
+pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Departments', 'Feature/Install');
 
 /*
 |--------------------------------------------------------------------------
@@ -30,10 +30,11 @@ pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Install');
  * Permission value to its Scope, or to null for company-wide Permissions.
  *
  * @param  array<string, Scope|null>  $grants
+ * @param  array<string, mixed>  $attributes
  */
-function employeeWith(array $grants): Employee
+function employeeWith(array $grants, array $attributes = []): Employee
 {
-    $employee = Employee::factory()->create();
+    $employee = Employee::factory()->create($attributes);
 
     giveRole($employee, $grants);
 
