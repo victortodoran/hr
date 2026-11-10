@@ -24,5 +24,5 @@ New domain code under `app/` must keep the mutation score at 80% or above (`comp
 
 Locally, run mutation with coverage and in parallel: `herd coverage vendor/bin/pest --mutate --everything --parallel --path=<paths>`. Keep the loop tight:
 
-- **While iterating:** run only the affected test files, and run mutation with `--path` set to the `app/` files you changed (a few seconds).
-- **Once, before committing:** run `composer ci:check` and the full mutation run, `--path=app` plus the `--ignore` list copied from the `test:mutate` script (about 45 seconds).
+- **While iterating:** run only the affected test files, and run mutation with `--path` set to the `app/` files you changed.
+- **Once, before committing:** run `composer ci:check` and the full mutation run, `--path=app` plus the `--ignore` list copied from the `test:mutate` script.
