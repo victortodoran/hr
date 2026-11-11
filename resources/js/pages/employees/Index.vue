@@ -34,9 +34,6 @@ const props = defineProps<{
 const search = ref(props.search);
 const statusFilter = ref<string>(props.status ?? 'all');
 
-/**
- * Reload the list with the current search and status filter.
- */
 function reloadList(): void {
     router.get(
         index.url({

@@ -28,7 +28,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Lets HR add Employees and keep their records up to date.
+ * Lists, shows, adds and edits Employees, each as far as the viewer's
+ * Permissions and Scope allow.
  */
 class EmployeeController extends Controller
 {
@@ -98,7 +99,8 @@ class EmployeeController extends Controller
 
     /**
      * Show an Employee's page: their record, then their Assignments and Pay,
-     * each only when the viewer may see it.
+     * each only when the viewer may see it, and their Reporting Chain unless
+     * they have left.
      */
     public function show(#[CurrentUser] Employee $actor, Employee $employee): Response
     {
@@ -267,8 +269,8 @@ class EmployeeController extends Controller
     }
 
     /**
-     * When the Employee has left, the Employees who still report to them
-     * and need a new Manager.
+     * When the Employee has left, the Employees whose Manager is still set to
+     * them, one level down, and who need a new Manager.
      *
      * @return array<int, array{id: int, name: string}>
      */

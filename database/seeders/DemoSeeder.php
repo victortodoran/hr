@@ -20,10 +20,10 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * A small demo company with at least one of everything, so every flow can be
- * tried by hand. It installs the company the way hr:install does, then adds
- * Employees, Roles, Clients, Projects, Assignments and Pay through the same
- * actions the app uses. Dates are relative to today, so the Future and Former
+ * A small demo company with at least one of everything but Work Entries, so
+ * every other flow can be tried by hand. It installs the company the way
+ * hr:install does, then adds Employees, Roles, Clients, Projects, Assignments
+ * and Pay through the same actions the app uses. Dates are relative to today, so the Future and Former
  * Employees stay that way. Everyone except the Future Employee can sign in
  * with the password "password"; the Future Employee still has an invitation
  * waiting. Invitations are not emailed.
@@ -169,9 +169,6 @@ class DemoSeeder extends Seeder
         $employee->forceFill(['password' => self::PASSWORD, 'email_verified_at' => now()])->save();
     }
 
-    /**
-     * Create a Project, optionally for a Client.
-     */
     private function project(string $name, ?Client $client, CarbonInterface $startDate, ?CarbonInterface $endDate = null): Project
     {
         return Project::query()->create([

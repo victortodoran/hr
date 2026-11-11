@@ -37,7 +37,7 @@ class RolePermission extends Model
     protected function casts(): array
     {
         return [
-            'permission' => Permission::class, // @pest-mutate-ignore (nothing reads it back yet)
+            'permission' => Permission::class,
             'scope' => Scope::class,
         ];
     }

@@ -79,9 +79,6 @@ class ProjectController extends Controller
         ]);
     }
 
-    /**
-     * Create a Project.
-     */
     public function store(ProjectRequest $request): RedirectResponse
     {
         Project::query()->create($request->validated());

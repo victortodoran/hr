@@ -15,7 +15,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Lets Admins keep the list of Clients the company does work for. A company
+ * Lets those who manage Clients keep the list of Clients the company does work for. A company
  * that works only for itself never needs one.
  */
 class ClientController extends Controller
@@ -66,9 +66,6 @@ class ClientController extends Controller
         ]);
     }
 
-    /**
-     * Create a Client.
-     */
     public function store(ClientRequest $request): RedirectResponse
     {
         Client::query()->create($request->validated());
@@ -78,9 +75,6 @@ class ClientController extends Controller
         return to_route('clients.index');
     }
 
-    /**
-     * Rename a Client.
-     */
     public function update(ClientRequest $request, Client $client): RedirectResponse
     {
         $client->update($request->validated());

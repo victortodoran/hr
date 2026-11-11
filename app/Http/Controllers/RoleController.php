@@ -64,7 +64,7 @@ class RoleController extends Controller
     }
 
     /**
-     * Create a Role.
+     * Create a Role, recorded in the Access Log.
      */
     public function store(#[CurrentUser] Employee $actor, RoleRequest $request, ChangeAccess $changeAccess): RedirectResponse
     {

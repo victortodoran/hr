@@ -13,8 +13,9 @@ const props = defineProps<{
 }>();
 
 /**
- * Where the member's name leads, or null when it leads nowhere: the viewed
- * Employee's own card, or a member the viewer may follow nowhere.
+ * Where the member's name leads: their Employee page or their Directory
+ * page. Null on the viewed Employee's own card, and when the viewer may open
+ * neither page (`link` is null).
  */
 const href = computed(() => {
     if (props.isViewed) {
