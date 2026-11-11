@@ -46,7 +46,6 @@ class AssignmentPolicy
      */
     public function viewSpareTime(Employee $actor): bool
     {
-        return collect([Permission::ViewAssignments, Permission::ManageAssignments])
-            ->contains(fn (Permission $permission): bool => in_array($actor->widestScopeFor($permission), [Scope::Reports, Scope::Everyone], true));
+        return $actor->assignmentScopes()->contains(fn (Scope $scope): bool => $scope !== Scope::Own);
     }
 }

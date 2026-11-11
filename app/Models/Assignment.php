@@ -85,6 +85,16 @@ class Assignment extends Model
     }
 
     /**
+     * The Internal Assignment's leftover share, when it has no planned one:
+     * the Employee's internal time today, or on the nearest day they work.
+     * Null on every other Assignment.
+     */
+    public function leftoverShare(): ?int
+    {
+        return $this->isInternal() && $this->share === null ? $this->employee->internalTimeOnNearestWorkingDay() : null;
+    }
+
+    /**
      * Limit the query to Internal Assignments.
      *
      * @param  Builder<Assignment>  $query
@@ -118,6 +128,18 @@ class Assignment extends Model
     protected function visibleTo(Builder $query, Employee $actor): void
     {
         $query->whereHas('employee', fn (Builder $employees) => $employees->whoseAssignmentsAreVisibleTo($actor));
+    }
+
+    /**
+     * Eager-load each Assignment's Employee with what their bookings need,
+     * for lists of many Assignments.
+     *
+     * @param  Builder<Assignment>  $query
+     */
+    #[QueryScope]
+    protected function withEmployeeBookings(Builder $query): void
+    {
+        $query->with(['employee:id,name,start_date,leaving_date', 'employee.'.Employee::BOOKINGS]); // @pest-mutate-ignore (eager loading only saves queries)
     }
 
     /**

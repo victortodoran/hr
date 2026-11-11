@@ -122,3 +122,31 @@ it('flags Over-booked Employees on a Project\'s team and a Client\'s page', func
     actingAs($viewer)->get(route('clients.show', $globex))
         ->assertInertia(fn (Assert $page) => $page->where('assignments', fn (Collection $assignments) => $flags($assignments) === ['Cara' => true, 'Dev' => false]));
 });
+
+it('shows an unplanned internal share as today\'s leftover, or the leftover on the nearest day they work', function (array $attributes, array $other, int $leftover) {
+    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2024-01-01', ...$attributes]);
+    $internal = Assignment::factory()->internal()->for($cara)->create();
+    Assignment::factory()->for($cara)->for(Project::factory()->create(['start_date' => '2024-01-01']))
+        ->create(['start_date' => $other[0], 'end_date' => $other[1], 'share' => 70]);
+    $viewer = employeeWith([Permission::ViewAssignments->value => Scope::Everyone, Permission::ViewProjects->value => null]);
+
+    actingAs($viewer)->get(route('employees.assignments.index', $cara))
+        ->assertInertia(fn (Assert $page) => $page->where('assignments.0.leftover_share', $leftover));
+    actingAs($viewer)->get(route('projects.show', $internal->project))
+        ->assertInertia(fn (Assert $page) => $page->where('team.0.leftover_share', $leftover));
+})->with([
+    'working today, beside 70%' => [[], ['2026-02-01', '2026-03-31'], 30],
+    'working today, 70% still to come' => [[], ['2026-04-01', null], 100],
+    'starting later, on their first day' => [['start_date' => '2026-04-01'], ['2026-04-01', '2026-04-30'], 30],
+    'left, on their last day' => [['leaving_date' => '2026-02-15'], ['2026-02-01', '2026-02-15'], 30],
+    'left, after their last Assignment ended' => [['leaving_date' => '2026-02-15'], ['2026-01-01', '2026-01-31'], 100],
+]);
+
+it('shows no leftover beside a planned internal share', function () {
+    $cara = Employee::factory()->create(['start_date' => '2024-01-01']);
+    Assignment::factory()->internal()->for($cara)->create(['share' => 20]);
+
+    actingAs(employeeWith([Permission::ViewAssignments->value => Scope::Everyone]))
+        ->get(route('employees.assignments.index', $cara))
+        ->assertInertia(fn (Assert $page) => $page->where('assignments.0.share', 20)->where('assignments.0.leftover_share', null));
+});

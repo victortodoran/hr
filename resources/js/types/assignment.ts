@@ -12,6 +12,8 @@ export type AssignmentRecord = {
     end_date: string | null;
     /** Only empty on the Internal Assignment, where it means the leftover time. */
     share: number | null;
+    /** The Internal Assignment's leftover time today, when no share is planned. */
+    leftover_share: number | null;
 };
 
 /**
@@ -49,4 +51,6 @@ export type TeamAssignment = {
     start_date: string;
     end_date: string | null;
     share: number | null;
+    /** The Internal Assignment's leftover time today, when no share is planned. */
+    leftover_share: number | null;
 };

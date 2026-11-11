@@ -58,6 +58,11 @@ use Laravel\Passkeys\Passkeys;
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])] // @pest-mutate-ignore (class attributes never show as covered)
 class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
+    /**
+     * The relations bookings() reads.
+     */
+    public const string BOOKINGS = 'assignments.project:id,is_internal';
+
     /** @use HasFactory<EmployeeFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
@@ -120,8 +125,8 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
 
     /**
      * Their Assignments as booking maths sees them, to work out planned and
-     * internal time and whether they are Over-booked. Load
-     * assignments.project first when doing this for many Employees.
+     * internal time and whether they are Over-booked. Lists of many
+     * Employees should eager-load these with withBookings().
      */
     public function bookings(): Bookings
     {
@@ -139,14 +144,51 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
-     * The Employee as a list of people shows them: name, and whether they
-     * are Over-booked today or later. Load assignments.project first.
+     * The first day the Assignment runs on which the Employee is Over-booked,
+     * or null when it never clashes.
+     */
+    public function overBookedDayDuring(Assignment $assignment): ?CarbonInterface
+    {
+        $day = $this->bookings()->firstOverBookedDayFrom($assignment->start_date);
+
+        return $day !== null && $assignment->booking()->runsOn($day) ? $day : null;
+    }
+
+    /**
+     * Their internal time today or, outside their period of work, on the
+     * nearest day of it: their first day before they start, their last day
+     * after they leave.
+     */
+    public function internalTimeOnNearestWorkingDay(): ?int
+    {
+        $day = today()->max($this->start_date);
+
+        return $this->bookings()->internalTimeOn($this->leaving_date === null ? $day : $day->min($this->leaving_date));
+    }
+
+    /**
+     * The Employee as a list of people shows them: their name, flagged when
+     * they are Over-booked today or later.
      *
      * @return array{id: int, name: string, is_over_booked: bool}
      */
-    public function asListed(): array
+    public function asListedWithOverBookedFlag(): array
     {
         return ['id' => $this->id, 'name' => $this->name, 'is_over_booked' => $this->overBookedFrom() !== null];
+    }
+
+    /**
+     * The widest Scopes of the actor's view assignments and manage
+     * assignments, which together decide whose Assignments they may see.
+     *
+     * @return Collection<int, Scope>
+     */
+    public function assignmentScopes(): Collection
+    {
+        return collect([Permission::ViewAssignments, Permission::ManageAssignments])
+            ->map(fn (Permission $permission): ?Scope => $this->widestScopeFor($permission))
+            ->filter()
+            ->values();
     }
 
     /**
@@ -385,14 +427,21 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     #[QueryScope]
     protected function whoseAssignmentsAreVisibleTo(Builder $query, Employee $actor): void
     {
-        $scopes = collect([Permission::ViewAssignments, Permission::ManageAssignments])
-            ->map(fn (Permission $permission): ?Scope => $actor->widestScopeFor($permission))
-            ->filter();
-
-        $query->where(function (Builder $covered) use ($scopes, $actor): void {
+        $query->where(function (Builder $covered) use ($actor): void {
             $covered->whereRaw('false');
-            $scopes->each(fn (Scope $scope) => $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $actor)));
+            $actor->assignmentScopes()->each(fn (Scope $scope) => $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $actor)));
         });
+    }
+
+    /**
+     * Eager-load what bookings() needs, for lists of many Employees.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function withBookings(Builder $query): void
+    {
+        $query->with(self::BOOKINGS); // @pest-mutate-ignore (eager loading only saves queries)
     }
 
     /**

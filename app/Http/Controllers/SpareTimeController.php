@@ -27,12 +27,13 @@ class SpareTimeController extends Controller
 
         $employees = Employee::query()
             ->whoseAssignmentsAreVisibleTo($actor)
-            ->with(['assignments.project:id,is_internal', 'internalAssignment:id,employee_id,project_id,job_title']) // @pest-mutate-ignore (eager loading only saves queries)
+            ->withBookings() // @pest-mutate-ignore (eager loading only saves queries)
+            ->with('internalAssignment:id,employee_id,project_id,job_title') // @pest-mutate-ignore (eager loading only saves queries)
             ->orderBy('name')
             ->orderBy('id')
             ->get()
             ->map(fn (Employee $employee): array => [
-                ...$employee->asListed(),
+                ...$employee->asListedWithOverBookedFlag(),
                 'job_title' => $employee->internalAssignment?->job_title,
                 'internal_time' => $employee->bookings()->internalTimeOn($day),
             ])

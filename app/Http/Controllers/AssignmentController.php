@@ -45,8 +45,9 @@ class AssignmentController extends Controller
                     'start_date' => $assignment->start_date->toDateString(),
                     'end_date' => $assignment->end_date?->toDateString(),
                     'share' => $assignment->share,
+                    'leftover_share' => $assignment->setRelation('employee', $employee)->leftoverShare(),
                 ]),
-            'overBookedFrom' => $employee->load('assignments.project')->overBookedFrom()?->toDateString(),
+            'overBookedFrom' => $employee->overBookedFrom()?->toDateString(),
             'canManage' => $canManage,
             'projects' => $canManage ? $this->openProjects() : [],
         ]);
@@ -59,7 +60,7 @@ class AssignmentController extends Controller
     {
         $assignment = $employee->assignments()->create($request->validated());
 
-        $this->flashSaved(__('Assignment created'), $assignment);
+        $this->flashSaved('Assignment created.', 'Assignment created, but :name is now Over-booked: their planned shares come to :total% on :date.', $assignment);
 
         return to_route('employees.assignments.index', $employee);
     }
@@ -72,7 +73,7 @@ class AssignmentController extends Controller
     {
         $assignment->update($request->validated());
 
-        $this->flashSaved(__('Assignment saved'), $assignment);
+        $this->flashSaved('Assignment saved.', 'Assignment saved, but :name is now Over-booked: their planned shares come to :total% on :date.', $assignment);
 
         return to_route('employees.assignments.index', $assignment->employee_id);
     }
@@ -80,25 +81,21 @@ class AssignmentController extends Controller
     /**
      * Confirm the save, or warn when it leaves the Employee Over-booked on a
      * day the Assignment runs: saving still succeeds, so someone can fix the
-     * overlap later.
+     * overlap later. Both messages are translation keys; the warning takes
+     * :name, :total and :date.
      */
-    private function flashSaved(string $saved, Assignment $assignment): void
+    private function flashSaved(string $confirmation, string $overBookedWarning, Assignment $assignment): void
     {
-        $employee = $assignment->employee->load('assignments.project');
-        $overBookedDay = $employee->bookings()->firstOverBookedDayFrom($assignment->start_date);
+        $employee = $assignment->employee;
+        $overBookedDay = $employee->overBookedDayDuring($assignment);
 
-        if ($overBookedDay === null || ! $assignment->booking()->runsOn($overBookedDay)) {
-            Inertia::flash('toast', ['type' => 'success', 'message' => $saved.'.']);
-
-            return;
-        }
-
-        Inertia::flash('toast', ['type' => 'warning', 'message' => __(':saved, but :name is now Over-booked: their planned shares come to :total% on :date.', [
-            'saved' => $saved,
-            'name' => $employee->name,
-            'total' => $employee->bookings()->plannedShareOn($overBookedDay),
-            'date' => $overBookedDay->format('j M Y'),
-        ])]);
+        Inertia::flash('toast', $overBookedDay === null
+            ? ['type' => 'success', 'message' => __($confirmation)]
+            : ['type' => 'warning', 'message' => __($overBookedWarning, [
+                'name' => $employee->name,
+                'total' => $employee->bookings()->plannedShareOn($overBookedDay),
+                'date' => $overBookedDay->format('j M Y'),
+            ])]);
     }
 
     /**

@@ -1,10 +1,15 @@
 <script setup lang="ts">
 defineProps<{
-    /** Only empty on the Internal Assignment, which then shows 0% until a share is planned. */
+    /** Only empty on the Internal Assignment, when no share is planned. */
     share: number | null;
+    /** What an unplanned internal share works out to today. */
+    leftover: number | null;
 }>();
 </script>
 
 <template>
-    <span>{{ share ?? 0 }}%</span>
+    <span v-if="share !== null">{{ share }}%</span>
+    <span v-else class="text-muted-foreground"
+        >{{ leftover ?? 0 }}% (leftover)</span
+    >
 </template>

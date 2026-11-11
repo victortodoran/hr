@@ -65,16 +65,17 @@ class ProjectController extends Controller
             ],
             'team' => $project->assignments()
                 ->visibleTo($actor)
-                ->with(['employee:id,name', 'employee.assignments.project:id,is_internal']) // @pest-mutate-ignore (eager loading only saves queries)
+                ->withEmployeeBookings() // @pest-mutate-ignore (eager loading only saves queries)
                 ->orderByEmployeeName()
                 ->get()
                 ->map(fn (Assignment $assignment): array => [
                     'id' => $assignment->id,
-                    'employee' => $assignment->employee->asListed(),
+                    'employee' => $assignment->employee->asListedWithOverBookedFlag(),
                     'job_title' => $assignment->job_title,
                     'start_date' => $assignment->start_date->toDateString(),
                     'end_date' => $assignment->end_date?->toDateString(),
                     'share' => $assignment->share,
+                    'leftover_share' => $assignment->leftoverShare(),
                 ]),
         ]);
     }

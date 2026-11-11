@@ -39,17 +39,19 @@ class ClientController extends Controller
             'assignments' => Assignment::query()
                 ->whereIn('project_id', $client->projects()->select('id'))
                 ->visibleTo($actor)
-                ->with(['employee:id,name', 'employee.assignments.project:id,is_internal', 'project:id,name']) // @pest-mutate-ignore (eager loading only saves queries)
+                ->withEmployeeBookings()
+                ->with('project:id,name,is_internal') // @pest-mutate-ignore (eager loading only saves queries)
                 ->orderByEmployeeName()
                 ->get()
                 ->map(fn (Assignment $assignment): array => [
                     'id' => $assignment->id,
-                    'employee' => $assignment->employee->asListed(),
+                    'employee' => $assignment->employee->asListedWithOverBookedFlag(),
                     'project' => $assignment->project->only('id', 'name'),
                     'job_title' => $assignment->job_title,
                     'start_date' => $assignment->start_date->toDateString(),
                     'end_date' => $assignment->end_date?->toDateString(),
                     'share' => $assignment->share,
+                    'leftover_share' => $assignment->leftoverShare(),
                 ]),
         ]);
     }

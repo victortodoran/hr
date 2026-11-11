@@ -56,7 +56,10 @@ defineProps<{
                         }}
                     </td>
                     <td class="px-4 py-2 text-right">
-                        <ShareOfTime :share="assignment.share" />
+                        <ShareOfTime
+                            :share="assignment.share"
+                            :leftover="assignment.leftover_share"
+                        />
                     </td>
                 </tr>
                 <tr v-if="assignments.length === 0">

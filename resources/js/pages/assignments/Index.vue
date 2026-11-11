@@ -91,7 +91,10 @@ setLayoutProps({
                             }}
                         </td>
                         <td class="px-4 py-2 text-right">
-                            <ShareOfTime :share="assignment.share" />
+                            <ShareOfTime
+                                :share="assignment.share"
+                                :leftover="assignment.leftover_share"
+                            />
                         </td>
                         <td v-if="canManage" class="px-4 py-2 text-right">
                             <AssignmentForm
