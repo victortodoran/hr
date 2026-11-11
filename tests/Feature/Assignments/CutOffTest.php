@@ -9,11 +9,12 @@ use App\Http\Requests\ProjectRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Project;
+use App\Rules\AssignmentsFit;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(CutOffAssignments::class, EmployeeController::class, EmployeeRequest::class, ProjectController::class, ProjectRequest::class);
+covers(CutOffAssignments::class, EmployeeController::class, EmployeeRequest::class, ProjectController::class, ProjectRequest::class, AssignmentsFit::class);
 
 beforeEach(fn () => travelTo('2026-03-01 09:00'));
 

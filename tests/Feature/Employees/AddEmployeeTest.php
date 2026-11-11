@@ -13,6 +13,7 @@ use App\Models\Employee;
 use App\Models\Role;
 use App\Notifications\Invitation;
 use App\Policies\EmployeePolicy;
+use App\Rules\AssignmentsFit;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -20,7 +21,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
 
-covers(EmployeeController::class, EmployeeRequest::class, EmployeePolicy::class, AddEmployee::class, ChangeAccess::class, Employee::class);
+covers(EmployeeController::class, EmployeeRequest::class, EmployeePolicy::class, AddEmployee::class, ChangeAccess::class, Employee::class, AssignmentsFit::class);
 
 beforeEach(fn () => Notification::fake());
 

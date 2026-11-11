@@ -7,11 +7,12 @@ use App\Models\Client;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Policies\ProjectPolicy;
+use App\Rules\AssignmentsFit;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 
-covers(ProjectController::class, ProjectRequest::class, ProjectPolicy::class, Project::class);
+covers(ProjectController::class, ProjectRequest::class, ProjectPolicy::class, Project::class, AssignmentsFit::class);
 
 /**
  * An Employee who may create, edit and delete Projects.
