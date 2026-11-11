@@ -16,8 +16,6 @@ use Illuminate\Support\Facades\Notification;
 use function Pest\Laravel\post;
 use function Pest\Laravel\seed;
 
-covers(DemoSeeder::class);
-
 it('seeds a demo company with at least one of everything to try by hand', function () {
     seed(DemoSeeder::class);
 
@@ -37,7 +35,7 @@ it('lets the demo Admin sign in with the demo password', function () {
     seed(DemoSeeder::class);
 
     post(route('login.store'), ['email' => 'ana@acme.test', 'password' => 'password'])
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('landing', absolute: false));
 });
 
 it('leaves an installed company alone', function () {
