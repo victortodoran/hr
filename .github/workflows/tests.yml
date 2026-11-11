@@ -96,10 +96,5 @@ jobs:
       - name: Run CI Checks
         run: composer ci:check
 
-      - name: DIAGNOSTIC (temporary) profile one file
-        run: |
-          /usr/bin/time -p vendor/bin/pest --mutate --everything --parallel --processes=2 --profile --path=app/Http/Controllers/DirectoryController.php
-          /usr/bin/time -p php -d pcov.enabled=0 vendor/bin/pest --mutate --everything --parallel --processes=2 --profile --path=app/Http/Controllers/DirectoryController.php || true
-
       - name: Run mutation testing
-        run: composer test:mutate
+        run: composer test:mutate -- --profile # TEMP profile
