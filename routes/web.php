@@ -17,9 +17,10 @@ use App\Http\Controllers\TopEmployeeController;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Project;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', fn (): RedirectResponse => auth()->check() ? to_route('dashboard') : to_route('login'))->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('invitation/{token}', [InvitationController::class, 'show'])->name('invitation.show');
