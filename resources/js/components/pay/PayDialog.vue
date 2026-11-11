@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import PayEntryController from '@/actions/App/Http/Controllers/PayEntryController';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +36,12 @@ const props = defineProps<{
 
 const open = ref(false);
 const inEffectOn = ref(today());
+
+watch(open, (isOpen) => {
+    if (isOpen) {
+        inEffectOn.value = today();
+    }
+});
 const entryInEffect = computed(() =>
     inEffectOn.value
         ? payInEffectOn(props.assignment.pay, inEffectOn.value)
