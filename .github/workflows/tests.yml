@@ -66,6 +66,17 @@ jobs:
       - name: Create test database
         run: psql -h 127.0.0.1 -U root -d hr -c 'CREATE DATABASE hr_testing'
 
+      # Mutation testing starts a fresh process, and so a fresh migrate:fresh,
+      # for every mutant. Skipping disk flushes makes that DDL fast; the
+      # database is thrown away after the run, so durability doesn't matter.
+      - name: Tune PostgreSQL for throwaway test data
+        run: >-
+          psql -h 127.0.0.1 -U root -d hr
+          -c 'ALTER SYSTEM SET fsync = off'
+          -c 'ALTER SYSTEM SET synchronous_commit = off'
+          -c 'ALTER SYSTEM SET full_page_writes = off'
+          -c 'SELECT pg_reload_conf()'
+
       - name: Install dependencies
         run: |
           composer install --no-interaction --no-progress
