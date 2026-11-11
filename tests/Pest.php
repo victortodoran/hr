@@ -2,7 +2,9 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
+use App\Models\Assignment;
 use App\Models\Employee;
+use App\Models\Project;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -18,7 +20,7 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)->in('Feature');
-pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Departments', 'Feature/Employees', 'Feature/Install', 'Feature/Directory', 'Feature/Lifecycle', 'Feature/Projects', 'Feature/ReportingLine', 'Feature/Assignments', 'Feature/Pay', 'Feature/Company');
+pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Departments', 'Feature/Employees', 'Feature/Install', 'Feature/Directory', 'Feature/Lifecycle', 'Feature/Projects', 'Feature/ReportingLine', 'Feature/Assignments', 'Feature/Pay', 'Feature/Company', 'Feature/WorkEntries');
 
 /*
 |--------------------------------------------------------------------------
@@ -90,4 +92,38 @@ function employeeRecordChanging(Employee $employee, array $changes): array
         'leaving_date' => $employee->leaving_date?->toDateString(),
         ...$changes,
     ];
+}
+
+/**
+ * An Employee named Cara who records their own hours, as the starter
+ * Employee Role allows.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function recorder(array $attributes = []): Employee
+{
+    return employeeWith([Permission::ManageWorkEntries->value => Scope::Own], ['name' => 'Cara', 'start_date' => '2025-01-06', ...$attributes]);
+}
+
+/**
+ * The Employee's Assignment to a Project, running from 2 Nov 2026 unless
+ * told otherwise.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function assignmentOf(Employee $employee, string $project = 'Relaunch', array $attributes = []): Assignment
+{
+    return Assignment::factory()->for($employee)->for(Project::factory()->create(['name' => $project, 'start_date' => '2026-01-05']))
+        ->create(['start_date' => '2026-11-02', 'end_date' => null, ...$attributes]);
+}
+
+/**
+ * A Work Entry as the add form sends it, with some changes.
+ *
+ * @param  array<string, mixed>  $changes
+ * @return array<string, mixed>
+ */
+function workEntryForm(Assignment $assignment, array $changes = []): array
+{
+    return ['assignment_id' => $assignment->id, 'date' => '2026-11-10', 'hours' => '3', 'description' => 'Reviewing the API', ...$changes];
 }

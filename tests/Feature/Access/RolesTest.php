@@ -58,7 +58,9 @@ it('offers every Permission, saying which ones carry a Scope', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->has('permissions', count(Permission::cases()))
             ->where('permissions.0', ['value' => 'view-employee-records', 'label' => 'View employee records', 'scoped' => true])
-            ->where('permissions.11', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scoped' => false])
+            ->where('permissions.6', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scoped' => true])
+            ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scoped' => true])
+            ->where('permissions.13', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scoped' => false])
             ->etc(),
         );
 });

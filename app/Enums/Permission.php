@@ -15,6 +15,8 @@ enum Permission: string
     case ManageAssignments = 'manage-assignments';
     case ViewPay = 'view-pay';
     case ManagePay = 'manage-pay';
+    case ViewWorkEntries = 'view-work-entries';
+    case ManageWorkEntries = 'manage-work-entries';
     case ViewDirectory = 'view-directory';
     case ViewProjects = 'view-projects';
     case ManageProjects = 'manage-projects';
@@ -42,7 +44,9 @@ enum Permission: string
             self::ViewAssignments,
             self::ManageAssignments,
             self::ViewPay,
-            self::ManagePay => true,
+            self::ManagePay,
+            self::ViewWorkEntries,
+            self::ManageWorkEntries => true,
             default => false,
         };
     }

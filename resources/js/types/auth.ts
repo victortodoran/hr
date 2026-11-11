@@ -18,6 +18,8 @@ export type Auth = {
     canSeeOwnPage: boolean;
     /** Whether the Employees list holds more than the signed-in Employee. */
     canListEmployees: boolean;
+    /** Whether the signed-in Employee may see any Work Entries. */
+    canSeeWorkEntries: boolean;
 };
 
 export type Passkey = {

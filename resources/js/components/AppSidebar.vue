@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     Briefcase,
+    Clock,
     Building2,
     FolderKanban,
     Landmark,
@@ -31,6 +32,7 @@ import { index as directory } from '@/routes/directory';
 import { index as employees, show as employeePage } from '@/routes/employees';
 import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
+import { index as workEntries } from '@/routes/work-entries';
 import type { NavItem } from '@/types';
 
 const page = usePage();
@@ -44,6 +46,9 @@ const mainNavItems = computed<NavItem[]>(() => [
                   icon: UserRound,
               },
           ]
+        : []),
+    ...(page.props.auth.canSeeWorkEntries
+        ? [{ title: 'Work Entries', href: workEntries(), icon: Clock }]
         : []),
     ...(page.props.auth.canListEmployees
         ? [{ title: 'Employees', href: employees(), icon: UsersRound }]

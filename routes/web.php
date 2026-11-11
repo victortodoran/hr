@@ -15,9 +15,11 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RoleHolderController;
 use App\Http\Controllers\TopEmployeeController;
+use App\Http\Controllers\WorkEntryController;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Project;
+use App\Models\WorkEntry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 
@@ -52,6 +54,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('can:managePayOn,assignment')->group(function () {
         Route::post('assignments/{assignment}/pay', [PayEntryController::class, 'store'])->name('assignments.pay.store');
         Route::delete('assignments/{assignment}/pay/{payEntry}', [PayEntryController::class, 'destroy'])->scopeBindings()->name('assignments.pay.destroy');
+    });
+
+    Route::get('work-entries', [WorkEntryController::class, 'index'])->name('work-entries.index');
+    Route::post('employees/{employee}/work-entries', [WorkEntryController::class, 'store'])->middleware('can:create,'.WorkEntry::class.',employee')->name('employees.work-entries.store');
+    Route::middleware('can:update,workEntry')->group(function () {
+        Route::patch('work-entries/{workEntry}', [WorkEntryController::class, 'update'])->name('work-entries.update');
+        Route::delete('work-entries/{workEntry}', [WorkEntryController::class, 'destroy'])->name('work-entries.destroy');
     });
 
     Route::middleware('can:'.Permission::ViewDirectory->value)->group(function () {

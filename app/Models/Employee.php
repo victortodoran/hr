@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -103,6 +104,16 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function assignments(): HasMany
     {
         return $this->hasMany(Assignment::class);
+    }
+
+    /**
+     * The hours worked on the Employee's Assignments.
+     *
+     * @return HasManyThrough<WorkEntry, Assignment, $this>
+     */
+    public function workEntries(): HasManyThrough
+    {
+        return $this->hasManyThrough(WorkEntry::class, Assignment::class);
     }
 
     /**

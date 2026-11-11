@@ -36,6 +36,7 @@ use Illuminate\Support\Carbon;
  * @property-read Employee $employee
  * @property-read Project $project
  * @property-read Collection<int, PayEntry> $payEntries
+ * @property-read Collection<int, WorkEntry> $workEntries
  */
 #[Fillable(['project_id', 'job_title', 'start_date', 'end_date', 'capacity'])] // @pest-mutate-ignore (class attributes never show as covered)
 class Assignment extends Model
@@ -80,6 +81,16 @@ class Assignment extends Model
     public function payEntries(): HasMany
     {
         return $this->hasMany(PayEntry::class);
+    }
+
+    /**
+     * The hours worked on the Assignment.
+     *
+     * @return HasMany<WorkEntry, $this>
+     */
+    public function workEntries(): HasMany
+    {
+        return $this->hasMany(WorkEntry::class);
     }
 
     /**
