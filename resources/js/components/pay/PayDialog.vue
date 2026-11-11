@@ -24,8 +24,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { formatDate, formatPeriod } from '@/lib/dates';
-import { formatPay } from '@/lib/pay';
+import { formatDate, formatPeriod, today } from '@/lib/dates';
+import { formatPay, payInEffectOn } from '@/lib/pay';
 import type { AssignmentRecord, PayEntryRecord } from '@/types';
 
 const props = defineProps<{
@@ -35,6 +35,12 @@ const props = defineProps<{
 }>();
 
 const open = ref(false);
+const inEffectOn = ref(today());
+const entryInEffect = computed(() =>
+    inEffectOn.value
+        ? payInEffectOn(props.assignment.pay, inEffectOn.value)
+        : null,
+);
 const canManagePay = computed(() => props.currency !== undefined);
 const fieldId = (field: string): string =>
     `pay-${field}-${props.assignment.id}`;
@@ -79,6 +85,22 @@ function add(): void {
                 </DialogDescription>
             </DialogHeader>
 
+            <div v-if="assignment.pay.length > 0" class="grid gap-2">
+                <Label :for="fieldId('in-effect-on')">In effect on</Label>
+                <Input
+                    :id="fieldId('in-effect-on')"
+                    v-model="inEffectOn"
+                    type="date"
+                    class="w-48"
+                />
+                <p
+                    v-if="inEffectOn && entryInEffect === null"
+                    class="text-sm text-muted-foreground"
+                >
+                    No Pay yet on {{ formatDate(inEffectOn) }}.
+                </p>
+            </div>
+
             <ul
                 v-if="assignment.pay.length > 0"
                 class="divide-y rounded-lg border"
@@ -95,7 +117,9 @@ function add(): void {
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <Badge v-if="entry.is_in_effect">In effect</Badge>
+                        <Badge v-if="entry.id === entryInEffect?.id"
+                            >In effect</Badge
+                        >
                         <Form
                             v-if="canManagePay"
                             v-bind="

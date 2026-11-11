@@ -30,10 +30,18 @@ export type OpenProject = Choice & {
 /**
  * Someone's Assignment as a Project's team or a Client's page lists it.
  */
+/**
+ * One of a Client's Projects, with the Employees assigned to it today.
+ */
+export type ClientProject = Choice & {
+    start_date: string;
+    end_date: string | null;
+    team: TeamAssignment[];
+};
+
 export type TeamAssignment = {
     id: number;
     employee: Choice;
-    project?: Choice;
     job_title: string | null;
     start_date: string;
     end_date: string | null;

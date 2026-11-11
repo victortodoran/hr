@@ -15,3 +15,10 @@ export function formatDate(date: string): string {
 export function formatPeriod(start: string, end: string | null): string {
     return `${formatDate(start)} – ${end ? formatDate(end) : 'no end date'}`;
 }
+
+/**
+ * Today in the viewer's time zone, as a YYYY-MM-DD date.
+ */
+export function today(): string {
+    return new Date().toLocaleDateString('en-CA');
+}

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Permission;
 use App\Enums\Scope;
+use Carbon\CarbonInterface;
 use Database\Factories\AssignmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope as QueryScope;
@@ -130,6 +131,19 @@ class Assignment extends Model
             $covered->whereRaw('false');
             $scopes->each(fn (Scope $scope) => $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $actor)));
         }));
+    }
+
+    /**
+     * Limit the query to Assignments running on the day: started by then and
+     * not yet ended. The end date counts as a day of the Assignment.
+     *
+     * @param  Builder<Assignment>  $query
+     */
+    #[QueryScope]
+    protected function runningOn(Builder $query, CarbonInterface $day): void
+    {
+        $query->whereDate('start_date', '<=', $day)
+            ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $day));
     }
 
     /**

@@ -269,5 +269,5 @@ it('never sends Pay on a Project\'s team or a Client\'s page', function () {
     actingAs($viewer)->get(route('projects.show', $assignment->project_id))
         ->assertInertia(fn (Assert $page) => $page->has('team.0')->missing('team.0.pay'));
     actingAs($viewer)->get(route('clients.show', $assignment->project->client_id))
-        ->assertInertia(fn (Assert $page) => $page->has('assignments.0')->missing('assignments.0.pay'));
+        ->assertInertia(fn (Assert $page) => $page->has('projects.0.team.0')->missing('projects.0.team.0.pay'));
 });
