@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Enums\Permission;
-use App\Enums\Scope;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -48,7 +47,7 @@ class HandleInertiaRequests extends Middleware
                 'can' => fn (): array => $employee instanceof Employee ? $employee->companyWidePermissions() : [],
                 'canSeeOwnPage' => fn (): bool => $employee instanceof Employee && $employee->can('view', $employee),
                 'canListEmployees' => fn (): bool => $employee instanceof Employee
-                    && in_array($employee->widestScopeFor(Permission::ViewEmployeeRecords), [Scope::Reports, Scope::Everyone], true),
+                    && ($employee->widestScopeFor(Permission::ViewEmployeeRecords)?->coversOthers() ?? false),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

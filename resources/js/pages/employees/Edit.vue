@@ -4,6 +4,7 @@ import EmployeeController from '@/actions/App/Http/Controllers/EmployeeControlle
 import EmployeeInvitationController from '@/actions/App/Http/Controllers/EmployeeInvitationController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import MakeTopEmployee from '@/components/employees/MakeTopEmployee.vue';
+import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,12 +18,6 @@ const props = defineProps<{
     managers: ManagerChoice[];
     reportsNeedingAManager: Choice[];
 }>();
-
-const statusBadges = {
-    future: { label: 'Future Employee', variant: 'secondary' },
-    current: { label: 'Current Employee', variant: 'default' },
-    former: { label: 'Former Employee', variant: 'outline' },
-} as const;
 
 setLayoutProps({
     breadcrumbs: [
@@ -39,9 +34,7 @@ setLayoutProps({
         <div class="flex items-start justify-between gap-4">
             <Heading :title="employee.name" description="Employee record" />
             <div class="flex flex-col items-end gap-2">
-                <Badge :variant="statusBadges[employee.status].variant">
-                    {{ statusBadges[employee.status].label }}
-                </Badge>
+                <EmploymentStatusBadge :status="employee.status" />
                 <Badge v-if="employee.is_top" variant="secondary"
                     >Top Employee</Badge
                 >

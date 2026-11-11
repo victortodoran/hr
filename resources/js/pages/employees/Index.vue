@@ -2,8 +2,9 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useDebounceFn } from '@vueuse/core';
 import { ref } from 'vue';
+import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
+import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -30,23 +31,17 @@ const props = defineProps<{
     canAdd: boolean;
 }>();
 
-const statusBadges = {
-    future: { label: 'Future', variant: 'secondary' },
-    current: { label: 'Current', variant: 'default' },
-    former: { label: 'Former', variant: 'outline' },
-} as const;
-
-const query = ref(props.search);
+const search = ref(props.search);
 const statusFilter = ref<string>(props.status ?? 'all');
 
 /**
  * Reload the list with the current search and status filter.
  */
-function filter(): void {
+function reloadList(): void {
     router.get(
         index.url({
             query: {
-                ...(query.value ? { search: query.value } : {}),
+                ...(search.value ? { search: search.value } : {}),
                 ...(statusFilter.value !== 'all'
                     ? { status: statusFilter.value }
                     : {}),
@@ -57,7 +52,7 @@ function filter(): void {
     );
 }
 
-const searchEmployees = useDebounceFn(filter, 300);
+const searchEmployees = useDebounceFn(reloadList, 300);
 </script>
 
 <template>
@@ -76,14 +71,14 @@ const searchEmployees = useDebounceFn(filter, 300);
 
         <div class="flex flex-wrap gap-3">
             <Input
-                v-model="query"
+                v-model="search"
                 type="search"
                 placeholder="Search by name"
                 aria-label="Search by name"
                 class="max-w-sm"
                 @update:model-value="searchEmployees"
             />
-            <Select v-model="statusFilter" @update:model-value="filter">
+            <Select v-model="statusFilter" @update:model-value="reloadList">
                 <SelectTrigger class="w-44" aria-label="Status">
                     <SelectValue />
                 </SelectTrigger>
@@ -116,22 +111,15 @@ const searchEmployees = useDebounceFn(filter, 300);
                             >
                         </td>
                         <td class="px-4 py-2">
-                            <Badge
-                                :variant="statusBadges[employee.status].variant"
-                            >
-                                {{ statusBadges[employee.status].label }}
-                            </Badge>
+                            <EmploymentStatusBadge :status="employee.status" />
                         </td>
                         <td class="px-4 py-2">
                             <ValueOr :value="employee.department" />
                         </td>
                         <td class="px-4 py-2">
-                            <Link
-                                v-if="employee.manager"
-                                :href="show(employee.manager.id)"
-                                class="underline-offset-4 hover:underline"
-                                >{{ employee.manager.name }}</Link
-                            >
+                            <span v-if="employee.manager">{{
+                                employee.manager.name
+                            }}</span>
                             <span v-else class="text-muted-foreground"
                                 >None (top Employee)</span
                             >
@@ -149,30 +137,6 @@ const searchEmployees = useDebounceFn(filter, 300);
             </table>
         </div>
 
-        <div
-            v-if="employees.prev_page_url || employees.next_page_url"
-            class="flex items-center justify-between gap-4 text-sm text-muted-foreground"
-        >
-            <span>
-                {{ employees.from }}–{{ employees.to }} of
-                {{ employees.total }}
-            </span>
-            <div class="flex gap-2">
-                <Button
-                    v-for="pageLink in [
-                        { label: 'Previous', url: employees.prev_page_url },
-                        { label: 'Next', url: employees.next_page_url },
-                    ]"
-                    :key="pageLink.label"
-                    variant="outline"
-                    size="sm"
-                    :disabled="!pageLink.url"
-                    :as="pageLink.url ? Link : 'button'"
-                    :href="pageLink.url ?? undefined"
-                >
-                    {{ pageLink.label }}
-                </Button>
-            </div>
-        </div>
+        <Pagination :page="employees" />
     </div>
 </template>
