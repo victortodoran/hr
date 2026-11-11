@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Project;
 use App\Models\Role;
 use App\Notifications\Invitation;
 use Illuminate\Support\Facades\Gate;
@@ -65,6 +66,18 @@ it('sets up the company, first Department and top Employee', function () {
 
     expect($settings?->name)->toBe('Acme Software')
         ->and($settings?->currency)->toBe('EUR');
+});
+
+it('creates the Internal Project, named after the company, with no Client or dates', function () {
+    install(installOptions())->assertSuccessful();
+
+    $internal = Project::query()->sole();
+
+    expect($internal->name)->toBe('Acme Software')
+        ->and($internal->is_internal)->toBeTrue()
+        ->and($internal->client_id)->toBeNull()
+        ->and($internal->start_date)->toBeNull()
+        ->and($internal->end_date)->toBeNull();
 });
 
 it('invites the first Employee to set their password', function () {
@@ -134,7 +147,8 @@ it('refuses to run on an app that is already installed', function () {
         ->assertFailed();
 
     expect(Employee::query()->count())->toBe(1)
-        ->and(Department::query()->count())->toBe(1);
+        ->and(Department::query()->count())->toBe(1)
+        ->and(Project::query()->count())->toBe(1);
 });
 
 it('refuses to run when Employees already exist, even without company settings', function () {

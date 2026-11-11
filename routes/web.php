@@ -2,14 +2,17 @@
 
 use App\Enums\Permission;
 use App\Http\Controllers\Auth\InvitationController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeInvitationController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RoleHolderController;
 use App\Http\Controllers\TopEmployeeController;
 use App\Models\Employee;
+use App\Models\Project;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -39,6 +42,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');
         Route::get('directory/{employee}', [DirectoryController::class, 'show'])->name('directory.show');
     });
+
+    Route::middleware('can:'.Permission::ManageClients->value)->group(function () {
+        Route::get('clients', [ClientController::class, 'index'])->name('clients.index');
+        Route::post('clients', [ClientController::class, 'store'])->name('clients.store');
+        Route::patch('clients/{client}', [ClientController::class, 'update'])->name('clients.update');
+        Route::delete('clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
+    });
+
+    Route::get('projects', [ProjectController::class, 'index'])->middleware('can:viewAny,'.Project::class)->name('projects.index');
+    Route::post('projects', [ProjectController::class, 'store'])->middleware('can:create,'.Project::class)->name('projects.store');
+    Route::patch('projects/{project}', [ProjectController::class, 'update'])->middleware('can:update,project')->name('projects.update');
+    Route::delete('projects/{project}', [ProjectController::class, 'destroy'])->middleware('can:delete,project')->name('projects.destroy');
 
     Route::middleware('can:'.Permission::ManageDepartments->value)->group(function () {
         Route::get('departments', [DepartmentController::class, 'index'])->name('departments.index');
