@@ -15,12 +15,21 @@ use Tests\TestCase;
 |--------------------------------------------------------------------------
 |
 | Feature test closures are bound to the application's TestCase, so they
-| can call routes and use Laravel's testing helpers.
+| can call routes and use Laravel's testing helpers, and each one starts
+| on a fresh database, including tests in folders added later.
 |
 */
 
-pest()->extend(TestCase::class)->in('Feature');
-pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Departments', 'Feature/Employees', 'Feature/Install', 'Feature/Directory', 'Feature/Lifecycle', 'Feature/Projects', 'Feature/ReportingLine', 'Feature/Assignments', 'Feature/Pay', 'Feature/Company', 'Feature/WorkEntries');
+/*
+ * Tests log to storage/logs/testing.log, which holds the real exception
+ * behind a failing request. A run outside parallel workers starts it
+ * empty, so it only ever holds the latest run and never grows unbounded.
+ */
+if (getenv('TEST_TOKEN') === false) {
+    file_put_contents(__DIR__.'/../storage/logs/testing.log', '');
+}
+
+pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature');
 
 /*
 |--------------------------------------------------------------------------

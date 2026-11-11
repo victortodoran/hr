@@ -1,12 +1,9 @@
 <?php
 
 use App\Models\Employee;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
-
-uses(RefreshDatabase::class);
 
 it('sends guests from the home page straight to sign in', function () {
     get('/')->assertRedirect(route('login'));
