@@ -28,7 +28,8 @@ class WorkEntryController extends Controller
     /**
      * One Employee's Work Entries for one week, Monday to Sunday, with totals
      * for each day, each Assignment and the week. Opens on the viewer's own
-     * current week.
+     * current week. An Employee who doesn't exist is refused just like one
+     * outside the viewer's Scope, so the page never reveals who exists.
      */
     public function index(#[CurrentUser] Employee $actor, Request $request): Response
     {
@@ -36,7 +37,8 @@ class WorkEntryController extends Controller
             'employee' => ['nullable', 'integer'],
             'week' => ['nullable', 'date_format:Y-m-d'],
         ]);
-        $employee = $request->filled('employee') ? Employee::query()->findOrFail($request->integer('employee')) : $actor;
+        $employee = $request->filled('employee') ? Employee::query()->find($request->integer('employee')) : $actor;
+        abort_if($employee === null, 403);
         Gate::authorize('viewAny', [WorkEntry::class, $employee]);
         $monday = CarbonImmutable::parse($request->string('week')->value() ?: today())->startOfWeek(CarbonInterface::MONDAY);
         $sunday = $monday->endOfWeek(CarbonInterface::SUNDAY);
@@ -57,11 +59,11 @@ class WorkEntryController extends Controller
                 ->map(fn (Collection $onAssignment): array => [
                     'assignment_id' => $onAssignment->firstOrFail()->assignment_id,
                     'project' => $onAssignment->firstOrFail()->assignment->project->name,
-                    'hours' => $onAssignment->sum('minutes') / 60,
+                    'hours' => $onAssignment->sum('hours'),
                 ])
                 ->sortBy('project')
                 ->values(),
-            'total' => $entries->sum('minutes') / 60,
+            'total' => $entries->sum('hours'),
             'assignments' => $employee->assignments()
                 ->whereDate('start_date', '<=', $sunday)
                 ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $monday))
@@ -99,10 +101,10 @@ class WorkEntryController extends Controller
                     'id' => $entry->id,
                     'assignment_id' => $entry->assignment_id,
                     'project' => $entry->assignment->project->name,
-                    'hours' => $entry->minutes / 60,
+                    'hours' => $entry->hours,
                     'description' => $entry->description,
                 ])->values()->all(),
-                'hours' => $onDay->sum('minutes') / 60,
+                'hours' => $onDay->sum('hours'),
             ];
         })->all();
     }
@@ -168,7 +170,7 @@ class WorkEntryController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Work Entry deleted.')]);
 
-        return $this->toWeekOf($workEntry->assignment->employee, $workEntry);
+        return $this->toWeekOf($workEntry->employee, $workEntry);
     }
 
     /**

@@ -122,7 +122,7 @@ class WorkEntryRequest extends FormRequest
     public function employee(): Employee
     {
         $workEntry = $this->route('workEntry');
-        $employee = $workEntry instanceof WorkEntry ? $workEntry->assignment->employee : $this->route('employee');
+        $employee = $workEntry instanceof WorkEntry ? $workEntry->employee : $this->route('employee');
 
         return $employee instanceof Employee ? $employee : throw new LogicException('A Work Entry always belongs to an Employee.'); // @pest-mutate-ignore (both routes always bind an Employee or a Work Entry)
     }

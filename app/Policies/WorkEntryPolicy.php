@@ -37,6 +37,6 @@ class WorkEntryPolicy
      */
     public function update(Employee $actor, WorkEntry $workEntry): bool
     {
-        return $this->create($actor, $workEntry->assignment->employee);
+        return $this->create($actor, $workEntry->employee);
     }
 }

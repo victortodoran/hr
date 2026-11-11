@@ -133,6 +133,14 @@ it('forbids seeing the week of an Employee outside the Scope', function () {
     $response->assertForbidden();
 });
 
+it('forbids an Employee who doesn\'t exist just as one outside the Scope, so neither gives away who exists', function () {
+    $ben = employeeWith([Permission::ManageWorkEntries->value => Scope::Reports]);
+
+    $response = actingAs($ben)->get(route('work-entries.index', ['employee' => Employee::query()->max('id') + 1]));
+
+    $response->assertForbidden();
+});
+
 it('forbids the page to someone without either Work Entries Permission', function () {
     $ben = employeeWith([Permission::ViewAssignments->value => Scope::Everyone]);
 

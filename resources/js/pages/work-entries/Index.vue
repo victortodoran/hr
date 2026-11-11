@@ -155,7 +155,7 @@ function switchEmployee(employeeId: unknown): void {
                     </p>
                     <WorkEntryDialog
                         v-if="canManage && day.date <= today"
-                        :employee-id="employee.id"
+                        :employee="employee"
                         :assignments="assignments"
                         :date="day.date"
                         :today="today"
@@ -179,7 +179,7 @@ function switchEmployee(employeeId: unknown): void {
                             }}</span>
                             <WorkEntryDialog
                                 v-if="canManage"
-                                :employee-id="employee.id"
+                                :employee="employee"
                                 :assignments="assignments"
                                 :date="day.date"
                                 :today="today"

@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Database\Factories\WorkEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Carbon;
 
 /**
@@ -19,9 +21,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon $date
  * @property int $minutes Whole minutes, in quarter-hour steps
  * @property string $description
+ * @property-read float|int $hours The minutes as hours, such as 7.5
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Assignment $assignment
+ * @property-read Employee $employee
  */
 #[Fillable(['assignment_id', 'date', 'minutes', 'description'])] // @pest-mutate-ignore (class attributes never show as covered)
 class WorkEntry extends Model
@@ -63,5 +67,25 @@ class WorkEntry extends Model
     public function assignment(): BelongsTo
     {
         return $this->belongsTo(Assignment::class);
+    }
+
+    /**
+     * The Employee whose hours these are: the one on the Assignment.
+     *
+     * @return HasOneThrough<Employee, Assignment, $this>
+     */
+    public function employee(): HasOneThrough
+    {
+        return $this->hasOneThrough(Employee::class, Assignment::class, 'id', 'id', 'assignment_id', 'employee_id');
+    }
+
+    /**
+     * The minutes as hours, such as 7.5.
+     *
+     * @return Attribute<float|int, never>
+     */
+    protected function hours(): Attribute
+    {
+        return Attribute::get(fn (): float|int => $this->minutes / 60);
     }
 }

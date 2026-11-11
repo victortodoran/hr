@@ -23,10 +23,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { WorkEntryAssignment, WorkEntryRecord } from '@/types';
+import type { Choice, WorkEntryAssignment, WorkEntryRecord } from '@/types';
 
 const props = defineProps<{
-    employeeId: number;
+    /** The Employee whose hours these are. */
+    employee: Choice;
     /** The Employee's Assignments that run during the week. */
     assignments: WorkEntryAssignment[];
     /** The day a new Work Entry starts on. */
@@ -74,7 +75,7 @@ const runningAssignments = computed(() =>
 function save(): void {
     const route = props.entry
         ? WorkEntryController.update(props.entry.id)
-        : WorkEntryController.store(props.employeeId);
+        : WorkEntryController.store(props.employee.id);
 
     form.submit(route, {
         preserveScroll: true,
@@ -94,12 +95,13 @@ function save(): void {
         </DialogTrigger>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>{{
-                    entry ? 'Change Work Entry' : 'Add Work Entry'
-                }}</DialogTitle>
+                <DialogTitle
+                    >{{ entry ? 'Change Work Entry' : 'Add Work Entry' }} for
+                    {{ employee.name }}</DialogTitle
+                >
                 <DialogDescription>
-                    Record how many hours were worked on one Assignment, in
-                    quarter-hour steps, and what was done.
+                    Record how many hours {{ employee.name }} worked on one
+                    Assignment, in quarter-hour steps, and what was done.
                 </DialogDescription>
             </DialogHeader>
 
