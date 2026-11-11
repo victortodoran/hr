@@ -17,14 +17,15 @@ class ChangeAccess
 {
     /**
      * Create a Role with the given Permissions, each mapped to its Scope or
-     * to null for company-wide Permissions.
+     * to null for company-wide Permissions, and say whether every new
+     * Employee gets it.
      *
      * @param  array<string, string|null>  $grants
      */
-    public function createRole(Employee $actor, string $name, array $grants): Role
+    public function createRole(Employee $actor, string $name, array $grants, bool $givenToNewEmployees): Role
     {
-        return DB::transaction(function () use ($actor, $name, $grants): Role {
-            $role = Role::query()->create(['name' => $name]);
+        return DB::transaction(function () use ($actor, $name, $grants, $givenToNewEmployees): Role {
+            $role = Role::query()->create(['name' => $name, 'is_given_to_new_employees' => $givenToNewEmployees]);
             $this->grant($role, $grants);
 
             $this->log($actor, AccessChange::RoleCreated, $role, after: $this->snapshot($role));
@@ -34,17 +35,18 @@ class ChangeAccess
     }
 
     /**
-     * Rename the Role and replace its Permissions and Scopes.
+     * Rename the Role, replace its Permissions and Scopes, and say whether
+     * every new Employee gets it.
      *
      * @param  array<string, string|null>  $grants
      */
-    public function editRole(Employee $actor, Role $role, string $name, array $grants): void
+    public function editRole(Employee $actor, Role $role, string $name, array $grants, bool $givenToNewEmployees): void
     {
-        DB::transaction(function () use ($actor, $role, $name, $grants): void {
+        DB::transaction(function () use ($actor, $role, $name, $grants, $givenToNewEmployees): void {
             $someoneCouldManageRoles = $this->someoneCanManageRoles();
             $before = $this->snapshot($role);
 
-            $role->update(['name' => $name]);
+            $role->update(['name' => $name, 'is_given_to_new_employees' => $givenToNewEmployees]);
             $role->permissions()->delete();
             $this->grant($role, $grants);
 
@@ -132,13 +134,18 @@ class ChangeAccess
     }
 
     /**
-     * The Role's name and Permissions as the Access Log keeps them.
+     * The Role's name, Permissions and whether new Employees get it, as the
+     * Access Log keeps them.
      *
-     * @return array{name: string, permissions: array<string, string|null>}
+     * @return array{name: string, permissions: array<string, string|null>, given_to_new_employees: bool}
      */
     private function snapshot(Role $role): array
     {
-        return ['name' => $role->name, 'permissions' => $role->load('permissions')->grants()];
+        return [
+            'name' => $role->name,
+            'permissions' => $role->load('permissions')->grants(),
+            'given_to_new_employees' => $role->is_given_to_new_employees,
+        ];
     }
 
     /**

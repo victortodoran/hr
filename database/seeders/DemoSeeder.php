@@ -79,15 +79,15 @@ class DemoSeeder extends Seeder
             Permission::ManageAssignments->value => Scope::Reports->value,
             Permission::ViewPay->value => Scope::Reports->value,
             Permission::ViewProjects->value => null,
-        ]);
+        ], givenToNewEmployees: false);
         $payroll = $this->changeAccess->createRole($ana, 'Payroll', [
             Permission::ViewPay->value => Scope::Everyone->value,
             Permission::ManagePay->value => Scope::Everyone->value,
-        ]);
+        ], givenToNewEmployees: false);
         $this->changeAccess->createRole($ana, 'Auditor', [
             Permission::ViewDirectory->value => null,
             Permission::ViewProjects->value => null,
-        ]);
+        ], givenToNewEmployees: false);
 
         $ben = $this->add($ana, 'Ben Ionescu', $engineering, $ana, $today->subYears(3));
         $hana = $this->add($ana, 'Hana Pop', $design, $ana, $today->subYears(2));

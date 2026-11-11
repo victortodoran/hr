@@ -15,7 +15,7 @@ use Inertia\Response;
 
 /**
  * Lets Employees who manage Roles shape them: their Permissions and Scopes,
- * and who holds them.
+ * whether new Employees get them, and who holds them.
  */
 class RoleController extends Controller
 {
@@ -37,6 +37,7 @@ class RoleController extends Controller
                 'id' => $role->id,
                 'name' => $role->name,
                 'permissions' => $role->grants(),
+                'given_to_new_employees' => $role->is_given_to_new_employees,
                 'holders' => $role->employees
                     ->map(fn (Employee $holder): array => [
                         'id' => $holder->id,
@@ -67,7 +68,7 @@ class RoleController extends Controller
      */
     public function store(#[CurrentUser] Employee $actor, RoleRequest $request, ChangeAccess $changeAccess): RedirectResponse
     {
-        $changeAccess->createRole($actor, $request->string('name')->value(), $request->grants());
+        $changeAccess->createRole($actor, $request->string('name')->value(), $request->grants(), $request->givenToNewEmployees());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role created.')]);
 
@@ -79,7 +80,7 @@ class RoleController extends Controller
      */
     public function update(#[CurrentUser] Employee $actor, RoleRequest $request, Role $role, ChangeAccess $changeAccess): RedirectResponse
     {
-        $changeAccess->editRole($actor, $role, $request->string('name')->value(), $request->grants());
+        $changeAccess->editRole($actor, $role, $request->string('name')->value(), $request->grants(), $request->givenToNewEmployees());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role saved.')]);
 

@@ -46,7 +46,12 @@ function labelOf(permission: string): string {
             class="grid gap-4 rounded-lg border p-4"
         >
             <div class="flex items-center justify-between gap-4">
-                <h2 class="font-medium">{{ role.name }}</h2>
+                <div class="flex items-center gap-2">
+                    <h2 class="font-medium">{{ role.name }}</h2>
+                    <Badge v-if="role.given_to_new_employees" variant="outline"
+                        >Given to new Employees</Badge
+                    >
+                </div>
                 <div class="flex gap-2">
                     <RoleForm
                         :key="JSON.stringify(role)"
