@@ -9,6 +9,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeInvitationController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PayEntryController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
@@ -20,7 +21,7 @@ use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn (): RedirectResponse => auth()->check() ? to_route('dashboard') : to_route('login'))->name('home');
+Route::get('/', fn (): RedirectResponse => auth()->check() ? to_route('landing') : to_route('login'))->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('invitation/{token}', [InvitationController::class, 'show'])->name('invitation.show');
@@ -28,7 +29,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('landing', LandingController::class)->name('landing');
 
     Route::middleware('can:create,'.Employee::class)->group(function () {
         Route::get('employees/create', [EmployeeController::class, 'create'])->name('employees.create');
@@ -40,10 +41,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
     });
 
+    Route::get('employees/{employee}', [EmployeeController::class, 'show'])->middleware('can:view,employee')->name('employees.show');
     Route::post('employees/{employee}/invitation', [EmployeeInvitationController::class, 'store'])->middleware('can:resendInvitation,employee')->name('employees.invitation.store');
     Route::post('employees/{employee}/top', [TopEmployeeController::class, 'store'])->middleware('can:becomeTop,employee')->name('employees.top.store');
 
-    Route::get('employees/{employee}/assignments', [AssignmentController::class, 'index'])->middleware('can:viewAny,'.Assignment::class.',employee')->name('employees.assignments.index');
     Route::post('employees/{employee}/assignments', [AssignmentController::class, 'store'])->middleware('can:create,'.Assignment::class.',employee')->name('employees.assignments.store');
     Route::patch('assignments/{assignment}', [AssignmentController::class, 'update'])->middleware('can:update,assignment')->name('assignments.update');
 

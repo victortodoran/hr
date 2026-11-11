@@ -23,7 +23,7 @@ class PayEntryController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Pay added.')]);
 
-        return to_route('employees.assignments.index', $assignment->employee_id);
+        return to_route('employees.show', $assignment->employee_id);
     }
 
     /**
@@ -35,6 +35,6 @@ class PayEntryController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Pay removed.')]);
 
-        return to_route('employees.assignments.index', $assignment->employee_id);
+        return to_route('employees.show', $assignment->employee_id);
     }
 }

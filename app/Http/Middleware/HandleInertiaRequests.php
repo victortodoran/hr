@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Assignment;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -45,7 +44,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'employee' => $employee,
                 'can' => fn (): array => $employee instanceof Employee ? $employee->companyWidePermissions() : [],
-                'canSeeOwnAssignments' => fn (): bool => $employee instanceof Employee && $employee->can('viewAny', [Assignment::class, $employee]),
+                'canSeeOwnPage' => fn (): bool => $employee instanceof Employee && $employee->can('view', $employee),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

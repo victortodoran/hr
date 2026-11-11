@@ -67,7 +67,7 @@ it('lets an assignment manager set the internal Job Title, or leave it empty, an
 
     actingAs(employeeWith([Permission::ManageAssignments->value => Scope::Everyone]))
         ->patch(route('assignments.update', $internal), ['job_title' => $jobTitle, 'capacity' => $capacity])
-        ->assertRedirect(route('employees.assignments.index', $cara))
+        ->assertRedirect(route('employees.show', $cara))
         ->assertSessionHasNoErrors();
 
     expect($internal->refresh()->only('job_title', 'capacity'))->toBe(['job_title' => $jobTitle, 'capacity' => $capacity])

@@ -8,7 +8,7 @@ import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { edit } from '@/routes/employees';
+import { edit, show } from '@/routes/employees';
 import type { Choice, EmployeeRecord, ManagerChoice } from '@/types';
 
 const props = defineProps<{
@@ -26,7 +26,8 @@ const statusBadges = {
 
 setLayoutProps({
     breadcrumbs: [
-        { title: props.employee.name, href: edit(props.employee.id) },
+        { title: props.employee.name, href: show(props.employee.id) },
+        { title: 'Edit', href: edit(props.employee.id) },
     ],
 });
 </script>

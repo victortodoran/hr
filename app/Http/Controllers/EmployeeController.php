@@ -5,11 +5,20 @@ namespace App\Http\Controllers;
 use App\Actions\AddEmployee;
 use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\EmploymentStatus;
+use App\Enums\Permission;
 use App\Http\Requests\EmployeeRequest;
+use App\Models\Assignment;
+use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\PayEntry;
+use App\Models\Project;
+use App\Support\Currency;
+use App\Support\PayHistory;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,6 +49,37 @@ class EmployeeController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Employee added. An invitation has been sent to :email.', ['email' => $employee->email])]);
 
         return to_route('employees.edit', $employee);
+    }
+
+    /**
+     * Show an Employee's page: their record, then their Assignments and Pay,
+     * each only when the viewer may see it.
+     */
+    public function show(#[CurrentUser] Employee $actor, Employee $employee): Response
+    {
+        $canViewRecord = $actor->can(Permission::ViewEmployeeRecords->value, $employee);
+        $canViewAssignments = $actor->can('viewAny', [Assignment::class, $employee]);
+        $canManage = $actor->can('create', [Assignment::class, $employee]);
+        $canViewPay = $actor->can('viewPay', [Assignment::class, $employee]);
+        $canManagePay = $actor->can('managePay', [Assignment::class, $employee]);
+        $currency = $canViewPay ? CompanySettings::payCurrency() : null;
+
+        return Inertia::render('employees/Show', [
+            'employee' => [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'job_title' => $employee->internalAssignment?->job_title,
+            ],
+            'record' => $canViewRecord ? $this->record($employee) : null,
+            'reportsNeedingAManager' => $canViewRecord ? $this->reportsNeedingAManager($employee) : [],
+            'assignments' => $canViewAssignments ? $this->assignments($employee, $currency) : null,
+            'canManage' => $canManage,
+            'projects' => $canManage ? $this->openProjects() : [],
+            'canViewPay' => $canViewPay,
+            'canManagePay' => $canManagePay,
+            ...($canManagePay && $currency !== null ? ['currency' => $currency->code] : []),
+            'canEdit' => $actor->can('update', $employee),
+        ]);
     }
 
     /**
@@ -77,6 +117,107 @@ class EmployeeController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Employee updated.')]);
 
         return to_route('employees.edit', $employee);
+    }
+
+    /**
+     * The Employee's record as their page shows it, with the Manager they
+     * effectively report to.
+     *
+     * @return array{email: string, status: string, start_date: string, leaving_date: string|null, department: string|null, manager: array{id: int, name: string}|null, is_top: bool}
+     */
+    private function record(Employee $employee): array
+    {
+        $effective = Employee::query()->withEffectiveManager()->findOrFail($employee->id);
+
+        return [
+            'email' => $effective->email,
+            'status' => $effective->employmentStatus()->value,
+            'start_date' => $effective->start_date->toDateString(),
+            'leaving_date' => $effective->leaving_date?->toDateString(),
+            'department' => $effective->department?->name, // @pest-mutate-ignore (every Employee has a Department; the nullsafe only satisfies the relation's nullable type)
+            'manager' => $effective->effectiveManager?->only('id', 'name'),
+            'is_top' => $effective->is_top,
+        ];
+    }
+
+    /**
+     * The Employee's Assignments, earliest first, each with its Pay history
+     * when a currency is given, which only happens for viewers allowed to see
+     * the Employee's Pay.
+     *
+     * @return array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>
+     */
+    private function assignments(Employee $employee, ?Currency $currency): array
+    {
+        return $employee->assignments()
+            ->with('project.client')
+            ->when($currency !== null, fn (Builder $query) => $query->with(['payEntries' => fn (HasMany $entries) => $entries->orderByDesc('effective_from')]))
+            ->orderBy('start_date')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Assignment $assignment): array => [
+                'id' => $assignment->id,
+                'project' => [
+                    'id' => $assignment->project->id,
+                    'name' => $assignment->project->name,
+                    'client' => $assignment->project->client?->name,
+                    'is_internal' => $assignment->project->is_internal,
+                ],
+                'job_title' => $assignment->job_title,
+                'start_date' => $assignment->start_date->toDateString(),
+                'end_date' => $assignment->end_date?->toDateString(),
+                'capacity' => $assignment->capacity,
+                ...($currency === null ? [] : ['pay' => $this->payHistory($assignment, $currency)]),
+            ])
+            ->all();
+    }
+
+    /**
+     * The Assignment's Pay history, newest first, marking the entry in
+     * effect today.
+     *
+     * @return array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>
+     */
+    private function payHistory(Assignment $assignment, Currency $currency): array
+    {
+        $inEffect = PayHistory::inEffectOn(
+            $assignment->payEntries->keyBy(fn (PayEntry $entry): string => $entry->effective_from->toDateString())->all(),
+            today(),
+        );
+
+        return $assignment->payEntries
+            ->map(fn (PayEntry $entry): array => [
+                'id' => $entry->id,
+                'effective_from' => $entry->effective_from->toDateString(),
+                'kind' => $entry->kind->value,
+                'amount' => $currency->format($entry->amount),
+                'is_in_effect' => $entry->is($inEffect),
+            ])
+            ->all();
+    }
+
+    /**
+     * The Projects an Employee can be put on: every Project except the
+     * Internal Project and those that have finished, by name.
+     *
+     * @return array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>
+     */
+    private function openProjects(): array
+    {
+        return Project::query()
+            ->with('client:id,name')
+            ->where('is_internal', false)
+            ->where(fn (Builder $query) => $query->whereNull('end_date')->orWhereDate('end_date', '>=', today()))
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Project $project): array => [
+                'id' => $project->id,
+                'name' => $project->name,
+                'client' => $project->client?->name,
+                ...$project->dates(),
+            ])
+            ->all();
     }
 
     /**

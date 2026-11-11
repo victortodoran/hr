@@ -14,8 +14,8 @@ export type Auth = {
     employee: Employee;
     /** Company-wide Permissions the signed-in Employee holds. */
     can: string[];
-    /** Whether the signed-in Employee may see their own Assignments. */
-    canSeeOwnAssignments: boolean;
+    /** Whether the signed-in Employee may open their own Employee page. */
+    canSeeOwnPage: boolean;
 };
 
 export type Passkey = {

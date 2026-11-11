@@ -86,7 +86,7 @@ it('lets the invited Employee set a password, verifying their email, then sign i
     expect($employee->refresh()->hasVerifiedEmail())->toBeTrue();
 
     post(route('login.store'), ['email' => $employee->email, 'password' => 'a-new-password'])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('landing', absolute: false));
 });
 
 it('keeps the invitation valid for a week', function () {
