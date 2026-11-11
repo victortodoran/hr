@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\CutOffAssignments;
+use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\Permission;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProjectController;
@@ -14,7 +14,7 @@ use App\Rules\AssignmentsFit;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(CutOffAssignments::class, EmployeeController::class, EmployeeRequest::class, ProjectController::class, ProjectRequest::class, AssignmentsFit::class);
+covers(UpdateTrimmingAssignments::class, EmployeeController::class, EmployeeRequest::class, ProjectController::class, ProjectRequest::class, AssignmentsFit::class);
 
 beforeEach(fn () => travelTo('2026-03-01 09:00'));
 

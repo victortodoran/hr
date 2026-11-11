@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\CutOffAssignments;
+use App\Actions\UpdateTrimmingAssignments;
 use App\Http\Requests\ProjectRequest;
 use App\Models\Assignment;
 use App\Models\Client;
@@ -10,7 +10,6 @@ use App\Models\Employee;
 use App\Models\Project;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -38,8 +37,7 @@ class ProjectController extends Controller
                 'id' => $project->id,
                 'name' => $project->name,
                 'client' => $project->client?->only('id', 'name'),
-                'start_date' => $project->start_date?->toDateString(),
-                'end_date' => $project->end_date?->toDateString(),
+                ...$project->dates(),
                 'is_internal' => $project->is_internal,
             ]);
 
@@ -62,8 +60,7 @@ class ProjectController extends Controller
                 'id' => $project->id,
                 'name' => $project->name,
                 'client' => $project->client?->only('id', 'name'),
-                'start_date' => $project->start_date?->toDateString(),
-                'end_date' => $project->end_date?->toDateString(),
+                ...$project->dates(),
                 'is_internal' => $project->is_internal,
             ],
             'team' => $project->assignments()
@@ -95,18 +92,12 @@ class ProjectController extends Controller
     }
 
     /**
-     * Change a Project's name, dates or Client. Its Assignments are cut off
-     * at its end date in the same transaction.
+     * Change a Project's name, dates or Client. Its Assignments are trimmed
+     * to end by its end date in the same transaction.
      */
-    public function update(ProjectRequest $request, Project $project, CutOffAssignments $cutOff): RedirectResponse
+    public function update(ProjectRequest $request, Project $project, UpdateTrimmingAssignments $updateTrimming): RedirectResponse
     {
-        DB::transaction(function () use ($request, $project, $cutOff): void {
-            $project->update($request->validated());
-
-            if ($project->end_date !== null) {
-                $cutOff->at($project, $project->end_date);
-            }
-        });
+        $updateTrimming->updateProject($project, $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project saved.')]);
 

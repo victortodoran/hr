@@ -94,8 +94,7 @@ class AssignmentController extends Controller
                 'id' => $project->id,
                 'name' => $project->name,
                 'client' => $project->client?->name,
-                'start_date' => $project->start_date?->toDateString(), // @pest-mutate-ignore (only the Internal Project has no start date, and it is left out)
-                'end_date' => $project->end_date?->toDateString(),
+                ...$project->dates(),
             ])
             ->all();
     }
