@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
+import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
 import { Badge } from '@/components/ui/badge';
@@ -33,12 +34,6 @@ const props = defineProps<{
     canEdit: boolean;
 }>();
 
-const statusBadges = {
-    future: { label: 'Future Employee', variant: 'secondary' },
-    current: { label: 'Current Employee', variant: 'default' },
-    former: { label: 'Former Employee', variant: 'outline' },
-} as const;
-
 /**
  * The entry in effect today, or null when none has taken effect yet.
  */
@@ -64,9 +59,7 @@ setLayoutProps({
             />
             <div class="flex items-center gap-2">
                 <template v-if="record">
-                    <Badge :variant="statusBadges[record.status].variant">
-                        {{ statusBadges[record.status].label }}
-                    </Badge>
+                    <EmploymentStatusBadge :status="record.status" />
                     <Badge v-if="record.is_top" variant="secondary"
                         >Top Employee</Badge
                     >

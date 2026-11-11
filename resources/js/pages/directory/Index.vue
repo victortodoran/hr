@@ -3,7 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { useDebounceFn } from '@vueuse/core';
 import { ref } from 'vue';
 import Heading from '@/components/Heading.vue';
-import { Button } from '@/components/ui/button';
+import Pagination from '@/components/Pagination.vue';
 import { Input } from '@/components/ui/input';
 import ValueOr from '@/components/ValueOr.vue';
 import { index, show } from '@/routes/directory';
@@ -104,30 +104,6 @@ const searchDirectory = useDebounceFn(() => {
             </table>
         </div>
 
-        <div
-            v-if="employees.prev_page_url || employees.next_page_url"
-            class="flex items-center justify-between gap-4 text-sm text-muted-foreground"
-        >
-            <span>
-                {{ employees.from }}–{{ employees.to }} of
-                {{ employees.total }}
-            </span>
-            <div class="flex gap-2">
-                <Button
-                    v-for="pageLink in [
-                        { label: 'Previous', url: employees.prev_page_url },
-                        { label: 'Next', url: employees.next_page_url },
-                    ]"
-                    :key="pageLink.label"
-                    variant="outline"
-                    size="sm"
-                    :disabled="!pageLink.url"
-                    :as="pageLink.url ? Link : 'button'"
-                    :href="pageLink.url ?? undefined"
-                >
-                    {{ pageLink.label }}
-                </Button>
-            </div>
-        </div>
+        <Pagination :page="employees" />
     </div>
 </template>

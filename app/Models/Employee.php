@@ -356,6 +356,21 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * Limit the query to Employees who are future, current or former today.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function inEmploymentStatus(Builder $query, EmploymentStatus $status): void
+    {
+        match ($status) {
+            EmploymentStatus::Future => $query->whereDate('start_date', '>', today()),
+            EmploymentStatus::Current => $query->current(),
+            EmploymentStatus::Former => $query->whereDate('leaving_date', '<', today()),
+        };
+    }
+
+    /**
      * Add each Employee's effective_manager_id: walking up from their stored
      * Manager, the first Employee who hasn't left. It is worked out when read,
      * so nothing needs reassigning when a Manager leaves. The walk only climbs

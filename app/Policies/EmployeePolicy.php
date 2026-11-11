@@ -14,6 +14,15 @@ use App\Models\Employee;
 class EmployeePolicy
 {
     /**
+     * Listing Employees needs view employee records with any Scope; the list
+     * then holds only the Employees that Scope covers.
+     */
+    public function viewAny(Employee $actor): bool
+    {
+        return $actor->widestScopeFor(Permission::ViewEmployeeRecords) !== null;
+    }
+
+    /**
      * Opening an Employee's page needs something on it the viewer may see:
      * their record, or their Assignments (which seeing their Pay also
      * allows).

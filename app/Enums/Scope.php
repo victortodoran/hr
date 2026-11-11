@@ -29,6 +29,14 @@ enum Scope: string
     }
 
     /**
+     * Whether this Scope can cover anyone besides the acting Employee.
+     */
+    public function coversOthers(): bool
+    {
+        return $this !== self::Own;
+    }
+
+    /**
      * Whether this Scope, held by the acting Employee, covers the target.
      * Reports are everyone below the acting Employee in the reporting line.
      */

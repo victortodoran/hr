@@ -41,6 +41,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
     });
 
+    Route::get('employees', [EmployeeController::class, 'index'])->middleware('can:viewAny,'.Employee::class)->name('employees.index');
     Route::get('employees/{employee}', [EmployeeController::class, 'show'])->middleware('can:view,employee')->name('employees.show');
     Route::post('employees/{employee}/invitation', [EmployeeInvitationController::class, 'store'])->middleware('can:resendInvitation,employee')->name('employees.invitation.store');
     Route::post('employees/{employee}/top', [TopEmployeeController::class, 'store'])->middleware('can:becomeTop,employee')->name('employees.top.store');

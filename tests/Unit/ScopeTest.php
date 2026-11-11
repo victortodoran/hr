@@ -29,3 +29,11 @@ it('picks the widest Scope whatever order the Roles come in', function (array $s
     'own then reports' => [[Scope::Own, Scope::Reports], Scope::Reports],
     'own then everyone' => [[Scope::Own, Scope::Everyone], Scope::Everyone],
 ]);
+
+it('covers other Employees only when it is wider than own', function (Scope $scope, bool $expected) {
+    expect($scope->coversOthers())->toBe($expected);
+})->with([
+    'own' => [Scope::Own, false],
+    'reports' => [Scope::Reports, true],
+    'everyone' => [Scope::Everyone, true],
+]);
