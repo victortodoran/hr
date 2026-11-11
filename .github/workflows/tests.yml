@@ -38,6 +38,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # A pull request checks out its merge into main; its first parent
+          # is main, so the mutation step can see which files the PR changes.
+          fetch-depth: 2
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
@@ -66,6 +69,17 @@ jobs:
       - name: Create test database
         run: psql -h 127.0.0.1 -U root -d hr -c 'CREATE DATABASE hr_testing'
 
+      # Mutation testing starts a fresh process, and so a fresh migrate:fresh,
+      # for every mutant. Skipping disk flushes makes that DDL fast; the
+      # database is thrown away after the run, so durability doesn't matter.
+      - name: Tune PostgreSQL for throwaway test data
+        run: >-
+          psql -h 127.0.0.1 -U root -d hr
+          -c 'ALTER SYSTEM SET fsync = off'
+          -c 'ALTER SYSTEM SET synchronous_commit = off'
+          -c 'ALTER SYSTEM SET full_page_writes = off'
+          -c 'SELECT pg_reload_conf()'
+
       - name: Install dependencies
         run: |
           composer install --no-interaction --no-progress
@@ -85,5 +99,21 @@ jobs:
       - name: Run CI Checks
         run: composer ci:check
 
+      # Pull requests mutate only the app/ files they change, which takes
+      # seconds instead of minutes; every push to main runs the full suite.
+      - name: Run mutation testing on changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          # Pest skips --ignore for files named in --path, so drop the files
+          # the test:mutate script ignores before passing the rest.
+          ignored=$(php -r 'preg_match("/--ignore=(\S+)/", implode(" ", (array) json_decode(file_get_contents("composer.json"), true)["scripts"]["test:mutate"]), $m); echo str_replace(",", "\n", $m[1]);')
+          changed=$(git diff --name-only --diff-filter=d HEAD^1 HEAD -- app | grep -v -F -f <(echo "$ignored") | paste -sd, - || true)
+          if [ -z "$changed" ]; then
+            echo "No app/ files changed; nothing to mutate."
+            exit 0
+          fi
+          composer test:mutate -- --path="$changed" --ignore-min-score-on-zero-mutations
+
       - name: Run mutation testing
+        if: github.event_name != 'pull_request'
         run: composer test:mutate
