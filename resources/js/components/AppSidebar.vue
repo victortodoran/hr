@@ -1,20 +1,16 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
-    BookOpen,
-    BriefcaseBusiness,
     Briefcase,
     Building2,
     FolderKanban,
-    FolderGit2,
     Landmark,
-    LayoutGrid,
     ShieldCheck,
+    UserRound,
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
-import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavEmployee from '@/components/NavEmployee.vue';
 import {
@@ -26,12 +22,12 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+import { landing } from '@/routes';
 import { index as clients } from '@/routes/clients';
 import { edit as company } from '@/routes/company';
 import { index as departments } from '@/routes/departments';
 import { index as directory } from '@/routes/directory';
-import { index as assignments } from '@/routes/employees/assignments';
+import { show as employeePage } from '@/routes/employees';
 import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import type { NavItem } from '@/types';
@@ -39,17 +35,12 @@ import type { NavItem } from '@/types';
 const page = usePage();
 
 const mainNavItems = computed<NavItem[]>(() => [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    ...(page.props.auth.canSeeOwnAssignments
+    ...(page.props.auth.canSeeOwnPage
         ? [
               {
-                  title: 'My Assignments',
-                  href: assignments(page.props.auth.employee.id),
-                  icon: BriefcaseBusiness,
+                  title: 'My Page',
+                  href: employeePage(page.props.auth.employee.id),
+                  icon: UserRound,
               },
           ]
         : []),
@@ -73,19 +64,6 @@ const mainNavItems = computed<NavItem[]>(() => [
         ? [{ title: 'Company', href: company(), icon: Landmark }]
         : []),
 ]);
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
-];
 </script>
 
 <template>
@@ -94,7 +72,7 @@ const footerNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
+                        <Link :href="landing()">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>
@@ -107,7 +85,6 @@ const footerNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
             <NavEmployee />
         </SidebarFooter>
     </Sidebar>

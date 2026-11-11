@@ -22,3 +22,17 @@ export type EmployeeRecord = {
     can_resend_invitation: boolean;
     can_become_top: boolean;
 };
+
+/**
+ * An Employee's record as their Employee page shows it, with the Manager
+ * they effectively report to.
+ */
+export type EmployeePageRecord = {
+    email: string;
+    status: EmploymentStatus;
+    start_date: string;
+    leaving_date: string | null;
+    department: string | null;
+    manager: Choice | null;
+    is_top: boolean;
+};

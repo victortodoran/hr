@@ -6,6 +6,7 @@ use App\Enums\PayKind;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\PayEntryController;
 use App\Http\Requests\PayEntryRequest;
 use App\Models\Assignment;
@@ -24,7 +25,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(AssignmentController::class, PayEntryController::class, PayEntryRequest::class, AssignmentPolicy::class, PayHistory::class, Currency::class, CompanySettings::class, PayEntry::class, Assignment::class);
+covers(AssignmentController::class, EmployeeController::class, PayEntryController::class, PayEntryRequest::class, AssignmentPolicy::class, PayHistory::class, Currency::class, CompanySettings::class, PayEntry::class, Assignment::class);
 
 beforeEach(function () {
     travelTo('2026-03-01 09:00');
@@ -67,10 +68,10 @@ it('lets someone who manages Pay give an Assignment Fixed or Hourly Pay, from an
 
     actingAs($manager)
         ->post(route('assignments.pay.store', $assignment), payForm(['kind' => $kind, 'amount' => $amount, 'effective_from' => $effectiveFrom]))
-        ->assertRedirect(route('employees.assignments.index', $assignment->employee_id))
+        ->assertRedirect(route('employees.show', $assignment->employee_id))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Pay added.']);
 
-    actingAs($manager)->get(route('employees.assignments.index', $assignment->employee_id))
+    actingAs($manager)->get(route('employees.show', $assignment->employee_id))
         ->assertInertia(fn (Assert $page) => $page
             ->where('assignments.0.pay', [
                 ['id' => $assignment->payEntries()->sole()->id, 'effective_from' => $effectiveFrom, 'kind' => $kind, 'amount' => $shown, 'is_in_effect' => $effectiveFrom <= '2026-03-01'],
@@ -98,7 +99,7 @@ it('shows the Pay history newest first and which entry is in effect on the day',
     PayEntry::factory()->for($assignment)->create(['effective_from' => '2026-09-01', 'kind' => PayKind::Fixed, 'amount' => 450000]);
     travelTo($day);
 
-    actingAs(payManager())->get(route('employees.assignments.index', $assignment->employee_id))
+    actingAs(payManager())->get(route('employees.show', $assignment->employee_id))
         ->assertInertia(fn (Assert $page) => $page
             ->where('assignments.0.pay.0.effective_from', '2026-09-01')
             ->where('assignments.0.pay.0.amount', '€4,500.00')
@@ -118,7 +119,7 @@ it('shows the Pay history newest first and which entry is in effect on the day',
 it('shows an Assignment with no Pay yet as having none', function () {
     $assignment = relaunchAssignment();
 
-    actingAs(payManager())->get(route('employees.assignments.index', $assignment->employee_id))
+    actingAs(payManager())->get(route('employees.show', $assignment->employee_id))
         ->assertInertia(fn (Assert $page) => $page->where('assignments.0.pay', []));
 });
 
@@ -182,7 +183,7 @@ it('lets someone who manages Pay remove an entry, such as a mistake', function (
 
     actingAs(payManager())
         ->delete(route('assignments.pay.destroy', [$assignment, $mistake]))
-        ->assertRedirect(route('employees.assignments.index', $assignment->employee_id))
+        ->assertRedirect(route('employees.show', $assignment->employee_id))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Pay removed.']);
 
     expect($assignment->payEntries()->pluck('id')->all())->toBe([$kept->id]);
@@ -204,7 +205,7 @@ it('sends Pay only to viewers whose view pay or manage pay covers the Employee',
     $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id, 'start_date' => '2025-01-06']);
     PayEntry::factory()->for(Assignment::factory()->for($cara))->create();
 
-    $page = actingAs($viewer($ben))->get(route('employees.assignments.index', $cara))->assertOk();
+    $page = actingAs($viewer($ben))->get(route('employees.show', $cara))->assertOk();
 
     $page->assertInertia(fn (Assert $page) => $page
         ->where('canViewPay', $seesPay)
@@ -247,7 +248,7 @@ it('lets a new Employee see their own Pay through the starter Employee Role', fu
     $cara->forceFill(['email_verified_at' => now()])->save(); // as accepting the invitation does
     PayEntry::factory()->for($cara->internalAssignment()->sole())->create(['amount' => 350000]);
 
-    actingAs($cara)->get(route('employees.assignments.index', $cara))
+    actingAs($cara)->get(route('employees.show', $cara))
         ->assertInertia(fn (Assert $page) => $page
             ->where('canViewPay', true)
             ->where('canManagePay', false)

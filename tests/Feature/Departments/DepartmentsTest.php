@@ -130,9 +130,9 @@ it('refuses every Department action to an Employee who does not manage Departmen
 ]);
 
 it('tells every page which company-wide Permissions the viewer holds, so the menu only shows what they can use', function () {
-    actingAs(admin())->get(route('dashboard'))
+    actingAs(admin())->get(route('profile.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.can', [Permission::ManageDepartments->value]));
 
-    actingAs(employeeWith([Permission::ViewDirectory->value => null, Permission::ViewPay->value => Scope::Own]))->get(route('dashboard'))
+    actingAs(employeeWith([Permission::ViewDirectory->value => null, Permission::ViewPay->value => Scope::Own]))->get(route('profile.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.can', [Permission::ViewDirectory->value]));
 });

@@ -4,12 +4,12 @@ import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { index, show } from '@/routes/directory';
-import { index as assignments } from '@/routes/employees/assignments';
+import { show as employeePage } from '@/routes/employees';
 import type { ChainLink } from '@/types';
 
 const props = defineProps<{
     chain: ChainLink[];
-    canViewAssignments: boolean;
+    canViewEmployeePage: boolean;
 }>();
 
 const employee = computed(() => props.chain[0]);
@@ -44,8 +44,8 @@ setLayoutProps({
                 :title="`${employee.name}'s Reporting Chain`"
                 description="Who they report to, up to the top of the company"
             />
-            <Button v-if="canViewAssignments" variant="outline" as-child>
-                <Link :href="assignments(employee.id)">Assignments</Link>
+            <Button v-if="canViewEmployeePage" variant="outline" as-child>
+                <Link :href="employeePage(employee.id)">Employee page</Link>
             </Button>
         </div>
 

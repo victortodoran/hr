@@ -4,68 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AssignmentRequest;
 use App\Models\Assignment;
-use App\Models\CompanySettings;
 use App\Models\Employee;
-use App\Models\PayEntry;
 use App\Models\Project;
-use App\Support\Currency;
-use App\Support\PayHistory;
-use Illuminate\Container\Attributes\CurrentUser;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
-use Inertia\Response;
 
 /**
- * Lets Employees see the Assignments their Scope covers, and those who
- * manage Assignments put Employees on Projects and change their Assignments.
+ * Lets those who manage Assignments put Employees on Projects and change
+ * their Assignments. The Assignments themselves are shown on the Employee
+ * page.
  */
 class AssignmentController extends Controller
 {
-    /**
-     * Show an Employee's Assignments, earliest first, and when the viewer
-     * may manage them, the Projects that are still open to Assignments.
-     * Each Assignment's Pay history is only sent to viewers allowed to see
-     * the Employee's Pay.
-     */
-    public function index(#[CurrentUser] Employee $actor, Employee $employee): Response
-    {
-        $canManage = $actor->can('create', [Assignment::class, $employee]);
-        $canViewPay = $actor->can('viewPay', [Assignment::class, $employee]);
-        $canManagePay = $actor->can('managePay', [Assignment::class, $employee]);
-        $currency = $canViewPay ? CompanySettings::payCurrency() : null;
-
-        return Inertia::render('assignments/Index', [
-            'employee' => $employee->only('id', 'name'),
-            'assignments' => $employee->assignments()
-                ->with('project.client')
-                ->when($canViewPay, fn (Builder $query) => $query->with(['payEntries' => fn (HasMany $entries) => $entries->orderByDesc('effective_from')]))
-                ->orderBy('start_date')
-                ->orderBy('id')
-                ->get()
-                ->map(fn (Assignment $assignment): array => [
-                    'id' => $assignment->id,
-                    'project' => [
-                        'id' => $assignment->project->id,
-                        'name' => $assignment->project->name,
-                        'client' => $assignment->project->client?->name,
-                        'is_internal' => $assignment->project->is_internal,
-                    ],
-                    'job_title' => $assignment->job_title,
-                    'start_date' => $assignment->start_date->toDateString(),
-                    'end_date' => $assignment->end_date?->toDateString(),
-                    'capacity' => $assignment->capacity,
-                    ...($currency === null ? [] : ['pay' => $this->payHistory($assignment, $currency)]),
-                ]),
-            'canManage' => $canManage,
-            'projects' => $canManage ? $this->openProjects() : [],
-            'canViewPay' => $canViewPay,
-            'canManagePay' => $canManagePay,
-            ...($canManagePay ? ['currency' => CompanySettings::payCurrency()->code] : []),
-        ]);
-    }
-
     /**
      * Put the Employee on a Project.
      */
@@ -75,7 +25,7 @@ class AssignmentController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Assignment created.')]);
 
-        return to_route('employees.assignments.index', $employee);
+        return to_route('employees.show', $employee);
     }
 
     /**
@@ -88,54 +38,6 @@ class AssignmentController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Assignment saved.')]);
 
-        return to_route('employees.assignments.index', $assignment->employee_id);
-    }
-
-    /**
-     * The Assignment's Pay history, newest first, marking the entry in
-     * effect today.
-     *
-     * @return array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>
-     */
-    private function payHistory(Assignment $assignment, Currency $currency): array
-    {
-        $inEffect = PayHistory::inEffectOn(
-            $assignment->payEntries->keyBy(fn (PayEntry $entry): string => $entry->effective_from->toDateString())->all(),
-            today(),
-        );
-
-        return $assignment->payEntries
-            ->map(fn (PayEntry $entry): array => [
-                'id' => $entry->id,
-                'effective_from' => $entry->effective_from->toDateString(),
-                'kind' => $entry->kind->value,
-                'amount' => $currency->format($entry->amount),
-                'is_in_effect' => $entry->is($inEffect),
-            ])
-            ->all();
-    }
-
-    /**
-     * The Projects an Employee can be put on: every Project except the
-     * Internal Project and those that have finished, by name.
-     *
-     * @return array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>
-     */
-    private function openProjects(): array
-    {
-        return Project::query()
-            ->with('client:id,name')
-            ->where('is_internal', false)
-            ->where(fn (Builder $query) => $query->whereNull('end_date')->orWhereDate('end_date', '>=', today()))
-            ->orderBy('name')
-            ->orderBy('id')
-            ->get()
-            ->map(fn (Project $project): array => [
-                'id' => $project->id,
-                'name' => $project->name,
-                'client' => $project->client?->name,
-                ...$project->dates(),
-            ])
-            ->all();
+        return to_route('employees.show', $assignment->employee_id);
     }
 }

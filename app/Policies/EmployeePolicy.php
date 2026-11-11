@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
+use App\Models\Assignment;
 use App\Models\Employee;
 
 /**
@@ -12,6 +13,17 @@ use App\Models\Employee;
  */
 class EmployeePolicy
 {
+    /**
+     * Opening an Employee's page needs something on it the viewer may see:
+     * their record, or their Assignments (which seeing their Pay also
+     * allows).
+     */
+    public function view(Employee $actor, Employee $employee): bool
+    {
+        return $actor->can(Permission::ViewEmployeeRecords->value, $employee)
+            || $actor->can('viewAny', [Assignment::class, $employee]);
+    }
+
     /**
      * Adding an Employee needs manage employees.
      */

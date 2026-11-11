@@ -2,7 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import ValueOr from '@/components/ValueOr.vue';
 import { formatPeriod } from '@/lib/dates';
-import { index } from '@/routes/employees/assignments';
+import { show } from '@/routes/employees';
 import type { TeamAssignment } from '@/types';
 
 defineProps<{
@@ -30,7 +30,7 @@ defineProps<{
                 <tr v-for="assignment in assignments" :key="assignment.id">
                     <td class="px-4 py-2 font-medium">
                         <Link
-                            :href="index(assignment.employee.id)"
+                            :href="show(assignment.employee.id)"
                             class="underline-offset-4 hover:underline"
                             >{{ assignment.employee.name }}</Link
                         >
