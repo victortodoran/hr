@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Head, setLayoutProps } from '@inertiajs/vue3';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
+import ShareOfTime from '@/components/assignments/ShareOfTime.vue';
 import Heading from '@/components/Heading.vue';
+import ValueOr from '@/components/ValueOr.vue';
 import { formatPeriod } from '@/lib/dates';
 import { index } from '@/routes/employees/assignments';
 import type { AssignmentRecord, Choice, OpenProject } from '@/types';
@@ -68,10 +70,7 @@ setLayoutProps({
                             </p>
                         </td>
                         <td class="px-4 py-2">
-                            <span v-if="assignment.job_title">{{
-                                assignment.job_title
-                            }}</span>
-                            <span v-else class="text-muted-foreground">—</span>
+                            <ValueOr :value="assignment.job_title" />
                         </td>
                         <td class="px-4 py-2">
                             {{
@@ -82,12 +81,7 @@ setLayoutProps({
                             }}
                         </td>
                         <td class="px-4 py-2 text-right">
-                            <span v-if="assignment.share !== null"
-                                >{{ assignment.share }}%</span
-                            >
-                            <span v-else class="text-muted-foreground"
-                                >Leftover</span
-                            >
+                            <ShareOfTime :share="assignment.share" />
                         </td>
                         <td v-if="canManage" class="px-4 py-2 text-right">
                             <AssignmentForm

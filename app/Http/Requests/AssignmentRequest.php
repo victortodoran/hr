@@ -80,15 +80,26 @@ class AssignmentRequest extends FormRequest
             return;
         }
 
-        [$start, $end] = $project->is_internal
-            ? [$employee->start_date, $employee->leaving_date]
-            : [Carbon::parse($this->string('start_date')->value()), $this->filled('end_date') ? Carbon::parse($this->string('end_date')->value()) : null];
+        ['start_date' => $start, 'end_date' => $end] = $project->is_internal ? $employee->workingPeriod() : $this->period();
 
         foreach ([$employee, $project] as $owner) {
             foreach ($owner->assignmentRefusals($start, $end) as $field => $refusal) {
                 $validator->errors()->add($field, $refusal);
             }
         }
+    }
+
+    /**
+     * The dates the form asks for.
+     *
+     * @return array{start_date: Carbon, end_date: Carbon|null}
+     */
+    private function period(): array
+    {
+        return [
+            'start_date' => Carbon::parse($this->string('start_date')->value()),
+            'end_date' => $this->filled('end_date') ? Carbon::parse($this->string('end_date')->value()) : null,
+        ];
     }
 
     /**
@@ -122,25 +133,25 @@ class AssignmentRequest extends FormRequest
     /**
      * @return array<string, string>
      */
-    public function messages(): array
-    {
-        $followsTheEmployee = __('The Internal Assignment always runs from :name\'s Start Date to their Leaving Date.', ['name' => $this->employee()->name]);
-
-        return [
-            'start_date.prohibited' => $followsTheEmployee,
-            'end_date.prohibited' => $followsTheEmployee,
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
     public function attributes(): array
     {
         return [
             'project_id' => __('Project'),
             'job_title' => __('Job Title'),
             'share' => __('share of time'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        $internalDatesMessage = __('The Internal Assignment always runs from :name\'s Start Date to their Leaving Date.', ['name' => $this->employee()->name]);
+
+        return [
+            'start_date.prohibited' => $internalDatesMessage,
+            'end_date.prohibited' => $internalDatesMessage,
         ];
     }
 }

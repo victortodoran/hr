@@ -10,7 +10,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 
-covers(DirectoryController::class, Employee::class);
+covers(DirectoryController::class, Employee::class, Assignment::class);
 
 /**
  * An Employee who may browse the directory, like everyone with the starter
@@ -36,9 +36,9 @@ it('lists current Employees by name with only their name, email, internal Job Ti
         'department_id' => Department::factory()->create(['name' => 'Design'])->id,
         'manager_id' => $ben->id,
     ]);
+    Assignment::factory()->for($cara)->create(['job_title' => 'Client Lead']);
     Assignment::factory()->internal()->for($ben)->create(['job_title' => null]);
     Assignment::factory()->internal()->for($cara)->create(['job_title' => 'Designer', 'share' => 40]);
-    Assignment::factory()->for($cara)->create(['job_title' => 'Client Lead']);
 
     actingAs($viewer)->get(route('directory.index'))
         ->assertInertia(fn (Assert $page) => $page

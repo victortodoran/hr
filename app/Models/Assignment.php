@@ -78,6 +78,17 @@ class Assignment extends Model
     }
 
     /**
+     * Limit the query to Internal Assignments.
+     *
+     * @param  Builder<Assignment>  $query
+     */
+    #[QueryScope]
+    protected function internal(Builder $query): void
+    {
+        $query->whereRelation('project', 'is_internal', true);
+    }
+
+    /**
      * Limit the query to Assignments to Projects other than the Internal
      * Project.
      *

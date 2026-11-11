@@ -5,6 +5,7 @@ import { ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import ValueOr from '@/components/ValueOr.vue';
 import { index, show } from '@/routes/directory';
 import type { DirectoryEntry, Paginated } from '@/types';
 
@@ -76,10 +77,7 @@ const searchDirectory = useDebounceFn(() => {
                             >
                         </td>
                         <td class="px-4 py-2">
-                            <span v-if="employee.job_title">{{
-                                employee.job_title
-                            }}</span>
-                            <span v-else class="text-muted-foreground">—</span>
+                            <ValueOr :value="employee.job_title" />
                         </td>
                         <td class="px-4 py-2">{{ employee.department }}</td>
                         <td class="px-4 py-2">

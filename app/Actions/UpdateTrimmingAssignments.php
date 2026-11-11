@@ -27,7 +27,7 @@ class UpdateTrimmingAssignments
     {
         DB::transaction(function () use ($employee, $changes): void {
             $employee->update($changes);
-            $employee->internalAssignment()->update(['start_date' => $employee->start_date, 'end_date' => $employee->leaving_date]);
+            $employee->internalAssignment()->update($employee->workingPeriod());
             $this->trim($employee->assignments(), $employee->leaving_date);
         });
     }

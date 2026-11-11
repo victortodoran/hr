@@ -113,7 +113,19 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
      */
     public function internalAssignment(): HasOne
     {
-        return $this->hasOne(Assignment::class)->whereRelation('project', 'is_internal', true);
+        return $this->hasOne(Assignment::class)->internal();
+    }
+
+    /**
+     * The Employee's period of work as an Assignment's dates, which is what
+     * their Internal Assignment always has. It is open-ended until a Leaving
+     * Date is set.
+     *
+     * @return array{start_date: Carbon, end_date: Carbon|null}
+     */
+    public function workingPeriod(): array
+    {
+        return ['start_date' => $this->start_date, 'end_date' => $this->leaving_date];
     }
 
     /**
@@ -124,8 +136,7 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     {
         $this->assignments()->create([
             'project_id' => Project::internal()->id,
-            'start_date' => $this->start_date,
-            'end_date' => $this->leaving_date,
+            ...$this->workingPeriod(),
         ]);
     }
 

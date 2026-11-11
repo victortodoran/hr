@@ -34,6 +34,12 @@ const props = defineProps<{
 
 const open = ref(false);
 const isInternal = props.assignment?.project.is_internal ?? false;
+const labels = isInternal
+    ? {
+          jobTitle: 'Internal Job Title (optional)',
+          share: 'Planned share of time (%, optional)',
+      }
+    : { jobTitle: 'Job Title', share: 'Share of time (%)' };
 const fieldId = (field: string): string =>
     `assignment-${field}-${props.assignment?.id ?? 'new'}`;
 
@@ -128,9 +134,7 @@ function submit(): void {
 
                 <div class="grid gap-2">
                     <Label :for="fieldId('job-title')">{{
-                        isInternal
-                            ? 'Internal Job Title (optional)'
-                            : 'Job Title'
+                        labels.jobTitle
                     }}</Label>
                     <Input
                         :id="fieldId('job-title')"
@@ -164,11 +168,7 @@ function submit(): void {
                 </div>
 
                 <div class="grid gap-2">
-                    <Label :for="fieldId('share')">{{
-                        isInternal
-                            ? 'Planned share of time (%, optional)'
-                            : 'Share of time (%)'
-                    }}</Label>
+                    <Label :for="fieldId('share')">{{ labels.share }}</Label>
                     <Input
                         :id="fieldId('share')"
                         v-model="form.share"
