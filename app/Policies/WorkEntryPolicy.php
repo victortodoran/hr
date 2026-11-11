@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Policies;
+
+use App\Enums\Permission;
+use App\Models\Employee;
+use App\Models\WorkEntry;
+
+/**
+ * Who may see and change Work Entries. Each check is made against the
+ * Employee the Work Entries belong to, through the Gate of the Permission
+ * behind it, so the acting Employee's Scope decides.
+ */
+class WorkEntryPolicy
+{
+    /**
+     * Seeing an Employee's Work Entries needs view work entries for them, or
+     * manage work entries, since managing them means seeing them.
+     */
+    public function viewAny(Employee $actor, Employee $employee): bool
+    {
+        return $actor->can(Permission::ViewWorkEntries->value, $employee)
+            || $this->create($actor, $employee);
+    }
+
+    /**
+     * Recording hours for an Employee needs manage work entries for them.
+     */
+    public function create(Employee $actor, Employee $employee): bool
+    {
+        return $actor->can(Permission::ManageWorkEntries->value, $employee);
+    }
+
+    /**
+     * Changing or deleting a Work Entry needs manage work entries for the
+     * Employee whose Assignment it is on.
+     */
+    public function update(Employee $actor, WorkEntry $workEntry): bool
+    {
+        return $this->create($actor, $workEntry->assignment->employee);
+    }
+}

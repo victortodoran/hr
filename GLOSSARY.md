@@ -86,6 +86,12 @@ _Avoid_: Hourly rate, wage, pay rate
 What an Employee does on a particular Assignment, such as "Senior Developer" or "Tech Lead". An Employee with several Assignments can have several Job Titles at once.
 _Avoid_: Role, position, function
 
+### Time
+
+**Work Entry**:
+A record of how many hours an Employee worked on one Assignment on one date, with a description of what was done, as in "Cara worked 3 hours on Relaunch on 10 Nov reviewing the API". An Employee can record several Work Entries for the same Assignment on the same date. Work Entries stand on their own and are not grouped into Timesheets.
+_Avoid_: Booking, time entry, timesheet, timesheet item, time log, worked hours
+
 ### Access
 
 **Role**:
@@ -101,5 +107,5 @@ The permanent record of every change to access: a Role being created, edited or 
 _Avoid_: Audit trail, history, activity log, permission log
 
 **Scope**:
-Which Employees a Permission about Employees (their records, Assignments or Pay) applies to. Permissions about anything else, such as Projects, Clients or Roles, have no Scope and always apply company-wide. The Scopes are **own** (only the Employee themselves), **reports** (the Employees who report to them) or **everyone**.
+Which Employees a Permission about Employees (their records, Assignments, Pay or Work Entries) applies to. Permissions about anything else, such as Projects, Clients or Roles, have no Scope and always apply company-wide. The Scopes are **own** (only the Employee themselves), **reports** (the Employees who report to them) or **everyone**.
 _Avoid_: Reach, level, visibility

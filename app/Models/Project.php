@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 
 /**
@@ -69,6 +70,16 @@ class Project extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(Assignment::class);
+    }
+
+    /**
+     * The hours worked on the Project's Assignments.
+     *
+     * @return HasManyThrough<WorkEntry, Assignment, $this>
+     */
+    public function workEntries(): HasManyThrough
+    {
+        return $this->hasManyThrough(WorkEntry::class, Assignment::class);
     }
 
     /**

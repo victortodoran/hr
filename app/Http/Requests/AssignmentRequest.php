@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Project;
+use App\Rules\WorkEntriesFit;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -46,8 +47,8 @@ class AssignmentRequest extends FormRequest
         return [
             ...$projectRules,
             'job_title' => ['required', 'string', 'max:255'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'start_date' => ['bail', 'required', 'date', WorkEntriesFit::startOf($this->assignment()?->workEntries(), $this->workEntriesMessage(':name has Work Entries on this Assignment from :date, so it can\'t start later than that.'))],
+            'end_date' => ['bail', 'nullable', 'date', 'after_or_equal:start_date', WorkEntriesFit::endOf($this->assignment()?->workEntries(), $this->workEntriesMessage(':name has Work Entries on this Assignment up to :date, so it can\'t end earlier than that.'))],
             ...$capacityRules,
         ];
     }
@@ -89,6 +90,15 @@ class AssignmentRequest extends FormRequest
                 $validator->errors()->add($field, $refusal);
             }
         }
+    }
+
+    /**
+     * Why a date that would leave Work Entries outside the Assignment is
+     * refused, naming its Employee and leaving :date for the rule.
+     */
+    private function workEntriesMessage(string $message): string
+    {
+        return __($message, ['name' => $this->employee()->name]);
     }
 
     /**
