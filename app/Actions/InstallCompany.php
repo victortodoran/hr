@@ -78,14 +78,14 @@ class InstallCompany
         }
 
         $starters = [
-            'Admin' => ['name' => 'Admin', 'grants' => $admin, 'givenToNewEmployees' => false],
-            'Manager' => ['name' => 'Manager', 'grants' => [
+            'Admin' => ['grants' => $admin, 'givenToNewEmployees' => false],
+            'Manager' => ['grants' => [
                 Permission::ViewEmployeeRecords->value => Scope::Reports->value,
                 Permission::ViewAssignments->value => Scope::Reports->value,
                 Permission::ManageAssignments->value => Scope::Reports->value,
                 Permission::ViewProjects->value => null,
             ], 'givenToNewEmployees' => false],
-            'Employee' => ['name' => 'Employee', 'grants' => [
+            'Employee' => ['grants' => [
                 Permission::ViewDirectory->value => null,
                 Permission::ViewEmployeeRecords->value => Scope::Own->value,
                 Permission::ViewAssignments->value => Scope::Own->value,
@@ -93,9 +93,11 @@ class InstallCompany
             ], 'givenToNewEmployees' => true],
         ];
 
-        return array_map(
-            fn (array $starter): Role => $this->changeAccess->createRole($installer, $starter['name'], $starter['grants'], $starter['givenToNewEmployees']),
-            $starters,
-        );
+        $roles = [];
+        foreach ($starters as $name => $starter) {
+            $roles[$name] = $this->changeAccess->createRole($installer, $name, $starter['grants'], $starter['givenToNewEmployees']);
+        }
+
+        return $roles;
     }
 }
