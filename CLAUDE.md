@@ -24,3 +24,7 @@ New domain code under `app/` must keep the mutation score at 80% or above. CI do
 
 - **While iterating:** run only the affected test files, and run mutation with `--path` set to the `app/` files you changed.
 - **Once, before committing:** run `composer ci:check` and `composer test:mutate -- --path=app`.
+
+### Wayfinder
+
+Regenerate Wayfinder's route files with `npm run build`, which passes the form-helper flags the pages rely on.
