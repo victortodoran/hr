@@ -16,6 +16,7 @@ use App\Models\PayEntry;
 use App\Models\Project;
 use App\Support\Currency;
 use App\Support\PayHistory;
+use App\Support\ReportingChain;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -116,6 +117,7 @@ class EmployeeController extends Controller
             ],
             'record' => $canViewRecord ? $this->record($employee) : null,
             'reportsNeedingAManager' => $canViewRecord ? $this->reportsNeedingAManager($employee) : [],
+            'reportingChain' => $employee->employmentStatus() === EmploymentStatus::Former ? null : ReportingChain::of($employee, $actor),
             'assignments' => $canViewAssignments ? $this->assignments($employee, $currency) : null,
             'canManage' => $canManage,
             'projects' => $canManage ? $this->openProjects() : [],

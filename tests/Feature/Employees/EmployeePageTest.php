@@ -8,11 +8,12 @@ use App\Models\Assignment;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Policies\EmployeePolicy;
+use App\Support\ReportingChain;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 
-covers(EmployeeController::class, EmployeePolicy::class, DirectoryController::class);
+covers(EmployeeController::class, EmployeePolicy::class, DirectoryController::class, ReportingChain::class);
 
 it('shows an Employee their own record, with no Assignments or Pay when they may only see the record', function () {
     $ben = Employee::factory()->top()->create(['name' => 'Ben Ford']);
@@ -135,14 +136,41 @@ it('lists, on a Former Employee\'s page, the Employees who still report to them 
         );
 });
 
-it('links to an Employee\'s page from their Reporting Chain only when the viewer may open it', function (array $grants, bool $expected) {
+it('links to an Employee\'s page from their Reporting Chain only when the viewer may open it', function (array $grants, string $expected) {
     $ben = employeeWith([Permission::ViewDirectory->value => null, ...$grants], ['manager_id' => Employee::factory()->top()->create()->id]);
     $cara = Employee::factory()->create(['manager_id' => $ben->id]);
 
     actingAs($ben)->get(route('directory.show', $cara))
-        ->assertInertia(fn (Assert $page) => $page->where('canViewEmployeePage', $expected));
+        ->assertInertia(fn (Assert $page) => $page->where('reportingChain.employee.link', $expected));
 })->with([
-    'records of reports' => [[Permission::ViewEmployeeRecords->value => Scope::Reports], true],
-    'assignments of reports' => [[Permission::ViewAssignments->value => Scope::Reports], true],
-    'own only' => [[Permission::ViewEmployeeRecords->value => Scope::Own, Permission::ViewAssignments->value => Scope::Own], false],
+    'records of reports' => [[Permission::ViewEmployeeRecords->value => Scope::Reports], 'employee'],
+    'assignments of reports' => [[Permission::ViewAssignments->value => Scope::Reports], 'employee'],
+    'own only' => [[Permission::ViewEmployeeRecords->value => Scope::Own, Permission::ViewAssignments->value => Scope::Own], 'directory'],
 ]);
+
+it('shows an Employee\'s Reporting Chain on their page to anyone who may open it, from the top down to those they are the Manager of', function () {
+    $top = Employee::factory()->top()->create(['name' => 'Ada', 'department_id' => Department::factory()->create(['name' => 'Board'])->id]);
+    $ana = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Own], ['name' => 'Ana', 'manager_id' => $top->id]);
+    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ana->id, 'department_id' => Department::factory()->create(['name' => 'Design'])->id]);
+
+    $response = actingAs($ana)->get(route('employees.show', $ana));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('reportingChain.above', [
+            ['id' => $top->id, 'name' => 'Ada', 'job_title' => null, 'department' => 'Board', 'status' => 'current', 'link' => null],
+        ])
+        ->where('reportingChain.employee.id', $ana->id)
+        ->where('reportingChain.employee.link', 'employee')
+        ->where('reportingChain.below', [
+            ['id' => $cara->id, 'name' => 'Cara', 'job_title' => null, 'department' => 'Design', 'status' => 'current', 'link' => null],
+        ]));
+});
+
+it('shows no Reporting Chain on a Former Employee\'s page', function () {
+    $top = Employee::factory()->top()->create();
+    $gone = Employee::factory()->former()->create(['manager_id' => $top->id]);
+
+    $response = actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]))->get(route('employees.show', $gone));
+
+    $response->assertOk()->assertInertia(fn (Assert $page) => $page->where('reportingChain', null));
+});

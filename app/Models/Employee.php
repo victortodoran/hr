@@ -208,12 +208,32 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
         $managerId = self::query()->withEffectiveManager()->whereKey($this->id)->value('effective_manager_id');
 
         while ($managerId !== null) {
-            $manager = self::query()->withEffectiveManager()->with('department')->whereKey($managerId)->firstOrFail();
+            $manager = self::query()->withEffectiveManager()->with(['department', 'internalAssignment'])->whereKey($managerId)->firstOrFail();
             $chain->push($manager);
             $managerId = $manager->effective_manager_id;
         }
 
         return $chain;
+    }
+
+    /**
+     * The Employees one level below in the Employee's Reporting Chain: those
+     * whose effective Manager they are, so the Employees of a Manager who
+     * has left count under the next Manager up. Future Employees are
+     * included and Former ones left out. In name order.
+     *
+     * @return Collection<int, Employee>
+     */
+    public function managedEmployees(): Collection
+    {
+        return self::query()
+            ->fromSub(self::query()->withEffectiveManager(), 'employees')
+            ->where('effective_manager_id', $this->id)
+            ->where(fn (Builder $staying) => $staying->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today()))
+            ->with(['department', 'internalAssignment'])
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get();
     }
 
     /**
