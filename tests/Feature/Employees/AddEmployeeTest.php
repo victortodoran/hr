@@ -73,7 +73,7 @@ it('adds an Employee who already has a Leaving Date', function () {
     expect(Employee::query()->where('email', 'cara@acme.test')->sole()->leaving_date?->toDateString())->toBe('2027-05-31');
 });
 
-it('puts the new Employee on the Internal Project for their whole period of work, with no internal Job Title or share yet', function (?string $leavingDate) {
+it('puts the new Employee on the Internal Project for their whole period of work, with no internal Job Title and 0% capacity', function (?string $leavingDate) {
     actingAs(employeeWhoManagesEmployees())->post(route('employees.store'), newEmployeeDetails(['leaving_date' => $leavingDate]));
 
     $internal = Employee::query()->where('email', 'cara@acme.test')->sole()->assignments()->sole();
@@ -83,7 +83,7 @@ it('puts the new Employee on the Internal Project for their whole period of work
         ->and($internal->start_date->toDateString())->toBe('2026-12-01')
         ->and($internal->end_date?->toDateString())->toBe($leavingDate)
         ->and($internal->job_title)->toBeNull()
-        ->and($internal->share)->toBeNull();
+        ->and($internal->capacity)->toBe(0);
 })->with(['staying' => null, 'leaving' => '2027-05-31']);
 
 it('gives the new Employee every Role marked for new Employees, and no others', function () {

@@ -14,12 +14,12 @@ use Illuminate\Validation\Validator;
 use LogicException;
 
 /**
- * An Assignment's Project, Job Title, dates and share of time, when putting
+ * An Assignment's Project, Job Title, dates and Capacity, when putting
  * an Employee on a Project or changing an Assignment. The Project is chosen
  * once, when the Assignment is created. Every Assignment must fall within
  * its Employee's working period and its Project's dates. The Internal
- * Assignment only takes an internal Job Title and an optional planned share;
- * its dates follow the Employee.
+ * Assignment only takes an internal Job Title, which is optional, and a
+ * Capacity; its dates follow the Employee.
  */
 class AssignmentRequest extends FormRequest
 {
@@ -28,12 +28,14 @@ class AssignmentRequest extends FormRequest
      */
     public function rules(): array
     {
+        $capacityRules = ['capacity' => ['required', 'integer', 'between:0,100']];
+
         if ($this->assignment()?->isInternal() === true) {
             return [
                 'job_title' => ['nullable', 'string', 'max:255'],
                 'start_date' => ['prohibited'],
                 'end_date' => ['prohibited'],
-                'share' => ['nullable', 'integer', 'between:1,100'],
+                ...$capacityRules,
             ];
         }
 
@@ -46,7 +48,7 @@ class AssignmentRequest extends FormRequest
             'job_title' => ['required', 'string', 'max:255'],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'share' => ['required', 'integer', 'between:1,100'],
+            ...$capacityRules,
         ];
     }
 
@@ -138,7 +140,7 @@ class AssignmentRequest extends FormRequest
         return [
             'project_id' => __('Project'),
             'job_title' => __('Job Title'),
-            'share' => __('share of time'),
+            'capacity' => __('Capacity'),
         ];
     }
 

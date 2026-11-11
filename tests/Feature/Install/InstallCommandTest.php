@@ -80,7 +80,7 @@ it('creates the Internal Project, named after the company, with no Client or dat
         ->and($internal->end_date)->toBeNull();
 });
 
-it('puts the first Employee on the Internal Project from today, with no internal Job Title yet', function () {
+it('puts the first Employee on the Internal Project from today, with no internal Job Title and 0% capacity', function () {
     install(installOptions())->assertSuccessful();
 
     $internal = Employee::query()->sole()->assignments()->sole();
@@ -89,7 +89,7 @@ it('puts the first Employee on the Internal Project from today, with no internal
         ->and($internal->start_date->isToday())->toBeTrue()
         ->and($internal->end_date)->toBeNull()
         ->and($internal->job_title)->toBeNull()
-        ->and($internal->share)->toBeNull();
+        ->and($internal->capacity)->toBe(0);
 });
 
 it('invites the first Employee to set their password', function () {

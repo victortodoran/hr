@@ -44,7 +44,7 @@ class AssignmentController extends Controller
                     'job_title' => $assignment->job_title,
                     'start_date' => $assignment->start_date->toDateString(),
                     'end_date' => $assignment->end_date?->toDateString(),
-                    'share' => $assignment->share,
+                    'capacity' => $assignment->capacity,
                 ]),
             'canManage' => $canManage,
             'projects' => $canManage ? $this->openProjects() : [],
@@ -64,7 +64,7 @@ class AssignmentController extends Controller
     }
 
     /**
-     * Change an Assignment's Job Title, dates or share, including ending it
+     * Change an Assignment's Job Title, dates or Capacity, including ending it
      * early.
      */
     public function update(AssignmentRequest $request, Assignment $assignment): RedirectResponse

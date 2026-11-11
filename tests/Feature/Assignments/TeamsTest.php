@@ -21,9 +21,9 @@ it('shows a Project with its team, by name', function () {
     $relaunch = Project::factory()->forClient($globex)->create(['name' => 'Relaunch', 'start_date' => '2025-01-06', 'end_date' => '2026-12-31']);
     $zoe = Employee::factory()->create(['name' => 'Zoe', 'start_date' => '2025-01-06']);
     $ana = Employee::factory()->create(['name' => 'Ana', 'start_date' => '2025-01-06']);
-    $zoes = Assignment::factory()->for($zoe)->for($relaunch)->create(['job_title' => 'Designer', 'start_date' => '2025-03-01', 'end_date' => null, 'share' => 50]);
-    $anasLater = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Tech Lead', 'start_date' => '2026-01-01', 'end_date' => '2026-12-31', 'share' => 100]);
-    $anasEarlier = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'share' => 80]);
+    $zoes = Assignment::factory()->for($zoe)->for($relaunch)->create(['job_title' => 'Designer', 'start_date' => '2025-03-01', 'end_date' => null, 'capacity' => 50]);
+    $anasLater = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Tech Lead', 'start_date' => '2026-01-01', 'end_date' => '2026-12-31', 'capacity' => 100]);
+    $anasEarlier = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 80]);
     Assignment::factory()->create();
 
     actingAs(employeeWith([Permission::ViewProjects->value => null, Permission::ViewAssignments->value => Scope::Everyone]))
@@ -32,9 +32,9 @@ it('shows a Project with its team, by name', function () {
             ->component('projects/Show')
             ->where('project', ['id' => $relaunch->id, 'name' => 'Relaunch', 'client' => ['id' => $globex->id, 'name' => 'Globex'], 'start_date' => '2025-01-06', 'end_date' => '2026-12-31', 'is_internal' => false])
             ->where('team', [
-                ['id' => $anasEarlier->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'share' => 80],
-                ['id' => $anasLater->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'job_title' => 'Tech Lead', 'start_date' => '2026-01-01', 'end_date' => '2026-12-31', 'share' => 100],
-                ['id' => $zoes->id, 'employee' => ['id' => $zoe->id, 'name' => 'Zoe'], 'job_title' => 'Designer', 'start_date' => '2025-03-01', 'end_date' => null, 'share' => 50],
+                ['id' => $anasEarlier->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 80],
+                ['id' => $anasLater->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'job_title' => 'Tech Lead', 'start_date' => '2026-01-01', 'end_date' => '2026-12-31', 'capacity' => 100],
+                ['id' => $zoes->id, 'employee' => ['id' => $zoe->id, 'name' => 'Zoe'], 'job_title' => 'Designer', 'start_date' => '2025-03-01', 'end_date' => null, 'capacity' => 50],
             ]),
         );
 });
@@ -91,9 +91,9 @@ it('shows a Client with the Employees assigned to its Projects', function () {
     $audit = Project::factory()->forClient($globex)->create(['name' => 'Audit', 'start_date' => '2025-01-06']);
     $ana = Employee::factory()->create(['name' => 'Ana', 'start_date' => '2025-01-06']);
     $zoe = Employee::factory()->create(['name' => 'Zoe', 'start_date' => '2025-01-06']);
-    $zoes = Assignment::factory()->for($zoe)->for($audit)->create(['job_title' => 'Auditor', 'start_date' => '2025-02-01', 'end_date' => null, 'share' => 20]);
-    $anasRelaunch = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'share' => 80]);
-    $anasAudit = Assignment::factory()->for($ana)->for($audit)->create(['job_title' => 'Analyst', 'start_date' => '2025-03-01', 'end_date' => null, 'share' => 20]);
+    $zoes = Assignment::factory()->for($zoe)->for($audit)->create(['job_title' => 'Auditor', 'start_date' => '2025-02-01', 'end_date' => null, 'capacity' => 20]);
+    $anasRelaunch = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 80]);
+    $anasAudit = Assignment::factory()->for($ana)->for($audit)->create(['job_title' => 'Analyst', 'start_date' => '2025-03-01', 'end_date' => null, 'capacity' => 20]);
     Assignment::factory()->for(Project::factory()->forClient())->create();
 
     actingAs(employeeWith([Permission::ManageClients->value => null, Permission::ViewAssignments->value => Scope::Everyone]))
@@ -102,9 +102,9 @@ it('shows a Client with the Employees assigned to its Projects', function () {
             ->component('clients/Show')
             ->where('client', ['id' => $globex->id, 'name' => 'Globex'])
             ->where('assignments', [
-                ['id' => $anasRelaunch->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'project' => ['id' => $relaunch->id, 'name' => 'Relaunch'], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'share' => 80],
-                ['id' => $anasAudit->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'project' => ['id' => $audit->id, 'name' => 'Audit'], 'job_title' => 'Analyst', 'start_date' => '2025-03-01', 'end_date' => null, 'share' => 20],
-                ['id' => $zoes->id, 'employee' => ['id' => $zoe->id, 'name' => 'Zoe'], 'project' => ['id' => $audit->id, 'name' => 'Audit'], 'job_title' => 'Auditor', 'start_date' => '2025-02-01', 'end_date' => null, 'share' => 20],
+                ['id' => $anasRelaunch->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'project' => ['id' => $relaunch->id, 'name' => 'Relaunch'], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 80],
+                ['id' => $anasAudit->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'project' => ['id' => $audit->id, 'name' => 'Audit'], 'job_title' => 'Analyst', 'start_date' => '2025-03-01', 'end_date' => null, 'capacity' => 20],
+                ['id' => $zoes->id, 'employee' => ['id' => $zoe->id, 'name' => 'Zoe'], 'project' => ['id' => $audit->id, 'name' => 'Audit'], 'job_title' => 'Auditor', 'start_date' => '2025-02-01', 'end_date' => null, 'capacity' => 20],
             ]),
         );
 });

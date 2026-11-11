@@ -130,13 +130,14 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
 
     /**
      * Put the Employee on the Internal Project for their whole period of
-     * work, with no internal Job Title or planned share yet.
+     * work, with no internal Job Title yet and 0% capacity.
      */
     public function createInternalAssignment(): void
     {
         $this->assignments()->create([
             'project_id' => Project::internal()->id,
             ...$this->workingPeriod(),
+            'capacity' => 0,
         ]);
     }
 

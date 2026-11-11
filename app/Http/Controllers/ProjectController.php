@@ -74,7 +74,7 @@ class ProjectController extends Controller
                     'job_title' => $assignment->job_title,
                     'start_date' => $assignment->start_date->toDateString(),
                     'end_date' => $assignment->end_date?->toDateString(),
-                    'share' => $assignment->share,
+                    'capacity' => $assignment->capacity,
                 ]),
         ]);
     }

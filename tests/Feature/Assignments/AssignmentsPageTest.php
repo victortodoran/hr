@@ -23,17 +23,17 @@ it('shows an Employee their own Assignments, the Internal Assignment among them,
     $relaunch = Project::factory()->forClient($globex)->create(['name' => 'Relaunch', 'start_date' => '2025-01-06']);
     $audit = Project::factory()->create(['name' => 'Audit', 'start_date' => '2025-01-06']);
     $internal = Assignment::factory()->internal()->for($ana)->create(['job_title' => 'Developer']);
-    $later = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Tech Lead', 'start_date' => '2026-03-01', 'end_date' => null, 'share' => 40]);
-    $earlier = Assignment::factory()->for($ana)->for($audit)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'share' => 100]);
+    $later = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Tech Lead', 'start_date' => '2026-03-01', 'end_date' => null, 'capacity' => 40]);
+    $earlier = Assignment::factory()->for($ana)->for($audit)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 100]);
 
     actingAs($ana)->get(route('employees.assignments.index', $ana))
         ->assertInertia(fn (Assert $page) => $page
             ->component('assignments/Index')
             ->where('employee', ['id' => $ana->id, 'name' => 'Ana Pop'])
             ->where('assignments', [
-                ['id' => $internal->id, 'project' => ['id' => $internal->project_id, 'name' => $internal->project->name, 'client' => null, 'is_internal' => true], 'job_title' => 'Developer', 'start_date' => '2025-01-06', 'end_date' => null, 'share' => null],
-                ['id' => $earlier->id, 'project' => ['id' => $audit->id, 'name' => 'Audit', 'client' => null, 'is_internal' => false], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'share' => 100],
-                ['id' => $later->id, 'project' => ['id' => $relaunch->id, 'name' => 'Relaunch', 'client' => 'Globex', 'is_internal' => false], 'job_title' => 'Tech Lead', 'start_date' => '2026-03-01', 'end_date' => null, 'share' => 40],
+                ['id' => $internal->id, 'project' => ['id' => $internal->project_id, 'name' => $internal->project->name, 'client' => null, 'is_internal' => true], 'job_title' => 'Developer', 'start_date' => '2025-01-06', 'end_date' => null, 'capacity' => 0],
+                ['id' => $earlier->id, 'project' => ['id' => $audit->id, 'name' => 'Audit', 'client' => null, 'is_internal' => false], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 100],
+                ['id' => $later->id, 'project' => ['id' => $relaunch->id, 'name' => 'Relaunch', 'client' => 'Globex', 'is_internal' => false], 'job_title' => 'Tech Lead', 'start_date' => '2026-03-01', 'end_date' => null, 'capacity' => 40],
             ])
             ->where('canManage', false)
             ->where('projects', []),
@@ -116,7 +116,7 @@ it('lets Scope decide whose Assignments an Employee may create and change', func
         'Eve' => Employee::factory()->create(['manager_id' => $dana->id, 'start_date' => '2024-01-01']),
     ];
     $project = Project::factory()->create(['start_date' => '2024-01-01']);
-    $form = ['project_id' => $project->id, 'job_title' => 'Analyst', 'start_date' => '2026-03-01', 'end_date' => null, 'share' => 50];
+    $form = ['project_id' => $project->id, 'job_title' => 'Analyst', 'start_date' => '2026-03-01', 'end_date' => null, 'capacity' => 50];
 
     foreach ($people as $name => $employee) {
         $expected = in_array($name, $allowed, true) ? 302 : 403;

@@ -10,8 +10,8 @@ export type AssignmentRecord = {
     job_title: string | null;
     start_date: string;
     end_date: string | null;
-    /** Only empty on the Internal Assignment, where it means the leftover time. */
-    share: number | null;
+    /** A whole percentage of the Employee's time, from 0 to 100. */
+    capacity: number;
 };
 
 /**
@@ -34,5 +34,5 @@ export type TeamAssignment = {
     job_title: string | null;
     start_date: string;
     end_date: string | null;
-    share: number | null;
+    capacity: number;
 };

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Head, setLayoutProps } from '@inertiajs/vue3';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
-import ShareOfTime from '@/components/assignments/ShareOfTime.vue';
 import Heading from '@/components/Heading.vue';
 import ValueOr from '@/components/ValueOr.vue';
 import { formatPeriod } from '@/lib/dates';
@@ -48,7 +47,9 @@ setLayoutProps({
                         <th class="px-4 py-2 font-medium">Project</th>
                         <th class="px-4 py-2 font-medium">Job Title</th>
                         <th class="px-4 py-2 font-medium">Dates</th>
-                        <th class="px-4 py-2 text-right font-medium">Share</th>
+                        <th class="px-4 py-2 text-right font-medium">
+                            Capacity
+                        </th>
                         <th v-if="canManage" class="px-4 py-2">
                             <span class="sr-only">Actions</span>
                         </th>
@@ -81,7 +82,7 @@ setLayoutProps({
                             }}
                         </td>
                         <td class="px-4 py-2 text-right">
-                            <ShareOfTime :share="assignment.share" />
+                            {{ assignment.capacity }}%
                         </td>
                         <td v-if="canManage" class="px-4 py-2 text-right">
                             <AssignmentForm

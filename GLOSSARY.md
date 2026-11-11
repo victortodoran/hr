@@ -51,7 +51,7 @@ A piece of work that Employees can be assigned to, running from a start date to 
 _Avoid_: Engagement, contract, account, job
 
 **Internal Project**:
-The one built-in Project, with no Client, that represents work for the company itself. Every Employee always has an Assignment to it for their whole period of work, and the Job Title on that Assignment is their internal position. Its share of time can be planned like any other Assignment; if it isn't, it is whatever time other Assignments leave over.
+The one built-in Project, with no Client, that represents work for the company itself. Every Employee always has an Internal Assignment to it for their whole period of work.
 _Avoid_: Internal, bench, overhead, company project
 
 **Client**:
@@ -59,8 +59,16 @@ An outside organisation the company does work for. Companies that do not work fo
 _Avoid_: Customer, account, partner
 
 **Assignment**:
-An Employee working on a Project for a period of time, with a Job Title, Pay, a start date, an optional end date and a share of the Employee's time. An Employee can have Assignments to several Projects at once, and so can work for several Clients at once.
+An Employee working on a Project for a period of time, with a Job Title, Pay, a start date, an optional end date and a Capacity. An Employee can have Assignments to several Projects at once, and so can work for several Clients at once.
 _Avoid_: Allocation, staffing, placement, membership
+
+**Capacity**:
+The whole percentage of an Employee's time, from 0% to 100%, that an Assignment is set to take, as in "Cara is assigned to Relaunch with 60% capacity". Every Assignment has one, set by hand and never worked out from other Assignments. An Internal Assignment starts at 0%.
+_Avoid_: Share of time, share, allocation, percentage, FTE, load
+
+**Internal Assignment**:
+An Employee's Assignment to the Internal Project. Every Employee has exactly one, running from their Start Date to their Leaving Date. Its Job Title is the Employee's internal Job Title, the one the directory shows.
+_Avoid_: Internal position, bench
 
 **Pay**:
 What the company pays an Employee for their work on one Assignment. It is either Fixed Pay or Hourly Pay, so an Employee with several Assignments can have several kinds of Pay at once. An Assignment's Pay can change over time, and each change takes effect from a given date.
@@ -77,10 +85,6 @@ _Avoid_: Hourly rate, wage, pay rate
 **Job Title**:
 What an Employee does on a particular Assignment, such as "Senior Developer" or "Tech Lead". An Employee with several Assignments can have several Job Titles at once.
 _Avoid_: Role, position, function
-
-**Over-booked**:
-Describes an Employee whose Assignments add up to more than 100% of their time on some day. It is allowed, but flagged so someone can fix it.
-_Avoid_: Over-allocated, overloaded, overcommitted
 
 ### Access
 

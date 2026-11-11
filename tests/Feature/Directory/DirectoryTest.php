@@ -38,7 +38,7 @@ it('lists current Employees by name with only their name, email, internal Job Ti
     ]);
     Assignment::factory()->for($cara)->create(['job_title' => 'Client Lead']);
     Assignment::factory()->internal()->for($ben)->create(['job_title' => null]);
-    Assignment::factory()->internal()->for($cara)->create(['job_title' => 'Designer', 'share' => 40]);
+    Assignment::factory()->internal()->for($cara)->create(['job_title' => 'Designer', 'capacity' => 40]);
 
     actingAs($viewer)->get(route('directory.index'))
         ->assertInertia(fn (Assert $page) => $page
