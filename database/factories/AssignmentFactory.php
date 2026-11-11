@@ -29,13 +29,13 @@ class AssignmentFactory extends Factory
                 Employee::query()->whereKey($attributes['employee_id'])->value('start_date'),
                 Project::query()->whereKey($attributes['project_id'])->value('start_date'),
             ))->toDateString(),
-            'share' => fake()->randomElement([20, 50, 80, 100]),
+            'capacity' => fake()->randomElement([20, 50, 80, 100]),
         ];
     }
 
     /**
      * The Employee's Internal Assignment: to the Internal Project, over their
-     * whole period of work, with no internal Job Title or planned share yet.
+     * whole period of work, with no internal Job Title yet and 0% capacity.
      */
     public function internal(): static
     {
@@ -44,7 +44,7 @@ class AssignmentFactory extends Factory
             'job_title' => null,
             'start_date' => fn (array $attributes): string => Carbon::parse(Employee::query()->whereKey($attributes['employee_id'])->value('start_date'))->toDateString(),
             'end_date' => fn (array $attributes): ?string => Employee::query()->whereKey($attributes['employee_id'])->value('leaving_date'),
-            'share' => null,
+            'capacity' => 0,
         ]);
     }
 }

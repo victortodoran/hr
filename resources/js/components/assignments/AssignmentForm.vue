@@ -34,12 +34,9 @@ const props = defineProps<{
 
 const open = ref(false);
 const isInternal = props.assignment?.project.is_internal ?? false;
-const labels = isInternal
-    ? {
-          jobTitle: 'Internal Job Title (optional)',
-          share: 'Planned share of time (%, optional)',
-      }
-    : { jobTitle: 'Job Title', share: 'Share of time (%)' };
+const jobTitleLabel = isInternal
+    ? 'Internal Job Title (optional)'
+    : 'Job Title';
 const fieldId = (field: string): string =>
     `assignment-${field}-${props.assignment?.id ?? 'new'}`;
 
@@ -48,7 +45,7 @@ const form = useForm({
     job_title: props.assignment?.job_title ?? '',
     start_date: props.assignment?.start_date ?? '',
     end_date: props.assignment?.end_date ?? '',
-    share: String(props.assignment?.share ?? ''),
+    capacity: String(props.assignment?.capacity ?? ''),
 });
 
 function submit(): void {
@@ -57,9 +54,9 @@ function submit(): void {
         : AssignmentController.store(props.employee.id);
 
     form.transform(
-        ({ project_id, job_title, start_date, end_date, share }) => ({
+        ({ project_id, job_title, start_date, end_date, capacity }) => ({
             job_title: job_title === '' ? null : job_title,
-            share: share === '' ? null : Number(share),
+            capacity: capacity === '' ? null : Number(capacity),
             ...(isInternal
                 ? {}
                 : { start_date, end_date: end_date === '' ? null : end_date }),
@@ -97,7 +94,8 @@ function submit(): void {
                     <DialogDescription v-if="isInternal">
                         The internal Job Title is what the directory shows for
                         {{ employee.name }}. Its dates always follow their Start
-                        Date and Leaving Date.
+                        Date and Leaving Date. Its Capacity is set by hand, like
+                        any other Assignment's.
                     </DialogDescription>
                     <DialogDescription v-else-if="assignment">
                         Set an end date to end the Assignment early.
@@ -134,7 +132,7 @@ function submit(): void {
 
                 <div class="grid gap-2">
                     <Label :for="fieldId('job-title')">{{
-                        labels.jobTitle
+                        jobTitleLabel
                     }}</Label>
                     <Input
                         :id="fieldId('job-title')"
@@ -168,21 +166,17 @@ function submit(): void {
                 </div>
 
                 <div class="grid gap-2">
-                    <Label :for="fieldId('share')">{{ labels.share }}</Label>
+                    <Label :for="fieldId('capacity')">Capacity (%)</Label>
                     <Input
-                        :id="fieldId('share')"
-                        v-model="form.share"
+                        :id="fieldId('capacity')"
+                        v-model="form.capacity"
                         type="number"
-                        min="1"
+                        min="0"
                         max="100"
                         step="1"
-                        :required="!isInternal"
+                        required
                     />
-                    <p v-if="isInternal" class="text-sm text-muted-foreground">
-                        Leave empty to count whatever time other Assignments
-                        leave over.
-                    </p>
-                    <InputError :message="form.errors.share" />
+                    <InputError :message="form.errors.capacity" />
                 </div>
 
                 <DialogFooter class="gap-2">

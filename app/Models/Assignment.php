@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * An Employee working on a Project for a period of time, with a Job Title
- * and a share of their time. It always falls within the Employee's working
+ * and a Capacity. It always falls within the Employee's working
  * period and the Project's dates. Every Employee has exactly one Internal
  * Assignment, to the Internal Project, whose dates mirror their Start Date
  * and Leaving Date and whose Job Title is the one the directory shows.
@@ -26,15 +26,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $job_title Only ever empty on the Internal Assignment
  * @property Carbon $start_date
  * @property Carbon|null $end_date
- * @property int|null $share A whole percentage of the Employee's time; only
- *                           optional on the Internal Assignment, where empty means
- *                           whatever time the others leave over
+ * @property int $capacity The whole percentage of the Employee's time, from 0
+ *                         to 100, that the Assignment is set to take, always set by hand
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Employee $employee
  * @property-read Project $project
  */
-#[Fillable(['project_id', 'job_title', 'start_date', 'end_date', 'share'])] // @pest-mutate-ignore (class attributes never show as covered)
+#[Fillable(['project_id', 'job_title', 'start_date', 'end_date', 'capacity'])] // @pest-mutate-ignore (class attributes never show as covered)
 class Assignment extends Model
 {
     /** @use HasFactory<AssignmentFactory> */

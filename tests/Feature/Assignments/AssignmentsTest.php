@@ -35,7 +35,7 @@ function assignmentForm(Project $project, array $overrides = []): array
         'job_title' => 'Senior Developer',
         'start_date' => '2026-03-01',
         'end_date' => '2026-08-31',
-        'share' => 60,
+        'capacity' => 60,
         ...$overrides,
     ];
 }
@@ -56,7 +56,7 @@ it('lets an assignment manager put an Employee on a Project', function () {
         ->and($assignment->job_title)->toBe('Senior Developer')
         ->and($assignment->start_date->toDateString())->toBe('2026-03-01')
         ->and($assignment->end_date?->toDateString())->toBe('2026-08-31')
-        ->and($assignment->share)->toBe(60);
+        ->and($assignment->capacity)->toBe(60);
 });
 
 it('refuses an Assignment outside the Employee\'s working period or the Project\'s dates', function (array $employee, array $project, array $overrides, string $field, string $message) {
@@ -134,30 +134,30 @@ it('rejects an invalid Assignment and explains why', function (Closure $override
     'start date not a date' => [fn (): array => ['start_date' => 'soon'], 'start_date', 'The start date field must be a valid date.'],
     'end date not a date' => [fn (): array => ['end_date' => 'later'], 'end_date', 'The end date field must be a valid date.'],
     'end date before start' => [fn (): array => ['end_date' => '2026-02-28'], 'end_date', 'The end date field must be a date after or equal to start date.'],
-    'share missing' => [fn (): array => ['share' => ''], 'share', 'The share of time field is required.'],
-    'share not whole' => [fn (): array => ['share' => 12.5], 'share', 'The share of time field must be an integer.'],
-    'share of nothing' => [fn (): array => ['share' => 0], 'share', 'The share of time field must be between 1 and 100.'],
-    'share above all time' => [fn (): array => ['share' => 101], 'share', 'The share of time field must be between 1 and 100.'],
+    'Capacity missing' => [fn (): array => ['capacity' => ''], 'capacity', 'The Capacity field is required.'],
+    'Capacity not whole' => [fn (): array => ['capacity' => 12.5], 'capacity', 'The Capacity field must be an integer.'],
+    'Capacity below 0%' => [fn (): array => ['capacity' => -1], 'capacity', 'The Capacity field must be between 0 and 100.'],
+    'Capacity above 100%' => [fn (): array => ['capacity' => 101], 'capacity', 'The Capacity field must be between 0 and 100.'],
 ]);
 
-it('accepts the smallest and largest shares of time', function (int $share) {
+it('accepts a Capacity anywhere from 0% to 100%', function (int $capacity) {
     $ana = Employee::factory()->create(['start_date' => '2025-01-06']);
     $relaunch = Project::factory()->create(['start_date' => '2026-01-05']);
 
     actingAs(assignmentManager())
-        ->post(route('employees.assignments.store', $ana), assignmentForm($relaunch, ['share' => $share]))
+        ->post(route('employees.assignments.store', $ana), assignmentForm($relaunch, ['capacity' => $capacity]))
         ->assertSessionHasNoErrors();
 
-    expect($ana->assignments()->sole()->share)->toBe($share);
-})->with([1, 100]);
+    expect($ana->assignments()->sole()->capacity)->toBe($capacity);
+})->with([0, 60, 100]);
 
-it('lets an assignment manager change an Assignment\'s Job Title, dates and share, but not its Project', function () {
+it('lets an assignment manager change an Assignment\'s Job Title, dates and Capacity, but not its Project', function (int $capacity) {
     $ana = Employee::factory()->create(['start_date' => '2025-01-06']);
     $relaunch = Project::factory()->create(['start_date' => '2026-01-05']);
-    $assignment = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2026-02-01', 'end_date' => null, 'share' => 100]);
+    $assignment = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2026-02-01', 'end_date' => null, 'capacity' => 50]);
 
     actingAs(assignmentManager())
-        ->patch(route('assignments.update', $assignment), assignmentForm(Project::factory()->create(), ['job_title' => 'Tech Lead', 'start_date' => '2026-01-05', 'end_date' => '2026-12-31', 'share' => 40]))
+        ->patch(route('assignments.update', $assignment), assignmentForm(Project::factory()->create(), ['job_title' => 'Tech Lead', 'start_date' => '2026-01-05', 'end_date' => '2026-12-31', 'capacity' => $capacity]))
         ->assertRedirect(route('employees.assignments.index', $ana))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Assignment saved.']);
 
@@ -167,8 +167,8 @@ it('lets an assignment manager change an Assignment\'s Job Title, dates and shar
         ->and($assignment->job_title)->toBe('Tech Lead')
         ->and($assignment->start_date->toDateString())->toBe('2026-01-05')
         ->and($assignment->end_date?->toDateString())->toBe('2026-12-31')
-        ->and($assignment->share)->toBe(40);
-});
+        ->and($assignment->capacity)->toBe($capacity);
+})->with([0, 40, 100]);
 
 it('lets an assignment manager end an Assignment early', function () {
     travelTo('2026-05-10');
