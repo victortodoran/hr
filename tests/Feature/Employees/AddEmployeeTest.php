@@ -59,6 +59,14 @@ it('adds an Employee and invites them to set a password', function () {
     Notification::assertSentTo($cara, Invitation::class);
 });
 
+it('adds an Employee who already has a Leaving Date', function () {
+    actingAs(employeeWhoManagesEmployees())
+        ->post(route('employees.store'), newEmployeeDetails(['leaving_date' => '2027-05-31']))
+        ->assertSessionHasNoErrors();
+
+    expect(Employee::query()->where('email', 'cara@acme.test')->sole()->leaving_date?->toDateString())->toBe('2027-05-31');
+});
+
 it('gives the new Employee every Role marked for new Employees, and no others', function () {
     $employeeRole = Role::factory()->create(['is_given_to_new_employees' => true]);
     $handbook = Role::factory()->create(['is_given_to_new_employees' => true]);

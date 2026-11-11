@@ -47,7 +47,7 @@ class EmployeeRequest extends FormRequest
             'leaving_date' => match (true) {
                 $employee?->is_top === true => ['prohibited'], // @pest-mutate-ignore (adding has no Employee yet, and PHP reads a property of null as null)
                 $employee?->employmentStatus() === EmploymentStatus::Former => [Rule::in([$employee->leaving_date?->toDateString()])], // @pest-mutate-ignore (a Former Employee always has a Leaving Date)
-                default => ['nullable', 'date', 'after_or_equal:start_date', $this->keepsSomeoneWhoCanManageRoles($employee)],
+                default => ['bail', 'nullable', 'date', 'after_or_equal:start_date', $this->notBeforeAnAssignmentOf($employee), $this->keepsSomeoneWhoCanManageRoles($employee)],
             },
         ];
     }
@@ -78,6 +78,25 @@ class EmployeeRequest extends FormRequest
                 $fail(__(':name has an Assignment starting on :date, so their Start Date can\'t be later than that.', [
                     'name' => $employee->name,
                     'date' => Carbon::parse($firstStart)->format('j M Y'),
+                ]));
+            }
+        };
+    }
+
+    /**
+     * Refuses a Leaving Date before the start of one of the Employee's
+     * Assignments, since every Assignment falls within their working period
+     * and cutting it off there would leave it ending before it starts.
+     */
+    private function notBeforeAnAssignmentOf(?Employee $employee): Closure
+    {
+        return function (string $attribute, mixed $leavingDate, Closure $fail) use ($employee): void {
+            $lastStart = $employee?->assignments()->max('start_date');
+
+            if (is_string($lastStart) && Carbon::parse($lastStart)->isAfter(Carbon::parse($leavingDate))) {
+                $fail(__(':name has an Assignment starting on :date, so their Leaving Date can\'t be earlier than that.', [
+                    'name' => $employee->name,
+                    'date' => Carbon::parse($lastStart)->format('j M Y'),
                 ]));
             }
         };

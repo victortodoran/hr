@@ -110,20 +110,57 @@ it('leaves Assignments alone when a Leaving Date is moved later or cleared', fun
     expect(periodsOf($cara))->toBe(['2026-01-01 – 2026-06-30']);
 })->with(['moved later' => '2026-09-30', 'cleared' => null]);
 
-it('removes Assignments that would only have started after the Leaving Date', function () {
-    $cara = staffMember();
+it('refuses a Leaving Date before the start of one of the Employee\'s Assignments', function () {
+    $cara = staffMember(['name' => 'Cara']);
     $project = Project::factory()->create(['start_date' => '2024-01-01']);
     Assignment::factory()->for($cara)->for($project)->createMany([
         ['start_date' => '2026-01-01', 'end_date' => null],
-        ['start_date' => '2026-03-31', 'end_date' => null],
         ['start_date' => '2026-04-01', 'end_date' => null],
     ]);
 
     actingAs(employeeWhoManagesEmployees())
         ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['leaving_date' => '2026-03-31']))
+        ->assertSessionHasErrors(['leaving_date' => 'Cara has an Assignment starting on 1 Apr 2026, so their Leaving Date can\'t be earlier than that.']);
+
+    expect($cara->refresh()->leaving_date)->toBeNull()
+        ->and(periodsOf($cara))->toBe(['2026-01-01 – open', '2026-04-01 – open']);
+});
+
+it('lets a Leaving Date fall on the day the Employee\'s last Assignment starts', function () {
+    $cara = staffMember();
+    Assignment::factory()->for($cara)->for(Project::factory()->create(['start_date' => '2024-01-01']))->create(['start_date' => '2026-03-31', 'end_date' => null]);
+
+    actingAs(employeeWhoManagesEmployees())
+        ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['leaving_date' => '2026-03-31']))
         ->assertSessionHasNoErrors();
 
-    expect(periodsOf($cara))->toBe(['2026-01-01 – 2026-03-31', '2026-03-31 – 2026-03-31']);
+    expect(periodsOf($cara))->toBe(['2026-03-31 – 2026-03-31']);
+});
+
+it('refuses a Project end date before the start of one of its Assignments', function () {
+    $project = Project::factory()->create(['name' => 'Relaunch', 'start_date' => '2024-01-01']);
+    Assignment::factory()->for(staffMember())->for($project)->createMany([
+        ['start_date' => '2026-01-01', 'end_date' => null],
+        ['start_date' => '2026-04-01', 'end_date' => null],
+    ]);
+
+    actingAs(employeeWith([Permission::ManageProjects->value => null]))
+        ->patch(route('projects.update', $project), projectChanging($project, ['end_date' => '2026-03-31']))
+        ->assertSessionHasErrors(['end_date' => 'Relaunch has an Assignment starting on 1 Apr 2026, so it can\'t end earlier than that.']);
+
+    expect($project->refresh()->end_date)->toBeNull()
+        ->and(periodsOf($project))->toBe(['2026-01-01 – open', '2026-04-01 – open']);
+});
+
+it('lets a Project end on the day its last Assignment starts', function () {
+    $project = Project::factory()->create(['start_date' => '2024-01-01']);
+    Assignment::factory()->for(staffMember())->for($project)->create(['start_date' => '2026-03-31', 'end_date' => null]);
+
+    actingAs(employeeWith([Permission::ManageProjects->value => null]))
+        ->patch(route('projects.update', $project), projectChanging($project, ['end_date' => '2026-03-31']))
+        ->assertSessionHasNoErrors();
+
+    expect(periodsOf($project))->toBe(['2026-03-31 – 2026-03-31']);
 });
 
 it('leaves other Employees\' Assignments alone when one Employee leaves', function () {
@@ -147,7 +184,6 @@ it('cuts a Project\'s Assignments off at an end date being set or moved earlier,
     Assignment::factory()->for($cara)->for($project)->createMany([
         ['start_date' => '2025-01-01', 'end_date' => '2025-12-31'],
         ['start_date' => '2026-01-01', 'end_date' => $from],
-        ['start_date' => '2026-05-01', 'end_date' => $from],
     ]);
     Assignment::factory()->for($cara)->for($other)->create(['start_date' => '2026-01-01', 'end_date' => null]);
 
@@ -210,15 +246,18 @@ it('refuses to delete a Project that has Assignments', function () {
     expect(Project::query()->whereKey($project->id)->exists())->toBeTrue();
 });
 
-it('still explains an invalid start date for an Employee or a Project with Assignments', function () {
+it('still explains an invalid date for an Employee or a Project with Assignments', function (string $employeeField, string $employeeMessage, string $projectField, string $projectMessage) {
     $cara = staffMember();
     $project = Project::factory()->create(['start_date' => '2024-01-01']);
     Assignment::factory()->for($cara)->for($project)->create();
 
     actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['start_date' => 'soon']))
-        ->assertSessionHasErrors(['start_date' => 'The Start Date field must be a valid date.']);
+        ->patch(route('employees.update', $cara), employeeRecordChanging($cara, [$employeeField => 'soon']))
+        ->assertSessionHasErrors([$employeeField => $employeeMessage]);
     actingAs(employeeWith([Permission::ManageProjects->value => null]))
-        ->patch(route('projects.update', $project), projectChanging($project, ['start_date' => 'soon']))
-        ->assertSessionHasErrors(['start_date' => 'The start date field must be a valid date.']);
-});
+        ->patch(route('projects.update', $project), projectChanging($project, [$projectField => 'soon']))
+        ->assertSessionHasErrors([$projectField => $projectMessage]);
+})->with([
+    'start' => ['start_date', 'The Start Date field must be a valid date.', 'start_date', 'The start date field must be a valid date.'],
+    'end' => ['leaving_date', 'The Leaving Date field must be a valid date.', 'end_date', 'The end date field must be a valid date.'],
+]);
