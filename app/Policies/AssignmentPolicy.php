@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
+use App\Enums\Scope;
 use App\Models\Assignment;
 use App\Models\Employee;
 
@@ -37,5 +38,15 @@ class AssignmentPolicy
     public function update(Employee $actor, Assignment $assignment): bool
     {
         return $this->create($actor, $assignment->employee);
+    }
+
+    /**
+     * The spare-time view lists other Employees, so it needs view or manage
+     * assignments with a Scope reaching beyond the actor: reports or everyone.
+     */
+    public function viewSpareTime(Employee $actor): bool
+    {
+        return collect([Permission::ViewAssignments, Permission::ManageAssignments])
+            ->contains(fn (Permission $permission): bool => in_array($actor->widestScopeFor($permission), [Scope::Reports, Scope::Everyone], true));
     }
 }

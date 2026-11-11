@@ -65,12 +65,12 @@ class ProjectController extends Controller
             ],
             'team' => $project->assignments()
                 ->visibleTo($actor)
-                ->with('employee:id,name')
+                ->with(['employee:id,name', 'employee.assignments.project:id,is_internal']) // @pest-mutate-ignore (eager loading only saves queries)
                 ->orderByEmployeeName()
                 ->get()
                 ->map(fn (Assignment $assignment): array => [
                     'id' => $assignment->id,
-                    'employee' => $assignment->employee->only('id', 'name'),
+                    'employee' => $assignment->employee->asListed(),
                     'job_title' => $assignment->job_title,
                     'start_date' => $assignment->start_date->toDateString(),
                     'end_date' => $assignment->end_date?->toDateString(),

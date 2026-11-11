@@ -16,6 +16,8 @@ export type Auth = {
     can: string[];
     /** Whether the signed-in Employee may see their own Assignments. */
     canSeeOwnAssignments: boolean;
+    /** Whether the signed-in Employee may see who has spare time, beyond themselves. */
+    canSeeSpareTime: boolean;
 };
 
 export type Passkey = {

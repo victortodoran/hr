@@ -46,6 +46,7 @@ class AssignmentController extends Controller
                     'end_date' => $assignment->end_date?->toDateString(),
                     'share' => $assignment->share,
                 ]),
+            'overBookedFrom' => $employee->load('assignments.project')->overBookedFrom()?->toDateString(),
             'canManage' => $canManage,
             'projects' => $canManage ? $this->openProjects() : [],
         ]);
@@ -56,9 +57,9 @@ class AssignmentController extends Controller
      */
     public function store(AssignmentRequest $request, Employee $employee): RedirectResponse
     {
-        $employee->assignments()->create($request->validated());
+        $assignment = $employee->assignments()->create($request->validated());
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Assignment created.')]);
+        $this->flashSaved(__('Assignment created'), $assignment);
 
         return to_route('employees.assignments.index', $employee);
     }
@@ -71,9 +72,33 @@ class AssignmentController extends Controller
     {
         $assignment->update($request->validated());
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Assignment saved.')]);
+        $this->flashSaved(__('Assignment saved'), $assignment);
 
         return to_route('employees.assignments.index', $assignment->employee_id);
+    }
+
+    /**
+     * Confirm the save, or warn when it leaves the Employee Over-booked on a
+     * day the Assignment runs: saving still succeeds, so someone can fix the
+     * overlap later.
+     */
+    private function flashSaved(string $saved, Assignment $assignment): void
+    {
+        $employee = $assignment->employee->load('assignments.project');
+        $overBookedDay = $employee->bookings()->firstOverBookedDayFrom($assignment->start_date);
+
+        if ($overBookedDay === null || ! $assignment->booking()->runsOn($overBookedDay)) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => $saved.'.']);
+
+            return;
+        }
+
+        Inertia::flash('toast', ['type' => 'warning', 'message' => __(':saved, but :name is now Over-booked: their planned shares come to :total% on :date.', [
+            'saved' => $saved,
+            'name' => $employee->name,
+            'total' => $employee->bookings()->plannedShareOn($overBookedDay),
+            'date' => $overBookedDay->format('j M Y'),
+        ])]);
     }
 
     /**

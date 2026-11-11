@@ -2,8 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\Permission;
-use App\Enums\Scope;
+use App\Support\Booking;
 use Database\Factories\AssignmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope as QueryScope;
@@ -78,6 +77,14 @@ class Assignment extends Model
     }
 
     /**
+     * The Assignment as booking maths sees it.
+     */
+    public function booking(): Booking
+    {
+        return new Booking($this->start_date, $this->end_date, $this->share, $this->isInternal());
+    }
+
+    /**
      * Limit the query to Internal Assignments.
      *
      * @param  Builder<Assignment>  $query
@@ -110,14 +117,7 @@ class Assignment extends Model
     #[QueryScope]
     protected function visibleTo(Builder $query, Employee $actor): void
     {
-        $scopes = collect([Permission::ViewAssignments, Permission::ManageAssignments])
-            ->map(fn (Permission $permission): ?Scope => $actor->widestScopeFor($permission))
-            ->filter();
-
-        $query->whereHas('employee', fn (Builder $employees) => $employees->where(function (Builder $covered) use ($scopes, $actor): void {
-            $covered->whereRaw('false');
-            $scopes->each(fn (Scope $scope) => $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $actor)));
-        }));
+        $query->whereHas('employee', fn (Builder $employees) => $employees->whoseAssignmentsAreVisibleTo($actor));
     }
 
     /**

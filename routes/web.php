@@ -11,6 +11,7 @@ use App\Http\Controllers\EmployeeInvitationController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RoleHolderController;
+use App\Http\Controllers\SpareTimeController;
 use App\Http\Controllers\TopEmployeeController;
 use App\Models\Assignment;
 use App\Models\Employee;
@@ -43,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('employees/{employee}/assignments', [AssignmentController::class, 'index'])->middleware('can:viewAny,'.Assignment::class.',employee')->name('employees.assignments.index');
     Route::post('employees/{employee}/assignments', [AssignmentController::class, 'store'])->middleware('can:create,'.Assignment::class.',employee')->name('employees.assignments.store');
     Route::patch('assignments/{assignment}', [AssignmentController::class, 'update'])->middleware('can:update,assignment')->name('assignments.update');
+    Route::get('spare-time', [SpareTimeController::class, 'index'])->middleware('can:viewSpareTime,'.Assignment::class)->name('spare-time.index');
 
     Route::middleware('can:'.Permission::ViewDirectory->value)->group(function () {
         Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');

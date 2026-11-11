@@ -32,9 +32,9 @@ it('shows a Project with its team, by name', function () {
             ->component('projects/Show')
             ->where('project', ['id' => $relaunch->id, 'name' => 'Relaunch', 'client' => ['id' => $globex->id, 'name' => 'Globex'], 'start_date' => '2025-01-06', 'end_date' => '2026-12-31', 'is_internal' => false])
             ->where('team', [
-                ['id' => $anasEarlier->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'share' => 80],
-                ['id' => $anasLater->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'job_title' => 'Tech Lead', 'start_date' => '2026-01-01', 'end_date' => '2026-12-31', 'share' => 100],
-                ['id' => $zoes->id, 'employee' => ['id' => $zoe->id, 'name' => 'Zoe'], 'job_title' => 'Designer', 'start_date' => '2025-03-01', 'end_date' => null, 'share' => 50],
+                ['id' => $anasEarlier->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana', 'is_over_booked' => false], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'share' => 80],
+                ['id' => $anasLater->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana', 'is_over_booked' => false], 'job_title' => 'Tech Lead', 'start_date' => '2026-01-01', 'end_date' => '2026-12-31', 'share' => 100],
+                ['id' => $zoes->id, 'employee' => ['id' => $zoe->id, 'name' => 'Zoe', 'is_over_booked' => false], 'job_title' => 'Designer', 'start_date' => '2025-03-01', 'end_date' => null, 'share' => 50],
             ]),
         );
 });
@@ -102,9 +102,9 @@ it('shows a Client with the Employees assigned to its Projects', function () {
             ->component('clients/Show')
             ->where('client', ['id' => $globex->id, 'name' => 'Globex'])
             ->where('assignments', [
-                ['id' => $anasRelaunch->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'project' => ['id' => $relaunch->id, 'name' => 'Relaunch'], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'share' => 80],
-                ['id' => $anasAudit->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'project' => ['id' => $audit->id, 'name' => 'Audit'], 'job_title' => 'Analyst', 'start_date' => '2025-03-01', 'end_date' => null, 'share' => 20],
-                ['id' => $zoes->id, 'employee' => ['id' => $zoe->id, 'name' => 'Zoe'], 'project' => ['id' => $audit->id, 'name' => 'Audit'], 'job_title' => 'Auditor', 'start_date' => '2025-02-01', 'end_date' => null, 'share' => 20],
+                ['id' => $anasRelaunch->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana', 'is_over_booked' => false], 'project' => ['id' => $relaunch->id, 'name' => 'Relaunch'], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'share' => 80],
+                ['id' => $anasAudit->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana', 'is_over_booked' => false], 'project' => ['id' => $audit->id, 'name' => 'Audit'], 'job_title' => 'Analyst', 'start_date' => '2025-03-01', 'end_date' => null, 'share' => 20],
+                ['id' => $zoes->id, 'employee' => ['id' => $zoe->id, 'name' => 'Zoe', 'is_over_booked' => false], 'project' => ['id' => $audit->id, 'name' => 'Audit'], 'job_title' => 'Auditor', 'start_date' => '2025-02-01', 'end_date' => null, 'share' => 20],
             ]),
         );
 });

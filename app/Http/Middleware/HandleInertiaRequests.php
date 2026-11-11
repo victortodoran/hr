@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                 'employee' => $employee,
                 'can' => fn (): array => $employee instanceof Employee ? $employee->companyWidePermissions() : [],
                 'canSeeOwnAssignments' => fn (): bool => $employee instanceof Employee && $employee->can('viewAny', [Assignment::class, $employee]),
+                'canSeeSpareTime' => fn (): bool => $employee instanceof Employee && $employee->can('viewSpareTime', Assignment::class),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import OverBookedBadge from '@/components/assignments/OverBookedBadge.vue';
 import ShareOfTime from '@/components/assignments/ShareOfTime.vue';
 import ValueOr from '@/components/ValueOr.vue';
 import { formatPeriod } from '@/lib/dates';
@@ -35,6 +36,10 @@ defineProps<{
                             class="underline-offset-4 hover:underline"
                             >{{ assignment.employee.name }}</Link
                         >
+                        <OverBookedBadge
+                            v-if="assignment.employee.is_over_booked"
+                            class="ml-2"
+                        />
                     </td>
                     <td v-if="showProject" class="px-4 py-2">
                         {{ assignment.project?.name }}

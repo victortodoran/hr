@@ -6,6 +6,8 @@ use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Notifications\Invitation;
+use App\Support\Booking;
+use App\Support\Bookings;
 use Carbon\CarbonInterface;
 use Database\Factories\EmployeeFactory;
 use Illuminate\Auth\Passwords\PasswordBroker;
@@ -114,6 +116,37 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function internalAssignment(): HasOne
     {
         return $this->hasOne(Assignment::class)->internal();
+    }
+
+    /**
+     * Their Assignments as booking maths sees them, to work out planned and
+     * internal time and whether they are Over-booked. Load
+     * assignments.project first when doing this for many Employees.
+     */
+    public function bookings(): Bookings
+    {
+        return new Bookings($this->assignments->map(fn (Assignment $assignment): Booking => $assignment->booking())->all());
+    }
+
+    /**
+     * The first day, today or later, when the Employee is Over-booked, or
+     * null when they aren't. Days already past aren't flagged, since nothing
+     * can be done about them.
+     */
+    public function overBookedFrom(): ?CarbonInterface
+    {
+        return $this->bookings()->firstOverBookedDayFrom(today());
+    }
+
+    /**
+     * The Employee as a list of people shows them: name, and whether they
+     * are Over-booked today or later. Load assignments.project first.
+     *
+     * @return array{id: int, name: string, is_over_booked: bool}
+     */
+    public function asListed(): array
+    {
+        return ['id' => $this->id, 'name' => $this->name, 'is_over_booked' => $this->overBookedFrom() !== null];
     }
 
     /**
@@ -340,6 +373,26 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
                 SELECT id FROM below
             )
             SQL, [$manager->id]);
+    }
+
+    /**
+     * Limit the query to the Employees whose Assignments the actor may see:
+     * those covered by their view assignments Scope or their manage
+     * assignments Scope, matching AssignmentPolicy::viewAny().
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function whoseAssignmentsAreVisibleTo(Builder $query, Employee $actor): void
+    {
+        $scopes = collect([Permission::ViewAssignments, Permission::ManageAssignments])
+            ->map(fn (Permission $permission): ?Scope => $actor->widestScopeFor($permission))
+            ->filter();
+
+        $query->where(function (Builder $covered) use ($scopes, $actor): void {
+            $covered->whereRaw('false');
+            $scopes->each(fn (Scope $scope) => $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $actor)));
+        });
     }
 
     /**

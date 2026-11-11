@@ -25,11 +25,25 @@ export type OpenProject = Choice & {
 };
 
 /**
+ * An Employee in a list of people, flagged when Over-booked today or later.
+ */
+export type ListedEmployee = Choice & { is_over_booked: boolean };
+
+/**
+ * Someone with internal time above 0% on a day, as the spare-time view lists
+ * them.
+ */
+export type SpareTimeEntry = ListedEmployee & {
+    job_title: string | null;
+    internal_time: number;
+};
+
+/**
  * Someone's Assignment as a Project's team or a Client's page lists it.
  */
 export type TeamAssignment = {
     id: number;
-    employee: Choice;
+    employee: ListedEmployee;
     project?: Choice;
     job_title: string | null;
     start_date: string;

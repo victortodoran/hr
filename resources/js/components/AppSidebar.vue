@@ -5,6 +5,7 @@ import {
     BriefcaseBusiness,
     Briefcase,
     Building2,
+    CalendarClock,
     FolderKanban,
     FolderGit2,
     LayoutGrid,
@@ -32,6 +33,7 @@ import { index as directory } from '@/routes/directory';
 import { index as assignments } from '@/routes/employees/assignments';
 import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
+import { index as spareTime } from '@/routes/spare-time';
 import type { NavItem } from '@/types';
 
 const page = usePage();
@@ -50,6 +52,9 @@ const mainNavItems = computed<NavItem[]>(() => [
                   icon: BriefcaseBusiness,
               },
           ]
+        : []),
+    ...(page.props.auth.canSeeSpareTime
+        ? [{ title: 'Spare time', href: spareTime(), icon: CalendarClock }]
         : []),
     ...(page.props.auth.can.includes('view-directory')
         ? [{ title: 'Directory', href: directory(), icon: Users }]

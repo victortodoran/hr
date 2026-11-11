@@ -3,14 +3,16 @@ import { Head, setLayoutProps } from '@inertiajs/vue3';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
 import ShareOfTime from '@/components/assignments/ShareOfTime.vue';
 import Heading from '@/components/Heading.vue';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import ValueOr from '@/components/ValueOr.vue';
-import { formatPeriod } from '@/lib/dates';
+import { formatDate, formatPeriod } from '@/lib/dates';
 import { index } from '@/routes/employees/assignments';
 import type { AssignmentRecord, Choice, OpenProject } from '@/types';
 
 const props = defineProps<{
     employee: Choice;
     assignments: AssignmentRecord[];
+    overBookedFrom: string | null;
     canManage: boolean;
     projects: OpenProject[];
 }>();
@@ -40,6 +42,14 @@ setLayoutProps({
                 :projects="projects"
             />
         </div>
+
+        <Alert v-if="overBookedFrom" variant="destructive">
+            <AlertTitle>{{ employee.name }} is Over-booked</AlertTitle>
+            <AlertDescription>
+                Their planned shares go above 100% from
+                {{ formatDate(overBookedFrom) }}.
+            </AlertDescription>
+        </Alert>
 
         <div class="overflow-x-auto rounded-lg border">
             <table class="w-full text-sm">
