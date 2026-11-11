@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import ShareOfTime from '@/components/assignments/ShareOfTime.vue';
+import ValueOr from '@/components/ValueOr.vue';
 import { formatPeriod } from '@/lib/dates';
 import { index } from '@/routes/employees/assignments';
 import type { TeamAssignment } from '@/types';
@@ -37,7 +39,9 @@ defineProps<{
                     <td v-if="showProject" class="px-4 py-2">
                         {{ assignment.project?.name }}
                     </td>
-                    <td class="px-4 py-2">{{ assignment.job_title }}</td>
+                    <td class="px-4 py-2">
+                        <ValueOr :value="assignment.job_title" />
+                    </td>
                     <td class="px-4 py-2">
                         {{
                             formatPeriod(
@@ -47,7 +51,7 @@ defineProps<{
                         }}
                     </td>
                     <td class="px-4 py-2 text-right">
-                        {{ assignment.share }}%
+                        <ShareOfTime :share="assignment.share" />
                     </td>
                 </tr>
                 <tr v-if="assignments.length === 0">

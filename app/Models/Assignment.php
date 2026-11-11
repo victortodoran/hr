@@ -16,15 +16,19 @@ use Illuminate\Support\Carbon;
 /**
  * An Employee working on a Project for a period of time, with a Job Title
  * and a share of their time. It always falls within the Employee's working
- * period and the Project's dates.
+ * period and the Project's dates. Every Employee has exactly one Internal
+ * Assignment, to the Internal Project, whose dates mirror their Start Date
+ * and Leaving Date and whose Job Title is the one the directory shows.
  *
  * @property int $id
  * @property int $employee_id
  * @property int $project_id
- * @property string $job_title
+ * @property string|null $job_title Only ever empty on the Internal Assignment
  * @property Carbon $start_date
  * @property Carbon|null $end_date
- * @property int|null $share A whole percentage of the Employee's time
+ * @property int|null $share A whole percentage of the Employee's time; only
+ *                           optional on the Internal Assignment, where empty means
+ *                           whatever time the others leave over
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Employee $employee
@@ -63,6 +67,37 @@ class Assignment extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Whether this is the Employee's Internal Assignment.
+     */
+    public function isInternal(): bool
+    {
+        return $this->project->is_internal;
+    }
+
+    /**
+     * Limit the query to Internal Assignments.
+     *
+     * @param  Builder<Assignment>  $query
+     */
+    #[QueryScope]
+    protected function internal(Builder $query): void
+    {
+        $query->whereRelation('project', 'is_internal', true);
+    }
+
+    /**
+     * Limit the query to Assignments to Projects other than the Internal
+     * Project.
+     *
+     * @param  Builder<Assignment>  $query
+     */
+    #[QueryScope]
+    protected function notInternal(Builder $query): void
+    {
+        $query->whereRelation('project', 'is_internal', false);
     }
 
     /**

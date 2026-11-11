@@ -212,16 +212,3 @@ it('lets an Assignment on a finished Project still be corrected', function () {
 
     expect($assignment->refresh()->job_title)->toBe('Senior Developer');
 });
-
-it('lets an Assignment on the Internal Project be changed without Project dates to keep to', function () {
-    $assignment = Assignment::factory()
-        ->for(Employee::factory()->create(['start_date' => '2025-01-06']))
-        ->for(Project::factory()->internal())
-        ->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => null]);
-
-    actingAs(assignmentManager())
-        ->patch(route('assignments.update', $assignment), assignmentForm($assignment->project, ['job_title' => 'Mentor', 'start_date' => '2025-01-06', 'end_date' => null]))
-        ->assertSessionHasNoErrors();
-
-    expect($assignment->refresh()->job_title)->toBe('Mentor');
-});

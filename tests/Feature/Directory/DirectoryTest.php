@@ -2,6 +2,7 @@
 
 use App\Enums\Permission;
 use App\Http\Controllers\DirectoryController;
+use App\Models\Assignment;
 use App\Models\Department;
 use App\Models\Employee;
 use Illuminate\Support\Facades\DB;
@@ -9,7 +10,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 
-covers(DirectoryController::class, Employee::class);
+covers(DirectoryController::class, Employee::class, Assignment::class);
 
 /**
  * An Employee who may browse the directory, like everyone with the starter
@@ -22,7 +23,7 @@ function colleague(array $attributes = []): Employee
     return employeeWith([Permission::ViewDirectory->value => null], ['name' => 'Zoe Viewer', ...$attributes]);
 }
 
-it('lists current Employees by name with only their name, email, Department and Manager', function () {
+it('lists current Employees by name with only their name, email, internal Job Title, Department and Manager', function () {
     $viewer = colleague();
     $ben = Employee::factory()->create([
         'name' => 'Ben Manager',
@@ -35,6 +36,9 @@ it('lists current Employees by name with only their name, email, Department and 
         'department_id' => Department::factory()->create(['name' => 'Design'])->id,
         'manager_id' => $ben->id,
     ]);
+    Assignment::factory()->for($cara)->create(['job_title' => 'Client Lead']);
+    Assignment::factory()->internal()->for($ben)->create(['job_title' => null]);
+    Assignment::factory()->internal()->for($cara)->create(['job_title' => 'Designer', 'share' => 40]);
 
     actingAs($viewer)->get(route('directory.index'))
         ->assertInertia(fn (Assert $page) => $page
@@ -44,6 +48,7 @@ it('lists current Employees by name with only their name, email, Department and 
                 ->where('id', $ben->id)
                 ->where('name', 'Ben Manager')
                 ->where('email', 'ben@acme.test')
+                ->where('job_title', null)
                 ->where('department', 'Engineering')
                 ->where('manager', null),
             )
@@ -51,6 +56,7 @@ it('lists current Employees by name with only their name, email, Department and 
                 ->where('id', $cara->id)
                 ->where('name', 'Cara Report')
                 ->where('email', 'cara@acme.test')
+                ->where('job_title', 'Designer')
                 ->where('department', 'Design')
                 ->where('manager', ['id' => $ben->id, 'name' => 'Ben Manager']),
             )

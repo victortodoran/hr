@@ -8,8 +8,10 @@ use App\Enums\Scope;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Requests\EmployeeRequest;
 use App\Models\AccessLogEntry;
+use App\Models\Assignment;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Project;
 use App\Models\Role;
 use App\Notifications\Invitation;
 use App\Policies\EmployeePolicy;
@@ -21,9 +23,12 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
 
-covers(EmployeeController::class, EmployeeRequest::class, EmployeePolicy::class, AddEmployee::class, ChangeAccess::class, Employee::class, AssignmentsFit::class);
+covers(Assignment::class, Project::class, EmployeeController::class, EmployeeRequest::class, EmployeePolicy::class, AddEmployee::class, ChangeAccess::class, Employee::class, AssignmentsFit::class);
 
-beforeEach(fn () => Notification::fake());
+beforeEach(function () {
+    Notification::fake();
+    Project::factory()->internal()->create(['name' => 'Acme Software']);
+});
 
 /**
  * @param  array<string, mixed>  $overrides
@@ -67,6 +72,19 @@ it('adds an Employee who already has a Leaving Date', function () {
 
     expect(Employee::query()->where('email', 'cara@acme.test')->sole()->leaving_date?->toDateString())->toBe('2027-05-31');
 });
+
+it('puts the new Employee on the Internal Project for their whole period of work, with no internal Job Title or share yet', function (?string $leavingDate) {
+    actingAs(employeeWhoManagesEmployees())->post(route('employees.store'), newEmployeeDetails(['leaving_date' => $leavingDate]));
+
+    $internal = Employee::query()->where('email', 'cara@acme.test')->sole()->assignments()->sole();
+
+    expect($internal->project->name)->toBe('Acme Software')
+        ->and($internal->isInternal())->toBeTrue()
+        ->and($internal->start_date->toDateString())->toBe('2026-12-01')
+        ->and($internal->end_date?->toDateString())->toBe($leavingDate)
+        ->and($internal->job_title)->toBeNull()
+        ->and($internal->share)->toBeNull();
+})->with(['staying' => null, 'leaving' => '2027-05-31']);
 
 it('gives the new Employee every Role marked for new Employees, and no others', function () {
     $employeeRole = Role::factory()->create(['is_given_to_new_employees' => true]);

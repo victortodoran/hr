@@ -5,6 +5,7 @@ import { ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import ValueOr from '@/components/ValueOr.vue';
 import { index, show } from '@/routes/directory';
 import type { DirectoryEntry, Paginated } from '@/types';
 
@@ -54,6 +55,7 @@ const searchDirectory = useDebounceFn(() => {
                     <tr>
                         <th class="px-4 py-2 font-medium">Name</th>
                         <th class="px-4 py-2 font-medium">Email</th>
+                        <th class="px-4 py-2 font-medium">Job Title</th>
                         <th class="px-4 py-2 font-medium">Department</th>
                         <th class="px-4 py-2 font-medium">Manager</th>
                     </tr>
@@ -74,6 +76,9 @@ const searchDirectory = useDebounceFn(() => {
                                 >{{ employee.email }}</a
                             >
                         </td>
+                        <td class="px-4 py-2">
+                            <ValueOr :value="employee.job_title" />
+                        </td>
                         <td class="px-4 py-2">{{ employee.department }}</td>
                         <td class="px-4 py-2">
                             <Link
@@ -89,7 +94,7 @@ const searchDirectory = useDebounceFn(() => {
                     </tr>
                     <tr v-if="employees.data.length === 0">
                         <td
-                            colspan="4"
+                            colspan="5"
                             class="px-4 py-6 text-center text-muted-foreground"
                         >
                             No Employees match “{{ search }}”.

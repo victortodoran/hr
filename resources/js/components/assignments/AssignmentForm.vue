@@ -33,6 +33,13 @@ const props = defineProps<{
 }>();
 
 const open = ref(false);
+const isInternal = props.assignment?.project.is_internal ?? false;
+const labels = isInternal
+    ? {
+          jobTitle: 'Internal Job Title (optional)',
+          share: 'Planned share of time (%, optional)',
+      }
+    : { jobTitle: 'Job Title', share: 'Share of time (%)' };
 const fieldId = (field: string): string =>
     `assignment-${field}-${props.assignment?.id ?? 'new'}`;
 
@@ -41,7 +48,7 @@ const form = useForm({
     job_title: props.assignment?.job_title ?? '',
     start_date: props.assignment?.start_date ?? '',
     end_date: props.assignment?.end_date ?? '',
-    share: props.assignment ? String(props.assignment.share) : '',
+    share: String(props.assignment?.share ?? ''),
 });
 
 function submit(): void {
@@ -49,12 +56,16 @@ function submit(): void {
         ? AssignmentController.update(props.assignment.id)
         : AssignmentController.store(props.employee.id);
 
-    form.transform(({ project_id, end_date, share, ...data }) => ({
-        ...data,
-        ...(props.assignment ? {} : { project_id: Number(project_id) }),
-        end_date: end_date === '' ? null : end_date,
-        share: share === '' ? null : Number(share),
-    })).submit(action, {
+    form.transform(
+        ({ project_id, job_title, start_date, end_date, share }) => ({
+            job_title: job_title === '' ? null : job_title,
+            share: share === '' ? null : Number(share),
+            ...(isInternal
+                ? {}
+                : { start_date, end_date: end_date === '' ? null : end_date }),
+            ...(props.assignment ? {} : { project_id: Number(project_id) }),
+        }),
+    ).submit(action, {
         preserveScroll: true,
         onSuccess: () => {
             open.value = false;
@@ -78,10 +89,17 @@ function submit(): void {
                 <DialogHeader>
                     <DialogTitle>{{
                         assignment
-                            ? `Edit Assignment to ${assignment.project.name}`
+                            ? isInternal
+                                ? 'Edit Internal Assignment'
+                                : `Edit Assignment to ${assignment.project.name}`
                             : `Assign ${employee.name} to a Project`
                     }}</DialogTitle>
-                    <DialogDescription v-if="assignment">
+                    <DialogDescription v-if="isInternal">
+                        The internal Job Title is what the directory shows for
+                        {{ employee.name }}. Its dates always follow their Start
+                        Date and Leaving Date.
+                    </DialogDescription>
+                    <DialogDescription v-else-if="assignment">
                         Set an end date to end the Assignment early.
                     </DialogDescription>
                 </DialogHeader>
@@ -115,17 +133,19 @@ function submit(): void {
                 </div>
 
                 <div class="grid gap-2">
-                    <Label :for="fieldId('job-title')">Job Title</Label>
+                    <Label :for="fieldId('job-title')">{{
+                        labels.jobTitle
+                    }}</Label>
                     <Input
                         :id="fieldId('job-title')"
                         v-model="form.job_title"
                         placeholder="e.g. Senior Developer"
-                        required
+                        :required="!isInternal"
                     />
                     <InputError :message="form.errors.job_title" />
                 </div>
 
-                <div class="grid gap-4 sm:grid-cols-2">
+                <div v-if="!isInternal" class="grid gap-4 sm:grid-cols-2">
                     <div class="grid gap-2">
                         <Label :for="fieldId('start')">Start date</Label>
                         <Input
@@ -148,7 +168,7 @@ function submit(): void {
                 </div>
 
                 <div class="grid gap-2">
-                    <Label :for="fieldId('share')">Share of time (%)</Label>
+                    <Label :for="fieldId('share')">{{ labels.share }}</Label>
                     <Input
                         :id="fieldId('share')"
                         v-model="form.share"
@@ -156,8 +176,12 @@ function submit(): void {
                         min="1"
                         max="100"
                         step="1"
-                        required
+                        :required="!isInternal"
                     />
+                    <p v-if="isInternal" class="text-sm text-muted-foreground">
+                        Leave empty to count whatever time other Assignments
+                        leave over.
+                    </p>
                     <InputError :message="form.errors.share" />
                 </div>
 

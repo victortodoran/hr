@@ -5,11 +5,13 @@ import type { Choice } from './employee-record';
  */
 export type AssignmentRecord = {
     id: number;
-    project: Choice & { client: string | null };
-    job_title: string;
+    project: Choice & { client: string | null; is_internal: boolean };
+    /** Only empty on the Internal Assignment, before an internal Job Title is set. */
+    job_title: string | null;
     start_date: string;
     end_date: string | null;
-    share: number;
+    /** Only empty on the Internal Assignment, where it means the leftover time. */
+    share: number | null;
 };
 
 /**
@@ -29,8 +31,8 @@ export type TeamAssignment = {
     id: number;
     employee: Choice;
     project?: Choice;
-    job_title: string;
+    job_title: string | null;
     start_date: string;
     end_date: string | null;
-    share: number;
+    share: number | null;
 };
