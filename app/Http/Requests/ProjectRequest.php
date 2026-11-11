@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Models\Client;
+use App\Models\Project;
+use App\Rules\AssignmentsFit;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -17,11 +19,14 @@ class ProjectRequest extends FormRequest
      */
     public function rules(): array
     {
+        $project = $this->route('project');
+        $project = $project instanceof Project ? $project : null; // @pest-mutate-ignore (the route parameter is always a Project or absent)
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'client_id' => ['nullable', 'integer', Rule::exists(Client::class, 'id')],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'start_date' => ['bail', 'required', 'date', AssignmentsFit::startOf($project, ':name has an Assignment starting on :date, so it can\'t start later than that.')],
+            'end_date' => ['bail', 'nullable', 'date', 'after_or_equal:start_date', AssignmentsFit::endOf($project, ':name has an Assignment starting on :date, so it can\'t end earlier than that.')],
         ];
     }
 

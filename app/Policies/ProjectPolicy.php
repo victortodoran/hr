@@ -23,6 +23,15 @@ class ProjectPolicy
     }
 
     /**
+     * Seeing a Project and its team needs the same as seeing the Projects.
+     * The team itself only lists the Assignments the viewer may see.
+     */
+    public function view(Employee $actor, Project $project): bool
+    {
+        return $this->viewAny($actor);
+    }
+
+    /**
      * Creating a Project needs manage projects.
      */
     public function create(Employee $actor): bool

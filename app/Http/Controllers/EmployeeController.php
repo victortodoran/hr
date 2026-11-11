@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\AddEmployee;
+use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\EmploymentStatus;
 use App\Http\Requests\EmployeeRequest;
 use App\Models\Department;
@@ -66,11 +67,12 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Save changes to an Employee's record.
+     * Save changes to an Employee's record. Their Assignments are trimmed
+     * to end by their Leaving Date in the same transaction.
      */
-    public function update(EmployeeRequest $request, Employee $employee): RedirectResponse
+    public function update(EmployeeRequest $request, Employee $employee, UpdateTrimmingAssignments $updateTrimming): RedirectResponse
     {
-        $employee->update($request->validated());
+        $updateTrimming->updateEmployee($employee, $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Employee updated.')]);
 

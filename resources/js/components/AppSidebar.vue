@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     BookOpen,
+    BriefcaseBusiness,
     Briefcase,
     Building2,
     FolderKanban,
@@ -28,6 +29,7 @@ import { dashboard } from '@/routes';
 import { index as clients } from '@/routes/clients';
 import { index as departments } from '@/routes/departments';
 import { index as directory } from '@/routes/directory';
+import { index as assignments } from '@/routes/employees/assignments';
 import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import type { NavItem } from '@/types';
@@ -40,6 +42,15 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    ...(page.props.auth.canSeeOwnAssignments
+        ? [
+              {
+                  title: 'My Assignments',
+                  href: assignments(page.props.auth.employee.id),
+                  icon: BriefcaseBusiness,
+              },
+          ]
+        : []),
     ...(page.props.auth.can.includes('view-directory')
         ? [{ title: 'Directory', href: directory(), icon: Users }]
         : []),

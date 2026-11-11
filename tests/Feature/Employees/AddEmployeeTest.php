@@ -13,6 +13,7 @@ use App\Models\Employee;
 use App\Models\Role;
 use App\Notifications\Invitation;
 use App\Policies\EmployeePolicy;
+use App\Rules\AssignmentsFit;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -20,7 +21,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
 
-covers(EmployeeController::class, EmployeeRequest::class, EmployeePolicy::class, AddEmployee::class, ChangeAccess::class, Employee::class);
+covers(EmployeeController::class, EmployeeRequest::class, EmployeePolicy::class, AddEmployee::class, ChangeAccess::class, Employee::class, AssignmentsFit::class);
 
 beforeEach(fn () => Notification::fake());
 
@@ -57,6 +58,14 @@ it('adds an Employee and invites them to set a password', function () {
         ->and($cara->hasPendingInvitation())->toBeTrue();
 
     Notification::assertSentTo($cara, Invitation::class);
+});
+
+it('adds an Employee who already has a Leaving Date', function () {
+    actingAs(employeeWhoManagesEmployees())
+        ->post(route('employees.store'), newEmployeeDetails(['leaving_date' => '2027-05-31']))
+        ->assertSessionHasNoErrors();
+
+    expect(Employee::query()->where('email', 'cara@acme.test')->sole()->leaving_date?->toDateString())->toBe('2027-05-31');
 });
 
 it('gives the new Employee every Role marked for new Employees, and no others', function () {

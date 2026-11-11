@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ClientRequest;
+use App\Models\Assignment;
 use App\Models\Client;
+use App\Models\Employee;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -22,6 +25,32 @@ class ClientController extends Controller
     {
         return Inertia::render('clients/Index', [
             'clients' => Client::query()->select(['id', 'name'])->withCount('projects')->orderBy('name')->get(),
+        ]);
+    }
+
+    /**
+     * Show a Client and who works for it: the Assignments to its Projects
+     * that the viewer may see, by Employee and then from the earliest.
+     */
+    public function show(#[CurrentUser] Employee $actor, Client $client): Response
+    {
+        return Inertia::render('clients/Show', [
+            'client' => $client->only('id', 'name'),
+            'assignments' => Assignment::query()
+                ->whereIn('project_id', $client->projects()->select('id'))
+                ->visibleTo($actor)
+                ->with(['employee:id,name', 'project:id,name']) // @pest-mutate-ignore (eager loading only saves queries)
+                ->orderByEmployeeName()
+                ->get()
+                ->map(fn (Assignment $assignment): array => [
+                    'id' => $assignment->id,
+                    'employee' => $assignment->employee->only('id', 'name'),
+                    'project' => $assignment->project->only('id', 'name'),
+                    'job_title' => $assignment->job_title,
+                    'start_date' => $assignment->start_date->toDateString(),
+                    'end_date' => $assignment->end_date?->toDateString(),
+                    'share' => $assignment->share,
+                ]),
         ]);
     }
 

@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\UpdateTrimmingAssignments;
 use App\Http\Requests\ProjectRequest;
+use App\Models\Assignment;
 use App\Models\Client;
+use App\Models\Employee;
 use App\Models\Project;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,8 +37,7 @@ class ProjectController extends Controller
                 'id' => $project->id,
                 'name' => $project->name,
                 'client' => $project->client?->only('id', 'name'),
-                'start_date' => $project->start_date?->toDateString(),
-                'end_date' => $project->end_date?->toDateString(),
+                ...$project->dates(),
                 'is_internal' => $project->is_internal,
             ]);
 
@@ -42,6 +46,36 @@ class ProjectController extends Controller
             'clients' => Gate::allows('create', Project::class)
                 ? Client::query()->orderBy('name')->get(['id', 'name'])
                 : [],
+        ]);
+    }
+
+    /**
+     * Show a Project and its team: the Assignments to it that the viewer may
+     * see, by Employee and then from the earliest.
+     */
+    public function show(#[CurrentUser] Employee $actor, Project $project): Response
+    {
+        return Inertia::render('projects/Show', [
+            'project' => [
+                'id' => $project->id,
+                'name' => $project->name,
+                'client' => $project->client?->only('id', 'name'),
+                ...$project->dates(),
+                'is_internal' => $project->is_internal,
+            ],
+            'team' => $project->assignments()
+                ->visibleTo($actor)
+                ->with('employee:id,name')
+                ->orderByEmployeeName()
+                ->get()
+                ->map(fn (Assignment $assignment): array => [
+                    'id' => $assignment->id,
+                    'employee' => $assignment->employee->only('id', 'name'),
+                    'job_title' => $assignment->job_title,
+                    'start_date' => $assignment->start_date->toDateString(),
+                    'end_date' => $assignment->end_date?->toDateString(),
+                    'share' => $assignment->share,
+                ]),
         ]);
     }
 
@@ -58,11 +92,12 @@ class ProjectController extends Controller
     }
 
     /**
-     * Change a Project's name, dates or Client.
+     * Change a Project's name, dates or Client. Its Assignments are trimmed
+     * to end by its end date in the same transaction.
      */
-    public function update(ProjectRequest $request, Project $project): RedirectResponse
+    public function update(ProjectRequest $request, Project $project, UpdateTrimmingAssignments $updateTrimming): RedirectResponse
     {
-        $project->update($request->validated());
+        $updateTrimming->updateProject($project, $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project saved.')]);
 
@@ -70,10 +105,17 @@ class ProjectController extends Controller
     }
 
     /**
-     * Delete a Project.
+     * Delete a Project, refusing once anyone has been assigned to it, since
+     * that work is part of their record.
      */
     public function destroy(Project $project): RedirectResponse
     {
+        if ($project->assignments()->exists()) {
+            throw ValidationException::withMessages([
+                'project' => __(':project has Assignments, so it can\'t be deleted. Set an end date instead.', ['project' => $project->name]),
+            ]);
+        }
+
         $project->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project deleted.')]);

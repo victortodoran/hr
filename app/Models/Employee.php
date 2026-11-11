@@ -6,6 +6,7 @@ use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Notifications\Invitation;
+use Carbon\CarbonInterface;
 use Database\Factories\EmployeeFactory;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -23,7 +24,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
@@ -95,6 +95,38 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * The Projects the Employee works on, and when.
+     *
+     * @return HasMany<Assignment, $this>
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
+    /**
+     * Why an Assignment over the period wouldn't fit the Employee's working
+     * period, by the field to blame; empty when it fits. A null end means
+     * the Assignment is open-ended.
+     *
+     * @return array<'start_date'|'end_date', string>
+     */
+    public function assignmentRefusals(CarbonInterface $start, ?CarbonInterface $end): array
+    {
+        $refusals = [];
+
+        if ($start->isBefore($this->start_date)) {
+            $refusals['start_date'] = __(':name\'s Start Date is :date, so the Assignment can\'t start before it.', ['name' => $this->name, 'date' => $this->start_date->format('j M Y')]);
+        }
+
+        if ($this->leaving_date !== null && ($end === null || $end->isAfter($this->leaving_date))) {
+            $refusals['end_date'] = __(':name\'s Leaving Date is :date, so the Assignment must end by then.', ['name' => $this->name, 'date' => $this->leaving_date->format('j M Y')]);
+        }
+
+        return $refusals;
+    }
+
+    /**
      * The Employee they report to; only the top Employee has none.
      *
      * @return BelongsTo<Employee, $this>
@@ -163,14 +195,7 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
      */
     public function hasInReports(Employee $other): bool
     {
-        return DB::scalar(<<<'SQL'
-            WITH RECURSIVE chain AS (
-                SELECT manager_id FROM employees WHERE id = ?
-                UNION
-                SELECT employees.manager_id FROM employees JOIN chain ON employees.id = chain.manager_id
-            )
-            SELECT EXISTS (SELECT 1 FROM chain WHERE manager_id = ?)
-            SQL, [$other->id, $this->id]) === true;
+        return self::query()->reportsOf($this)->whereKey($other->id)->exists();
     }
 
     /**
@@ -258,6 +283,27 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
         $query->whereDate('start_date', '<=', today())
             ->whereNull('leaving_date')
             ->whereHas('roles.permissions', fn (Builder $grants) => $grants->where('permission', Permission::ManageRoles));
+    }
+
+    /**
+     * Limit the query to the Manager's Reports: everyone below them in the
+     * reporting line, the same Employees hasInReports() accepts.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function reportsOf(Builder $query, Employee $manager): void
+    {
+        $query->whereRaw(<<<'SQL'
+            employees.id IN (
+                WITH RECURSIVE below AS (
+                    SELECT id FROM employees WHERE manager_id = ?
+                    UNION
+                    SELECT employees.id FROM employees JOIN below ON employees.manager_id = below.id
+                )
+                SELECT id FROM below
+            )
+            SQL, [$manager->id]);
     }
 
     /**

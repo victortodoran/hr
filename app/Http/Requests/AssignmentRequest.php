@@ -1,0 +1,120 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\Assignment;
+use App\Models\Employee;
+use App\Models\Project;
+use Closure;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
+use LogicException;
+
+/**
+ * An Assignment's Project, Job Title, dates and share of time, when putting
+ * an Employee on a Project or changing an Assignment. The Project is chosen
+ * once, when the Assignment is created. Every Assignment must fall within
+ * its Employee's working period and its Project's dates.
+ */
+class AssignmentRequest extends FormRequest
+{
+    /**
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        $projectRules = $this->assignment() === null
+            ? ['project_id' => ['required', 'integer', Rule::exists(Project::class, 'id')->where('is_internal', false)]]
+            : [];
+
+        return [
+            ...$projectRules,
+            'job_title' => ['required', 'string', 'max:255'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'share' => ['required', 'integer', 'between:1,100'],
+        ];
+    }
+
+    /**
+     * Once the Project and dates are valid on their own, check that they fit
+     * the Employee and the Project.
+     *
+     * @return array<int, Closure(Validator): void>
+     */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            if ($validator->errors()->hasAny(['project_id', 'start_date', 'end_date'])) {
+                return;
+            }
+
+            $this->checkDates($validator, $this->project(), $this->employee());
+        }];
+    }
+
+    /**
+     * Refuse a new Assignment on a finished Project, and any Assignment that
+     * starts before, or may run past, the Employee's or the Project's dates.
+     */
+    private function checkDates(Validator $validator, Project $project, Employee $employee): void
+    {
+        if ($this->assignment() === null && $project->hasFinished()) {
+            $validator->errors()->add('project_id', __(':project has finished, so nobody can be assigned to it.', ['project' => $project->name]));
+
+            return;
+        }
+
+        $start = Carbon::parse($this->string('start_date')->value());
+        $end = $this->filled('end_date') ? Carbon::parse($this->string('end_date')->value()) : null;
+
+        foreach ([$employee, $project] as $owner) {
+            foreach ($owner->assignmentRefusals($start, $end) as $field => $refusal) {
+                $validator->errors()->add($field, $refusal);
+            }
+        }
+    }
+
+    /**
+     * The Assignment being changed, or null when creating one.
+     */
+    private function assignment(): ?Assignment
+    {
+        $assignment = $this->route('assignment');
+
+        return $assignment instanceof Assignment ? $assignment : null; // @pest-mutate-ignore (the route parameter is always an Assignment or absent)
+    }
+
+    /**
+     * The Employee the Assignment belongs to.
+     */
+    private function employee(): Employee
+    {
+        $employee = $this->assignment()->employee ?? $this->route('employee');
+
+        return $employee instanceof Employee ? $employee : throw new LogicException('An Assignment always belongs to an Employee.'); // @pest-mutate-ignore (both routes always bind an Employee or an Assignment)
+    }
+
+    /**
+     * The Project the Assignment is for: its own, or the one chosen.
+     */
+    private function project(): Project
+    {
+        return $this->assignment()->project ?? Project::query()->findOrFail($this->integer('project_id'));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'project_id' => __('Project'),
+            'job_title' => __('Job Title'),
+            'share' => __('share of time'),
+        ];
+    }
+}
