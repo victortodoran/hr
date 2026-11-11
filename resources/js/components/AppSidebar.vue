@@ -2,7 +2,9 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     BookOpen,
+    Briefcase,
     Building2,
+    FolderKanban,
     FolderGit2,
     LayoutGrid,
     ShieldCheck,
@@ -23,8 +25,10 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as clients } from '@/routes/clients';
 import { index as departments } from '@/routes/departments';
 import { index as directory } from '@/routes/directory';
+import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import type { NavItem } from '@/types';
 
@@ -38,6 +42,13 @@ const mainNavItems = computed<NavItem[]>(() => [
     },
     ...(page.props.auth.can.includes('view-directory')
         ? [{ title: 'Directory', href: directory(), icon: Users }]
+        : []),
+    ...(page.props.auth.can.includes('view-projects') ||
+    page.props.auth.can.includes('manage-projects')
+        ? [{ title: 'Projects', href: projects(), icon: FolderKanban }]
+        : []),
+    ...(page.props.auth.can.includes('manage-clients')
+        ? [{ title: 'Clients', href: clients(), icon: Briefcase }]
         : []),
     ...(page.props.auth.can.includes('manage-departments')
         ? [{ title: 'Departments', href: departments(), icon: Building2 }]

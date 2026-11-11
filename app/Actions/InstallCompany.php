@@ -7,13 +7,15 @@ use App\Enums\Scope;
 use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Project;
 use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Sets up a brand-new installation: the company, its first Department, the
- * starter Roles, and the first Employee as the top Employee with Admin.
+ * Sets up a brand-new installation: the company, its Internal Project, its
+ * first Department, the starter Roles, and the first Employee as the top
+ * Employee with Admin.
  */
 class InstallCompany
 {
@@ -33,6 +35,10 @@ class InstallCompany
     {
         $employee = DB::transaction(function () use ($company, $currency, $department, $name, $email): Employee {
             CompanySettings::query()->create(['name' => $company, 'currency' => $currency]);
+
+            $internalProject = new Project(['name' => $company]);
+            $internalProject->is_internal = true;
+            $internalProject->save();
 
             $roles = $this->createStarterRoles();
 
