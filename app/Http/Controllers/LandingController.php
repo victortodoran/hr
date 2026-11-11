@@ -19,10 +19,14 @@ class LandingController extends Controller
      */
     public function __invoke(#[CurrentUser] Employee $employee): RedirectResponse
     {
-        return match (true) { // @pest-mutate-ignore (coverage never attributes this line to a test, like class attributes)
-            $employee->can('view', $employee) => to_route('employees.show', $employee),
-            $employee->can(Permission::ViewDirectory->value) => to_route('directory.index'),
-            default => to_route('profile.edit'),
-        };
+        if ($employee->can('view', $employee)) {
+            return to_route('employees.show', $employee);
+        }
+
+        if ($employee->can(Permission::ViewDirectory->value)) {
+            return to_route('directory.index');
+        }
+
+        return to_route('profile.edit');
     }
 }

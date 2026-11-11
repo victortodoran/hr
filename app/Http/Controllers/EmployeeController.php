@@ -62,6 +62,7 @@ class EmployeeController extends Controller
         $canManage = $actor->can('create', [Assignment::class, $employee]);
         $canViewPay = $actor->can('viewPay', [Assignment::class, $employee]);
         $canManagePay = $actor->can('managePay', [Assignment::class, $employee]);
+        $currency = $canViewPay ? CompanySettings::payCurrency() : null;
 
         return Inertia::render('employees/Show', [
             'employee' => [
@@ -71,12 +72,12 @@ class EmployeeController extends Controller
             ],
             'record' => $canViewRecord ? $this->record($employee) : null,
             'reportsNeedingAManager' => $canViewRecord ? $this->reportsNeedingAManager($employee) : [],
-            'assignments' => $canViewAssignments ? $this->assignments($employee, $canViewPay ? CompanySettings::payCurrency() : null) : null,
+            'assignments' => $canViewAssignments ? $this->assignments($employee, $currency) : null,
             'canManage' => $canManage,
             'projects' => $canManage ? $this->openProjects() : [],
             'canViewPay' => $canViewPay,
             'canManagePay' => $canManagePay,
-            ...($canManagePay ? ['currency' => CompanySettings::payCurrency()->code] : []),
+            ...($canManagePay && $currency !== null ? ['currency' => $currency->code] : []),
             'canEdit' => $actor->can('update', $employee),
         ]);
     }
@@ -144,7 +145,7 @@ class EmployeeController extends Controller
      * when a currency is given, which only happens for viewers allowed to see
      * the Employee's Pay.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>
      */
     private function assignments(Employee $employee, ?Currency $currency): array
     {
