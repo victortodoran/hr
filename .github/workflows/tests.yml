@@ -97,4 +97,4 @@ jobs:
         run: composer ci:check
 
       - name: Run mutation testing
-        run: composer test:mutate -- --profile # TEMP profile
+        run: composer test:mutate
