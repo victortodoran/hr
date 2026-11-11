@@ -197,8 +197,9 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
-     * The Employee's Reporting Chain: their effective Manager, that
-     * Manager's effective Manager, and so on up to the top Employee.
+     * Everyone above the Employee in their Reporting Chain: their effective
+     * Manager, that Manager's effective Manager, and so on up to the top
+     * Employee, nearest first.
      *
      * @return Collection<int, Employee>
      */

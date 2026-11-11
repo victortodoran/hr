@@ -10,7 +10,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Lets Admins keep the company's flat list of Departments.
+ * Lets those who manage Departments keep the company's flat list of
+ * Departments.
  */
 class DepartmentController extends Controller
 {
@@ -24,9 +25,6 @@ class DepartmentController extends Controller
         ]);
     }
 
-    /**
-     * Create a Department.
-     */
     public function store(DepartmentRequest $request): RedirectResponse
     {
         Department::query()->create($request->validated());
@@ -36,9 +34,6 @@ class DepartmentController extends Controller
         return to_route('departments.index');
     }
 
-    /**
-     * Rename a Department.
-     */
     public function update(DepartmentRequest $request, Department $department): RedirectResponse
     {
         $department->update($request->validated());

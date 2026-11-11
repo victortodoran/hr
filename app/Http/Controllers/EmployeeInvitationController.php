@@ -7,7 +7,8 @@ use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
 /**
- * Lets HR resend an invitation to an Employee who has yet to set a password.
+ * Lets those who manage Employees resend an invitation to an Employee who
+ * has yet to set a password.
  */
 class EmployeeInvitationController extends Controller
 {
