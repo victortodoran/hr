@@ -13,6 +13,7 @@ use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\travelTo;
 
 covers(ProjectController::class, ClientController::class, ProjectPolicy::class, Assignment::class, Scope::class, Employee::class);
 
@@ -74,7 +75,7 @@ it('shows on a Project\'s team and a Client\'s page only the Assignments the vie
     actingAs($ben)->get(route('projects.show', $project))
         ->assertInertia(fn (Assert $page) => $page->where('team', fn (Collection $team) => $team->pluck('employee.name')->all() === $visible));
     actingAs($ben)->get(route('clients.show', $globex))
-        ->assertInertia(fn (Assert $page) => $page->where('assignments', fn (Collection $assignments) => $assignments->pluck('employee.name')->all() === $visible));
+        ->assertInertia(fn (Assert $page) => $page->where('projects.0.team', fn (Collection $team) => $team->pluck('employee.name')->all() === $visible));
 })->with([
     'no Assignment Permission' => [[], []],
     'view, own' => [[Permission::ViewAssignments->value => Scope::Own], ['Ben']],
@@ -85,27 +86,37 @@ it('shows on a Project\'s team and a Client\'s page only the Assignments the vie
     'view own, manage everyone' => [[Permission::ViewAssignments->value => Scope::Own, Permission::ManageAssignments->value => Scope::Everyone], ['Ben', 'Cara', 'Dana', 'Dev', 'Eve']],
 ]);
 
-it('shows a Client with the Employees assigned to its Projects', function () {
+it('shows a Client\'s Projects by name, empty ones included, each with the Employees assigned to it today', function () {
+    travelTo('2026-03-10');
     $globex = Client::factory()->create(['name' => 'Globex']);
-    $relaunch = Project::factory()->forClient($globex)->create(['name' => 'Relaunch', 'start_date' => '2025-01-06']);
-    $audit = Project::factory()->forClient($globex)->create(['name' => 'Audit', 'start_date' => '2025-01-06']);
+    $relaunch = Project::factory()->forClient($globex)->create(['name' => 'Relaunch', 'start_date' => '2025-01-06', 'end_date' => null]);
+    $audit = Project::factory()->forClient($globex)->create(['name' => 'Audit', 'start_date' => '2025-01-06', 'end_date' => '2026-12-31']);
+    $empty = Project::factory()->forClient($globex)->create(['name' => 'Brand', 'start_date' => '2026-04-01', 'end_date' => null]);
+    Project::factory()->forClient()->create();
     $ana = Employee::factory()->create(['name' => 'Ana', 'start_date' => '2025-01-06']);
     $zoe = Employee::factory()->create(['name' => 'Zoe', 'start_date' => '2025-01-06']);
     $zoes = Assignment::factory()->for($zoe)->for($audit)->create(['job_title' => 'Auditor', 'start_date' => '2025-02-01', 'end_date' => null, 'capacity' => 20]);
-    $anasRelaunch = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 80]);
-    $anasAudit = Assignment::factory()->for($ana)->for($audit)->create(['job_title' => 'Analyst', 'start_date' => '2025-03-01', 'end_date' => null, 'capacity' => 20]);
-    Assignment::factory()->for(Project::factory()->forClient())->create();
+    $anas = Assignment::factory()->for($ana)->for($audit)->create(['job_title' => 'Analyst', 'start_date' => '2026-03-10', 'end_date' => null, 'capacity' => 20]);
+    $endsToday = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2026-03-10', 'capacity' => 80]);
+    Assignment::factory()->for($zoe)->for($relaunch)->create(['start_date' => '2025-02-01', 'end_date' => '2026-03-09']);
+    Assignment::factory()->for($zoe)->for($relaunch)->create(['start_date' => '2026-03-11', 'end_date' => null]);
 
     actingAs(employeeWith([Permission::ManageClients->value => null, Permission::ViewAssignments->value => Scope::Everyone]))
         ->get(route('clients.show', $globex))
         ->assertInertia(fn (Assert $page) => $page
             ->component('clients/Show')
             ->where('client', ['id' => $globex->id, 'name' => 'Globex'])
-            ->where('assignments', [
-                ['id' => $anasRelaunch->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'project' => ['id' => $relaunch->id, 'name' => 'Relaunch'], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 80],
-                ['id' => $anasAudit->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'project' => ['id' => $audit->id, 'name' => 'Audit'], 'job_title' => 'Analyst', 'start_date' => '2025-03-01', 'end_date' => null, 'capacity' => 20],
-                ['id' => $zoes->id, 'employee' => ['id' => $zoe->id, 'name' => 'Zoe'], 'project' => ['id' => $audit->id, 'name' => 'Audit'], 'job_title' => 'Auditor', 'start_date' => '2025-02-01', 'end_date' => null, 'capacity' => 20],
-            ]),
+            ->where('projects', [
+                ['id' => $audit->id, 'name' => 'Audit', 'start_date' => '2025-01-06', 'end_date' => '2026-12-31', 'team' => [
+                    ['id' => $anas->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'job_title' => 'Analyst', 'start_date' => '2026-03-10', 'end_date' => null, 'capacity' => 20],
+                    ['id' => $zoes->id, 'employee' => ['id' => $zoe->id, 'name' => 'Zoe'], 'job_title' => 'Auditor', 'start_date' => '2025-02-01', 'end_date' => null, 'capacity' => 20],
+                ]],
+                ['id' => $empty->id, 'name' => 'Brand', 'start_date' => '2026-04-01', 'end_date' => null, 'team' => []],
+                ['id' => $relaunch->id, 'name' => 'Relaunch', 'start_date' => '2025-01-06', 'end_date' => null, 'team' => [
+                    ['id' => $endsToday->id, 'employee' => ['id' => $ana->id, 'name' => 'Ana'], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2026-03-10', 'capacity' => 80],
+                ]],
+            ])
+            ->missing('assignments'),
         );
 });
 

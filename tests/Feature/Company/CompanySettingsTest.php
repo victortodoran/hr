@@ -7,6 +7,7 @@ use App\Http\Requests\CompanySettingsRequest;
 use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;
+use App\Models\Project;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -85,4 +86,16 @@ it('keeps the company settings to those who manage the company', function () {
     actingAs($employee)->patch(route('company.update'), ['name' => 'Taken', 'currency' => 'USD'])->assertForbidden();
 
     expect(CompanySettings::query()->sole()->name)->toBe('Acme');
+});
+
+it('renames the Internal Project with the company, leaving other Projects alone', function () {
+    $internal = Project::factory()->internal()->create(['name' => 'Acme']);
+    $audit = Project::factory()->create(['name' => 'Acme']);
+
+    actingAs(companyManager())
+        ->patch(route('company.update'), ['name' => 'Acme Software', 'currency' => 'EUR'])
+        ->assertSessionHasNoErrors();
+
+    expect($internal->refresh()->name)->toBe('Acme Software')
+        ->and($audit->refresh()->name)->toBe('Acme');
 });

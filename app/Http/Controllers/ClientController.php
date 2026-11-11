@@ -6,7 +6,9 @@ use App\Http\Requests\ClientRequest;
 use App\Models\Assignment;
 use App\Models\Client;
 use App\Models\Employee;
+use App\Models\Project;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -29,27 +31,37 @@ class ClientController extends Controller
     }
 
     /**
-     * Show a Client and who works for it: the Assignments to its Projects
-     * that the viewer may see, by Employee and then from the earliest.
+     * Show a Client's Projects by name, empty ones included, each with the
+     * Employees assigned to it today whose Assignments the viewer may see.
+     * Each Project's page keeps its full team.
      */
     public function show(#[CurrentUser] Employee $actor, Client $client): Response
     {
         return Inertia::render('clients/Show', [
             'client' => $client->only('id', 'name'),
-            'assignments' => Assignment::query()
-                ->whereIn('project_id', $client->projects()->select('id'))
-                ->visibleTo($actor)
-                ->with(['employee:id,name', 'project:id,name']) // @pest-mutate-ignore (eager loading only saves queries)
-                ->orderByEmployeeName()
+            'projects' => $client->projects()
+                ->with(['assignments' => fn (HasMany $assignments) => $assignments
+                    ->runningOn(today())
+                    ->visibleTo($actor)
+                    ->with('employee:id,name') // @pest-mutate-ignore (eager loading only saves queries)
+                    ->orderByEmployeeName()])
+                ->orderBy('name')
+                ->orderBy('id')
                 ->get()
-                ->map(fn (Assignment $assignment): array => [
-                    'id' => $assignment->id,
-                    'employee' => $assignment->employee->only('id', 'name'),
-                    'project' => $assignment->project->only('id', 'name'),
-                    'job_title' => $assignment->job_title,
-                    'start_date' => $assignment->start_date->toDateString(),
-                    'end_date' => $assignment->end_date?->toDateString(),
-                    'capacity' => $assignment->capacity,
+                ->map(fn (Project $project): array => [
+                    'id' => $project->id,
+                    'name' => $project->name,
+                    ...$project->dates(),
+                    'team' => $project->assignments
+                        ->map(fn (Assignment $assignment): array => [
+                            'id' => $assignment->id,
+                            'employee' => $assignment->employee->only('id', 'name'),
+                            'job_title' => $assignment->job_title,
+                            'start_date' => $assignment->start_date->toDateString(),
+                            'end_date' => $assignment->end_date?->toDateString(),
+                            'capacity' => $assignment->capacity,
+                        ])
+                        ->all(),
                 ]),
         ]);
     }

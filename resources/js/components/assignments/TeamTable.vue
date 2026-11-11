@@ -7,7 +7,6 @@ import type { TeamAssignment } from '@/types';
 
 defineProps<{
     assignments: TeamAssignment[];
-    showProject?: boolean;
     empty: string;
 }>();
 </script>
@@ -18,9 +17,6 @@ defineProps<{
             <thead class="bg-muted/50 text-left text-muted-foreground">
                 <tr>
                     <th class="px-4 py-2 font-medium">Employee</th>
-                    <th v-if="showProject" class="px-4 py-2 font-medium">
-                        Project
-                    </th>
                     <th class="px-4 py-2 font-medium">Job Title</th>
                     <th class="px-4 py-2 font-medium">Dates</th>
                     <th class="px-4 py-2 text-right font-medium">Capacity</th>
@@ -34,9 +30,6 @@ defineProps<{
                             class="underline-offset-4 hover:underline"
                             >{{ assignment.employee.name }}</Link
                         >
-                    </td>
-                    <td v-if="showProject" class="px-4 py-2">
-                        {{ assignment.project?.name }}
                     </td>
                     <td class="px-4 py-2">
                         <ValueOr :value="assignment.job_title" />
@@ -55,7 +48,7 @@ defineProps<{
                 </tr>
                 <tr v-if="assignments.length === 0">
                     <td
-                        :colspan="showProject ? 5 : 4"
+                        colspan="4"
                         class="px-4 py-6 text-center text-muted-foreground"
                     >
                         {{ empty }}

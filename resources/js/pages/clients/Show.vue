@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { Head, setLayoutProps } from '@inertiajs/vue3';
+import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import TeamTable from '@/components/assignments/TeamTable.vue';
 import Heading from '@/components/Heading.vue';
+import { formatPeriod } from '@/lib/dates';
 import { index, show } from '@/routes/clients';
-import type { Choice, TeamAssignment } from '@/types';
+import { show as showProject } from '@/routes/projects';
+import type { Choice, ClientProject } from '@/types';
 
 const props = defineProps<{
     client: Choice;
-    assignments: TeamAssignment[];
+    projects: ClientProject[];
 }>();
 
 setLayoutProps({
@@ -24,13 +26,34 @@ setLayoutProps({
     <div class="flex max-w-4xl flex-col gap-6 p-4">
         <Heading
             :title="client.name"
-            description="The Employees assigned to its Projects"
+            description="Its Projects, and who is assigned to each today"
         />
 
-        <TeamTable
-            :assignments="assignments"
-            show-project
-            empty="Nobody you can see is assigned to this Client's Projects."
-        />
+        <section
+            v-for="project in projects"
+            :key="project.id"
+            class="flex flex-col gap-3"
+        >
+            <div class="flex items-baseline justify-between gap-4">
+                <h2 class="font-medium">
+                    <Link
+                        :href="showProject(project.id)"
+                        class="underline-offset-4 hover:underline"
+                        >{{ project.name }}</Link
+                    >
+                </h2>
+                <p class="text-sm text-muted-foreground">
+                    {{ formatPeriod(project.start_date, project.end_date) }}
+                </p>
+            </div>
+            <TeamTable
+                :assignments="project.team"
+                empty="Nobody you can see is assigned to this Project today."
+            />
+        </section>
+
+        <p v-if="projects.length === 0" class="text-sm text-muted-foreground">
+            This Client has no Projects yet.
+        </p>
     </div>
 </template>
