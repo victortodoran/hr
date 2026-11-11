@@ -13,8 +13,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * Saves an Employee or a Project and, in the same transaction, trims its
  * Assignments to end by its last day (a Leaving Date or a Project end date),
- * so nobody appears to work after leaving or on a finished Project.
- * Validation has already refused a last day before any Assignment starts.
+ * so nobody appears to work after leaving or on a finished Project. An
+ * Employee's Internal Assignment always takes their Start Date and Leaving
+ * Date. Validation has already refused a last day before any other
+ * Assignment starts.
  */
 class UpdateTrimmingAssignments
 {
@@ -25,6 +27,7 @@ class UpdateTrimmingAssignments
     {
         DB::transaction(function () use ($employee, $changes): void {
             $employee->update($changes);
+            $employee->internalAssignment()->update(['start_date' => $employee->start_date, 'end_date' => $employee->leaving_date]);
             $this->trim($employee->assignments(), $employee->leaving_date);
         });
     }

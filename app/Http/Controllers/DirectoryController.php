@@ -18,7 +18,8 @@ use Inertia\Response;
 class DirectoryController extends Controller
 {
     /**
-     * Show current Employees by name, optionally searched by part of a name.
+     * Show current Employees by name, with their internal Job Title,
+     * optionally searched by part of a name.
      */
     public function index(Request $request): Response
     {
@@ -27,7 +28,7 @@ class DirectoryController extends Controller
         $employees = Employee::query()
             ->current()
             ->withEffectiveManager()
-            ->with(['department:id,name', 'effectiveManager:id,name'])
+            ->with(['department:id,name', 'effectiveManager:id,name', 'internalAssignment:id,employee_id,project_id,job_title'])
             ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
             ->orderBy('name')
             ->orderBy('id')
@@ -37,6 +38,7 @@ class DirectoryController extends Controller
                 'id' => $employee->id,
                 'name' => $employee->name,
                 'email' => $employee->email,
+                'job_title' => $employee->internalAssignment?->job_title,
                 'department' => $employee->department?->name, // @pest-mutate-ignore (every Employee has a Department; the nullsafe only satisfies the relation's nullable type)
                 'manager' => $employee->effectiveManager?->only('id', 'name'),
             ]);

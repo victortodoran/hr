@@ -13,7 +13,9 @@ use Illuminate\Translation\PotentiallyTranslatedString;
  * Keeps an Employee's or a Project's dates around its Assignments: the start
  * can't be later than the first Assignment starts, and the end can't be
  * earlier than the last one starts, since every Assignment falls within
- * those dates. With no owner yet (when adding one), anything fits.
+ * those dates. The Internal Assignment follows the Employee's dates, so it
+ * never stands in the way. With no owner yet (when adding one), anything
+ * fits.
  */
 class AssignmentsFit implements ValidationRule
 {
@@ -51,7 +53,7 @@ class AssignmentsFit implements ValidationRule
             return;
         }
 
-        $assignments = $this->owner->assignments();
+        $assignments = $this->owner->assignments()->notInternal();
         $edge = $this->isStart ? $assignments->min('start_date') : $assignments->max('start_date');
 
         if (! is_string($edge)) {

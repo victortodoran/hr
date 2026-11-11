@@ -4,6 +4,7 @@ use App\Http\Requests\Auth\AcceptInvitationRequest;
 use App\Http\Requests\EmployeeRequest;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Project;
 use App\Notifications\Invitation;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
@@ -14,7 +15,10 @@ use function Pest\Laravel\post;
 
 covers(Employee::class, EmployeeRequest::class, AcceptInvitationRequest::class);
 
-beforeEach(fn () => Notification::fake());
+beforeEach(function () {
+    Notification::fake();
+    Project::factory()->internal()->create();
+});
 
 /**
  * @return array<string, mixed>

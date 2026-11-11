@@ -46,6 +46,14 @@ class Project extends Model
     }
 
     /**
+     * The company's one Internal Project, created at install.
+     */
+    public static function internal(): self
+    {
+        return self::query()->where('is_internal', true)->sole();
+    }
+
+    /**
      * @return BelongsTo<Client, $this>
      */
     public function client(): BelongsTo

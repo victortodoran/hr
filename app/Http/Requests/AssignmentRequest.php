@@ -17,7 +17,9 @@ use LogicException;
  * An Assignment's Project, Job Title, dates and share of time, when putting
  * an Employee on a Project or changing an Assignment. The Project is chosen
  * once, when the Assignment is created. Every Assignment must fall within
- * its Employee's working period and its Project's dates.
+ * its Employee's working period and its Project's dates. The Internal
+ * Assignment only takes an internal Job Title and an optional planned share;
+ * its dates follow the Employee.
  */
 class AssignmentRequest extends FormRequest
 {
@@ -26,6 +28,15 @@ class AssignmentRequest extends FormRequest
      */
     public function rules(): array
     {
+        if ($this->assignment()?->isInternal() === true) {
+            return [
+                'job_title' => ['nullable', 'string', 'max:255'],
+                'start_date' => ['prohibited'],
+                'end_date' => ['prohibited'],
+                'share' => ['nullable', 'integer', 'between:1,100'],
+            ];
+        }
+
         $projectRules = $this->assignment() === null
             ? ['project_id' => ['required', 'integer', Rule::exists(Project::class, 'id')->where('is_internal', false)]]
             : [];
@@ -59,6 +70,7 @@ class AssignmentRequest extends FormRequest
     /**
      * Refuse a new Assignment on a finished Project, and any Assignment that
      * starts before, or may run past, the Employee's or the Project's dates.
+     * The Internal Assignment takes the Employee's dates.
      */
     private function checkDates(Validator $validator, Project $project, Employee $employee): void
     {
@@ -68,8 +80,9 @@ class AssignmentRequest extends FormRequest
             return;
         }
 
-        $start = Carbon::parse($this->string('start_date')->value());
-        $end = $this->filled('end_date') ? Carbon::parse($this->string('end_date')->value()) : null;
+        [$start, $end] = $project->is_internal
+            ? [$employee->start_date, $employee->leaving_date]
+            : [Carbon::parse($this->string('start_date')->value()), $this->filled('end_date') ? Carbon::parse($this->string('end_date')->value()) : null];
 
         foreach ([$employee, $project] as $owner) {
             foreach ($owner->assignmentRefusals($start, $end) as $field => $refusal) {
@@ -104,6 +117,19 @@ class AssignmentRequest extends FormRequest
     private function project(): Project
     {
         return $this->assignment()->project ?? Project::query()->findOrFail($this->integer('project_id'));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        $followsTheEmployee = __('The Internal Assignment always runs from :name\'s Start Date to their Leaving Date.', ['name' => $this->employee()->name]);
+
+        return [
+            'start_date.prohibited' => $followsTheEmployee,
+            'end_date.prohibited' => $followsTheEmployee,
+        ];
     }
 
     /**

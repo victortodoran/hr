@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -102,6 +103,30 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function assignments(): HasMany
     {
         return $this->hasMany(Assignment::class);
+    }
+
+    /**
+     * Their Assignment to the Internal Project, for their whole period of
+     * work.
+     *
+     * @return HasOne<Assignment, $this>
+     */
+    public function internalAssignment(): HasOne
+    {
+        return $this->hasOne(Assignment::class)->whereRelation('project', 'is_internal', true);
+    }
+
+    /**
+     * Put the Employee on the Internal Project for their whole period of
+     * work, with no internal Job Title or planned share yet.
+     */
+    public function createInternalAssignment(): void
+    {
+        $this->assignments()->create([
+            'project_id' => Project::internal()->id,
+            'start_date' => $this->start_date,
+            'end_date' => $this->leaving_date,
+        ]);
     }
 
     /**

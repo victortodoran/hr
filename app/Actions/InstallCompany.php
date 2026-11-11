@@ -51,6 +51,7 @@ class InstallCompany
             ]);
             $employee->is_top = true;
             $employee->save();
+            $employee->createInternalAssignment();
 
             $employee->roles()->attach($roles['Admin']);
 

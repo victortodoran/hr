@@ -32,4 +32,19 @@ class AssignmentFactory extends Factory
             'share' => fake()->randomElement([20, 50, 80, 100]),
         ];
     }
+
+    /**
+     * The Employee's Internal Assignment: to the Internal Project, over their
+     * whole period of work, with no internal Job Title or planned share yet.
+     */
+    public function internal(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'project_id' => fn (): int => Project::query()->where('is_internal', true)->value('id') ?? Project::factory()->internal()->create()->id,
+            'job_title' => null,
+            'start_date' => fn (array $attributes): string => Carbon::parse(Employee::query()->whereKey($attributes['employee_id'])->value('start_date'))->toDateString(),
+            'end_date' => fn (array $attributes): ?string => Employee::query()->whereKey($attributes['employee_id'])->value('leaving_date'),
+            'share' => null,
+        ]);
+    }
 }

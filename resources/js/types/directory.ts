@@ -4,6 +4,7 @@ export type DirectoryEntry = {
     id: number;
     name: string;
     email: string;
+    job_title: string | null;
     department: string;
     manager: Choice | null;
 };

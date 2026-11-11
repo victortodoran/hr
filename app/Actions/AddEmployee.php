@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Records a new Employee, gives them the Roles marked for new Employees and
- * invites them to set their password.
+ * Records a new Employee, puts them on the Internal Project, gives them the
+ * Roles marked for new Employees and invites them to set their password.
  */
 class AddEmployee
 {
@@ -28,6 +28,7 @@ class AddEmployee
                 ...$details,
                 'password' => Str::random(40), // @pest-mutate-ignore (an unusable placeholder until the invitation is accepted)
             ]);
+            $employee->createInternalAssignment();
 
             Role::query()
                 ->where('is_given_to_new_employees', true)

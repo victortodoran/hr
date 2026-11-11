@@ -59,10 +59,20 @@ setLayoutProps({
                                 {{ assignment.project.name }}
                             </p>
                             <p class="text-muted-foreground">
-                                {{ assignment.project.client ?? 'No Client' }}
+                                {{
+                                    assignment.project.is_internal
+                                        ? 'Internal'
+                                        : (assignment.project.client ??
+                                          'No Client')
+                                }}
                             </p>
                         </td>
-                        <td class="px-4 py-2">{{ assignment.job_title }}</td>
+                        <td class="px-4 py-2">
+                            <span v-if="assignment.job_title">{{
+                                assignment.job_title
+                            }}</span>
+                            <span v-else class="text-muted-foreground">—</span>
+                        </td>
                         <td class="px-4 py-2">
                             {{
                                 formatPeriod(
@@ -72,7 +82,12 @@ setLayoutProps({
                             }}
                         </td>
                         <td class="px-4 py-2 text-right">
-                            {{ assignment.share }}%
+                            <span v-if="assignment.share !== null"
+                                >{{ assignment.share }}%</span
+                            >
+                            <span v-else class="text-muted-foreground"
+                                >Leftover</span
+                            >
                         </td>
                         <td v-if="canManage" class="px-4 py-2 text-right">
                             <AssignmentForm

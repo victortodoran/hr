@@ -39,6 +39,7 @@ class AssignmentController extends Controller
                         'id' => $assignment->project->id,
                         'name' => $assignment->project->name,
                         'client' => $assignment->project->client?->name,
+                        'is_internal' => $assignment->project->is_internal,
                     ],
                     'job_title' => $assignment->job_title,
                     'start_date' => $assignment->start_date->toDateString(),

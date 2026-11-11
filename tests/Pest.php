@@ -72,3 +72,22 @@ function giveRole(Employee $employee, array $grants): Role
 
     return $role;
 }
+
+/**
+ * An Employee's record as the edit form sends it, with some changes.
+ *
+ * @param  array<string, mixed>  $changes
+ * @return array<string, mixed>
+ */
+function employeeRecordChanging(Employee $employee, array $changes): array
+{
+    return [
+        'name' => $employee->name,
+        'email' => $employee->email,
+        'department_id' => $employee->department_id,
+        'manager_id' => $employee->manager_id,
+        'start_date' => $employee->start_date->toDateString(),
+        'leaving_date' => $employee->leaving_date?->toDateString(),
+        ...$changes,
+    ];
+}
