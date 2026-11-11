@@ -3,14 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EmploymentStatus;
+use App\Models\Assignment;
 use App\Models\Employee;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
  * Lets every Employee with view directory find colleagues and see where
- * anyone sits in the company. It never shows Assignments, dates or Pay.
+ * anyone sits in the company. It never shows Assignments, dates or Pay,
+ * though it links to someone's Assignments for viewers allowed to see them.
  */
 class DirectoryController extends Controller
 {
@@ -48,7 +51,7 @@ class DirectoryController extends Controller
      * Show an Employee's Reporting Chain, from them up to the top Employee.
      * Former Employees have left the directory, so they have no page.
      */
-    public function show(Employee $employee): Response
+    public function show(#[CurrentUser] Employee $actor, Employee $employee): Response
     {
         abort_if($employee->employmentStatus() === EmploymentStatus::Former, 404);
 
@@ -60,6 +63,7 @@ class DirectoryController extends Controller
                     'department' => $chainMember->department?->name, // @pest-mutate-ignore (every Employee has a Department; the nullsafe only satisfies the relation's nullable type)
                 ])
                 ->all(),
+            'canViewAssignments' => $actor->can('viewAny', [Assignment::class, $employee]),
         ]);
     }
 }

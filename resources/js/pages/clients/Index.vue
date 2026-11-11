@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import ClientController from '@/actions/App/Http/Controllers/ClientController';
 import DeleteClient from '@/components/clients/DeleteClient.vue';
 import RenameClient from '@/components/clients/RenameClient.vue';
@@ -8,7 +8,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { index } from '@/routes/clients';
+import { index, show } from '@/routes/clients';
 import type { ClientRecord } from '@/types';
 
 defineOptions({
@@ -58,7 +58,11 @@ defineProps<{
                 class="flex items-center justify-between gap-4 px-4 py-3"
             >
                 <div>
-                    <p class="font-medium">{{ client.name }}</p>
+                    <Link
+                        :href="show(client.id)"
+                        class="font-medium underline-offset-4 hover:underline"
+                        >{{ client.name }}</Link
+                    >
                     <p class="text-sm text-muted-foreground">
                         {{ client.projects_count }}
                         {{

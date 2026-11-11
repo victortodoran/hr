@@ -95,6 +95,16 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * The Projects the Employee works on, and when.
+     *
+     * @return HasMany<Assignment, $this>
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
+    /**
      * The Employee they report to; only the top Employee has none.
      *
      * @return BelongsTo<Employee, $this>
@@ -258,6 +268,27 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
         $query->whereDate('start_date', '<=', today())
             ->whereNull('leaving_date')
             ->whereHas('roles.permissions', fn (Builder $grants) => $grants->where('permission', Permission::ManageRoles));
+    }
+
+    /**
+     * Limit the query to the Manager's Reports: everyone below them in the
+     * reporting line, the same Employees hasInReports() accepts.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function reportsOf(Builder $query, Employee $manager): void
+    {
+        $query->whereRaw(<<<'SQL'
+            employees.id IN (
+                WITH RECURSIVE below AS (
+                    SELECT id FROM employees WHERE manager_id = ?
+                    UNION
+                    SELECT employees.id FROM employees JOIN below ON employees.manager_id = below.id
+                )
+                SELECT id FROM below
+            )
+            SQL, [$manager->id]);
     }
 
     /**

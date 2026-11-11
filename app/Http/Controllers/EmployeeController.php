@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\AddEmployee;
+use App\Actions\CutOffAssignments;
 use App\Enums\EmploymentStatus;
 use App\Http\Requests\EmployeeRequest;
 use App\Models\Department;
@@ -10,6 +11,7 @@ use App\Models\Employee;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -66,11 +68,18 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Save changes to an Employee's record.
+     * Save changes to an Employee's record. Their Assignments are cut off
+     * at their Leaving Date in the same transaction.
      */
-    public function update(EmployeeRequest $request, Employee $employee): RedirectResponse
+    public function update(EmployeeRequest $request, Employee $employee, CutOffAssignments $cutOff): RedirectResponse
     {
-        $employee->update($request->validated());
+        DB::transaction(function () use ($request, $employee, $cutOff): void {
+            $employee->update($request->validated());
+
+            if ($employee->leaving_date !== null) {
+                $cutOff->at($employee, $employee->leaving_date);
+            }
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Employee updated.')]);
 

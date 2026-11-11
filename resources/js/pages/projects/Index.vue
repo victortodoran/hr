@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import DeleteProject from '@/components/projects/DeleteProject.vue';
 import ProjectForm from '@/components/projects/ProjectForm.vue';
 import { Badge } from '@/components/ui/badge';
-import { index } from '@/routes/projects';
+import { formatDate } from '@/lib/dates';
+import { index, show } from '@/routes/projects';
 import type { Choice, ProjectRecord } from '@/types';
 
 defineOptions({
@@ -23,17 +24,6 @@ const page = usePage();
 const canManage = computed(() =>
     page.props.auth.can.includes('manage-projects'),
 );
-
-/**
- * A date as people read it, such as "5 Jan 2026".
- */
-function formatDate(date: string): string {
-    return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-    });
-}
 </script>
 
 <template>
@@ -63,7 +53,11 @@ function formatDate(date: string): string {
                 <tbody class="divide-y">
                     <tr v-for="project in projects" :key="project.id">
                         <td class="px-4 py-2 font-medium">
-                            {{ project.name }}
+                            <Link
+                                :href="show(project.id)"
+                                class="underline-offset-4 hover:underline"
+                                >{{ project.name }}</Link
+                            >
                             <Badge
                                 v-if="project.is_internal"
                                 variant="secondary"

@@ -8,6 +8,7 @@ use App\Models\Employee;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -42,7 +43,7 @@ class EmployeeRequest extends FormRequest
             'manager_id' => $employee?->is_top
                 ? ['prohibited']
                 : ['bail', 'required', 'integer', Rule::exists(Employee::class, 'id'), Rule::notIn([$employee?->id]), $this->noLoopUnder($employee)],
-            'start_date' => ['required', 'date'],
+            'start_date' => ['bail', 'required', 'date', $this->notAfterAnAssignmentOf($employee)],
             'leaving_date' => match (true) {
                 $employee?->is_top === true => ['prohibited'], // @pest-mutate-ignore (adding has no Employee yet, and PHP reads a property of null as null)
                 $employee?->employmentStatus() === EmploymentStatus::Former => [Rule::in([$employee->leaving_date?->toDateString()])], // @pest-mutate-ignore (a Former Employee always has a Leaving Date)
@@ -60,6 +61,24 @@ class EmployeeRequest extends FormRequest
         return function (string $attribute, mixed $managerId, Closure $fail) use ($employee): void {
             if ($employee !== null && $employee->hasInReports(Employee::query()->whereKey($managerId)->firstOrFail())) {
                 $fail(__('That would make a loop: the new Manager reports to this Employee.'));
+            }
+        };
+    }
+
+    /**
+     * Refuses a Start Date later than the start of one of the Employee's
+     * Assignments, since every Assignment falls within their working period.
+     */
+    private function notAfterAnAssignmentOf(?Employee $employee): Closure
+    {
+        return function (string $attribute, mixed $startDate, Closure $fail) use ($employee): void {
+            $firstStart = $employee?->assignments()->min('start_date');
+
+            if (is_string($firstStart) && Carbon::parse($firstStart)->isBefore(Carbon::parse($startDate))) {
+                $fail(__(':name has an Assignment starting on :date, so their Start Date can\'t be later than that.', [
+                    'name' => $employee->name,
+                    'date' => Carbon::parse($firstStart)->format('j M Y'),
+                ]));
             }
         };
     }

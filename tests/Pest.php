@@ -18,7 +18,7 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)->in('Feature');
-pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Departments', 'Feature/Employees', 'Feature/Install', 'Feature/Directory', 'Feature/Lifecycle', 'Feature/Projects', 'Feature/ReportingLine');
+pest()->use(RefreshDatabase::class)->in('Feature/Access', 'Feature/Departments', 'Feature/Employees', 'Feature/Install', 'Feature/Directory', 'Feature/Lifecycle', 'Feature/Projects', 'Feature/ReportingLine', 'Feature/Assignments');
 
 /*
 |--------------------------------------------------------------------------

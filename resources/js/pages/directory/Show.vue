@@ -2,11 +2,14 @@
 import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
+import { Button } from '@/components/ui/button';
 import { index, show } from '@/routes/directory';
+import { index as assignments } from '@/routes/employees/assignments';
 import type { ChainLink } from '@/types';
 
 const props = defineProps<{
     chain: ChainLink[];
+    canViewAssignments: boolean;
 }>();
 
 const employee = computed(() => props.chain[0]);
@@ -36,10 +39,15 @@ setLayoutProps({
     <Head :title="`${employee.name}'s Reporting Chain`" />
 
     <div class="flex max-w-xl flex-col gap-6 p-4">
-        <Heading
-            :title="`${employee.name}'s Reporting Chain`"
-            description="Who they report to, up to the top of the company"
-        />
+        <div class="flex items-start justify-between gap-4">
+            <Heading
+                :title="`${employee.name}'s Reporting Chain`"
+                description="Who they report to, up to the top of the company"
+            />
+            <Button v-if="canViewAssignments" variant="outline" as-child>
+                <Link :href="assignments(employee.id)">Assignments</Link>
+            </Button>
+        </div>
 
         <ol class="flex flex-col items-center" aria-label="Reporting Chain">
             <li
