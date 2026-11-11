@@ -96,5 +96,14 @@ jobs:
       - name: Run CI Checks
         run: composer ci:check
 
+      - name: DIAGNOSTIC (temporary) time one process
+        run: |
+          export DB_DATABASE=hr_testing
+          for i in 1 2 3; do /usr/bin/time -f "migrate:fresh %es" php artisan migrate:fresh --env=testing -q; done
+          for i in 1 2 3; do /usr/bin/time -f "migrate:fresh no-pcov %es" php -d pcov.enabled=0 artisan migrate:fresh --env=testing -q; done
+          for i in 1 2 3; do /usr/bin/time -f "one test file %es" vendor/bin/pest tests/Feature/Directory/ReportingChainTest.php --bail >/dev/null; done
+          for i in 1 2 3; do /usr/bin/time -f "one test file no-pcov %es" php -d pcov.enabled=0 vendor/bin/pest tests/Feature/Directory/ReportingChainTest.php --bail >/dev/null; done
+          for i in 1 2 3; do /usr/bin/time -f "pest boot only %es" vendor/bin/pest --filter=nothing-matches >/dev/null || true; done
+
       - name: Run mutation testing
         run: composer test:mutate
