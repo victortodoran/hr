@@ -16,6 +16,8 @@ export type Auth = {
     can: string[];
     /** Whether the signed-in Employee may open their own Employee page. */
     canSeeOwnPage: boolean;
+    /** Whether the Employees list holds more than the signed-in Employee. */
+    canListEmployees: boolean;
 };
 
 export type Passkey = {

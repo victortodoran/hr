@@ -7,6 +7,7 @@ import {
     Landmark,
     ShieldCheck,
     UserRound,
+    UsersRound,
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
@@ -27,7 +28,7 @@ import { index as clients } from '@/routes/clients';
 import { edit as company } from '@/routes/company';
 import { index as departments } from '@/routes/departments';
 import { index as directory } from '@/routes/directory';
-import { show as employeePage } from '@/routes/employees';
+import { index as employees, show as employeePage } from '@/routes/employees';
 import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import type { NavItem } from '@/types';
@@ -43,6 +44,9 @@ const mainNavItems = computed<NavItem[]>(() => [
                   icon: UserRound,
               },
           ]
+        : []),
+    ...(page.props.auth.canListEmployees
+        ? [{ title: 'Employees', href: employees(), icon: UsersRound }]
         : []),
     ...(page.props.auth.can.includes('view-directory')
         ? [{ title: 'Directory', href: directory(), icon: Users }]

@@ -6,6 +6,7 @@ use App\Actions\AddEmployee;
 use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
+use App\Enums\Scope;
 use App\Http\Requests\EmployeeRequest;
 use App\Models\Assignment;
 use App\Models\CompanySettings;
@@ -20,6 +21,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,6 +31,47 @@ use Inertia\Response;
  */
 class EmployeeController extends Controller
 {
+    /**
+     * List the Employees whose record the viewer may see, by name, with each
+     * one's status, optionally narrowed to one status or part of a name.
+     */
+    public function index(#[CurrentUser] Employee $actor, Request $request): Response
+    {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::enum(EmploymentStatus::class)],
+        ]);
+        $search = $filters['search'] ?? '';
+        $status = isset($filters['status']) ? EmploymentStatus::from($filters['status']) : null;
+        /** @var Scope $scope the policy only lets in viewers who hold view employee records */
+        $scope = $actor->widestScopeFor(Permission::ViewEmployeeRecords);
+
+        $employees = Employee::query()
+            ->where(fn (Builder $query) => $scope->limit($query, $actor))
+            ->when($status, fn (Builder $query, EmploymentStatus $status) => $query->inEmploymentStatus($status))
+            ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
+            ->withEffectiveManager()
+            ->with(['department:id,name', 'effectiveManager:id,name'])
+            ->orderBy('name')
+            ->orderBy('id')
+            ->paginate(25)
+            ->withQueryString()
+            ->through(fn (Employee $employee): array => [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'status' => $employee->employmentStatus()->value,
+                'department' => $employee->department?->name, // @pest-mutate-ignore (every Employee has a Department; the nullsafe only satisfies the relation's nullable type)
+                'manager' => $employee->effectiveManager?->only('id', 'name'),
+            ]);
+
+        return Inertia::render('employees/Index', [
+            'employees' => $employees,
+            'search' => $search,
+            'status' => $status?->value,
+            'canAdd' => $actor->can('create', Employee::class),
+        ]);
+    }
+
     /**
      * Show the form for adding an Employee.
      */

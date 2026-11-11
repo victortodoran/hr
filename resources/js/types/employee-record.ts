@@ -36,3 +36,12 @@ export type EmployeePageRecord = {
     manager: Choice | null;
     is_top: boolean;
 };
+
+/**
+ * One row of the Employees list.
+ */
+export type EmployeeListEntry = Choice & {
+    status: EmploymentStatus;
+    department: string | null;
+    manager: Choice | null;
+};

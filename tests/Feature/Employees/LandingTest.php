@@ -54,3 +54,13 @@ it('tells the pages whether the signed-in Employee may open their own Employee p
     'reports only' => [[Permission::ViewEmployeeRecords->value => Scope::Reports], false],
     'neither' => [[Permission::ViewDirectory->value => null], false],
 ]);
+
+it('tells the pages whether to offer the Employees list, which only helps when the viewer may see more than their own record', function (?Scope $scope, bool $expected) {
+    actingAs(employeeWith($scope === null ? [Permission::ViewDirectory->value => null] : [Permission::ViewEmployeeRecords->value => $scope]))->get(route('profile.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('auth.canListEmployees', $expected));
+})->with([
+    'own' => [Scope::Own, false],
+    'reports' => [Scope::Reports, true],
+    'everyone' => [Scope::Everyone, true],
+    'none' => [null, false],
+]);
