@@ -19,6 +19,8 @@ use Illuminate\Support\Str;
  */
 class InstallCompany
 {
+    public function __construct(private ChangeAccess $changeAccess) {}
+
     /**
      * Whether the app has already been installed.
      */
@@ -40,8 +42,6 @@ class InstallCompany
             $internalProject->is_internal = true;
             $internalProject->save();
 
-            $roles = $this->createStarterRoles();
-
             $employee = new Employee([
                 'name' => $name,
                 'email' => $email,
@@ -53,7 +53,8 @@ class InstallCompany
             $employee->save();
             $employee->createInternalAssignment();
 
-            $employee->roles()->attach($roles['Admin']);
+            $roles = $this->createStarterRoles($employee);
+            $this->changeAccess->giveRole($employee, $roles['Admin'], $employee);
 
             return $employee;
         });
@@ -64,44 +65,37 @@ class InstallCompany
     }
 
     /**
-     * Create Admin, Manager and Employee as ordinary, editable Roles.
+     * Create Admin, Manager and Employee as ordinary, editable Roles, logged
+     * as created by the first Employee, the one installing the app.
      *
      * @return array<string, Role>
      */
-    private function createStarterRoles(): array
+    private function createStarterRoles(Employee $installer): array
     {
         $admin = [];
         foreach (Permission::cases() as $permission) {
-            $admin[$permission->value] = $permission->isScoped() ? Scope::Everyone : null;
+            $admin[$permission->value] = $permission->isScoped() ? Scope::Everyone->value : null;
         }
 
         $starters = [
-            'Admin' => ['grants' => $admin, 'givenToNewEmployees' => false],
-            'Manager' => ['grants' => [
-                Permission::ViewEmployeeRecords->value => Scope::Reports,
-                Permission::ViewAssignments->value => Scope::Reports,
-                Permission::ManageAssignments->value => Scope::Reports,
+            'Admin' => ['name' => 'Admin', 'grants' => $admin, 'givenToNewEmployees' => false],
+            'Manager' => ['name' => 'Manager', 'grants' => [
+                Permission::ViewEmployeeRecords->value => Scope::Reports->value,
+                Permission::ViewAssignments->value => Scope::Reports->value,
+                Permission::ManageAssignments->value => Scope::Reports->value,
                 Permission::ViewProjects->value => null,
             ], 'givenToNewEmployees' => false],
-            'Employee' => ['grants' => [
+            'Employee' => ['name' => 'Employee', 'grants' => [
                 Permission::ViewDirectory->value => null,
-                Permission::ViewEmployeeRecords->value => Scope::Own,
-                Permission::ViewAssignments->value => Scope::Own,
-                Permission::ViewPay->value => Scope::Own,
+                Permission::ViewEmployeeRecords->value => Scope::Own->value,
+                Permission::ViewAssignments->value => Scope::Own->value,
+                Permission::ViewPay->value => Scope::Own->value,
             ], 'givenToNewEmployees' => true],
         ];
 
-        $roles = [];
-        foreach ($starters as $name => $starter) {
-            $role = Role::query()->create(['name' => $name, 'is_given_to_new_employees' => $starter['givenToNewEmployees']]);
-
-            foreach ($starter['grants'] as $permission => $scope) {
-                $role->permissions()->create(['permission' => $permission, 'scope' => $scope]);
-            }
-
-            $roles[$name] = $role;
-        }
-
-        return $roles;
+        return array_map(
+            fn (array $starter): Role => $this->changeAccess->createRole($installer, $starter['name'], $starter['grants'], $starter['givenToNewEmployees']),
+            $starters,
+        );
     }
 }

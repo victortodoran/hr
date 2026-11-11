@@ -11,9 +11,9 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * A Role's name and Permissions, when creating or editing one. Permissions
- * arrive as a map from each chosen Permission to its Scope, or to null for
- * company-wide Permissions.
+ * A Role's name, Permissions and whether new Employees get it, when creating
+ * or editing one. Permissions arrive as a map from each chosen Permission to
+ * its Scope, or to null for company-wide Permissions.
  */
 class RoleRequest extends FormRequest
 {
@@ -32,6 +32,7 @@ class RoleRequest extends FormRequest
                 Rule::unique(Role::class)->ignore($role instanceof Role ? $role->id : null),
             ],
             'permissions' => ['present', 'array', $this->eachPermissionWithItsScope()],
+            'given_to_new_employees' => ['required', 'boolean'],
         ];
     }
 
@@ -46,6 +47,14 @@ class RoleRequest extends FormRequest
         $permissions = $this->validated('permissions');
 
         return $permissions;
+    }
+
+    /**
+     * Whether every new Employee should be given the Role.
+     */
+    public function givenToNewEmployees(): bool
+    {
+        return $this->boolean('given_to_new_employees');
     }
 
     /**

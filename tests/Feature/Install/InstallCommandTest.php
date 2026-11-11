@@ -1,8 +1,11 @@
 <?php
 
+use App\Actions\ChangeAccess;
 use App\Actions\InstallCompany;
 use App\Console\Commands\InstallCommand;
+use App\Enums\AccessChange;
 use App\Enums\Permission;
+use App\Models\AccessLogEntry;
 use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
@@ -15,7 +18,7 @@ use Illuminate\Testing\PendingCommand;
 
 use function Pest\Laravel\artisan;
 
-covers(InstallCommand::class, InstallCompany::class, CompanySettings::class, Role::class);
+covers(InstallCommand::class, InstallCompany::class, CompanySettings::class, Role::class, ChangeAccess::class);
 
 /**
  * Run hr:install with the given options and return the pending command
@@ -219,4 +222,24 @@ it('asks for any value not given as an option', function () {
         ->assertSuccessful();
 
     expect(Employee::query()->where('email', 'dana@acme.test')->exists())->toBeTrue();
+});
+
+it('logs the starter Roles being created and Admin given to the first Employee, as done by them', function () {
+    install(installOptions())->assertSuccessful();
+
+    $dana = Employee::query()->where('email', 'dana@acme.test')->sole();
+    $entries = AccessLogEntry::query()->orderBy('id')->get();
+
+    expect($entries->map(fn (AccessLogEntry $entry): array => [$entry->change, $entry->role_name, $entry->employee_id])->all())->toBe([
+        [AccessChange::RoleCreated, 'Admin', null],
+        [AccessChange::RoleCreated, 'Manager', null],
+        [AccessChange::RoleCreated, 'Employee', null],
+        [AccessChange::RoleGiven, 'Admin', $dana->id],
+    ])
+        ->and($entries->pluck('actor_id')->unique()->all())->toBe([$dana->id])
+        ->and($entries->get(2)?->after)->toBe([
+            'name' => 'Employee',
+            'permissions' => ['view-employee-records' => 'own', 'view-assignments' => 'own', 'view-pay' => 'own', 'view-directory' => null],
+            'given_to_new_employees' => true,
+        ]);
 });

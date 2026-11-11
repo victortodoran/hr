@@ -38,9 +38,14 @@ const scopes: { value: Scope; label: string }[] = [
 
 const open = ref(false);
 
-const form = useForm<{ name: string; permissions: Grants }>({
+const form = useForm<{
+    name: string;
+    permissions: Grants;
+    given_to_new_employees: boolean;
+}>({
     name: props.role?.name ?? '',
     permissions: { ...props.role?.permissions },
+    given_to_new_employees: props.role?.given_to_new_employees ?? false,
 });
 
 function isGranted(permission: PermissionChoice): boolean {
@@ -96,6 +101,19 @@ function submit(): void {
                         required
                     />
                     <InputError :message="form.errors.name" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label class="flex items-center gap-3 font-normal">
+                        <Checkbox
+                            :model-value="form.given_to_new_employees"
+                            @update:model-value="
+                                form.given_to_new_employees = $event === true
+                            "
+                        />
+                        Give to new Employees
+                    </Label>
+                    <InputError :message="form.errors.given_to_new_employees" />
                 </div>
 
                 <fieldset class="grid gap-3">

@@ -15,6 +15,8 @@ export type RoleRecord = {
     id: number;
     name: string;
     permissions: Grants;
+    /** Whether every new Employee is given the Role. */
+    given_to_new_employees: boolean;
     holders: RoleHolder[];
 };
 
