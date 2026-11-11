@@ -1,0 +1,74 @@
+<script setup lang="ts">
+import { Form, Head } from '@inertiajs/vue3';
+import CompanySettingsController from '@/actions/App/Http/Controllers/CompanySettingsController';
+import Heading from '@/components/Heading.vue';
+import InputError from '@/components/InputError.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { edit } from '@/routes/company';
+import type { CompanySettings } from '@/types';
+
+defineOptions({
+    layout: {
+        breadcrumbs: [{ title: 'Company', href: edit() }],
+    },
+});
+
+defineProps<{
+    company: CompanySettings;
+    isCurrencyLocked: boolean;
+}>();
+</script>
+
+<template>
+    <Head title="Company" />
+
+    <div class="flex max-w-xl flex-col gap-8 p-4">
+        <Heading
+            title="Company"
+            description="The company's name and the currency every Pay is recorded in"
+        />
+
+        <Form
+            v-bind="CompanySettingsController.update.form()"
+            :options="{ preserveScroll: true }"
+            class="space-y-6"
+            v-slot="{ errors, processing }"
+        >
+            <div class="grid gap-2">
+                <Label for="company-name">Name</Label>
+                <Input
+                    id="company-name"
+                    name="name"
+                    :default-value="company.name"
+                    required
+                />
+                <InputError :message="errors.name" />
+            </div>
+
+            <div class="grid gap-2">
+                <Label for="company-currency">Currency</Label>
+                <Input
+                    id="company-currency"
+                    name="currency"
+                    :default-value="company.currency"
+                    maxlength="3"
+                    class="uppercase"
+                    :readonly="isCurrencyLocked"
+                    required
+                />
+                <p class="text-sm text-muted-foreground">
+                    {{
+                        isCurrencyLocked
+                            ? "Pay has been recorded in this currency, so it can't be changed."
+                            : 'A three-letter code, such as EUR. It can only be changed until Pay is recorded.'
+                    }}
+                </p>
+                <InputError :message="errors.currency" />
+            </div>
+
+            <Button type="submit" :disabled="processing">Save</Button>
+        </Form>
+    </div>
+</template>

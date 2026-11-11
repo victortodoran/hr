@@ -7,6 +7,7 @@ import {
     Building2,
     FolderKanban,
     FolderGit2,
+    Landmark,
     LayoutGrid,
     ShieldCheck,
     Users,
@@ -27,6 +28,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as clients } from '@/routes/clients';
+import { edit as company } from '@/routes/company';
 import { index as departments } from '@/routes/departments';
 import { index as directory } from '@/routes/directory';
 import { index as assignments } from '@/routes/employees/assignments';
@@ -66,6 +68,9 @@ const mainNavItems = computed<NavItem[]>(() => [
         : []),
     ...(page.props.auth.can.includes('manage-roles')
         ? [{ title: 'Roles', href: roles(), icon: ShieldCheck }]
+        : []),
+    ...(page.props.auth.can.includes('manage-company')
+        ? [{ title: 'Company', href: company(), icon: Landmark }]
         : []),
 ]);
 

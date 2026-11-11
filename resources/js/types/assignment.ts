@@ -1,4 +1,5 @@
 import type { Choice } from './employee-record';
+import type { PayEntryRecord } from './pay';
 
 /**
  * One of an Employee's Assignments, as their Assignments page shows it.
@@ -12,6 +13,8 @@ export type AssignmentRecord = {
     end_date: string | null;
     /** A whole percentage of the Employee's time, from 0 to 100. */
     capacity: number;
+    /** The Pay history, newest first; only sent to viewers who may see it. */
+    pay?: PayEntryRecord[];
 };
 
 /**

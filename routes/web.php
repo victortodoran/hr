@@ -4,10 +4,12 @@ use App\Enums\Permission;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeInvitationController;
+use App\Http\Controllers\PayEntryController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RoleHolderController;
@@ -44,6 +46,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('employees/{employee}/assignments', [AssignmentController::class, 'store'])->middleware('can:create,'.Assignment::class.',employee')->name('employees.assignments.store');
     Route::patch('assignments/{assignment}', [AssignmentController::class, 'update'])->middleware('can:update,assignment')->name('assignments.update');
 
+    Route::middleware('can:managePayOn,assignment')->group(function () {
+        Route::post('assignments/{assignment}/pay', [PayEntryController::class, 'store'])->name('assignments.pay.store');
+        Route::delete('assignments/{assignment}/pay/{payEntry}', [PayEntryController::class, 'destroy'])->scopeBindings()->name('assignments.pay.destroy');
+    });
+
     Route::middleware('can:'.Permission::ViewDirectory->value)->group(function () {
         Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');
         Route::get('directory/{employee}', [DirectoryController::class, 'show'])->name('directory.show');
@@ -62,6 +69,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects', [ProjectController::class, 'store'])->middleware('can:create,'.Project::class)->name('projects.store');
     Route::patch('projects/{project}', [ProjectController::class, 'update'])->middleware('can:update,project')->name('projects.update');
     Route::delete('projects/{project}', [ProjectController::class, 'destroy'])->middleware('can:delete,project')->name('projects.destroy');
+
+    Route::middleware('can:'.Permission::ManageCompany->value)->group(function () {
+        Route::get('company', [CompanySettingsController::class, 'edit'])->name('company.edit');
+        Route::patch('company', [CompanySettingsController::class, 'update'])->name('company.update');
+    });
 
     Route::middleware('can:'.Permission::ManageDepartments->value)->group(function () {
         Route::get('departments', [DepartmentController::class, 'index'])->name('departments.index');
