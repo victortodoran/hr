@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import ValueOr from '@/components/ValueOr.vue';
-
 defineProps<{
-    /** Only empty on the Internal Assignment, where it means the leftover time. */
+    /** Only empty on the Internal Assignment, which then shows 0% until a share is planned. */
     share: number | null;
 }>();
 </script>
 
 <template>
-    <ValueOr :value="share === null ? null : `${share}%`" fallback="Leftover" />
+    <span>{{ share ?? 0 }}%</span>
 </template>
