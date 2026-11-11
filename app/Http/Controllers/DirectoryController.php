@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\EmploymentStatus;
 use App\Models\Employee;
+use App\Support\ReportingChain;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -49,7 +50,8 @@ class DirectoryController extends Controller
     }
 
     /**
-     * Show an Employee's Reporting Chain, from them up to the top Employee.
+     * Show an Employee's Reporting Chain: everyone above them up to the top
+     * Employee, and the Employees they are the Manager of.
      * Former Employees have left the directory, so they have no page.
      */
     public function show(#[CurrentUser] Employee $actor, Employee $employee): Response
@@ -57,14 +59,7 @@ class DirectoryController extends Controller
         abort_if($employee->employmentStatus() === EmploymentStatus::Former, 404);
 
         return Inertia::render('directory/Show', [
-            'chain' => collect([$employee->load('department'), ...$employee->reportingChain()])
-                ->map(fn (Employee $chainMember): array => [
-                    'id' => $chainMember->id,
-                    'name' => $chainMember->name,
-                    'department' => $chainMember->department?->name, // @pest-mutate-ignore (every Employee has a Department; the nullsafe only satisfies the relation's nullable type)
-                ])
-                ->all(),
-            'canViewEmployeePage' => $actor->can('view', $employee),
+            'reportingChain' => ReportingChain::of($employee, $actor),
         ]);
     }
 }

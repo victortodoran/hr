@@ -1,4 +1,4 @@
-import type { Choice } from './employee-record';
+import type { Choice, EmploymentStatus } from './employee-record';
 
 export type DirectoryEntry = {
     id: number;
@@ -9,8 +9,25 @@ export type DirectoryEntry = {
     manager: Choice | null;
 };
 
-export type ChainLink = {
+/**
+ * One Employee in a Reporting Chain, with where the viewer may follow their
+ * name: their Employee page, their Directory page, or nowhere.
+ */
+export type ChainMember = {
     id: number;
     name: string;
-    department: string;
+    job_title: string | null;
+    department: string | null;
+    status: EmploymentStatus;
+    link: 'employee' | 'directory' | null;
+};
+
+/**
+ * An Employee's Reporting Chain: everyone above them from the top Employee
+ * down, the Employee, and the Employees they are the Manager of.
+ */
+export type ReportingChainView = {
+    above: ChainMember[];
+    employee: ChainMember;
+    below: ChainMember[];
 };

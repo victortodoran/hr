@@ -37,7 +37,7 @@ An Employee anywhere below another Employee in the reporting line, whether direc
 _Avoid_: Subordinate, team member, direct
 
 **Reporting Chain**:
-An Employee's Manager, that Manager's Manager, and so on up to the single Employee at the top of the company.
+An Employee's place in the reporting line: their Manager, that Manager's Manager, and so on up to the single Employee at the top of the company, then the Employee themselves, then the Employees they are the Manager of. It reaches only one level down, not to every Report.
 _Avoid_: Hierarchy, org path, chain of command, management line
 
 ### Organisation

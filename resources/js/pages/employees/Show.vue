@@ -4,6 +4,7 @@ import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
+import ReportingChain from '@/components/employees/ReportingChain.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import ValueOr from '@/components/ValueOr.vue';
@@ -16,6 +17,7 @@ import type {
     EmployeePageRecord,
     OpenProject,
     PayEntryRecord,
+    ReportingChainView,
 } from '@/types';
 
 const props = defineProps<{
@@ -23,6 +25,8 @@ const props = defineProps<{
     /** Only sent to viewers who may see the Employee's record. */
     record: EmployeePageRecord | null;
     reportsNeedingAManager: Choice[];
+    /** Null for a Former Employee, who is no longer in the reporting line. */
+    reportingChain: ReportingChainView | null;
     /** Only sent to viewers who may see the Employee's Assignments. */
     assignments: AssignmentRecord[] | null;
     canManage: boolean;
@@ -135,6 +139,11 @@ setLayoutProps({
                     </li>
                 </ul>
             </div>
+        </section>
+
+        <section v-if="reportingChain" class="flex max-w-xl flex-col gap-4">
+            <h2 class="text-lg font-semibold">Reporting Chain</h2>
+            <ReportingChain :chain="reportingChain" />
         </section>
 
         <section v-if="assignments" class="flex flex-col gap-4">
