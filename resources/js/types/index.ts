@@ -9,3 +9,4 @@ export * from './pagination';
 export * from './project';
 export * from './ui';
 export * from './role';
+export * from './pay';

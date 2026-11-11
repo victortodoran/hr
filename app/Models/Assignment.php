@@ -8,9 +8,11 @@ use Database\Factories\AssignmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope as QueryScope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -32,6 +34,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Employee $employee
  * @property-read Project $project
+ * @property-read Collection<int, PayEntry> $payEntries
  */
 #[Fillable(['project_id', 'job_title', 'start_date', 'end_date', 'capacity'])] // @pest-mutate-ignore (class attributes never show as covered)
 class Assignment extends Model
@@ -66,6 +69,16 @@ class Assignment extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * The Assignment's Pay history.
+     *
+     * @return HasMany<PayEntry, $this>
+     */
+    public function payEntries(): HasMany
+    {
+        return $this->hasMany(PayEntry::class);
     }
 
     /**

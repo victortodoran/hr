@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\Currency;
+use Database\Factories\CompanySettingsFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -21,11 +24,32 @@ use Illuminate\Support\Carbon;
 #[Table('company_settings')]
 class CompanySettings extends Model
 {
+    /** @use HasFactory<CompanySettingsFactory> */
+    use HasFactory;
+
     /**
      * The installation's company settings, or null before installation.
      */
     public static function current(): ?self
     {
         return static::query()->first();
+    }
+
+    /**
+     * Whether the currency can no longer change, because Pay has been
+     * recorded in it.
+     */
+    public static function isCurrencyLocked(): bool
+    {
+        return PayEntry::query()->exists();
+    }
+
+    /**
+     * The currency every Pay is recorded in. The company is installed
+     * before anyone can sign in, so its settings always exist by then.
+     */
+    public static function payCurrency(): Currency
+    {
+        return new Currency(static::query()->sole()->currency);
     }
 }
