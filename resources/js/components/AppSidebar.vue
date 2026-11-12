@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     Briefcase,
+    CalendarDays,
     CheckCheck,
     Clock,
     Building2,
@@ -36,6 +37,7 @@ import { index as employees, show as employeePage } from '@/routes/employees';
 import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import { index as team } from '@/routes/team';
+import { index as timeOff } from '@/routes/time-off';
 import { index as workEntries } from '@/routes/work-entries';
 import type { NavItem } from '@/types';
 
@@ -57,6 +59,7 @@ const mainNavItems = computed<NavItem[]>(() => [
     ...(page.props.auth.canSeeWorkEntries
         ? [{ title: 'Work Entries', href: workEntries(), icon: Clock }]
         : []),
+    { title: 'Time Off', href: timeOff(), icon: CalendarDays },
     ...(page.props.auth.canSeeApprovals
         ? [{ title: 'Approvals', href: approvals(), icon: CheckCheck }]
         : []),
