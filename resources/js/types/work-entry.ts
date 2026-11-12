@@ -1,4 +1,17 @@
 /**
+ * Where a Work Entry stands: only a Pending one can be changed.
+ */
+export type WorkEntryState = 'pending' | 'approved' | 'locked';
+
+/**
+ * Who approved or locked a Work Entry, and on which day.
+ */
+export type WorkEntrySignOff = {
+    by: string;
+    on: string;
+};
+
+/**
  * How long an Employee worked on one Assignment on one date, and what
  * they did.
  */
@@ -8,6 +21,11 @@ export type WorkEntryRecord = {
     project: string;
     hours: number;
     description: string;
+    state: WorkEntryState;
+    approved: WorkEntrySignOff | null;
+    locked: WorkEntrySignOff | null;
+    /** Whether the viewer may change or delete it. */
+    can_change: boolean;
 };
 
 /**

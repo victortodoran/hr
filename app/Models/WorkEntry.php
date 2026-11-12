@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\WorkEntryState;
 use Database\Factories\WorkEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -14,18 +15,26 @@ use Illuminate\Support\Carbon;
 /**
  * How long an Employee worked on one of their Assignments on one date, and
  * what they did. It always falls within the Assignment's dates and never
- * on a day still to come.
+ * on a day still to come. It starts Pending, can be Approved, and can then
+ * be Locked for good.
  *
  * @property int $id
  * @property int $assignment_id
  * @property Carbon $date
  * @property int $minutes Whole minutes, in quarter-hour steps
  * @property string $description
+ * @property WorkEntryState $state
+ * @property int|null $approved_by
+ * @property Carbon|null $approved_at
+ * @property int|null $locked_by
+ * @property Carbon|null $locked_at
  * @property-read float|int $hours The minutes as hours, such as 7.5
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Assignment $assignment
  * @property-read Employee $employee
+ * @property-read Employee|null $approver
+ * @property-read Employee|null $locker
  */
 #[Fillable(['assignment_id', 'date', 'minutes', 'description'])] // @pest-mutate-ignore (class attributes never show as covered)
 class WorkEntry extends Model
@@ -38,6 +47,15 @@ class WorkEntry extends Model
      * Assignments.
      */
     public const int MINUTES_IN_A_DAY = 24 * 60; // @pest-mutate-ignore (constants are evaluated before coverage starts; the 24-hour tests pin the value)
+
+    /**
+     * Every Work Entry starts Pending.
+     *
+     * @var array<string, string>
+     */
+    protected $attributes = [
+        'state' => 'pending', // @pest-mutate-ignore (the column defaults to pending too, so stored Work Entries look the same)
+    ];
 
     /**
      * Minutes as hours people read, such as "7.5" or "23".
@@ -58,6 +76,9 @@ class WorkEntry extends Model
     {
         return [
             'date' => 'date',
+            'state' => WorkEntryState::class,
+            'approved_at' => 'datetime',
+            'locked_at' => 'datetime',
         ];
     }
 
@@ -77,6 +98,36 @@ class WorkEntry extends Model
     public function employee(): HasOneThrough
     {
         return $this->hasOneThrough(Employee::class, Assignment::class, 'id', 'id', 'assignment_id', 'employee_id');
+    }
+
+    /**
+     * Whether the Work Entry is Pending, the only state in which it can be
+     * changed or deleted.
+     */
+    public function isPending(): bool
+    {
+        return $this->state === WorkEntryState::Pending;
+    }
+
+    /**
+     * The Employee who approved the Work Entry, while it is Approved or
+     * Locked.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'approved_by');
+    }
+
+    /**
+     * The Employee who locked the Work Entry, once it is Locked.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function locker(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'locked_by');
     }
 
     /**

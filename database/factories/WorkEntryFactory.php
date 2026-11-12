@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\WorkEntryState;
 use App\Models\Assignment;
+use App\Models\Employee;
 use App\Models\WorkEntry;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
@@ -25,5 +27,32 @@ class WorkEntryFactory extends Factory
             'minutes' => fake()->numberBetween(1, 32) * 15,
             'description' => fake()->sentence(),
         ];
+    }
+
+    /**
+     * Approved by someone else, an hour ago unless told otherwise.
+     */
+    public function approved(?Employee $approver = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'state' => WorkEntryState::Approved,
+            'approved_by' => $approver ?? Employee::factory(),
+            'approved_at' => now()->subHour(),
+        ]);
+    }
+
+    /**
+     * Approved (by someone else unless already approved), then Locked by
+     * someone else.
+     */
+    public function locked(?Employee $locker = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'approved_by' => $attributes['approved_by'] ?? Employee::factory(),
+            'approved_at' => $attributes['approved_at'] ?? now()->subHour(),
+            'state' => WorkEntryState::Locked,
+            'locked_by' => $locker ?? Employee::factory(),
+            'locked_at' => now(),
+        ]);
     }
 }

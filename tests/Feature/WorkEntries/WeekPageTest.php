@@ -48,11 +48,11 @@ it('shows the week holding the given day, with totals for each day, each Assignm
     $response->assertInertia(fn (Assert $page) => $page
         ->where('week', '2026-11-02')
         ->where('days.1', ['date' => '2026-11-03', 'hours' => 3.5, 'entries' => [
-            ['id' => $review->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2, 'description' => 'Review'],
-            ['id' => $api->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API'],
+            ['id' => $review->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2, 'description' => 'Review', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_change' => true],
+            ['id' => $api->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_change' => true],
         ]])
         ->where('days.4', ['date' => '2026-11-06', 'hours' => 0.75, 'entries' => [
-            ['id' => $invoices->id, 'assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75, 'description' => 'Invoices'],
+            ['id' => $invoices->id, 'assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75, 'description' => 'Invoices', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_change' => true],
         ]])
         ->where('days.6', ['date' => '2026-11-08', 'hours' => 0, 'entries' => []])
         ->where('assignmentTotals', [
@@ -60,6 +60,34 @@ it('shows the week holding the given day, with totals for each day, each Assignm
             ['assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 3.5],
         ])
         ->where('total', 4.25));
+});
+
+it('shows who approved and locked each Work Entry, and offers to change only Pending ones', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    $ben = Employee::factory()->create(['name' => 'Ben']);
+    $fay = Employee::factory()->create(['name' => 'Fay']);
+    $pending = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'minutes' => 60, 'description' => 'Pending']);
+    $approved = WorkEntry::factory()->for($relaunch)->approved($ben)->create(['date' => '2026-11-10', 'minutes' => 60, 'description' => 'Approved', 'approved_at' => '2026-11-10 17:00']);
+    $locked = WorkEntry::factory()->for($relaunch)->approved($ben)->locked($fay)->create(['date' => '2026-11-10', 'minutes' => 60, 'description' => 'Locked', 'approved_at' => '2026-11-10 18:00', 'locked_at' => '2026-11-11 08:00']);
+
+    $response = actingAs($cara)->get(route('work-entries.index'));
+
+    $response->assertInertia(fn (Assert $page) => $page->where('days.1.entries', [
+        ['id' => $pending->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Pending', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_change' => true],
+        ['id' => $approved->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Approved', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => null, 'can_change' => false],
+        ['id' => $locked->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Locked', 'state' => 'locked', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => ['by' => 'Fay', 'on' => '2026-11-11'], 'can_change' => false],
+    ]));
+});
+
+it('offers to change no Work Entry to someone who can only see them', function () {
+    $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
+    $cara = Employee::factory()->create();
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10']);
+
+    $response = actingAs($ben)->get(route('work-entries.index', ['employee' => $cara->id]));
+
+    $response->assertInertia(fn (Assert $page) => $page->where('days.1.entries.0.can_change', false));
 });
 
 it('offers the Employee\'s Assignments that run during the week', function () {

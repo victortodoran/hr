@@ -33,10 +33,12 @@ class WorkEntryPolicy
 
     /**
      * Changing or deleting a Work Entry needs manage work entries for the
-     * Employee whose Assignment it is on.
+     * Employee whose Assignment it is on, and only a Pending one can be
+     * changed: an Approved one must be reopened first, and a Locked one never
+     * can be.
      */
     public function update(Employee $actor, WorkEntry $workEntry): bool
     {
-        return $this->create($actor, $workEntry->employee);
+        return $workEntry->isPending() && $this->create($actor, $workEntry->employee);
     }
 }
