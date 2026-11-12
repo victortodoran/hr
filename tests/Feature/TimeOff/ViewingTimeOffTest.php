@@ -44,10 +44,8 @@ it('shows Cara\'s Paid Days, Paid Days left and Time Off, latest first, on her r
     $ids = $cara->timeOff()->orderByDesc('first_date')->pluck('id')->all();
 
     actingAs(employeeWith([Permission::ViewTimeOff->value => Scope::Everyone]))
-        ->get(route('employees.show', $cara))->assertOk()
+        ->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('record', null)
-            ->where('assignments', null)
             ->where('paidDays', null)
             ->where('timeOff', [
                 'year' => 2026,
@@ -66,8 +64,8 @@ it('shows no Time Off to someone who may see Cara\'s record but not her Time Off
     $cara = caraWithTimeOff(Employee::factory()->create());
 
     actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]))
-        ->get(route('employees.show', $cara))
-        ->assertInertia(fn (Assert $page) => $page->where('timeOff', null));
+        ->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
+        ->assertInertia(fn (Assert $page) => $page->where('tab', 'overview')->missing('timeOff'));
 });
 
 it('refuses Cara\'s page to someone with View Time Off only for themselves', function () {
@@ -82,7 +80,7 @@ it('lets an Employee with View Time Off for themselves see their own Time Off on
     $cara = caraWithTimeOff(Employee::factory()->create());
     giveRole($cara, [Permission::ViewTimeOff->value => Scope::Own]);
 
-    actingAs($cara)->get(route('employees.show', $cara))
+    actingAs($cara)->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page->where('timeOff.paid_days_left', 13)->has('timeOff.requests', 4));
 });
 
@@ -90,7 +88,7 @@ it('shows Cara\'s Time Off to someone who manages her Paid Days', function () {
     $cara = caraWithTimeOff(Employee::factory()->create());
 
     actingAs(employeeWith([Permission::ManagePaidDays->value => Scope::Everyone]))
-        ->get(route('employees.show', $cara))
+        ->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page
             ->has('paidDays', 2)
             ->where('timeOff.paid_days', 20)

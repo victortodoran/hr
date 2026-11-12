@@ -38,6 +38,12 @@ export type EmployeePageRecord = {
 };
 
 /**
+ * The tabs of an Employee's page: Overview (record and Reporting Chain),
+ * Assignments & Pay, and Time Off (Paid Days and Time Off).
+ */
+export type EmployeePageTab = 'overview' | 'assignments' | 'time-off';
+
+/**
  * One row of the Employees list.
  */
 export type EmployeeListEntry = Choice & {

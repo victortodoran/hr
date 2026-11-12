@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EmployeePageTab;
 use App\Http\Requests\PaidDaysRequest;
 use App\Models\Employee;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,6 @@ class PaidDaysController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Paid Days for :year saved.', ['year' => $year])]);
 
-        return to_route('employees.show', $employee);
+        return to_route('employees.show', ['employee' => $employee, 'tab' => EmployeePageTab::TimeOff]);
     }
 }

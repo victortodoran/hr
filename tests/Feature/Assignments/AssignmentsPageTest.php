@@ -27,7 +27,7 @@ it('shows an Employee their own Assignments, the Internal Assignment among them,
     $later = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Tech Lead', 'start_date' => '2026-03-01', 'end_date' => null, 'capacity' => 40]);
     $earlier = Assignment::factory()->for($ana)->for($audit)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 100]);
 
-    actingAs($ana)->get(route('employees.show', $ana))
+    actingAs($ana)->get(route('employees.show', ['employee' => $ana, 'tab' => 'assignments']))
         ->assertInertia(fn (Assert $page) => $page
             ->component('employees/Show')
             ->where('employee', ['id' => $ana->id, 'name' => 'Ana Pop', 'job_title' => 'Developer'])
@@ -51,7 +51,7 @@ it('offers an assignment manager the Projects still open to Assignments, by name
     Project::factory()->internal()->create();
 
     actingAs(employeeWith([Permission::ManageAssignments->value => Scope::Everyone]))
-        ->get(route('employees.show', $ana))
+        ->get(route('employees.show', ['employee' => $ana, 'tab' => 'assignments']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('assignments', [])
             ->where('canManage', true)
@@ -80,7 +80,7 @@ it('lets Scope decide whose Assignments an Employee may see', function (Scope $s
     ];
 
     foreach ($people as $name => $employee) {
-        actingAs($ben)->get(route('employees.show', $employee))
+        actingAs($ben)->get(route('employees.show', ['employee' => $employee, 'tab' => 'assignments']))
             ->assertStatus(in_array($name, $visible, true) ? 200 : 403);
     }
 })->with([
@@ -93,7 +93,7 @@ it('lets an Employee who manages someone\'s Assignments see them too', function 
     $ben = employeeWith([Permission::ManageAssignments->value => Scope::Reports], ['manager_id' => Employee::factory()->top()->create()->id]);
     $cara = Employee::factory()->create(['manager_id' => $ben->id]);
 
-    actingAs($ben)->get(route('employees.show', $cara))
+    actingAs($ben)->get(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
         ->assertInertia(fn (Assert $page) => $page->where('canManage', true));
 });
 
@@ -101,7 +101,7 @@ it('shows Assignments read-only to an Employee who may see but not manage them',
     $ben = employeeWith([Permission::ViewAssignments->value => Scope::Everyone, Permission::ManageAssignments->value => Scope::Reports], ['manager_id' => Employee::factory()->top()->create()->id]);
     $eve = Employee::factory()->create();
 
-    actingAs($ben)->get(route('employees.show', $eve))
+    actingAs($ben)->get(route('employees.show', ['employee' => $eve, 'tab' => 'assignments']))
         ->assertInertia(fn (Assert $page) => $page->where('canManage', false)->where('projects', []));
 });
 

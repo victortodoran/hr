@@ -53,7 +53,7 @@ it('lets someone who manages Paid Days set an Employee\'s Paid Days for a year, 
 
     actingAs(paidDaysManager())
         ->post(route('employees.paid-days.store', $cara), ['year' => 2026, 'days' => 20])
-        ->assertRedirect(route('employees.show', $cara))
+        ->assertRedirect(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Paid Days for 2026 saved.']);
 
     expect(storedPaidDays($cara))->toBe([2025 => 18, 2026 => 20, 2027 => 25]);
@@ -89,7 +89,7 @@ it('shows Paid Days for this year and next, a year with no number copying the mo
         PaidDays::factory()->for($cara)->create(['year' => $year, 'days' => $days]);
     }
 
-    actingAs(paidDaysManager())->get(route('employees.show', $cara))
+    actingAs(paidDaysManager())->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('paidDays', [
                 ['year' => 2026, 'days' => $shown[0]],
@@ -110,7 +110,7 @@ it('keeps copying forward into the new year', function () {
     PaidDays::factory()->for(Employee::factory())->create(['year' => 2027, 'days' => 5]);
     travelTo('2027-01-01 09:00');
 
-    actingAs(paidDaysManager())->get(route('employees.show', $cara))
+    actingAs(paidDaysManager())->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('paidDays', [
                 ['year' => 2027, 'days' => 20],
@@ -122,17 +122,17 @@ it('shows Paid Days only to those who manage them for the Employee', function ()
     $cara = cara();
 
     actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]))
-        ->get(route('employees.show', $cara))
-        ->assertInertia(fn (Assert $page) => $page->where('paidDays', null));
+        ->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
+        ->assertInertia(fn (Assert $page) => $page->where('tab', 'overview')->missing('paidDays'));
 });
 
 it('lets someone who only manages Paid Days open the Employee\'s page to set them', function () {
     $cara = cara();
 
-    actingAs(paidDaysManager())->get(route('employees.show', $cara))
+    actingAs(paidDaysManager())->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('record', null)
-            ->where('assignments', null)
+            ->where('tabs', ['overview', 'time-off'])
+            ->where('tab', 'time-off')
             ->has('paidDays', 2));
 });
 
