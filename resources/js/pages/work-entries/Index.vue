@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     Select,
     SelectContent,
@@ -13,7 +21,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
-import WorkEntryDialog from '@/components/work-entries/WorkEntryDialog.vue';
+import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
 import { formatDate } from '@/lib/dates';
 import { index } from '@/routes/work-entries';
 import type {
@@ -100,6 +108,111 @@ const isCurrentWeek = computed(
 
 function switchEmployee(employeeId: unknown): void {
     router.get(weekOf(Number(employeeId), props.week).url);
+}
+
+/** The Work Entries turned into fields to change them. */
+const editing = reactive(new Set<number>());
+
+/** The rows holding typing that isn't saved yet, by row key. */
+const unsaved = reactive(new Set<string>());
+
+/** The Assignment of the Work Entry last added on this page. */
+const lastAssignmentId = ref<number | null>(null);
+
+/** Each day's empty row, by date, so the cursor can move between them. */
+const newRows = new Map<string, InstanceType<typeof WorkEntryRow>>();
+
+function rememberNewRow(date: string, row: unknown): void {
+    if (row) {
+        newRows.set(date, row as InstanceType<typeof WorkEntryRow>);
+    } else {
+        newRows.delete(date);
+    }
+}
+
+function markUnsaved(rowKey: string, isDirty: boolean): void {
+    if (isDirty) {
+        unsaved.add(rowKey);
+    } else {
+        unsaved.delete(rowKey);
+    }
+}
+
+function stopEditing(entryId: number): void {
+    editing.delete(entryId);
+    unsaved.delete(`entry-${entryId}`);
+}
+
+/**
+ * Whether the cursor stops at a day after adding a Work Entry: a weekday up
+ * to today without Time Off.
+ */
+function takesNextEntry(day: WorkEntryDay): boolean {
+    const weekday = new Date(`${day.date}T00:00:00`).getDay();
+
+    return (
+        weekday !== 0 &&
+        weekday !== 6 &&
+        day.time_off === null &&
+        day.date <= props.today
+    );
+}
+
+/**
+ * After a Work Entry is added, moves the cursor to the next day that takes
+ * one, or keeps it on the same day when none is left this week.
+ */
+async function entryAdded(date: string, assignmentId: number): Promise<void> {
+    lastAssignmentId.value = assignmentId;
+
+    const next = props.days.find(
+        (day) => day.date > date && takesNextEntry(day),
+    );
+
+    await nextTick();
+    newRows.get(next?.date ?? date)?.focusHours();
+}
+
+/** A visit to another week or page held back until leaving is confirmed. */
+const heldVisit = ref<URL | null>(null);
+
+let stopGuarding: (() => void) | null = null;
+
+onMounted(() => {
+    stopGuarding = router.on('before', (event) => {
+        const visit = event.detail.visit;
+
+        if (
+            visit.method !== 'get' ||
+            visit.prefetch ||
+            unsaved.size === 0 ||
+            heldVisit.value !== null
+        ) {
+            return;
+        }
+
+        heldVisit.value = visit.url;
+
+        return false;
+    });
+});
+
+onUnmounted(() => stopGuarding?.());
+
+function stayOnWeek(): void {
+    heldVisit.value = null;
+}
+
+function leaveWeek(): void {
+    const url = heldVisit.value;
+
+    if (url === null) {
+        return;
+    }
+
+    unsaved.clear();
+    heldVisit.value = null;
+    router.visit(url);
 }
 </script>
 
@@ -191,59 +304,72 @@ function switchEmployee(employeeId: unknown): void {
                             >Nothing logged</span
                         >
                     </p>
-                    <WorkEntryDialog
-                        v-if="canManage && day.date <= today"
-                        :employee="employee"
-                        :assignments="assignments"
-                        :date="day.date"
-                        :today="today"
-                    />
                 </div>
                 <ul v-if="day.entries.length > 0" class="space-y-1">
                     <li
                         v-for="entry in day.entries"
                         :key="entry.id"
-                        class="flex items-center justify-between gap-4 text-sm"
+                        class="text-sm"
                     >
-                        <p>
-                            <span class="font-medium">{{ entry.project }}</span>
-                            <span class="text-muted-foreground">
-                                · {{ entry.description }}</span
-                            >
-                            <span
-                                v-if="entry.approved"
-                                class="block text-xs text-muted-foreground"
-                                >{{ signOffs(entry) }}</span
-                            >
-                        </p>
-                        <div class="flex items-center gap-2">
-                            <StatusBadge :state="entry.state" />
-                            <span class="tabular-nums">{{
-                                formatHours(entry.hours)
-                            }}</span>
-                            <WorkEntryDialog
-                                v-if="entry.can_edit"
-                                :employee="employee"
-                                :assignments="assignments"
-                                :date="day.date"
-                                :today="today"
-                                :entry="entry"
-                            />
-                            <DeleteWorkEntry
-                                v-else-if="entry.can_delete"
-                                :entry="entry"
-                            />
-                            <WorkEntryDialog
-                                v-if="canManage"
-                                :employee="employee"
-                                :assignments="assignments"
-                                :date="day.date"
-                                :today="today"
-                                :repeat-of="entry"
-                            />
+                        <WorkEntryRow
+                            v-if="editing.has(entry.id)"
+                            :employee="employee"
+                            :assignments="assignments"
+                            :date="day.date"
+                            :today="today"
+                            :entry="entry"
+                            @saved="stopEditing(entry.id)"
+                            @cancel="stopEditing(entry.id)"
+                            @dirty="markUnsaved(`entry-${entry.id}`, $event)"
+                        />
+                        <div
+                            v-else
+                            class="flex items-center justify-between gap-4"
+                        >
+                            <p>
+                                <span class="font-medium">{{
+                                    entry.project
+                                }}</span>
+                                <span class="text-muted-foreground">
+                                    · {{ entry.description }}</span
+                                >
+                                <span
+                                    v-if="entry.approved"
+                                    class="block text-xs text-muted-foreground"
+                                    >{{ signOffs(entry) }}</span
+                                >
+                            </p>
+                            <div class="flex items-center gap-2">
+                                <StatusBadge :state="entry.state" />
+                                <span class="tabular-nums">{{
+                                    formatHours(entry.hours)
+                                }}</span>
+                                <Button
+                                    v-if="entry.can_edit"
+                                    variant="ghost"
+                                    size="sm"
+                                    @click="editing.add(entry.id)"
+                                    >Edit</Button
+                                >
+                                <DeleteWorkEntry
+                                    v-else-if="entry.can_delete"
+                                    :entry="entry"
+                                />
+                            </div>
                         </div>
                     </li>
                 </ul>
+                <WorkEntryRow
+                    v-if="canManage && day.date <= today"
+                    :ref="(row) => rememberNewRow(day.date, row)"
+                    :employee="employee"
+                    :assignments="assignments"
+                    :date="day.date"
+                    :today="today"
+                    :last-assignment-id="lastAssignmentId"
+                    @saved="entryAdded(day.date, $event)"
+                    @dirty="markUnsaved(`new-${day.date}`, $event)"
+                />
             </li>
         </ul>
 
@@ -262,5 +388,27 @@ function switchEmployee(employeeId: unknown): void {
                 </li>
             </ul>
         </section>
+
+        <Dialog
+            :open="heldVisit !== null"
+            @update:open="(open) => !open && stayOnWeek()"
+        >
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Leave without saving?</DialogTitle>
+                    <DialogDescription>
+                        You have an unsaved Work Entry. Leave anyway?
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter class="gap-2">
+                    <Button variant="secondary" @click="stayOnWeek"
+                        >Stay</Button
+                    >
+                    <Button variant="destructive" @click="leaveWeek"
+                        >Leave</Button
+                    >
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>
