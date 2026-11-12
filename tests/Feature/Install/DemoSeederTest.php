@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\EmploymentStatus;
+use App\Enums\WorkEntryState;
 use App\Models\AccessLogEntry;
 use App\Models\Assignment;
 use App\Models\Client;
@@ -10,6 +11,7 @@ use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\WorkEntry;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\Notification;
 
@@ -29,6 +31,18 @@ it('seeds a demo company with at least one of everything to try by hand', functi
         ->and(AccessLogEntry::query()->exists())->toBeTrue()
         ->and(Employee::query()->get()->map(fn (Employee $employee): EmploymentStatus => $employee->employmentStatus())->unique()->values()->all())
         ->toEqualCanonicalizing([EmploymentStatus::Future, EmploymentStatus::Current, EmploymentStatus::Former]);
+});
+
+it('gives Ana Pending Work Entries of her Reports to approve, next to Approved and Locked ones', function () {
+    seed(DemoSeeder::class);
+    $ana = Employee::query()->where('email', 'ana@acme.test')->sole();
+
+    $pending = WorkEntry::query()->where('state', WorkEntryState::Pending)->with('employee')->get();
+
+    expect($pending->pluck('employee.name')->unique()->count())->toBeGreaterThan(1)
+        ->and($pending->every(fn (WorkEntry $entry): bool => $entry->employee->isNot($ana) && $entry->date->lte(today())))->toBeTrue()
+        ->and(WorkEntry::query()->where('state', WorkEntryState::Approved)->where('approved_by', $ana->id)->exists())->toBeTrue()
+        ->and(WorkEntry::query()->where('state', WorkEntryState::Locked)->exists())->toBeTrue();
 });
 
 it('lets the demo Admin sign in with the demo password', function () {

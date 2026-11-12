@@ -9,22 +9,25 @@ use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\PayKind;
 use App\Enums\Permission;
 use App\Enums\Scope;
+use App\Enums\WorkEntryState;
 use App\Models\Assignment;
 use App\Models\Client;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\WorkEntry;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * A small demo company with at least one of everything but Work Entries, so
- * every other flow can be tried by hand. It installs the company the way
- * hr:install does, then adds Employees, Roles, Clients, Projects, Assignments
- * and Pay through the same actions the app uses. Dates are relative to today, so the Future and Former
- * Employees stay that way. Everyone except the Future Employee can sign in
+ * A small demo company with at least one of everything, so every flow can be
+ * tried by hand. It installs the company the way hr:install does, then adds
+ * Employees, Roles, Clients, Projects, Assignments and Pay through the same
+ * actions the app uses, and four weeks of Work Entries. Dates are relative to
+ * today, so the Future and Former Employees stay that way, and the last two
+ * weeks of Work Entries are always Pending, waiting for Ana to approve them. Everyone except the Future Employee can sign in
  * with the password "password"; the Future Employee still has an invitation
  * waiting. Invitations are not emailed.
  *
@@ -127,13 +130,17 @@ class DemoSeeder extends Seeder
         $this->internal($ivan, 'Product Designer', 50, [['fixed', 390000, null]]);
         $this->internal($dan, null, 0, []);
 
-        $this->assign($cara, $relaunch, 'Tech Lead', 60, $today->subYear(), null, [['hourly', 2500, null]]);
+        $caraOnRelaunch = $this->assign($cara, $relaunch, 'Tech Lead', 60, $today->subYear(), null, [['hourly', 2500, null]]);
         $this->assign($cara, $audit, 'Developer', 40, $today->subMonths(14), $today->subMonths(2), [['hourly', 2200, null]]);
         $this->assign($ben, $relaunch, 'Delivery Lead', 20, $today->subYear(), null, []);
         $this->assign($eve, $audit, 'QA Engineer', 100, $today->subMonths(14), $today->subMonths(2), [['hourly', 2000, null]]);
-        $this->assign($lia, $relaunch, 'Developer', 80, $today->subMonths(6), null, [['hourly', 1800, null]]);
-        $this->assign($ivan, $website, 'Designer', 50, $today->subMonths(6), $today->addMonths(4), [['hourly', 3000, null]]);
+        $liaOnRelaunch = $this->assign($lia, $relaunch, 'Developer', 80, $today->subMonths(6), null, [['hourly', 1800, null]]);
+        $ivanOnWebsite = $this->assign($ivan, $website, 'Designer', 50, $today->subMonths(6), $today->addMonths(4), [['hourly', 3000, null]]);
         $this->assign($dan, $mobileApp, 'Developer', 100, $today->addMonths(2), null, []);
+
+        $this->recordWeeks($caraOnRelaunch, 5, ['Reviewing pull requests', 'Checkout API', 'Sprint planning', 'Fixing payment bugs'], $ana, $finn);
+        $this->recordWeeks($liaOnRelaunch, 6, ['Product listing page', 'Unit tests for the cart', 'Pairing with Cara'], $ana, $finn);
+        $this->recordWeeks($ivanOnWebsite, 4, ['Homepage mock-ups', 'Design review with Hana', 'Icon set'], $ana, $finn);
 
         $this->command?->info('Demo company seeded. Sign in as ana@acme.test (Admin), ben@acme.test, hana@acme.test, finn@acme.test, cara@acme.test, ivan@acme.test or lia@acme.test with the password "password".');
     }
@@ -198,7 +205,7 @@ class DemoSeeder extends Seeder
      *
      * @param  list<array{0: string, 1: int, 2: CarbonInterface|null}>  $pay  Kind, amount in cents, and the day it takes effect (null for the first day)
      */
-    private function assign(Employee $employee, Project $project, string $jobTitle, int $capacity, CarbonInterface $startDate, ?CarbonInterface $endDate, array $pay): void
+    private function assign(Employee $employee, Project $project, string $jobTitle, int $capacity, CarbonInterface $startDate, ?CarbonInterface $endDate, array $pay): Assignment
     {
         $assignment = $employee->assignments()->create([
             'project_id' => $project->id,
@@ -209,6 +216,50 @@ class DemoSeeder extends Seeder
         ]);
 
         $this->pay($assignment, $pay);
+
+        return $assignment;
+    }
+
+    /**
+     * Record hours on the Assignment for every weekday of the last four
+     * weeks, up to today. This week and last are Pending. The week before was
+     * Approved by the approver the following Monday, and the one before that
+     * was also Locked by the locker a week later.
+     *
+     * @param  list<string>  $descriptions  What was done, taken in turn
+     */
+    private function recordWeeks(Assignment $assignment, int $hoursPerDay, array $descriptions, Employee $approver, Employee $locker): void
+    {
+        $thisMonday = today()->startOfWeek(CarbonInterface::MONDAY);
+
+        foreach (range(0, 3) as $weeksAgo) {
+            $monday = $thisMonday->subWeeks($weeksAgo);
+
+            foreach (range(0, 4) as $weekday) {
+                $date = $monday->addDays($weekday);
+
+                if ($date->isAfter(today())) {
+                    continue;
+                }
+
+                $workEntry = WorkEntry::query()->create([
+                    'assignment_id' => $assignment->id,
+                    'date' => $date,
+                    'minutes' => $hoursPerDay * 60,
+                    'description' => $descriptions[($weeksAgo * 5 + $weekday) % count($descriptions)],
+                ]);
+
+                if ($weeksAgo >= 2) {
+                    $workEntry->forceFill([
+                        'state' => $weeksAgo === 3 ? WorkEntryState::Locked : WorkEntryState::Approved,
+                        'approved_by' => $approver->id,
+                        'approved_at' => $monday->addWeek()->setTime(10, 0),
+                        'locked_by' => $weeksAgo === 3 ? $locker->id : null,
+                        'locked_at' => $weeksAgo === 3 ? $monday->addWeeks(2)->setTime(11, 0) : null,
+                    ])->save();
+                }
+            }
+        }
     }
 
     /**
