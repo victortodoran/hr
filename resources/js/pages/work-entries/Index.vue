@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Form, Head, Link, router } from '@inertiajs/vue3';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import { computed } from 'vue';
+import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -209,13 +210,30 @@ function switchEmployee(employeeId: unknown): void {
                                 formatHours(entry.hours)
                             }}</span>
                             <WorkEntryDialog
-                                v-if="entry.can_change"
+                                v-if="entry.can_edit"
                                 :employee="employee"
                                 :assignments="assignments"
                                 :date="day.date"
                                 :today="today"
                                 :entry="entry"
                             />
+                            <Form
+                                v-else-if="entry.can_delete"
+                                v-bind="
+                                    WorkEntryController.destroy.form(entry.id)
+                                "
+                                :options="{ preserveScroll: true }"
+                                v-slot="{ processing }"
+                            >
+                                <Button
+                                    type="submit"
+                                    variant="ghost"
+                                    size="sm"
+                                    class="text-destructive"
+                                    :disabled="processing"
+                                    >Delete</Button
+                                >
+                            </Form>
                         </div>
                     </li>
                 </ul>

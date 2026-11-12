@@ -2,6 +2,7 @@
 import { Form } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import TopEmployeeController from '@/actions/App/Http/Controllers/TopEmployeeController';
+import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -33,7 +34,7 @@ const open = ref(false);
                 :options="{ preserveScroll: true }"
                 class="space-y-6"
                 @success="open = false"
-                v-slot="{ processing }"
+                v-slot="{ errors, processing }"
             >
                 <DialogHeader class="space-y-3">
                     <DialogTitle
@@ -44,6 +45,8 @@ const open = ref(false);
                         current top Employee will report to them.
                     </DialogDescription>
                 </DialogHeader>
+
+                <InputError :message="errors.employee" />
 
                 <DialogFooter class="gap-2">
                     <DialogClose as-child>

@@ -3,7 +3,9 @@
 use App\Actions\NameTopEmployee;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\TopEmployeeController;
+use App\Models\Assignment;
 use App\Models\Employee;
+use App\Models\WorkEntry;
 use App\Policies\EmployeePolicy;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -86,4 +88,31 @@ it('offers handing over the top spot only to those allowed, for Employees who ca
 
     actingAs(employeeWhoManagesEmployees())->get(route('employees.edit', $ben))
         ->assertInertia(fn (Assert $page) => $page->where('employee.can_become_top', false));
+});
+
+it('refuses to make someone the top Employee while they have Pending Work Entries, which nobody could then approve', function () {
+    $dana = Employee::factory()->top()->create();
+    $ben = Employee::factory()->create(['name' => 'Ben', 'manager_id' => $dana->id]);
+    WorkEntry::factory()->for(Assignment::factory()->for($ben))->create();
+
+    actingAs(employeeWhoManagesTheCompany())
+        ->post(route('employees.top.store', $ben))
+        ->assertSessionHasErrors(['employee' => 'Ben has Pending Work Entries, which nobody could approve once Ben is the top Employee. Have their Manager approve them first, or delete them.']);
+
+    expect($ben->refresh()->is_top)->toBeFalse()
+        ->and($dana->refresh()->is_top)->toBeTrue();
+});
+
+it('makes someone the top Employee when their Work Entries are all Approved or Locked', function () {
+    $dana = Employee::factory()->top()->create();
+    $ben = Employee::factory()->create(['manager_id' => $dana->id]);
+    $assignment = Assignment::factory()->for($ben)->create();
+    WorkEntry::factory()->for($assignment)->approved()->create();
+    WorkEntry::factory()->for($assignment)->locked()->create();
+
+    actingAs(employeeWhoManagesTheCompany())
+        ->post(route('employees.top.store', $ben))
+        ->assertSessionHasNoErrors();
+
+    expect($ben->refresh()->is_top)->toBeTrue();
 });
