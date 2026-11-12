@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import type { EmploymentStatus } from '@/types';
+import StatusBadge from '@/components/StatusBadge.vue';
+import type { EmploymentStatus, StatusBadgeState } from '@/types';
 
 defineProps<{
     status: EmploymentStatus;
 }>();
 
-const badges = {
-    future: { label: 'Future Employee', variant: 'secondary' },
-    current: { label: 'Current Employee', variant: 'default' },
-    former: { label: 'Former Employee', variant: 'outline' },
-} as const;
+const badges: Record<
+    EmploymentStatus,
+    { label: string; state: StatusBadgeState }
+> = {
+    future: { label: 'Future Employee', state: 'pending' },
+    current: { label: 'Current Employee', state: 'approved' },
+    former: { label: 'Former Employee', state: 'locked' },
+};
 </script>
 
 <template>
-    <Badge :variant="badges[status].variant">{{ badges[status].label }}</Badge>
+    <StatusBadge :state="badges[status].state">{{
+        badges[status].label
+    }}</StatusBadge>
 </template>

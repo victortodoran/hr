@@ -3,6 +3,7 @@ import { Form } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import ClientController from '@/actions/App/Http/Controllers/ClientController';
 import InputError from '@/components/InputError.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -56,7 +57,7 @@ const open = ref(false);
                     <DialogClose as-child>
                         <Button variant="secondary">Cancel</Button>
                     </DialogClose>
-                    <Button type="submit" :disabled="processing">Save</Button>
+                    <SubmitButton :processing="processing">Save</SubmitButton>
                 </DialogFooter>
             </Form>
         </DialogContent>

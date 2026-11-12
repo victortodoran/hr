@@ -59,6 +59,15 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    --color-status-pending: var(--status-pending);
+    --color-status-pending-foreground: var(--status-pending-foreground);
+    --color-status-approved: var(--status-approved);
+    --color-status-approved-foreground: var(--status-approved-foreground);
+    --color-status-declined: var(--status-declined);
+    --color-status-declined-foreground: var(--status-declined-foreground);
+    --color-status-closed: var(--status-closed);
+    --color-status-closed-foreground: var(--status-closed-foreground);
 }
 
 /*
@@ -124,6 +133,14 @@
     --sidebar-border: hsl(0 0% 91%);
     --sidebar-ring: hsl(217.2 91.2% 59.8%);
     --sidebar: hsl(0 0% 98%);
+    --status-pending: hsl(48 96% 89%);
+    --status-pending-foreground: hsl(26 90% 30%);
+    --status-approved: hsl(141 79% 90%);
+    --status-approved-foreground: hsl(143 64% 22%);
+    --status-declined: hsl(0 93% 94%);
+    --status-declined-foreground: hsl(0 70% 35%);
+    --status-closed: hsl(0 0% 93%);
+    --status-closed-foreground: hsl(0 0% 32%);
 }
 
 .dark {
@@ -160,6 +177,14 @@
     --sidebar-border: hsl(0 0% 15.9%);
     --sidebar-ring: hsl(217.2 91.2% 59.8%);
     --sidebar: hsl(240 5.9% 10%);
+    --status-pending: hsl(32 70% 15%);
+    --status-pending-foreground: hsl(43 96% 64%);
+    --status-approved: hsl(144 55% 13%);
+    --status-approved-foreground: hsl(142 69% 64%);
+    --status-declined: hsl(0 60% 17%);
+    --status-declined-foreground: hsl(0 91% 75%);
+    --status-closed: hsl(0 0% 16%);
+    --status-closed-foreground: hsl(0 0% 70%);
 }
 
 @layer base {

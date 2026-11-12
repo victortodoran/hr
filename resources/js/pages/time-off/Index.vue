@@ -6,9 +6,9 @@ import TimeOffController from '@/actions/App/Http/Controllers/TimeOffController'
 import TimeOffDeclineController from '@/actions/App/Http/Controllers/TimeOffDeclineController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
-import TimeOffStateBadge from '@/components/time-off/TimeOffStateBadge.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDate } from '@/lib/dates';
@@ -109,8 +109,8 @@ defineProps<{
                     </p>
                     <InputError :message="errors.is_paid" />
                 </fieldset>
-                <Button type="submit" :disabled="processing"
-                    >Request Time Off</Button
+                <SubmitButton :processing="processing"
+                    >Request Time Off</SubmitButton
                 >
             </Form>
         </section>
@@ -168,11 +168,8 @@ defineProps<{
                             v-slot="{ errors, processing }"
                             class="space-y-1"
                         >
-                            <Button
-                                type="submit"
-                                size="sm"
-                                :disabled="processing"
-                                >Approve</Button
+                            <SubmitButton :processing="processing" size="sm"
+                                >Approve</SubmitButton
                             >
                             <InputError :message="errors.approval" />
                         </Form>
@@ -194,13 +191,12 @@ defineProps<{
                                 />
                                 <InputError :message="errors.decline_reason" />
                             </div>
-                            <Button
-                                type="submit"
+                            <SubmitButton
+                                :processing="processing"
                                 variant="outline"
                                 size="sm"
                                 class="text-destructive"
-                                :disabled="processing"
-                                >Decline</Button
+                                >Decline</SubmitButton
                             >
                         </Form>
                     </div>
@@ -224,7 +220,7 @@ defineProps<{
                 >
                     <TimeOffSummary :time-off="item" />
                     <div class="flex items-center gap-2">
-                        <TimeOffStateBadge :state="item.state" />
+                        <StatusBadge :state="item.state" />
                         <Form
                             v-if="item.can_cancel"
                             v-bind="
@@ -235,13 +231,12 @@ defineProps<{
                             :options="{ preserveScroll: true }"
                             v-slot="{ processing }"
                         >
-                            <Button
-                                type="submit"
+                            <SubmitButton
+                                :processing="processing"
                                 variant="ghost"
                                 size="sm"
                                 class="text-destructive"
-                                :disabled="processing"
-                                >Cancel</Button
+                                >Cancel</SubmitButton
                             >
                         </Form>
                     </div>

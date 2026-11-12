@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import { computed } from 'vue';
 import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
 import Heading from '@/components/Heading.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -225,13 +226,12 @@ function switchEmployee(employeeId: unknown): void {
                                 :options="{ preserveScroll: true }"
                                 v-slot="{ processing }"
                             >
-                                <Button
-                                    type="submit"
+                                <SubmitButton
+                                    :processing="processing"
                                     variant="ghost"
                                     size="sm"
                                     class="text-destructive"
-                                    :disabled="processing"
-                                    >Delete</Button
+                                    >Delete</SubmitButton
                                 >
                             </Form>
                         </div>

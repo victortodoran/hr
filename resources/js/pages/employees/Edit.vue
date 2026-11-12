@@ -6,9 +6,8 @@ import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import MakeTopEmployee from '@/components/employees/MakeTopEmployee.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { edit, show } from '@/routes/employees';
 import type { Choice, EmployeeRecord, ManagerChoice } from '@/types';
 
@@ -72,14 +71,12 @@ setLayoutProps({
                 :options="{ preserveScroll: true }"
                 v-slot="{ processing }"
             >
-                <Button
-                    type="submit"
+                <SubmitButton
+                    :processing="processing"
                     variant="outline"
                     size="sm"
-                    :disabled="processing"
+                    >Resend invitation</SubmitButton
                 >
-                    Resend invitation
-                </Button>
             </Form>
         </div>
 
@@ -97,10 +94,7 @@ setLayoutProps({
             />
 
             <div>
-                <Button type="submit" :disabled="processing">
-                    <Spinner v-if="processing" />
-                    Save
-                </Button>
+                <SubmitButton :processing="processing">Save</SubmitButton>
             </div>
         </Form>
     </div>
