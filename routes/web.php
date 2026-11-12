@@ -72,10 +72,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('locks/create', [LockController::class, 'create'])->name('locks.create');
         Route::post('locks', [LockController::class, 'store'])->name('locks.store');
     });
-    Route::middleware('can:update,workEntry')->group(function () {
-        Route::patch('work-entries/{workEntry}', [WorkEntryController::class, 'update'])->name('work-entries.update');
-        Route::delete('work-entries/{workEntry}', [WorkEntryController::class, 'destroy'])->name('work-entries.destroy');
-    });
+    Route::patch('work-entries/{workEntry}', [WorkEntryController::class, 'update'])->middleware('can:update,workEntry')->name('work-entries.update');
+    Route::delete('work-entries/{workEntry}', [WorkEntryController::class, 'destroy'])->middleware('can:delete,workEntry')->name('work-entries.destroy');
 
     Route::middleware('can:'.Permission::ViewDirectory->value)->group(function () {
         Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');

@@ -37,7 +37,7 @@ it('lets an Employee record hours on their own Assignment and see them Pending o
             ->where('week', '2026-11-09')
             ->where('days.1.date', '2026-11-10')
             ->where('days.1.entries', [
-                ['id' => WorkEntry::query()->sole()->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2.75, 'description' => 'Reviewing the API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_change' => true],
+                ['id' => WorkEntry::query()->sole()->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2.75, 'description' => 'Reviewing the API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
             ])
             ->where('canManage', true));
 });

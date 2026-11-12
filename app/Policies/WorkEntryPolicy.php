@@ -20,26 +20,40 @@ class WorkEntryPolicy
     public function viewAny(Employee $actor, Employee $employee): bool
     {
         return $actor->can(Permission::ViewWorkEntries->value, $employee)
-            || $this->create($actor, $employee);
+            || $actor->can(Permission::ManageWorkEntries->value, $employee);
     }
 
     /**
      * Recording hours for an Employee needs manage work entries for them.
+     * Nobody records hours for the top Employee: with no Manager, nobody
+     * could approve them.
      */
     public function create(Employee $actor, Employee $employee): bool
     {
-        return $actor->can(Permission::ManageWorkEntries->value, $employee);
+        return ! $employee->is_top
+            && $actor->can(Permission::ManageWorkEntries->value, $employee);
     }
 
     /**
-     * Changing or deleting a Work Entry needs manage work entries for the
-     * Employee whose Assignment it is on, and only a Pending one can be
-     * changed: an Approved one must be reopened first, and a Locked one never
-     * can be.
+     * Changing a Work Entry needs what recording it does, and only a Pending
+     * one can be changed: an Approved one must be reopened first, and a
+     * Locked one never can be.
      */
     public function update(Employee $actor, WorkEntry $workEntry): bool
     {
         return $workEntry->isPending() && $this->create($actor, $workEntry->employee);
+    }
+
+    /**
+     * Deleting a Work Entry needs manage work entries for the Employee whose
+     * Assignment it is on, and only a Pending one can be deleted. Unlike
+     * changing, it is allowed for the top Employee, so Pending Work Entries
+     * nobody can approve can be cleared away.
+     */
+    public function delete(Employee $actor, WorkEntry $workEntry): bool
+    {
+        return $workEntry->isPending()
+            && $actor->can(Permission::ManageWorkEntries->value, $workEntry->employee);
     }
 
     /**

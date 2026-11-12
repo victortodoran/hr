@@ -51,12 +51,13 @@ class WorkEntryController extends Controller
             ->get();
 
         $canManage = $actor->can('create', [WorkEntry::class, $employee]);
+        $canDelete = $actor->can(Permission::ManageWorkEntries->value, $employee);
 
         return Inertia::render('work-entries/Index', [
             'employee' => $employee->only('id', 'name'),
             'week' => $monday->toDateString(),
             'today' => today()->toDateString(),
-            'days' => $this->days($monday, $entries, $canManage),
+            'days' => $this->days($monday, $entries, $canManage, $canDelete),
             'assignmentTotals' => $entries->groupBy('assignment_id')
                 ->map(fn (Collection $onAssignment): array => [
                     'assignment_id' => $onAssignment->firstOrFail()->assignment_id,
@@ -88,15 +89,16 @@ class WorkEntryController extends Controller
     /**
      * Monday to Sunday, each with its Work Entries and their total. Each
      * Work Entry carries its state, who approved and locked it, and whether
-     * the viewer can change it, which needs manage work entries for the
-     * Employee and a Pending Work Entry.
+     * the viewer can change or delete it: both need a Pending Work Entry,
+     * changing needs what recording does, and deleting needs only manage
+     * work entries for the Employee, the top Employee included.
      *
      * @param  Collection<int, WorkEntry>  $entries
      * @return array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int}>
      */
-    private function days(CarbonImmutable $monday, Collection $entries, bool $canManage): array
+    private function days(CarbonImmutable $monday, Collection $entries, bool $canManage, bool $canDelete): array
     {
-        return collect(range(0, 6))->map(function (int $offset) use ($monday, $entries, $canManage): array {
+        return collect(range(0, 6))->map(function (int $offset) use ($monday, $entries, $canManage, $canDelete): array {
             $date = $monday->addDays($offset)->toDateString();
             $onDay = $entries->filter(fn (WorkEntry $entry): bool => $entry->date->toDateString() === $date);
 
@@ -111,7 +113,8 @@ class WorkEntryController extends Controller
                     'state' => $entry->state->value,
                     'approved' => $entry->approval(),
                     'locked' => $entry->lock(),
-                    'can_change' => $canManage && $entry->isPending(),
+                    'can_edit' => $canManage && $entry->isPending(),
+                    'can_delete' => $canDelete && $entry->isPending(),
                 ])->values()->all(),
                 'hours' => $onDay->sum('hours'),
             ];

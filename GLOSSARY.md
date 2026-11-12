@@ -29,7 +29,7 @@ _Avoid_: End date, termination date, exit date
 ### Reporting line
 
 **Manager**:
-The one Employee that another Employee reports to directly. Every Employee has exactly one Manager, except the single Employee at the top of the company (for example the CEO), who has none.
+The one Employee that another Employee reports to directly. Every Employee has exactly one Manager, except the single Employee at the top of the company (for example the CEO), who has none. With no Manager to approve them, the top Employee records no Work Entries.
 _Avoid_: Boss, supervisor, line manager, team lead
 
 **Report**:
