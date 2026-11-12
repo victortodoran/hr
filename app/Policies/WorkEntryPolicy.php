@@ -43,10 +43,22 @@ class WorkEntryPolicy
     }
 
     /**
-     * The Approvals page is for those who approve or reopen Work Entries.
+     * The Approvals page is for those who approve, reopen or lock Work
+     * Entries.
      */
     public function viewApprovals(Employee $actor): bool
     {
-        return $actor->holds(Permission::ApproveWorkEntries) || $actor->holds(Permission::ReopenWorkEntries);
+        return $actor->holds(Permission::ApproveWorkEntries)
+            || $actor->holds(Permission::ReopenWorkEntries)
+            || $this->lock($actor);
+    }
+
+    /**
+     * Locking Work Entries needs lock work entries, which applies
+     * company-wide, the locker's own Work Entries included.
+     */
+    public function lock(Employee $actor): bool
+    {
+        return $actor->holds(Permission::LockWorkEntries);
     }
 }

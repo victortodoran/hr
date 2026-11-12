@@ -6,6 +6,8 @@ use App\Enums\WorkEntryState;
 use Carbon\CarbonInterface;
 use Database\Factories\WorkEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope as QueryScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -163,6 +165,23 @@ class WorkEntry extends Model
     public function locker(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'locked_by');
+    }
+
+    /**
+     * Limit the query to the Work Entries matching the Approvals filters,
+     * each applied only when set.
+     *
+     * @param  Builder<WorkEntry>  $query
+     * @param  array{employee: int|null, project: int|null, from: string|null, to: string|null, state: string}  $filters
+     */
+    #[QueryScope]
+    protected function filteredBy(Builder $query, array $filters): void
+    {
+        $query->when($filters['employee'], fn (Builder $entries, int $employee) => $entries->whereRelation('assignment', 'employee_id', $employee))
+            ->when($filters['project'], fn (Builder $entries, int $project) => $entries->whereRelation('assignment', 'project_id', $project))
+            ->when($filters['from'], fn (Builder $entries, string $from) => $entries->whereDate('date', '>=', $from))
+            ->when($filters['to'], fn (Builder $entries, string $to) => $entries->whereDate('date', '<=', $to))
+            ->where('state', $filters['state']);
     }
 
     /**
