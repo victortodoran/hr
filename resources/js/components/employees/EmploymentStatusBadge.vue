@@ -10,7 +10,7 @@ const badges: Record<
     EmploymentStatus,
     { label: string; state: StatusBadgeState }
 > = {
-    future: { label: 'Future Employee', state: 'pending' },
+    future: { label: 'Future Employee', state: 'upcoming' },
     current: { label: 'Current Employee', state: 'approved' },
     former: { label: 'Former Employee', state: 'locked' },
 };

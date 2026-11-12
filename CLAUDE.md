@@ -16,11 +16,11 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 
 ### Code review
 
-Commit first, run `git fetch origin main:main` so the review diffs against the real `main`, then run `/code-review low <branch>` against the feature branch, unless I say otherwise. Without a target it reviews only uncommitted changes, and new files show up as bare signatures. Reviewers apply `CODING_STANDARDS.md`.
+Commit first, run `git fetch origin main:main` so the review diffs against the real `main`, then run `/code-review low <branch>` against the feature branch, unless I say otherwise. Without a target it reviews only uncommitted changes, and new files show up as bare signatures. Reviewers apply `CODING_STANDARDS.md`. A review that finishes without reading the diff counts as not run: run it again.
 
 ### Delivery
 
-One issue, one branch from `origin/main`, one PR. Open the PR when the issue is done, then start the next issue only after that PR is merged.
+One issue, one branch from `origin/main`, one PR. Open the PR when the issue is done, then start the next issue only after that PR is merged. Before implementing an issue, or briefing a subagent to, read `docs/agents/implementing-an-issue.md`.
 
 ### Mutation testing
 
