@@ -99,8 +99,8 @@ class EmployeeController extends Controller
 
     /**
      * Show an Employee's page: their record, then their Assignments and Pay,
-     * each only when the viewer may see it, and their Reporting Chain unless
-     * they have left.
+     * and their Paid Days for this year and next, each only when the viewer
+     * may see it, and their Reporting Chain unless they have left.
      */
     public function show(#[CurrentUser] Employee $actor, Employee $employee): Response
     {
@@ -110,6 +110,7 @@ class EmployeeController extends Controller
         $canViewPay = $actor->can('viewPay', [Assignment::class, $employee]);
         $canManagePay = $actor->can('managePay', [Assignment::class, $employee]);
         $currency = $canViewPay ? CompanySettings::payCurrency() : null;
+        $thisYear = today()->year;
 
         return Inertia::render('employees/Show', [
             'employee' => [
@@ -127,6 +128,9 @@ class EmployeeController extends Controller
             'canManagePay' => $canManagePay,
             ...($canManagePay && $currency !== null ? ['currency' => $currency->code] : []),
             'canEdit' => $actor->can('update', $employee),
+            'paidDays' => $actor->can('setPaidDays', $employee)
+                ? array_map(fn (int $year): array => ['year' => $year, 'days' => $employee->paidDaysIn($year)], [$thisYear, $thisYear + 1])
+                : null,
         ]);
     }
 

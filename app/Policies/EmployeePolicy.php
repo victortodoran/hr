@@ -24,13 +24,24 @@ class EmployeePolicy
 
     /**
      * Opening an Employee's page needs something on it the viewer may see:
-     * their record, or their Assignments (which seeing their Pay also
-     * allows).
+     * their record, their Assignments (which seeing their Pay also
+     * allows), or their Paid Days.
      */
     public function view(Employee $actor, Employee $employee): bool
     {
         return $actor->can(Permission::ViewEmployeeRecords->value, $employee)
-            || $actor->can('viewAny', [Assignment::class, $employee]);
+            || $actor->can('viewAny', [Assignment::class, $employee])
+            || $this->setPaidDays($actor, $employee);
+    }
+
+    /**
+     * Seeing and setting an Employee's Paid Days needs manage paid days for
+     * them. It isn't named managePaidDays, since the Gate would then send
+     * the Permission's own check back here.
+     */
+    public function setPaidDays(Employee $actor, Employee $employee): bool
+    {
+        return $actor->can(Permission::ManagePaidDays->value, $employee);
     }
 
     /**

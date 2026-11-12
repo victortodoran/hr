@@ -12,3 +12,4 @@ export * from './role';
 export * from './pay';
 export * from './work-entry';
 export * from './team';
+export * from './time-off';

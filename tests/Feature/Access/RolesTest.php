@@ -57,13 +57,14 @@ it('shows an Employee who manages Roles every Role with its Permissions, Scopes 
 it('offers every Permission with the Scopes it can carry', function () {
     actingAs(roleManager())->get(route('roles.index'))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('permissions', 17)
+            ->has('permissions', 18)
             ->where('permissions.0', ['value' => 'view-employee-records', 'label' => 'View employee records', 'scopes' => ['own', 'reports', 'everyone']])
             ->where('permissions.6', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scopes' => ['own', 'reports', 'everyone']])
             ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scopes' => ['own', 'reports', 'everyone']])
             ->where('permissions.8', ['value' => 'reopen-work-entries', 'label' => 'Reopen work entries', 'scopes' => ['reports', 'everyone']])
             ->where('permissions.9', ['value' => 'lock-work-entries', 'label' => 'Lock work entries', 'scopes' => []])
-            ->where('permissions.15', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => []])
+            ->where('permissions.10', ['value' => 'manage-paid-days', 'label' => 'Manage paid days', 'scopes' => ['own', 'reports', 'everyone']])
+            ->where('permissions.16', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => []])
             ->where('permissions', fn (Collection $permissions): bool => ! $permissions->contains('value', 'approve-work-entries'))
             ->etc(),
         );
