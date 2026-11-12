@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
+import { FolderKanban } from '@lucide/vue';
 import TeamTable from '@/components/assignments/TeamTable.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import { formatPeriod } from '@/lib/dates';
 import { index, show } from '@/routes/clients';
 import { show as showProject } from '@/routes/projects';
@@ -23,7 +26,7 @@ setLayoutProps({
 <template>
     <Head :title="client.name" />
 
-    <div class="flex max-w-4xl flex-col gap-6 p-4">
+    <PageContainer width="wide">
         <Heading
             :title="client.name"
             description="Its Projects, and who is assigned to each today"
@@ -52,8 +55,11 @@ setLayoutProps({
             />
         </section>
 
-        <p v-if="projects.length === 0" class="text-sm text-muted-foreground">
-            This Client has no Projects yet.
-        </p>
-    </div>
+        <div v-if="projects.length === 0" class="rounded-lg border">
+            <EmptyState
+                :icon="FolderKanban"
+                message="The Projects done for this Client appear here. It has none yet."
+            />
+        </div>
+    </PageContainer>
 </template>

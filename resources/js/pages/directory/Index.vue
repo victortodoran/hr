@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import { Users } from '@lucide/vue';
 import { useDebounceFn } from '@vueuse/core';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import DataTable from '@/components/DataTable.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Input } from '@/components/ui/input';
 import ValueOr from '@/components/ValueOr.vue';
 import { index, show } from '@/routes/directory';
-import type { DirectoryEntry, Paginated } from '@/types';
+import type { DirectoryEntry, Paginated, TableColumn } from '@/types';
 
 defineOptions({
     layout: {
@@ -19,6 +23,23 @@ const props = defineProps<{
     employees: Paginated<DirectoryEntry>;
     search: string;
 }>();
+
+const columns: TableColumn[] = [
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'job_title', label: 'Job Title', minor: true },
+    { key: 'department', label: 'Department', minor: true },
+    { key: 'manager', label: 'Manager', minor: true },
+];
+
+const emptyMessage = computed(
+    () =>
+        `Everyone currently working at the company appears here. ${
+            props.search
+                ? `Nobody matches “${props.search}”.`
+                : 'Nobody is working here yet.'
+        }`,
+);
 
 const query = ref(props.search);
 
@@ -34,7 +55,7 @@ const searchDirectory = useDebounceFn(() => {
 <template>
     <Head title="Directory" />
 
-    <div class="flex max-w-4xl flex-col gap-6 p-4">
+    <PageContainer width="wide">
         <Heading
             title="Directory"
             description="Everyone currently working at the company"
@@ -49,61 +70,40 @@ const searchDirectory = useDebounceFn(() => {
             @update:model-value="searchDirectory"
         />
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
-                    <tr>
-                        <th class="px-4 py-2 font-medium">Name</th>
-                        <th class="px-4 py-2 font-medium">Email</th>
-                        <th class="px-4 py-2 font-medium">Job Title</th>
-                        <th class="px-4 py-2 font-medium">Department</th>
-                        <th class="px-4 py-2 font-medium">Manager</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y">
-                    <tr v-for="employee in employees.data" :key="employee.id">
-                        <td class="px-4 py-2 font-medium">
-                            <Link
-                                :href="show(employee.id)"
-                                class="underline-offset-4 hover:underline"
-                                >{{ employee.name }}</Link
-                            >
-                        </td>
-                        <td class="px-4 py-2">
-                            <a
-                                :href="`mailto:${employee.email}`"
-                                class="underline-offset-4 hover:underline"
-                                >{{ employee.email }}</a
-                            >
-                        </td>
-                        <td class="px-4 py-2">
-                            <ValueOr :value="employee.job_title" />
-                        </td>
-                        <td class="px-4 py-2">{{ employee.department }}</td>
-                        <td class="px-4 py-2">
-                            <Link
-                                v-if="employee.manager"
-                                :href="show(employee.manager.id)"
-                                class="underline-offset-4 hover:underline"
-                                >{{ employee.manager.name }}</Link
-                            >
-                            <span v-else class="text-muted-foreground"
-                                >None (top Employee)</span
-                            >
-                        </td>
-                    </tr>
-                    <tr v-if="employees.data.length === 0">
-                        <td
-                            colspan="5"
-                            class="px-4 py-6 text-center text-muted-foreground"
-                        >
-                            No Employees match “{{ search }}”.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <DataTable :columns="columns" :rows="employees.data">
+            <template #cell-name="{ row }">
+                <Link
+                    :href="show(row.id)"
+                    class="font-medium underline-offset-4 hover:underline"
+                    >{{ row.name }}</Link
+                >
+            </template>
+            <template #cell-email="{ row }">
+                <a
+                    :href="`mailto:${row.email}`"
+                    class="break-all underline-offset-4 hover:underline"
+                    >{{ row.email }}</a
+                >
+            </template>
+            <template #cell-job_title="{ row }">
+                <ValueOr :value="row.job_title" />
+            </template>
+            <template #cell-manager="{ row }">
+                <Link
+                    v-if="row.manager"
+                    :href="show(row.manager.id)"
+                    class="underline-offset-4 hover:underline"
+                    >{{ row.manager.name }}</Link
+                >
+                <span v-else class="text-muted-foreground"
+                    >None (top Employee)</span
+                >
+            </template>
+            <template #empty>
+                <EmptyState :icon="Users" :message="emptyMessage" />
+            </template>
+        </DataTable>
 
         <Pagination :page="employees" />
-    </div>
+    </PageContainer>
 </template>

@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import { UsersRound } from '@lucide/vue';
 import { useDebounceFn } from '@vueuse/core';
 import { ref } from 'vue';
+import DataTable from '@/components/DataTable.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +20,12 @@ import {
 } from '@/components/ui/select';
 import ValueOr from '@/components/ValueOr.vue';
 import { create, index, show } from '@/routes/employees';
-import type { EmployeeListEntry, EmploymentStatus, Paginated } from '@/types';
+import type {
+    EmployeeListEntry,
+    EmploymentStatus,
+    Paginated,
+    TableColumn,
+} from '@/types';
 
 defineOptions({
     layout: {
@@ -30,6 +39,13 @@ const props = defineProps<{
     status: EmploymentStatus | null;
     canAdd: boolean;
 }>();
+
+const columns: TableColumn[] = [
+    { key: 'name', label: 'Name' },
+    { key: 'status', label: 'Status' },
+    { key: 'department', label: 'Department', minor: true },
+    { key: 'manager', label: 'Manager', minor: true },
+];
 
 const search = ref(props.search);
 const statusFilter = ref<string>(props.status ?? 'all');
@@ -55,7 +71,7 @@ const searchEmployees = useDebounceFn(reloadList, 300);
 <template>
     <Head title="Employees" />
 
-    <div class="flex max-w-4xl flex-col gap-6 p-4">
+    <PageContainer width="wide">
         <div class="flex items-start justify-between gap-4">
             <Heading
                 title="Employees"
@@ -88,52 +104,40 @@ const searchEmployees = useDebounceFn(reloadList, 300);
             </Select>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
-                    <tr>
-                        <th class="px-4 py-2 font-medium">Name</th>
-                        <th class="px-4 py-2 font-medium">Status</th>
-                        <th class="px-4 py-2 font-medium">Department</th>
-                        <th class="px-4 py-2 font-medium">Manager</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y">
-                    <tr v-for="employee in employees.data" :key="employee.id">
-                        <td class="px-4 py-2 font-medium">
-                            <Link
-                                :href="show(employee.id)"
-                                class="underline-offset-4 hover:underline"
-                                >{{ employee.name }}</Link
-                            >
-                        </td>
-                        <td class="px-4 py-2">
-                            <EmploymentStatusBadge :status="employee.status" />
-                        </td>
-                        <td class="px-4 py-2">
-                            <ValueOr :value="employee.department" />
-                        </td>
-                        <td class="px-4 py-2">
-                            <span v-if="employee.manager">{{
-                                employee.manager.name
-                            }}</span>
-                            <span v-else class="text-muted-foreground"
-                                >None (top Employee)</span
-                            >
-                        </td>
-                    </tr>
-                    <tr v-if="employees.data.length === 0">
-                        <td
-                            colspan="4"
-                            class="px-4 py-6 text-center text-muted-foreground"
-                        >
-                            No Employees match.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <DataTable :columns="columns" :rows="employees.data">
+            <template #cell-name="{ row }">
+                <Link
+                    :href="show(row.id)"
+                    class="font-medium underline-offset-4 hover:underline"
+                    >{{ row.name }}</Link
+                >
+            </template>
+            <template #cell-status="{ row }">
+                <EmploymentStatusBadge :status="row.status" />
+            </template>
+            <template #cell-department="{ row }">
+                <ValueOr :value="row.department" />
+            </template>
+            <template #cell-manager="{ row }">
+                <span v-if="row.manager">{{ row.manager.name }}</span>
+                <span v-else class="text-muted-foreground"
+                    >None (top Employee)</span
+                >
+            </template>
+            <template #empty>
+                <EmptyState
+                    :icon="UsersRound"
+                    message="Employees whose record you may see appear here. None match your search and status."
+                >
+                    <template v-if="canAdd" #action>
+                        <Button as-child>
+                            <Link :href="create()">Add Employee</Link>
+                        </Button>
+                    </template>
+                </EmptyState>
+            </template>
+        </DataTable>
 
         <Pagination :page="employees" />
-    </div>
+    </PageContainer>
 </template>

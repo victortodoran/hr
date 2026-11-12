@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
+import { CalendarDays, FolderKanban } from '@lucide/vue';
+import { computed } from 'vue';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
+import DataTable from '@/components/DataTable.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import PaidDaysForm from '@/components/time-off/PaidDaysForm.vue';
@@ -23,6 +28,7 @@ import type {
     PaidDaysRecord,
     PayEntryRecord,
     ReportingChainView,
+    TableColumn,
 } from '@/types';
 
 const props = defineProps<{
@@ -47,6 +53,22 @@ const props = defineProps<{
     timeOff: EmployeeTimeOff | null;
 }>();
 
+const assignmentColumns = computed<TableColumn[]>(() => [
+    { key: 'project', label: 'Project' },
+    { key: 'job_title', label: 'Job Title', minor: true },
+    { key: 'dates', label: 'Dates', minor: true },
+    { key: 'capacity', label: 'Capacity', align: 'end', minor: true },
+    ...(props.canViewPay ? [{ key: 'pay', label: 'Pay', minor: true }] : []),
+    ...(props.canManage || props.canViewPay
+        ? [{ key: 'actions', label: 'Actions', align: 'end' as const }]
+        : []),
+]);
+
+const timeOffColumns: TableColumn[] = [
+    { key: 'time_off', label: 'Time Off' },
+    { key: 'state', label: 'State', align: 'end' },
+];
+
 /**
  * The entry in effect today, or null when none has taken effect yet.
  */
@@ -64,7 +86,7 @@ setLayoutProps({
 <template>
     <Head :title="employee.name" />
 
-    <div class="flex max-w-4xl flex-col gap-8 p-4">
+    <PageContainer width="wide">
         <div class="flex items-start justify-between gap-4">
             <Heading
                 :title="employee.name"
@@ -185,22 +207,20 @@ setLayoutProps({
                     >
                 </p>
             </div>
-            <p
-                v-if="timeOff.requests.length === 0"
-                class="text-sm text-muted-foreground"
-            >
-                {{ employee.name }} hasn't requested any Time Off yet.
-            </p>
-            <ul v-else class="divide-y rounded-lg border text-sm">
-                <li
-                    v-for="item in timeOff.requests"
-                    :key="item.id"
-                    class="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
-                >
-                    <TimeOffSummary :time-off="item" />
-                    <StatusBadge :state="item.state" />
-                </li>
-            </ul>
+            <DataTable :columns="timeOffColumns" :rows="timeOff.requests">
+                <template #cell-time_off="{ row }">
+                    <TimeOffSummary :time-off="row" />
+                </template>
+                <template #cell-state="{ row }">
+                    <StatusBadge :state="row.state" />
+                </template>
+                <template #empty>
+                    <EmptyState
+                        :icon="CalendarDays"
+                        :message="`${employee.name}'s Time Off requests appear here. They haven't requested any yet.`"
+                    />
+                </template>
+            </DataTable>
         </section>
 
         <section v-if="reportingChain" class="flex max-w-xl flex-col gap-4">
@@ -218,101 +238,65 @@ setLayoutProps({
                 />
             </div>
 
-            <div class="overflow-x-auto rounded-lg border">
-                <table class="w-full text-sm">
-                    <thead class="bg-muted/50 text-left text-muted-foreground">
-                        <tr>
-                            <th class="px-4 py-2 font-medium">Project</th>
-                            <th class="px-4 py-2 font-medium">Job Title</th>
-                            <th class="px-4 py-2 font-medium">Dates</th>
-                            <th class="px-4 py-2 text-right font-medium">
-                                Capacity
-                            </th>
-                            <th v-if="canViewPay" class="px-4 py-2 font-medium">
-                                Pay
-                            </th>
-                            <th
-                                v-if="canManage || canViewPay"
-                                class="px-4 py-2"
-                            >
-                                <span class="sr-only">Actions</span>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y">
-                        <tr
-                            v-for="assignment in assignments"
-                            :key="assignment.id"
-                        >
-                            <td class="px-4 py-2">
-                                <p class="font-medium">
-                                    {{ assignment.project.name }}
-                                </p>
-                                <p class="text-muted-foreground">
-                                    {{
-                                        assignment.project.is_internal
-                                            ? 'Internal'
-                                            : (assignment.project.client ??
-                                              'No Client')
-                                    }}
-                                </p>
-                            </td>
-                            <td class="px-4 py-2">
-                                <ValueOr :value="assignment.job_title" />
-                            </td>
-                            <td class="px-4 py-2">
-                                {{
-                                    formatPeriod(
-                                        assignment.start_date,
-                                        assignment.end_date,
-                                    )
-                                }}
-                            </td>
-                            <td class="px-4 py-2 text-right">
-                                {{ assignment.capacity }}%
-                            </td>
-                            <td v-if="canViewPay" class="px-4 py-2">
-                                {{
-                                    payInEffect(assignment)
-                                        ? formatPay(payInEffect(assignment)!)
-                                        : 'None in effect'
-                                }}
-                            </td>
-                            <td
-                                v-if="canManage || canViewPay"
-                                class="px-4 py-2 text-right"
-                            >
-                                <div class="flex justify-end gap-2">
-                                    <PayDialog
-                                        v-if="assignment.pay"
-                                        :assignment="{
-                                            ...assignment,
-                                            pay: assignment.pay,
-                                        }"
-                                        :currency="currency"
-                                    />
-                                    <AssignmentForm
-                                        v-if="canManage"
-                                        :employee="employee"
-                                        :projects="projects"
-                                        :assignment="assignment"
-                                    />
-                                </div>
-                            </td>
-                        </tr>
-                        <tr v-if="assignments.length === 0">
-                            <td
-                                :colspan="
-                                    4 + (canViewPay ? 2 : canManage ? 1 : 0)
-                                "
-                                class="px-4 py-6 text-center text-muted-foreground"
-                            >
-                                No Assignments yet.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <DataTable :columns="assignmentColumns" :rows="assignments">
+                <template #cell-project="{ row }">
+                    <p class="font-medium">{{ row.project.name }}</p>
+                    <p class="text-muted-foreground">
+                        {{
+                            row.project.is_internal
+                                ? 'Internal'
+                                : (row.project.client ?? 'No Client')
+                        }}
+                    </p>
+                </template>
+                <template #cell-job_title="{ row }">
+                    <ValueOr :value="row.job_title" />
+                </template>
+                <template #cell-dates="{ row }">
+                    {{ formatPeriod(row.start_date, row.end_date) }}
+                </template>
+                <template #cell-capacity="{ row }">
+                    {{ row.capacity }}%
+                </template>
+                <template #cell-pay="{ row }">
+                    {{
+                        payInEffect(row)
+                            ? formatPay(payInEffect(row)!)
+                            : 'None in effect'
+                    }}
+                </template>
+                <template #head-actions>
+                    <span class="sr-only">Actions</span>
+                </template>
+                <template #cell-actions="{ row }">
+                    <div class="flex justify-end gap-2">
+                        <PayDialog
+                            v-if="row.pay"
+                            :assignment="{ ...row, pay: row.pay }"
+                            :currency="currency"
+                        />
+                        <AssignmentForm
+                            v-if="canManage"
+                            :employee="employee"
+                            :projects="projects"
+                            :assignment="row"
+                        />
+                    </div>
+                </template>
+                <template #empty>
+                    <EmptyState
+                        :icon="FolderKanban"
+                        :message="`The Projects ${employee.name} is assigned to appear here. There are no Assignments yet.`"
+                    >
+                        <template v-if="canManage" #action>
+                            <AssignmentForm
+                                :employee="employee"
+                                :projects="projects"
+                            />
+                        </template>
+                    </EmptyState>
+                </template>
+            </DataTable>
         </section>
-    </div>
+    </PageContainer>
 </template>

@@ -29,7 +29,6 @@ const candidates = computed(() =>
 
 <template>
     <div class="grid gap-3">
-        <p class="text-sm font-medium">Held by</p>
         <ul v-if="role.holders.length > 0" class="grid gap-2">
             <li
                 v-for="holder in role.holders"

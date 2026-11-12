@@ -3,8 +3,9 @@ import type { TableColumn } from '@/types';
 
 /**
  * The table every list uses. Each cell shows the row's field named by the
- * column's key, unless the page fills the `cell-<key>` slot. When there are
- * no rows, the `empty` slot (usually an EmptyState) fills the table body.
+ * column's key, unless the page fills the `cell-<key>` slot; each header shows
+ * the column's label, unless the page fills the `head-<key>` slot. When there
+ * are no rows, the `empty` slot (usually an EmptyState) fills the table body.
  */
 const props = defineProps<{
     columns: TableColumn[];
@@ -17,6 +18,8 @@ defineSlots<
         empty?: () => unknown;
     } & {
         [slot: `cell-${string}`]: (props: { row: Row }) => unknown;
+    } & {
+        [slot: `head-${string}`]: () => unknown;
     }
 >();
 
@@ -53,7 +56,9 @@ function cellClass(column: TableColumn): string[] {
                         class="font-medium"
                         :class="cellClass(column)"
                     >
-                        {{ column.label }}
+                        <slot :name="`head-${column.key}`">{{
+                            column.label
+                        }}</slot>
                     </th>
                 </tr>
             </thead>

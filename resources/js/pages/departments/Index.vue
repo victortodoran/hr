@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { Building2 } from '@lucide/vue';
 import DepartmentController from '@/actions/App/Http/Controllers/DepartmentController';
 import DeleteDepartment from '@/components/departments/DeleteDepartment.vue';
 import RenameDepartment from '@/components/departments/RenameDepartment.vue';
+import DataTable from '@/components/DataTable.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { index } from '@/routes/departments';
-import type { Department } from '@/types';
+import type { Department, TableColumn } from '@/types';
 
 defineOptions({
     layout: {
@@ -20,12 +25,17 @@ defineOptions({
 defineProps<{
     departments: Department[];
 }>();
+
+const columns: TableColumn[] = [
+    { key: 'name', label: 'Name' },
+    { key: 'actions', label: 'Actions', align: 'end' },
+];
 </script>
 
 <template>
     <Head title="Departments" />
 
-    <div class="flex max-w-2xl flex-col gap-8 p-4">
+    <PageContainer width="wide">
         <Heading
             title="Departments"
             description="The parts of the company each Employee belongs to"
@@ -35,7 +45,7 @@ defineProps<{
             v-bind="DepartmentController.store.form()"
             reset-on-success
             :options="{ preserveScroll: true }"
-            class="flex items-end gap-2"
+            class="flex max-w-xl items-end gap-2"
             v-slot="{ errors, processing }"
         >
             <div class="grid flex-1 gap-2">
@@ -51,18 +61,31 @@ defineProps<{
             <SubmitButton :processing="processing">Add</SubmitButton>
         </Form>
 
-        <ul class="divide-y rounded-lg border">
-            <li
-                v-for="department in departments"
-                :key="department.id"
-                class="flex items-center justify-between gap-4 px-4 py-3"
-            >
-                <span class="font-medium">{{ department.name }}</span>
-                <div class="flex gap-2">
-                    <RenameDepartment :department="department" />
-                    <DeleteDepartment :department="department" />
+        <DataTable :columns="columns" :rows="departments">
+            <template #cell-name="{ row }">
+                <span class="font-medium">{{ row.name }}</span>
+            </template>
+            <template #head-actions>
+                <span class="sr-only">Actions</span>
+            </template>
+            <template #cell-actions="{ row }">
+                <div class="flex justify-end gap-2">
+                    <RenameDepartment :department="row" />
+                    <DeleteDepartment :department="row" />
                 </div>
-            </li>
-        </ul>
-    </div>
+            </template>
+            <template #empty>
+                <EmptyState
+                    :icon="Building2"
+                    message="Departments are the parts of the company each Employee belongs to. There are none yet."
+                >
+                    <template #action>
+                        <Button variant="outline" as-child>
+                            <label for="new-department">Add Department</label>
+                        </Button>
+                    </template>
+                </EmptyState>
+            </template>
+        </DataTable>
+    </PageContainer>
 </template>
