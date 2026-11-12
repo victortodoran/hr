@@ -43,6 +43,9 @@
             "Tests\\": "tests/"
         }
     },
+    "scripts-descriptions": {
+        "lint:callbacks": "Fails when a Collection callback is a built-in with an optional second parameter, such as map(intval(...)): Collections pass the key as that argument."
+    },
     "scripts": {
         "setup": [
             "composer install",
@@ -65,9 +68,11 @@
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
             "npm run check",
+            "@lint:callbacks",
             "npm run types:check",
             "@test"
         ],
+        "lint:callbacks": "! grep -rnE '\\b(map|each|filter|reject|every|contains|first|sortBy|groupBy|keyBy)\\((intval|floatval|strval|boolval|trim|ltrim|rtrim|round|explode)\\(\\.\\.\\.\\)' app",
         "types:check": [
             "phpstan analyse --memory-limit=1G"
         ],

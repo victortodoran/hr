@@ -16,7 +16,11 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 
 ### Code review
 
-Run `/code-review low <branch>` against the feature branch, unless I say otherwise; without a target it reviews only uncommitted changes. Reviewers apply `CODING_STANDARDS.md`.
+Commit first, then run `/code-review low <branch>` against the feature branch, unless I say otherwise. Without a target it reviews only uncommitted changes, and new files show up as bare signatures. Reviewers apply `CODING_STANDARDS.md`.
+
+### Delivery
+
+One issue, one branch from `origin/main`, one PR. Open the PR when the issue is done, then start the next issue only after that PR is merged.
 
 ### Mutation testing
 
