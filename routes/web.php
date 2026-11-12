@@ -22,6 +22,7 @@ use App\Http\Controllers\TimeOffApprovalController;
 use App\Http\Controllers\TimeOffCancellationController;
 use App\Http\Controllers\TimeOffController;
 use App\Http\Controllers\TimeOffDeclineController;
+use App\Http\Controllers\TimeOffPreviewController;
 use App\Http\Controllers\TopEmployeeController;
 use App\Http\Controllers\WorkEntryController;
 use App\Models\Assignment;
@@ -82,6 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('work-entries/{workEntry}', [WorkEntryController::class, 'destroy'])->middleware('can:delete,workEntry')->name('work-entries.destroy');
 
     Route::get('time-off', [TimeOffController::class, 'index'])->name('time-off.index');
+    Route::get('time-off/preview', [TimeOffPreviewController::class, 'show'])->name('time-off.preview');
     Route::post('time-off', [TimeOffController::class, 'store'])->name('time-off.store');
     Route::post('time-off/{timeOff}/cancellation', [TimeOffCancellationController::class, 'store'])->middleware('can:cancel,timeOff')->name('time-off.cancellation.store');
     Route::middleware('can:decide,timeOff')->group(function () {

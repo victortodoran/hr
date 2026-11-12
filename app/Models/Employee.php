@@ -162,6 +162,22 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * What Paid Time Off not yet requested would take from each year it
+     * touches: the weekdays falling in that year, and the Paid Days left in
+     * it before them.
+     *
+     * @return list<array{year: int, uses: int, left: int}>
+     */
+    public function paidDaysUsedBy(TimeOff $timeOff): array
+    {
+        return array_map(fn (int $year): array => [
+            'year' => $year,
+            'uses' => $timeOff->weekdaysIn($year),
+            'left' => $this->paidDaysLeftIn($year),
+        ], range($timeOff->first_date->year, $timeOff->last_date->year));
+    }
+
+    /**
      * Their Assignment to the Internal Project, for their whole period of
      * work.
      *

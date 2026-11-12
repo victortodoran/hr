@@ -66,3 +66,13 @@ export type TimeOffToApprove = {
     /** Paid Days left per year, already counting this Time Off when Paid. */
     paid_days_left: { year: number; days: number }[];
 };
+
+/**
+ * What requesting Time Off would take: its weekdays and, when Paid, for
+ * each year it touches the Paid Days it would use and those left after it,
+ * counting Pending and Approved Paid Time Off.
+ */
+export type TimeOffPreview = {
+    weekdays: number;
+    years: { year: number; uses: number; left_after: number }[];
+};
