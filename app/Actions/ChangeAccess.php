@@ -35,8 +35,27 @@ class ChangeAccess
     }
 
     /**
+     * Create the one Admin Role, which always holds every Permission, so it
+     * stores no grants. New Employees don't get it.
+     */
+    public function createAdminRole(Employee $actor, string $name): Role
+    {
+        return DB::transaction(function () use ($actor, $name): Role {
+            $role = new Role(['name' => $name, 'is_given_to_new_employees' => false]);
+            $role->is_admin = true;
+            $role->save();
+
+            $this->log($actor, AccessChange::RoleCreated, $role, after: $this->snapshot($role));
+
+            return $role;
+        });
+    }
+
+    /**
      * Rename the Role, replace its Permissions and Scopes, and say whether
-     * every new Employee gets it.
+     * every new Employee gets it. Admin always holds every Permission, so
+     * the grants sent for it are ignored, and it is only ever given to
+     * Employees one by one, never to every new Employee.
      *
      * @param  array<string, string|null>  $grants
      */
@@ -46,9 +65,12 @@ class ChangeAccess
             $someoneCouldManageRoles = $this->someoneCanManageRoles();
             $before = $this->snapshot($role);
 
-            $role->update(['name' => $name, 'is_given_to_new_employees' => $givenToNewEmployees]);
-            $role->permissions()->delete();
-            $this->grant($role, $grants);
+            $role->update(['name' => $name, 'is_given_to_new_employees' => $givenToNewEmployees && ! $role->is_admin]);
+
+            if (! $role->is_admin) {
+                $role->permissions()->delete();
+                $this->grant($role, $grants);
+            }
 
             $this->ensureSomeoneStillCanManageRoles($someoneCouldManageRoles);
             $this->log($actor, AccessChange::RoleEdited, $role, before: $before, after: $this->snapshot($role));
@@ -56,10 +78,19 @@ class ChangeAccess
     }
 
     /**
-     * Delete the Role, taking it from everyone who holds it.
+     * Delete the Role, taking it from everyone who holds it. Admin can't be
+     * deleted.
+     *
+     * @throws ValidationException
      */
     public function deleteRole(Employee $actor, Role $role): void
     {
+        if ($role->is_admin) {
+            throw ValidationException::withMessages([
+                'role' => __('Admin always holds every Permission, so it can\'t be deleted.'),
+            ]);
+        }
+
         DB::transaction(function () use ($actor, $role): void {
             $someoneCouldManageRoles = $this->someoneCanManageRoles();
             $before = [...$this->snapshot($role), 'holders' => $role->employees()->orderBy('employees.id')->pluck('employees.id')->all()];
@@ -135,15 +166,16 @@ class ChangeAccess
 
     /**
      * The Role's name, Permissions and whether new Employees get it, as the
-     * Access Log keeps them.
+     * Access Log keeps them. Admin's Permissions are not stored, so it is
+     * marked as Admin, meaning every Permission, instead.
      *
-     * @return array{name: string, permissions: array<string, string|null>, given_to_new_employees: bool}
+     * @return array{name: string, permissions?: array<string, string|null>, admin?: true, given_to_new_employees: bool}
      */
     private function snapshot(Role $role): array
     {
         return [
             'name' => $role->name,
-            'permissions' => $role->load('permissions')->grants(),
+            ...($role->is_admin ? ['admin' => true] : ['permissions' => $role->load('permissions')->grants()]),
             'given_to_new_employees' => $role->is_given_to_new_employees,
         ];
     }

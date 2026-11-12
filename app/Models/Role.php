@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Permission;
+use App\Enums\Scope;
 use Database\Factories\RoleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,6 +17,7 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property string $name
+ * @property bool $is_admin
  * @property bool $is_given_to_new_employees
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -36,12 +38,19 @@ class Role extends Model
 
     /**
      * The Role's Permissions in the fixed Permission order, each mapped to
-     * its Scope, or to null for company-wide Permissions.
+     * its Scope, or to null for company-wide Permissions. Admin holds every
+     * Permission, with everyone for those about Employees.
      *
      * @return array<string, string|null>
      */
     public function grants(): array
     {
+        if ($this->is_admin) {
+            return collect(Permission::cases())
+                ->mapWithKeys(fn (Permission $permission): array => [$permission->value => $permission->isScoped() ? Scope::Everyone->value : null])
+                ->all();
+        }
+
         $scopes = $this->permissions->mapWithKeys(fn (RolePermission $grant): array => [$grant->permission->value => $grant->scope?->value]);
 
         return collect(Permission::cases())

@@ -36,6 +36,7 @@ class RoleController extends Controller
             'roles' => $roles->map(fn (Role $role): array => [
                 'id' => $role->id,
                 'name' => $role->name,
+                'is_admin' => $role->is_admin,
                 'permissions' => $role->grants(),
                 'given_to_new_employees' => $role->is_given_to_new_employees,
                 'holders' => $role->employees

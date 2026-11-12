@@ -15,7 +15,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\freezeTime;
 
-covers(RoleController::class, RoleRequest::class, ChangeAccess::class, Role::class, Permission::class, AccessLogEntry::class);
+covers(RoleController::class, RoleRequest::class, ChangeAccess::class, Role::class, Permission::class, AccessLogEntry::class, Employee::class);
 
 /**
  * An Employee who manages Roles, like the starter Admin.
@@ -270,4 +270,61 @@ it('gives new Employees the Roles marked for them on the Role form, so another R
     ])->assertRedirect();
 
     expect(Employee::query()->where('email', 'cara@acme.test')->sole()->roles->pluck('name')->all())->toBe(['Staff']);
+});
+
+it('counts an Admin holder as able to manage Roles, so the last other Role that manages them can go', function () {
+    $admin = roleManager('Role Managers');
+    $roleManagers = $admin->roles()->sole();
+    Employee::factory()->create()->roles()->attach(Role::factory()->admin()->create());
+
+    actingAs($admin)
+        ->delete(route('roles.destroy', $roleManagers))
+        ->assertSessionHasNoErrors();
+
+    expect(Role::query()->whereKey($roleManagers->id)->exists())->toBeFalse();
+});
+
+it('lets Admin be renamed, but keeps every Permission, never gives it to new Employees, and logs the marker instead of grants', function () {
+    $admin = roleManager();
+    $adminRole = Role::factory()->admin()->create(['name' => 'Owners']);
+
+    actingAs($admin)
+        ->patch(route('roles.update', $adminRole), ['name' => 'Superusers', 'permissions' => ['view-pay' => 'own'], 'given_to_new_employees' => true])
+        ->assertSessionHasNoErrors();
+
+    expect($adminRole->refresh()->name)->toBe('Superusers')
+        ->and($adminRole->is_given_to_new_employees)->toBeFalse()
+        ->and($adminRole->permissions()->exists())->toBeFalse();
+
+    $entry = AccessLogEntry::query()->sole();
+    expect($entry->before)->toBe(['name' => 'Owners', 'admin' => true, 'given_to_new_employees' => false])
+        ->and($entry->after)->toBe(['name' => 'Superusers', 'admin' => true, 'given_to_new_employees' => false]);
+});
+
+it('refuses to delete Admin', function () {
+    $admin = roleManager('Role Managers');
+    $adminRole = Role::factory()->admin()->create();
+
+    actingAs($admin)
+        ->delete(route('roles.destroy', $adminRole))
+        ->assertSessionHasErrors(['role' => 'Admin always holds every Permission, so it can\'t be deleted.']);
+
+    expect(Role::query()->whereKey($adminRole->id)->exists())->toBeTrue()
+        ->and(AccessLogEntry::query()->exists())->toBeFalse();
+});
+
+it('shows Admin as holding every Permission with Scope everyone, marked so the editor can fix them', function () {
+    $admin = roleManager('Role Managers');
+    Role::factory()->admin()->create();
+
+    actingAs($admin)->get(route('roles.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('roles.0.name', 'Admin')
+            ->where('roles.0.is_admin', true)
+            ->has('roles.0.permissions', count(Permission::cases()))
+            ->where('roles.0.permissions.view-employee-records', 'everyone')
+            ->where('roles.0.permissions.manage-roles', null)
+            ->where('roles.1.is_admin', false)
+            ->etc(),
+        );
 });

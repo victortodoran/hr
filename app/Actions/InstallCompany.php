@@ -8,14 +8,13 @@ use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Project;
-use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
  * Sets up a brand-new installation: the company, its Internal Project, its
- * first Department, the starter Roles, and the first Employee as the top
- * Employee with Admin.
+ * first Department, the Admin Role and the other starter Roles, and the
+ * first Employee as the top Employee with Admin.
  */
 class InstallCompany
 {
@@ -53,8 +52,9 @@ class InstallCompany
             $employee->save();
             $employee->createInternalAssignment();
 
-            $roles = $this->createStarterRoles($employee);
-            $this->changeAccess->giveRole($employee, $roles['Admin'], $employee);
+            $admin = $this->changeAccess->createAdminRole($employee, 'Admin');
+            $this->createStarterRoles($employee);
+            $this->changeAccess->giveRole($employee, $admin, $employee);
 
             return $employee;
         });
@@ -65,20 +65,12 @@ class InstallCompany
     }
 
     /**
-     * Create Admin, Manager and Employee as ordinary, editable Roles, logged
-     * as created by the first Employee, the one installing the app.
-     *
-     * @return array<string, Role>
+     * Create Manager and Employee as ordinary, editable Roles, logged as
+     * created by the first Employee, the one installing the app.
      */
-    private function createStarterRoles(Employee $installer): array
+    private function createStarterRoles(Employee $installer): void
     {
-        $admin = [];
-        foreach (Permission::cases() as $permission) {
-            $admin[$permission->value] = $permission->isScoped() ? Scope::Everyone->value : null;
-        }
-
         $starters = [
-            'Admin' => ['grants' => $admin, 'givenToNewEmployees' => false],
             'Manager' => ['grants' => [
                 Permission::ViewEmployeeRecords->value => Scope::Reports->value,
                 Permission::ViewAssignments->value => Scope::Reports->value,
@@ -96,11 +88,8 @@ class InstallCompany
             ], 'givenToNewEmployees' => true],
         ];
 
-        $roles = [];
         foreach ($starters as $name => $starter) {
-            $roles[$name] = $this->changeAccess->createRole($installer, $name, $starter['grants'], $starter['givenToNewEmployees']);
+            $this->changeAccess->createRole($installer, $name, $starter['grants'], $starter['givenToNewEmployees']);
         }
-
-        return $roles;
     }
 }

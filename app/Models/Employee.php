@@ -312,12 +312,22 @@ class Employee extends Authenticatable implements MustVerifyEmail
 
     /**
      * The company-wide Permissions (those without a Scope) the Employee's
-     * Roles grant, so pages can offer only what the Employee may use.
+     * Roles grant, all of them for an Admin holder, so pages can offer only
+     * what the Employee may use.
      *
      * @return array<int, string>
      */
     public function companyWidePermissions(): array
     {
+        if ($this->holdsAdmin()) {
+            return collect(Permission::cases())
+                ->reject(fn (Permission $permission): bool => $permission->isScoped())
+                ->map(fn (Permission $permission): string => $permission->value)
+                ->sort()
+                ->values()
+                ->all();
+        }
+
         return RolePermission::query()
             ->whereIn('role_id', $this->roles()->select('roles.id'))
             ->distinct()
@@ -331,8 +341,8 @@ class Employee extends Authenticatable implements MustVerifyEmail
 
     /**
      * Limit the query to Employees who can manage Roles from now on: current
-     * Employees with no Leaving Date whose Roles grant manage roles. Anyone
-     * else can't sign in, or soon won't be able to.
+     * Employees with no Leaving Date who hold Admin or a Role granting manage
+     * roles. Anyone else can't sign in, or soon won't be able to.
      *
      * @param  Builder<Employee>  $query
      */
@@ -341,7 +351,9 @@ class Employee extends Authenticatable implements MustVerifyEmail
     {
         $query->whereDate('start_date', '<=', today())
             ->whereNull('leaving_date')
-            ->whereHas('roles.permissions', fn (Builder $grants) => $grants->where('permission', Permission::ManageRoles));
+            ->whereHas('roles', fn (Builder $roles) => $roles
+                ->where('is_admin', true)
+                ->orWhereHas('permissions', fn (Builder $grants) => $grants->where('permission', Permission::ManageRoles)));
     }
 
     /**
@@ -443,12 +455,30 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Every grant of the Permission across the Employee's Roles.
+     * Whether the Employee holds the Admin Role, which always holds every
+     * Permission with the everyone Scope.
+     */
+    public function holdsAdmin(): bool
+    {
+        return $this->roles()->where('is_admin', true)->exists();
+    }
+
+    /**
+     * Every grant of the Permission across the Employee's Roles. The Admin
+     * Role stores no grants, so for its holders this is the one grant it
+     * always has: everyone for a Permission about Employees.
      *
      * @return Collection<int, RolePermission>
      */
     private function grantsOf(Permission $permission): Collection
     {
+        if ($this->holdsAdmin()) {
+            return collect([new RolePermission([
+                'permission' => $permission, // @pest-mutate-ignore (callers only read the grant's Scope)
+                'scope' => $permission->isScoped() ? Scope::Everyone : null,
+            ])]);
+        }
+
         return RolePermission::query()
             ->whereIn('role_id', $this->roles()->select('roles.id'))
             ->where('permission', $permission)

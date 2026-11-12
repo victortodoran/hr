@@ -58,9 +58,13 @@ function labelOf(permission: string): string {
                         :role="role"
                         :permissions="permissions"
                     />
-                    <DeleteRole :role="role" />
+                    <DeleteRole v-if="!role.is_admin" :role="role" />
                 </div>
             </div>
+
+            <p v-if="role.is_admin" class="text-sm text-muted-foreground">
+                Admin always holds every Permission, with Scope everyone.
+            </p>
 
             <ul
                 v-if="Object.keys(role.permissions).length > 0"

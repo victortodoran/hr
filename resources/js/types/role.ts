@@ -14,6 +14,8 @@ export type RoleHolder = {
 export type RoleRecord = {
     id: number;
     name: string;
+    /** Whether this is Admin, which always holds every Permission. */
+    is_admin: boolean;
     permissions: Grants;
     /** Whether every new Employee is given the Role. */
     given_to_new_employees: boolean;
