@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { Form, Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import { computed } from 'vue';
-import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
 import Heading from '@/components/Heading.vue';
-import SubmitButton from '@/components/SubmitButton.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +12,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import WorkEntryDialog from '@/components/work-entries/WorkEntryDialog.vue';
 import { formatDate } from '@/lib/dates';
 import { index } from '@/routes/work-entries';
@@ -218,22 +217,10 @@ function switchEmployee(employeeId: unknown): void {
                                 :today="today"
                                 :entry="entry"
                             />
-                            <Form
+                            <DeleteWorkEntry
                                 v-else-if="entry.can_delete"
-                                v-bind="
-                                    WorkEntryController.destroy.form(entry.id)
-                                "
-                                :options="{ preserveScroll: true }"
-                                v-slot="{ processing }"
-                            >
-                                <SubmitButton
-                                    :processing="processing"
-                                    variant="ghost"
-                                    size="sm"
-                                    class="text-destructive"
-                                    >Delete</SubmitButton
-                                >
-                            </Form>
+                                :entry="entry"
+                            />
                         </div>
                     </li>
                 </ul>

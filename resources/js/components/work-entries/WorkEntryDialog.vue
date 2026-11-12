@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, useForm } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
 import InputError from '@/components/InputError.vue';
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import {
     Select,
     SelectContent,
@@ -179,20 +180,9 @@ function save(): void {
                 </div>
 
                 <DialogFooter class="gap-2">
-                    <Form
-                        v-if="entry"
-                        v-bind="WorkEntryController.destroy.form(entry.id)"
-                        :options="{ preserveScroll: true }"
-                        class="mr-auto"
-                        v-slot="{ processing }"
-                    >
-                        <SubmitButton
-                            :processing="processing"
-                            variant="ghost"
-                            class="text-destructive"
-                            >Delete</SubmitButton
-                        >
-                    </Form>
+                    <div v-if="entry" class="mr-auto">
+                        <DeleteWorkEntry :entry="entry" />
+                    </div>
                     <DialogClose as-child>
                         <Button variant="secondary" type="button"
                             >Cancel</Button
