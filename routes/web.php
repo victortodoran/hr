@@ -62,6 +62,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('can:viewApprovals,'.WorkEntry::class)->group(function () {
         Route::get('approvals', [ApprovalController::class, 'index'])->name('approvals.index');
         Route::post('approvals', [ApprovalController::class, 'store'])->name('approvals.store');
+        Route::delete('approvals', [ApprovalController::class, 'destroy'])->name('approvals.destroy');
     });
     Route::middleware('can:update,workEntry')->group(function () {
         Route::patch('work-entries/{workEntry}', [WorkEntryController::class, 'update'])->name('work-entries.update');

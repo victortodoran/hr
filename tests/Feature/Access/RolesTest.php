@@ -61,7 +61,8 @@ it('offers every Permission with the Scopes it can carry', function () {
             ->where('permissions.6', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scopes' => ['own', 'reports', 'everyone']])
             ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scopes' => ['own', 'reports', 'everyone']])
             ->where('permissions.8', ['value' => 'approve-work-entries', 'label' => 'Approve work entries', 'scopes' => ['reports', 'everyone']])
-            ->where('permissions.14', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => []])
+            ->where('permissions.9', ['value' => 'reopen-work-entries', 'label' => 'Reopen work entries', 'scopes' => ['reports', 'everyone']])
+            ->where('permissions.15', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => []])
             ->etc(),
         );
 });
@@ -117,6 +118,7 @@ it('rejects a Role whose name or Permissions are invalid', function (array $inpu
     'scoped Permission without a Scope' => [['permissions' => ['view-pay' => null]], 'permissions', 'Choose a Scope for View pay: own, reports or everyone.'],
     'scoped Permission with an unknown Scope' => [['permissions' => ['view-pay' => 'department']], 'permissions', 'Choose a Scope for View pay: own, reports or everyone.'],
     'approve work entries for own' => [['permissions' => ['approve-work-entries' => 'own']], 'permissions', 'Choose a Scope for Approve work entries: reports or everyone.'],
+    'reopen work entries for own' => [['permissions' => ['reopen-work-entries' => 'own']], 'permissions', 'Choose a Scope for Reopen work entries: reports or everyone.'],
     'company-wide Permission with a Scope' => [['permissions' => ['manage-roles' => 'own']], 'permissions', 'Manage roles always applies company-wide, so it takes no Scope.'],
     'mark missing' => [['given_to_new_employees' => null], 'given_to_new_employees', 'The given to new employees field is required.'],
     'mark not true or false' => [['given_to_new_employees' => 'maybe'], 'given_to_new_employees', 'The given to new employees field must be true or false.'],

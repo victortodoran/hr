@@ -59,7 +59,7 @@ export type WorkEntryAssignment = {
 
 /**
  * A Work Entry on the Approvals page, with whose it is and whether the
- * viewer may approve it.
+ * viewer may approve or reopen it.
  */
 export type ApprovalEntry = {
     id: number;
@@ -72,6 +72,7 @@ export type ApprovalEntry = {
     approved: WorkEntrySignOff | null;
     locked: WorkEntrySignOff | null;
     can_approve: boolean;
+    can_reopen: boolean;
 };
 
 /**

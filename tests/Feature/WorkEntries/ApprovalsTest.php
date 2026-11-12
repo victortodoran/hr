@@ -44,10 +44,12 @@ it('lists the Pending Work Entries of the approver\'s Reports, oldest first', fu
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('approvals/Index')
+        ->where('canApprove', true)
+        ->where('canReopen', false)
         ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null, 'state' => 'pending'])
         ->where('entries.data', [
-            ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'project' => 'Billing', 'hours' => 1, 'description' => 'Invoices', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_approve' => true],
-            ['id' => $later->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_approve' => true],
+            ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'project' => 'Billing', 'hours' => 1, 'description' => 'Invoices', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_approve' => true, 'can_reopen' => false],
+            ['id' => $later->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_approve' => true, 'can_reopen' => false],
         ])
         ->where('total', 2.5)
         ->where('employees', [['id' => $cara->id, 'name' => 'Cara'], ['id' => $dev->id, 'name' => 'Dev']])
@@ -71,11 +73,12 @@ it('never lists the approver\'s own Work Entries, even when they may approve eve
         ->where('employees', [['id' => $ada->id, 'name' => 'Ada']]));
 });
 
-it('refuses the Approvals page to someone who doesn\'t approve Work Entries', function () {
+it('refuses the Approvals page to someone who neither approves nor reopens Work Entries', function () {
     $cara = employeeWith([Permission::ManageWorkEntries->value => Scope::Everyone, Permission::ViewWorkEntries->value => Scope::Everyone]);
 
     actingAs($cara)->get(route('approvals.index'))->assertForbidden();
     actingAs($cara)->post(route('approvals.store'), ['ids' => []])->assertForbidden();
+    actingAs($cara)->delete(route('approvals.destroy'), ['ids' => []])->assertForbidden();
 });
 
 it('filters by Employee, Project, dates and state, keeping the total to what matches', function (array $filters, array $expected) {
