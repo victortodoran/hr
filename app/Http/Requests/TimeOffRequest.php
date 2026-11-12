@@ -2,12 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Employee;
 use App\Models\TimeOff;
-use Carbon\CarbonImmutable;
 use Closure;
-use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 /**
@@ -17,20 +13,8 @@ use Illuminate\Validation\Validator;
  * their Pending or Approved Time Off and, when Paid, fits the Paid Days left
  * in every year it touches.
  */
-class TimeOffRequest extends FormRequest
+class TimeOffRequest extends TimeOffPreviewRequest
 {
-    /**
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
-    public function rules(): array
-    {
-        return [
-            'first_date' => ['bail', 'required', 'date_format:Y-m-d', 'after_or_equal:today'],
-            'last_date' => ['bail', 'required', 'date_format:Y-m-d', 'after_or_equal:first_date'],
-            'is_paid' => ['required', 'boolean'],
-        ];
-    }
-
     /**
      * Once the dates are valid on their own, check them against the
      * Employee's period of work and other Time Off, then the Paid Days left.
@@ -109,12 +93,7 @@ class TimeOffRequest extends FormRequest
      */
     private function checkPaidDays(Validator $validator): void
     {
-        $requested = new TimeOff($this->timeOff());
-
-        foreach (range($this->firstDate()->year, $this->lastDate()->year) as $year) {
-            $left = $this->employee()->paidDaysLeftIn($year);
-            $needed = $requested->weekdaysIn($year);
-
+        foreach ($this->employee()->paidDaysUsedBy($this->unsavedTimeOff()) as ['year' => $year, 'uses' => $needed, 'left' => $left]) {
             if ($needed > $left) {
                 $validator->errors()->add('is_paid', trans_choice('You have :count Paid Day left in :year, but this Paid Time Off takes :needed. Request the rest as Unpaid Time Off.|You have :count Paid Days left in :year, but this Paid Time Off takes :needed. Request the rest as Unpaid Time Off.', $left, [
                     'year' => $year,
@@ -122,50 +101,5 @@ class TimeOffRequest extends FormRequest
                 ]));
             }
         }
-    }
-
-    /**
-     * The Time Off as it is stored.
-     *
-     * @return array{first_date: string, last_date: string, is_paid: bool}
-     */
-    public function timeOff(): array
-    {
-        return [
-            'first_date' => $this->string('first_date')->value(),
-            'last_date' => $this->string('last_date')->value(),
-            'is_paid' => $this->boolean('is_paid'),
-        ];
-    }
-
-    /**
-     * The Employee requesting the Time Off: always the one signed in.
-     */
-    public function employee(): Employee
-    {
-        /** @var Employee */
-        return $this->user();
-    }
-
-    private function firstDate(): CarbonImmutable
-    {
-        return CarbonImmutable::parse($this->string('first_date')->value());
-    }
-
-    private function lastDate(): CarbonImmutable
-    {
-        return CarbonImmutable::parse($this->string('last_date')->value());
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'first_date.after_or_equal' => __('Time Off can\'t start in the past.'),
-            'is_paid.required' => __('Choose Paid or Unpaid Time Off.'),
-            'is_paid.boolean' => __('Choose Paid or Unpaid Time Off.'),
-        ];
     }
 }
