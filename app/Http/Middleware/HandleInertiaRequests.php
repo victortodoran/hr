@@ -53,6 +53,7 @@ class HandleInertiaRequests extends Middleware
                     && ($employee->holds(Permission::ViewWorkEntries) || $employee->holds(Permission::ManageWorkEntries)),
                 'canSeeTeam' => fn (): bool => $employee instanceof Employee && $employee->can('viewTeam', Employee::class),
                 'canSeeApprovals' => fn (): bool => $employee instanceof Employee && $employee->can('viewApprovals', WorkEntry::class),
+                'approvalsWaiting' => fn (): int => $employee instanceof Employee ? array_sum($employee->waitingForDecision()) : 0,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

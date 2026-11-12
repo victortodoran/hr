@@ -43,49 +43,73 @@ import type { NavItem } from '@/types';
 
 const page = usePage();
 
-const mainNavItems = computed<NavItem[]>(() => [
-    ...(page.props.auth.canSeeOwnPage
+const auth = computed(() => page.props.auth);
+
+const meItems = computed<NavItem[]>(() => [
+    ...(auth.value.canSeeOwnPage
         ? [
               {
                   title: 'My Page',
-                  href: employeePage(page.props.auth.employee.id),
+                  href: employeePage(auth.value.employee.id),
                   icon: UserRound,
               },
           ]
         : []),
-    ...(page.props.auth.canSeeTeam
-        ? [{ title: 'Team', href: team(), icon: Network }]
-        : []),
-    ...(page.props.auth.canSeeWorkEntries
+    ...(auth.value.canSeeWorkEntries
         ? [{ title: 'Work Entries', href: workEntries(), icon: Clock }]
         : []),
     { title: 'Time Off', href: timeOff(), icon: CalendarDays },
-    ...(page.props.auth.canSeeApprovals
-        ? [{ title: 'Approvals', href: approvals(), icon: CheckCheck }]
+]);
+
+const manageItems = computed<NavItem[]>(() => [
+    ...(auth.value.canSeeTeam
+        ? [{ title: 'Team', href: team(), icon: Network }]
         : []),
-    ...(page.props.auth.canListEmployees
+    ...(auth.value.canSeeApprovals
+        ? [
+              {
+                  title: 'Approvals',
+                  href: approvals(),
+                  icon: CheckCheck,
+                  badge: auth.value.approvalsWaiting,
+              },
+          ]
+        : []),
+]);
+
+const companyItems = computed<NavItem[]>(() => [
+    ...(auth.value.canListEmployees
         ? [{ title: 'Employees', href: employees(), icon: UsersRound }]
         : []),
-    ...(page.props.auth.can.includes('view-directory')
+    ...(auth.value.can.includes('view-directory')
         ? [{ title: 'Directory', href: directory(), icon: Users }]
         : []),
-    ...(page.props.auth.can.includes('view-projects') ||
-    page.props.auth.can.includes('manage-projects')
+    ...(auth.value.can.includes('view-projects') ||
+    auth.value.can.includes('manage-projects')
         ? [{ title: 'Projects', href: projects(), icon: FolderKanban }]
         : []),
-    ...(page.props.auth.can.includes('manage-clients')
+    ...(auth.value.can.includes('manage-clients')
         ? [{ title: 'Clients', href: clients(), icon: Briefcase }]
         : []),
-    ...(page.props.auth.can.includes('manage-departments')
+    ...(auth.value.can.includes('manage-departments')
         ? [{ title: 'Departments', href: departments(), icon: Building2 }]
         : []),
-    ...(page.props.auth.can.includes('manage-roles')
+    ...(auth.value.can.includes('manage-roles')
         ? [{ title: 'Roles', href: roles(), icon: ShieldCheck }]
         : []),
-    ...(page.props.auth.can.includes('manage-company')
+    ...(auth.value.can.includes('manage-company')
         ? [{ title: 'Company', href: company(), icon: Landmark }]
         : []),
 ]);
+
+/** The labelled groups, leaving out any with no link the Employee may open. */
+const navGroups = computed(() =>
+    [
+        { label: 'Me', items: meItems.value },
+        { label: 'Manage', items: manageItems.value },
+        { label: 'Company', items: companyItems.value },
+    ].filter((group) => group.items.length > 0),
+);
 </script>
 
 <template>
@@ -103,7 +127,12 @@ const mainNavItems = computed<NavItem[]>(() => [
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <NavMain
+                v-for="group in navGroups"
+                :key="group.label"
+                :label="group.label"
+                :items="group.items"
+            />
         </SidebarContent>
 
         <SidebarFooter>

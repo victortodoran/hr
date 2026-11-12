@@ -23,4 +23,6 @@ export type Auth = {
     canSeeTeam: boolean;
     /** Whether the signed-in Employee may open the Approvals page. */
     canSeeApprovals: boolean;
+    /** How many Pending Work Entries and Time Off wait for the signed-in Employee to decide. */
+    approvalsWaiting: number;
 };

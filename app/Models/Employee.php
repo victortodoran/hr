@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Enums\Scope;
+use App\Enums\TimeOffState;
+use App\Enums\WorkEntryState;
 use App\Notifications\Invitation;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -293,6 +295,29 @@ class Employee extends Authenticatable implements MustVerifyEmail
     public function managesAnyone(): bool
     {
         return self::query()->effectivelyManagedBy($this)->exists();
+    }
+
+    /**
+     * What is waiting for this Employee to decide: the Pending Work Entries
+     * and Pending Time Off of the Employees whose effective Manager they are,
+     * the same Employees they approve for.
+     *
+     * @return array{workEntries: int, timeOff: int}
+     */
+    public function waitingForDecision(): array
+    {
+        $decidedFor = self::query()->effectivelyManagedBy($this)->select('employees.id');
+
+        return [
+            'workEntries' => WorkEntry::query()
+                ->where('state', WorkEntryState::Pending)
+                ->whereIn('assignment_id', Assignment::query()->select('id')->whereIn('employee_id', clone $decidedFor))
+                ->count(),
+            'timeOff' => TimeOff::query()
+                ->where('state', TimeOffState::Pending)
+                ->whereIn('employee_id', $decidedFor)
+                ->count(),
+        ];
     }
 
     /**
