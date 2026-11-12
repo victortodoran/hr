@@ -125,7 +125,7 @@ it('makes the starter Admin the Admin Role, storing no grants since it always ho
         ->and($admin->permissions()->exists())->toBeFalse();
 });
 
-it('creates the starter Employee Role: directory, plus own records, Assignments and Pay, and recording their own Work Entries', function () {
+it('creates the starter Employee Role: directory, plus own records, Assignments, Pay and Time Off, and recording their own Work Entries', function () {
     install(installOptions())->assertSuccessful();
 
     $cara = Employee::factory()->create();
@@ -137,6 +137,7 @@ it('creates the starter Employee Role: directory, plus own records, Assignments 
         ->and($gate->allows(Permission::ViewEmployeeRecords->value, $cara))->toBeTrue()
         ->and($gate->allows(Permission::ViewAssignments->value, $cara))->toBeTrue()
         ->and($gate->allows(Permission::ViewPay->value, $cara))->toBeTrue()
+        ->and($cara->widestScopeFor(Permission::ViewTimeOff)?->value)->toBe('own')
         ->and($cara->widestScopeFor(Permission::ManageWorkEntries)?->value)->toBe('own')
         ->and($gate->allows(Permission::ViewEmployeeRecords->value, $colleague))->toBeFalse()
         ->and($gate->allows(Permission::ManageEmployees->value))->toBeFalse()
@@ -149,7 +150,7 @@ it('marks only the starter Employee Role as given to new Employees', function ()
     expect(Role::query()->where('is_given_to_new_employees', true)->pluck('name')->all())->toBe(['Employee']);
 });
 
-it('creates the starter Manager Role: Reports\' records, Assignments and Work Entries, plus Projects', function () {
+it('creates the starter Manager Role: Reports\' records, Assignments, Work Entries and Time Off, plus Projects', function () {
     install(installOptions())->assertSuccessful();
 
     $ben = Employee::factory()->create();
@@ -161,6 +162,8 @@ it('creates the starter Manager Role: Reports\' records, Assignments and Work En
         ->and($ben->widestScopeFor(Permission::ViewAssignments)?->value)->toBe('reports')
         ->and($ben->widestScopeFor(Permission::ManageAssignments)?->value)->toBe('reports')
         ->and($ben->widestScopeFor(Permission::ViewWorkEntries)?->value)->toBe('reports')
+        ->and($ben->widestScopeFor(Permission::ViewTimeOff)?->value)->toBe('reports')
+        ->and($ben->widestScopeFor(Permission::ManagePaidDays))->toBeNull()
         ->and(Role::query()->where('name', 'Manager')->sole()->grants())->not->toHaveKey('approve-work-entries')
         ->and($ben->widestScopeFor(Permission::ManageWorkEntries))->toBeNull()
         ->and($ben->widestScopeFor(Permission::ViewPay))->toBeNull()
@@ -253,7 +256,7 @@ it('logs the starter Roles being created and Admin given to the first Employee, 
         ->and($entries->get(0)?->after)->toBe(['name' => 'Admin', 'admin' => true, 'given_to_new_employees' => false])
         ->and($entries->get(2)?->after)->toBe([
             'name' => 'Employee',
-            'permissions' => ['view-employee-records' => 'own', 'view-assignments' => 'own', 'view-pay' => 'own', 'manage-work-entries' => 'own', 'view-directory' => null],
+            'permissions' => ['view-employee-records' => 'own', 'view-assignments' => 'own', 'view-pay' => 'own', 'manage-work-entries' => 'own', 'view-time-off' => 'own', 'view-directory' => null],
             'given_to_new_employees' => true,
         ]);
 });

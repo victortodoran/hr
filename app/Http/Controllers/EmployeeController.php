@@ -14,6 +14,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\Project;
+use App\Models\TimeOff;
 use App\Support\Currency;
 use App\Support\PayHistory;
 use App\Support\ReportingChain;
@@ -99,8 +100,9 @@ class EmployeeController extends Controller
 
     /**
      * Show an Employee's page: their record, then their Assignments and Pay,
-     * and their Paid Days for this year and next, each only when the viewer
-     * may see it, and their Reporting Chain unless they have left.
+     * their Paid Days for this year and next to set, and their Time Off with
+     * this year's Paid Days left, each only when the viewer may see it, and
+     * their Reporting Chain unless they have left.
      */
     public function show(#[CurrentUser] Employee $actor, Employee $employee): Response
     {
@@ -131,6 +133,7 @@ class EmployeeController extends Controller
             'paidDays' => $actor->can('setPaidDays', $employee)
                 ? array_map(fn (int $year): array => ['year' => $year, 'days' => $employee->paidDaysIn($year)], [$thisYear, $thisYear + 1])
                 : null,
+            'timeOff' => $actor->can('viewTimeOffAndPaidDays', $employee) ? $this->timeOff($employee, $thisYear) : null,
         ]);
     }
 
@@ -189,6 +192,28 @@ class EmployeeController extends Controller
             'department' => $effective->department?->name, // @pest-mutate-ignore (every Employee has a Department; the nullsafe only satisfies the relation's nullable type)
             'manager' => $effective->effectiveManager?->only('id', 'name'),
             'is_top' => $effective->is_top,
+        ];
+    }
+
+    /**
+     * The Employee's Paid Days and Paid Days left this year, and their Time
+     * Off in every state, latest first.
+     *
+     * @return array{year: int, paid_days: int, paid_days_left: int, requests: array<int, array{id: int, first_date: string, last_date: string, days: int, is_paid: bool, state: string, decided_by: string|null, decline_reason: string|null}>}
+     */
+    private function timeOff(Employee $employee, int $year): array
+    {
+        return [
+            'year' => $year,
+            'paid_days' => $employee->paidDaysIn($year),
+            'paid_days_left' => $employee->paidDaysLeftIn($year),
+            'requests' => $employee->timeOff()
+                ->with('decider:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+                ->orderByDesc('first_date')
+                ->orderByDesc('id')
+                ->get()
+                ->map(fn (TimeOff $timeOff): array => $timeOff->details())
+                ->all(),
         ];
     }
 

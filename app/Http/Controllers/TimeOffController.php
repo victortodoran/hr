@@ -36,14 +36,7 @@ class TimeOffController extends Controller
                 ->orderByDesc('id')
                 ->get()
                 ->map(fn (TimeOff $timeOff): array => [
-                    'id' => $timeOff->id,
-                    'first_date' => $timeOff->first_date->toDateString(),
-                    'last_date' => $timeOff->last_date->toDateString(),
-                    'days' => $timeOff->weekdays(),
-                    'is_paid' => $timeOff->is_paid,
-                    'state' => $timeOff->state->value,
-                    'decided_by' => $timeOff->decider?->name,
-                    'decline_reason' => $timeOff->decline_reason,
+                    ...$timeOff->details(),
                     'can_cancel' => $actor->can('cancel', $timeOff),
                 ])
                 ->all(),

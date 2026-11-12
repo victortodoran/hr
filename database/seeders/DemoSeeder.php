@@ -9,6 +9,7 @@ use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\PayKind;
 use App\Enums\Permission;
 use App\Enums\Scope;
+use App\Enums\TimeOffState;
 use App\Enums\WorkEntryState;
 use App\Models\Assignment;
 use App\Models\Client;
@@ -25,12 +26,13 @@ use Illuminate\Support\Str;
  * A small demo company with at least one of everything, so every flow can be
  * tried by hand. It installs the company the way hr:install does, then adds
  * Employees, Roles, Clients, Projects, Assignments and Pay through the same
- * actions the app uses, and four weeks of Work Entries. Dates are relative to
- * today, so the Future and Former Employees stay that way, and the last two
- * weeks of Work Entries are always Pending, waiting for each Employee's
- * Manager (Ben or Hana) to approve them. Everyone except the Future Employee
- * can sign in with the password "password"; the Future Employee still has an
- * invitation waiting. Invitations are not emailed.
+ * actions the app uses, four weeks of Work Entries, Paid Days (none for
+ * Ivan) and Time Off in every state. Dates are relative to today, so the
+ * Future and Former Employees stay that way, and the last two weeks of Work
+ * Entries and the Time Off still to come are always Pending, waiting for
+ * each Employee's Manager (Ben or Hana) to approve them. Everyone except the
+ * Future Employee can sign in with the password "password"; the Future
+ * Employee still has an invitation waiting. Invitations are not emailed.
  *
  *   Ana (top, Admin)
  *   ├── Ben (Senior Manager: Pay of his Reports)
@@ -82,6 +84,7 @@ class DemoSeeder extends Seeder
             Permission::ViewAssignments->value => Scope::Reports->value,
             Permission::ManageAssignments->value => Scope::Reports->value,
             Permission::ViewPay->value => Scope::Reports->value,
+            Permission::ViewTimeOff->value => Scope::Reports->value,
             Permission::ViewProjects->value => null,
         ], givenToNewEmployees: false);
         $payroll = $this->changeAccess->createRole($ana, 'Payroll', [
@@ -142,6 +145,21 @@ class DemoSeeder extends Seeder
         $this->recordWeeks($caraOnRelaunch, 5, ['Reviewing pull requests', 'Checkout API', 'Sprint planning', 'Fixing payment bugs'], $ben, $finn);
         $this->recordWeeks($liaOnRelaunch, 6, ['Product listing page', 'Unit tests for the cart', 'Pairing with Cara'], $ben, $finn);
         $this->recordWeeks($ivanOnWebsite, 4, ['Homepage mock-ups', 'Design review with Hana', 'Icon set'], $hana, $finn);
+
+        foreach ([$ana, $ben, $hana, $finn, $cara, $eve, $lia, $dan] as $employee) {
+            $this->paidDays($employee, $employee->is_top ? 25 : 20);
+        }
+        $this->paidDays($ivan, 0);
+
+        $thisMonday = $today->startOfWeek(CarbonInterface::MONDAY);
+        $this->timeOff($ana, $thisMonday->subWeeks(6), 4, true, TimeOffState::Approved);
+        $this->timeOff($ben, $thisMonday->addWeeks(4), 4, true, TimeOffState::Approved, $ana);
+        $this->timeOff($cara, $thisMonday->subWeeks(5), 2, true, TimeOffState::Approved, $ben);
+        $this->timeOff($cara, $thisMonday->addWeeks(2), 4, true);
+        $this->timeOff($cara, $thisMonday->addWeeks(5)->addDays(3), 1, true, TimeOffState::Cancelled);
+        $this->timeOff($lia, $thisMonday->addWeeks(3), 1, false);
+        $this->timeOff($ivan, $thisMonday->addWeeks(2), 2, false, TimeOffState::Declined, $hana, 'Launch week for the Website Revamp. Could you take the week after?');
+        $this->timeOff($ivan, $thisMonday->addWeeks(3)->addDays(4), 0, false);
 
         $this->command?->info('Demo company seeded. Sign in as ana@acme.test (Admin), ben@acme.test, hana@acme.test, finn@acme.test, cara@acme.test, ivan@acme.test or lia@acme.test with the password "password".');
     }
@@ -261,6 +279,37 @@ class DemoSeeder extends Seeder
                 }
             }
         }
+    }
+
+    /**
+     * Give the Employee Paid Days from last year on, so their past Time Off
+     * has Paid Days too.
+     */
+    private function paidDays(Employee $employee, int $days): void
+    {
+        $employee->paidDays()->create(['year' => today()->year - 1, 'days' => $days]);
+    }
+
+    /**
+     * Add Time Off from a first date to the given number of days after it,
+     * Pending unless given another state. Approved and Declined Time Off is
+     * decided by the decider, or by nobody for the top Employee's.
+     */
+    private function timeOff(Employee $employee, CarbonInterface $first, int $daysAfter, bool $isPaid, TimeOffState $state = TimeOffState::Pending, ?Employee $decider = null, ?string $declineReason = null): void
+    {
+        $timeOff = $employee->timeOff()->make([
+            'first_date' => $first,
+            'last_date' => $first->addDays($daysAfter),
+            'is_paid' => $isPaid,
+        ]);
+
+        $timeOff->forceFill([
+            'state' => $state,
+            'decided_by' => $decider?->id,
+            'decided_at' => in_array($state, [TimeOffState::Approved, TimeOffState::Declined], true) ? now()->subDay() : null,
+            'decline_reason' => $declineReason,
+            'cancelled_at' => $state === TimeOffState::Cancelled ? now()->subDay() : null,
+        ])->save();
     }
 
     /**

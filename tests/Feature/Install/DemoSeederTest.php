@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\EmploymentStatus;
+use App\Enums\Permission;
+use App\Enums\TimeOffState;
 use App\Enums\WorkEntryState;
 use App\Models\AccessLogEntry;
 use App\Models\Assignment;
@@ -11,6 +13,7 @@ use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\Notification;
@@ -45,6 +48,23 @@ it('gives Ben Pending Work Entries of the Employees he manages to approve, next 
         ->and($pending->filter(fn (WorkEntry $entry): bool => $managedByBen->contains($entry->employee->id))->count())->toBeGreaterThan(1)
         ->and(WorkEntry::query()->where('state', WorkEntryState::Approved)->where('approved_by', $ben->id)->exists())->toBeTrue()
         ->and(WorkEntry::query()->where('state', WorkEntryState::Locked)->exists())->toBeTrue();
+});
+
+it('gives most Employees Paid Days and one none, and Time Off in every state for their Managers to see', function () {
+    seed(DemoSeeder::class);
+    $paidDays = Employee::query()->get()->map(fn (Employee $employee): int => $employee->paidDaysIn(today()->year));
+    $ben = Employee::query()->where('email', 'ben@acme.test')->sole();
+    $pendingForBen = TimeOff::query()->where('state', TimeOffState::Pending)
+        ->whereIn('employee_id', Employee::query()->effectivelyManagedBy($ben)->select('employees.id'));
+
+    expect($paidDays->filter(fn (int $days): bool => $days > 0)->count())->toBeGreaterThan(intdiv($paidDays->count(), 2))
+        ->and($paidDays)->toContain(0)
+        ->and(TimeOff::query()->pluck('state')->unique()->values()->all())->toEqualCanonicalizing(TimeOffState::cases())
+        ->and(TimeOff::query()->where('state', TimeOffState::Declined)->whereNull('decline_reason')->exists())->toBeFalse()
+        ->and(TimeOff::query()->where('is_paid', false)->exists())->toBeTrue()
+        ->and($pendingForBen->exists())->toBeTrue()
+        ->and(Employee::query()->get()->every(fn (Employee $employee): bool => $employee->paidDaysLeftIn(today()->year) >= 0))->toBeTrue()
+        ->and($ben->can(Permission::ViewTimeOff->value, $pendingForBen->firstOrFail()->employee))->toBeTrue();
 });
 
 it('lets the demo Admin sign in with the demo password', function () {

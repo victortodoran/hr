@@ -157,5 +157,5 @@ The permanent record of every change to access: a Role being created, edited or 
 _Avoid_: Audit trail, history, activity log, permission log
 
 **Scope**:
-Which Employees a Permission about Employees (their records, Assignments, Pay or Work Entries) applies to. Permissions about anything else, such as Projects, Clients or Roles, have no Scope and always apply company-wide. The Scopes are **own** (only the Employee themselves), **reports** (the Employees who report to them) or **everyone**.
+Which Employees a Permission about Employees (their records, Assignments, Pay, Work Entries, Time Off or Paid Days) applies to. Permissions about anything else, such as Projects, Clients or Roles, have no Scope and always apply company-wide. The Scopes are **own** (only the Employee themselves), **reports** (the Employees who report to them) or **everyone**.
 _Avoid_: Reach, level, visibility
