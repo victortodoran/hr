@@ -245,7 +245,7 @@ it('counts Paid Time Off on the last and first day of a year in that year only',
 it('shows the Employee their own Time Off, latest first, and the Paid Days left this year', function () {
     $cara = timeOffRequester();
     PaidDays::factory()->for($cara)->create(['year' => 2027, 'days' => 25]);
-    $february = TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-06']);
+    $february = TimeOff::factory()->for($cara)->approved(Employee::factory()->create(['name' => 'Ben']))->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-06']);
     $unpaid = TimeOff::factory()->for($cara)->unpaid()->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-14']);
     $newYear = TimeOff::factory()->for($cara)->create(['first_date' => '2026-12-28', 'last_date' => '2027-01-08']);
     $cancelled = TimeOff::factory()->for($cara)->cancelled()->create(['first_date' => '2026-12-07', 'last_date' => '2026-12-11']);
@@ -258,10 +258,10 @@ it('shows the Employee their own Time Off, latest first, and the Paid Days left 
             ->where('today', '2026-12-01')
             ->where('paidDaysLeft', 11)
             ->where('timeOff', [
-                ['id' => $newYear->id, 'first_date' => '2026-12-28', 'last_date' => '2027-01-08', 'days' => 10, 'is_paid' => true, 'state' => 'pending', 'can_cancel' => true],
-                ['id' => $unpaid->id, 'first_date' => '2026-12-14', 'last_date' => '2026-12-14', 'days' => 1, 'is_paid' => false, 'state' => 'pending', 'can_cancel' => true],
-                ['id' => $cancelled->id, 'first_date' => '2026-12-07', 'last_date' => '2026-12-11', 'days' => 5, 'is_paid' => true, 'state' => 'cancelled', 'can_cancel' => false],
-                ['id' => $february->id, 'first_date' => '2026-02-02', 'last_date' => '2026-02-06', 'days' => 5, 'is_paid' => true, 'state' => 'approved', 'can_cancel' => false],
+                ['id' => $newYear->id, 'first_date' => '2026-12-28', 'last_date' => '2027-01-08', 'days' => 10, 'is_paid' => true, 'state' => 'pending', 'decided_by' => null, 'decline_reason' => null, 'can_cancel' => true],
+                ['id' => $unpaid->id, 'first_date' => '2026-12-14', 'last_date' => '2026-12-14', 'days' => 1, 'is_paid' => false, 'state' => 'pending', 'decided_by' => null, 'decline_reason' => null, 'can_cancel' => true],
+                ['id' => $cancelled->id, 'first_date' => '2026-12-07', 'last_date' => '2026-12-11', 'days' => 5, 'is_paid' => true, 'state' => 'cancelled', 'decided_by' => null, 'decline_reason' => null, 'can_cancel' => false],
+                ['id' => $february->id, 'first_date' => '2026-02-02', 'last_date' => '2026-02-06', 'days' => 5, 'is_paid' => true, 'state' => 'approved', 'decided_by' => 'Ben', 'decline_reason' => null, 'can_cancel' => false],
             ]));
 });
 
