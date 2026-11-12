@@ -4,6 +4,7 @@ import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
+import PaidDaysForm from '@/components/time-off/PaidDaysForm.vue';
 import ReportingChain from '@/components/employees/ReportingChain.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import type {
     Choice,
     EmployeePageRecord,
     OpenProject,
+    PaidDaysRecord,
     PayEntryRecord,
     ReportingChainView,
 } from '@/types';
@@ -36,6 +38,8 @@ const props = defineProps<{
     /** The company currency; only sent to those who may manage Pay. */
     currency?: string;
     canEdit: boolean;
+    /** This year's and next year's; only sent to those who may manage them. */
+    paidDays: PaidDaysRecord[] | null;
 }>();
 
 /**
@@ -138,6 +142,24 @@ setLayoutProps({
                         }}</Link>
                     </li>
                 </ul>
+            </div>
+        </section>
+
+        <section v-if="paidDays" class="flex flex-col gap-4">
+            <div>
+                <h2 class="text-lg font-semibold">Paid Days</h2>
+                <p class="text-sm text-muted-foreground">
+                    Days of Paid Time Off each year. A year with no number of
+                    its own keeps the year before's.
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-8 rounded-lg border p-4">
+                <PaidDaysForm
+                    v-for="year in paidDays"
+                    :key="year.year"
+                    :employee="employee"
+                    :paid-days="year"
+                />
             </div>
         </section>
 

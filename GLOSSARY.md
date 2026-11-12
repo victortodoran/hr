@@ -112,6 +112,32 @@ _Avoid_: Unlock, unapprove, reject, revert
 The final state of an Approved Work Entry, closed for good, for example because it has been invoiced to a Client or paid. A Locked Work Entry can never be changed, deleted or sent back to Pending.
 _Avoid_: Invoiced, closed, final, frozen, archived
 
+### Time Off
+
+**Time Off**:
+One or more whole days an Employee asks to be away from work, from a first to a last date, as in "Cara requested Time Off from 22 to 24 Dec". Only weekdays count as days of Time Off; weekends never do, and public holidays count like any other weekday. Each Time Off is either Paid Time Off or Unpaid Time Off. It is Pending until the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't). The top Employee's Time Off is Approved as soon as they request it. An Employee's Time Off can't overlap their other Pending or Approved Time Off.
+_Avoid_: Holiday, leave, vacation, absence, day off, PTO
+
+**Paid Time Off**:
+Time Off the company still pays for, using up the Employee's Paid Days for the year each day falls in. It can only be requested while enough Paid Days are left, counting both Pending and Approved Paid Time Off.
+_Avoid_: Paid leave, annual leave, holiday
+
+**Unpaid Time Off**:
+Time Off the company doesn't pay for. It uses no Paid Days, so any Employee can request it, including one with no Paid Days at all.
+_Avoid_: Unpaid leave
+
+**Paid Days**:
+How many days of Paid Time Off an Employee gets in one calendar year, as in "Cara has 20 Paid Days in 2026". Each year has its own number: a new year starts with the previous year's number until HR changes it, and changing one year never changes another. Unused Paid Days are lost when the year ends.
+_Avoid_: Allowance, entitlement, balance, holiday days, PTO days
+
+**Declined**:
+The state of Time Off the Employee's Manager has refused, always with a reason the Employee can see. It uses no Paid Days and is kept on record; the Employee can request other dates instead.
+_Avoid_: Rejected, denied, refused
+
+**Cancelled**:
+The state of Time Off the Employee withdrew, whether Pending or Approved, before its first day. It uses no Paid Days. Once Time Off has started, it can no longer be cancelled or changed.
+_Avoid_: Withdrawn, revoked, deleted
+
 ### Access
 
 **Role**:

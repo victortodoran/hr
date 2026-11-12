@@ -19,6 +19,7 @@ enum Permission: string
     case ManageWorkEntries = 'manage-work-entries';
     case ReopenWorkEntries = 'reopen-work-entries';
     case LockWorkEntries = 'lock-work-entries';
+    case ManagePaidDays = 'manage-paid-days';
     case ViewDirectory = 'view-directory';
     case ViewProjects = 'view-projects';
     case ManageProjects = 'manage-projects';
@@ -49,7 +50,8 @@ enum Permission: string
             self::ManagePay,
             self::ViewWorkEntries,
             self::ManageWorkEntries,
-            self::ReopenWorkEntries => true,
+            self::ReopenWorkEntries,
+            self::ManagePaidDays => true,
             default => false,
         };
     }

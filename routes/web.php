@@ -12,6 +12,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeInvitationController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LockController;
+use App\Http\Controllers\PaidDaysController;
 use App\Http\Controllers\PayEntryController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
@@ -49,6 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('employees', [EmployeeController::class, 'index'])->middleware('can:viewAny,'.Employee::class)->name('employees.index');
     Route::get('employees/{employee}', [EmployeeController::class, 'show'])->middleware('can:view,employee')->name('employees.show');
     Route::post('employees/{employee}/invitation', [EmployeeInvitationController::class, 'store'])->middleware('can:resendInvitation,employee')->name('employees.invitation.store');
+    Route::post('employees/{employee}/paid-days', [PaidDaysController::class, 'store'])->middleware('can:setPaidDays,employee')->name('employees.paid-days.store');
     Route::post('employees/{employee}/top', [TopEmployeeController::class, 'store'])->middleware('can:becomeTop,employee')->name('employees.top.store');
 
     Route::post('employees/{employee}/assignments', [AssignmentController::class, 'store'])->middleware('can:create,'.Assignment::class.',employee')->name('employees.assignments.store');

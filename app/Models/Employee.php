@@ -107,6 +107,30 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * The Employee's Paid Days, one row for each year that has its own
+     * number.
+     *
+     * @return HasMany<PaidDays, $this>
+     */
+    public function paidDays(): HasMany
+    {
+        return $this->hasMany(PaidDays::class);
+    }
+
+    /**
+     * How many Paid Days the Employee gets in a year: that year's own
+     * number, or else the most recent earlier year's, or 0 when no year up
+     * to it has one.
+     */
+    public function paidDaysIn(int $year): int
+    {
+        /** @var int|null $days */
+        $days = $this->paidDays()->where('year', '<=', $year)->orderByDesc('year')->value('days');
+
+        return $days ?? 0;
+    }
+
+    /**
      * Their Assignment to the Internal Project, for their whole period of
      * work.
      *
