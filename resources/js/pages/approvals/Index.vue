@@ -33,6 +33,8 @@ defineOptions({
 
 const props = defineProps<{
     filters: ApprovalFilters;
+    canApprove: boolean;
+    canReopen: boolean;
     entries: Paginated<ApprovalEntry>;
     /** Total hours of every Work Entry matching the filters. */
     total: number;
@@ -77,7 +79,7 @@ function reloadList(): void {
 }
 
 const selectableOnPage = computed(() =>
-    props.entries.data.filter((entry) => entry.can_approve),
+    props.entries.data.filter((entry) => entry.can_approve || entry.can_reopen),
 );
 
 const isPageSelected = computed(
@@ -109,17 +111,33 @@ function selectAllMatching(): void {
     });
 }
 
+/** Whether the state shown is one the viewer can act on, so selecting every match is useful. */
+const canActOnState = computed(
+    () =>
+        (props.filters.state === 'pending' && props.canApprove) ||
+        (props.filters.state === 'approved' && props.canReopen),
+);
+
+const afterAction = {
+    preserveScroll: true,
+    onSuccess: () => {
+        selected.value = [];
+    },
+};
+
 function approve(): void {
     router.post(
         ApprovalController.store.url(),
         { ids: selected.value },
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                selected.value = [];
-            },
-        },
+        afterAction,
     );
+}
+
+function reopen(): void {
+    router.delete(ApprovalController.destroy.url(), {
+        data: { ids: selected.value },
+        ...afterAction,
+    });
 }
 
 /**
@@ -151,7 +169,7 @@ function signOffs(entry: ApprovalEntry): string {
     <div class="flex max-w-5xl flex-col gap-6 p-4">
         <Heading
             title="Approvals"
-            description="Work Entries of the Employees you approve for"
+            description="Work Entries of the Employees you approve or reopen for"
         />
 
         <div class="flex flex-wrap items-end gap-3">
@@ -218,7 +236,7 @@ function signOffs(entry: ApprovalEntry): string {
                     >{{ selected.length }} selected</span
                 >
                 <Button
-                    v-if="entries.total > 0 && filters.state === 'pending'"
+                    v-if="entries.total > 0 && canActOnState"
                     variant="link"
                     size="sm"
                     class="px-0"
@@ -234,9 +252,21 @@ function signOffs(entry: ApprovalEntry): string {
                     >Clear</Button
                 >
             </div>
-            <Button :disabled="selected.length === 0" @click="approve"
-                >Approve</Button
-            >
+            <div class="flex gap-2">
+                <Button
+                    v-if="canReopen"
+                    variant="outline"
+                    :disabled="selected.length === 0"
+                    @click="reopen"
+                    >Reopen</Button
+                >
+                <Button
+                    v-if="canApprove"
+                    :disabled="selected.length === 0"
+                    @click="approve"
+                    >Approve</Button
+                >
+            </div>
         </div>
 
         <div class="overflow-x-auto rounded-lg border">
@@ -264,7 +294,7 @@ function signOffs(entry: ApprovalEntry): string {
                     <tr v-for="entry in entries.data" :key="entry.id">
                         <td class="px-4 py-2">
                             <Checkbox
-                                v-if="entry.can_approve"
+                                v-if="entry.can_approve || entry.can_reopen"
                                 :model-value="selected.includes(entry.id)"
                                 :aria-label="`Select ${entry.employee.name}'s Work Entry on ${formatDate(entry.date)}`"
                                 @update:model-value="

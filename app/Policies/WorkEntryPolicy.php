@@ -43,10 +43,10 @@ class WorkEntryPolicy
     }
 
     /**
-     * The Approvals page is for those who approve Work Entries.
+     * The Approvals page is for those who approve or reopen Work Entries.
      */
     public function viewApprovals(Employee $actor): bool
     {
-        return $actor->holds(Permission::ApproveWorkEntries);
+        return $actor->holds(Permission::ApproveWorkEntries) || $actor->holds(Permission::ReopenWorkEntries);
     }
 }
