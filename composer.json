@@ -82,6 +82,9 @@
             "@types:check",
             "@php artisan test"
         ],
+        "test:readable": [
+            "env -u CLAUDECODE -u AI_AGENT -u CLAUDE_CODE_ENTRYPOINT php artisan test --compact"
+        ],
         "test:mutate": [
             "Composer\\Config::disableProcessTimeout",
             "env -u CLAUDECODE -u AI_AGENT -u CLAUDE_CODE_ENTRYPOINT XDEBUG_MODE=coverage herd coverage vendor/bin/pest --mutate --everything --parallel --min=80 --ignore=app/Http/Controllers/Settings,app/Http/Requests/Settings,app/Actions/Fortify,app/Concerns,app/Http/Middleware/HandleAppearance.php,app/Http/Middleware/HandleInertiaRequests.php,app/Providers/AppServiceProvider.php,app/Providers/FortifyServiceProvider.php,app/Http/Controllers/Controller.php"
