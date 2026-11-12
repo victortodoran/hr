@@ -108,6 +108,27 @@ class TimeOff extends Model
     }
 
     /**
+     * What a list of Time Off shows of it: its dates, the weekdays it
+     * counts, whether it is Paid, its state, who decided it and why it was
+     * declined.
+     *
+     * @return array{id: int, first_date: string, last_date: string, days: int, is_paid: bool, state: string, decided_by: string|null, decline_reason: string|null}
+     */
+    public function details(): array
+    {
+        return [
+            'id' => $this->id,
+            'first_date' => $this->first_date->toDateString(),
+            'last_date' => $this->last_date->toDateString(),
+            'days' => $this->weekdays(),
+            'is_paid' => $this->is_paid,
+            'state' => $this->state->value,
+            'decided_by' => $this->decider?->name,
+            'decline_reason' => $this->decline_reason,
+        ];
+    }
+
+    /**
      * Whether the Employee can still cancel it: it is Pending or Approved,
      * and its first date is still to come.
      */

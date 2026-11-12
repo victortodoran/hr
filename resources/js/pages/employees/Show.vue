@@ -5,6 +5,8 @@ import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.
 import Heading from '@/components/Heading.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
 import PaidDaysForm from '@/components/time-off/PaidDaysForm.vue';
+import TimeOffStateBadge from '@/components/time-off/TimeOffStateBadge.vue';
+import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
 import ReportingChain from '@/components/employees/ReportingChain.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +18,7 @@ import type {
     AssignmentRecord,
     Choice,
     EmployeePageRecord,
+    EmployeeTimeOff,
     OpenProject,
     PaidDaysRecord,
     PayEntryRecord,
@@ -40,6 +43,8 @@ const props = defineProps<{
     canEdit: boolean;
     /** This year's and next year's; only sent to those who may manage them. */
     paidDays: PaidDaysRecord[] | null;
+    /** Only sent to those who may see the Employee's Time Off. */
+    timeOff: EmployeeTimeOff | null;
 }>();
 
 /**
@@ -161,6 +166,41 @@ setLayoutProps({
                     :paid-days="year"
                 />
             </div>
+        </section>
+
+        <section v-if="timeOff" class="flex flex-col gap-4">
+            <div>
+                <h2 class="text-lg font-semibold">Time Off</h2>
+                <p class="text-sm">
+                    <span
+                        class="font-semibold tabular-nums"
+                        :class="{
+                            'text-destructive': timeOff.paid_days_left < 0,
+                        }"
+                        >{{ timeOff.paid_days_left }}</span
+                    >
+                    <span class="text-muted-foreground">
+                        of {{ timeOff.paid_days }} Paid Days left in
+                        {{ timeOff.year }}</span
+                    >
+                </p>
+            </div>
+            <p
+                v-if="timeOff.requests.length === 0"
+                class="text-sm text-muted-foreground"
+            >
+                {{ employee.name }} hasn't requested any Time Off yet.
+            </p>
+            <ul v-else class="divide-y rounded-lg border text-sm">
+                <li
+                    v-for="item in timeOff.requests"
+                    :key="item.id"
+                    class="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
+                >
+                    <TimeOffSummary :time-off="item" />
+                    <TimeOffStateBadge :state="item.state" />
+                </li>
+            </ul>
         </section>
 
         <section v-if="reportingChain" class="flex max-w-xl flex-col gap-4">

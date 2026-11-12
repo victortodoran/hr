@@ -76,6 +76,7 @@ class InstallCompany
                 Permission::ViewAssignments->value => Scope::Reports->value,
                 Permission::ManageAssignments->value => Scope::Reports->value,
                 Permission::ViewWorkEntries->value => Scope::Reports->value,
+                Permission::ViewTimeOff->value => Scope::Reports->value,
                 Permission::ViewProjects->value => null,
             ], 'givenToNewEmployees' => false],
             'Employee' => ['grants' => [
@@ -84,6 +85,7 @@ class InstallCompany
                 Permission::ViewAssignments->value => Scope::Own->value,
                 Permission::ViewPay->value => Scope::Own->value,
                 Permission::ManageWorkEntries->value => Scope::Own->value,
+                Permission::ViewTimeOff->value => Scope::Own->value,
             ], 'givenToNewEmployees' => true],
         ];
 

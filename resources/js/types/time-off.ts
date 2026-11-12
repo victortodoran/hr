@@ -14,10 +14,10 @@ export type PaidDaysRecord = {
 export type TimeOffState = 'pending' | 'approved' | 'declined' | 'cancelled';
 
 /**
- * One of the signed-in Employee's Time Off, with the weekdays it counts, who
- * decided it and why it was declined, and whether they may still cancel it.
+ * One Time Off as a list shows it: its dates, the weekdays it counts, who
+ * decided it and why it was declined.
  */
-export type TimeOffRecord = {
+export type TimeOffDetails = {
     id: number;
     first_date: string;
     last_date: string;
@@ -29,7 +29,26 @@ export type TimeOffRecord = {
     decided_by: string | null;
     /** Why it was declined; only Declined Time Off has one. */
     decline_reason: string | null;
+};
+
+/**
+ * One of the signed-in Employee's Time Off, with whether they may still
+ * cancel it.
+ */
+export type TimeOffRecord = TimeOffDetails & {
     can_cancel: boolean;
+};
+
+/**
+ * An Employee's Time Off as their page shows it: this year's Paid Days and
+ * Paid Days left, and all their Time Off, latest first.
+ */
+export type EmployeeTimeOff = {
+    year: number;
+    paid_days: number;
+    /** Paid Days minus Pending and Approved Paid Time Off this year. */
+    paid_days_left: number;
+    requests: TimeOffDetails[];
 };
 
 /**

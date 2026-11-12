@@ -6,13 +6,15 @@ import TimeOffController from '@/actions/App/Http/Controllers/TimeOffController'
 import TimeOffDeclineController from '@/actions/App/Http/Controllers/TimeOffDeclineController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
-import { Badge } from '@/components/ui/badge';
+import TimeOffStateBadge from '@/components/time-off/TimeOffStateBadge.vue';
+import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDate } from '@/lib/dates';
+import { formatDays } from '@/lib/time-off';
 import { index } from '@/routes/time-off';
-import type { TimeOffRecord, TimeOffState, TimeOffToApprove } from '@/types';
+import type { TimeOffRecord, TimeOffToApprove } from '@/types';
 
 defineOptions({
     layout: {
@@ -29,20 +31,6 @@ defineProps<{
     /** Direct Reports' Pending Time Off; null for someone who manages nobody. */
     toApprove: TimeOffToApprove[] | null;
 }>();
-
-const stateNames: Record<TimeOffState, string> = {
-    pending: 'Pending',
-    approved: 'Approved',
-    declined: 'Declined',
-    cancelled: 'Cancelled',
-};
-
-/**
- * Days as people read them, such as "1 day" or "3 days".
- */
-function formatDays(days: number): string {
-    return days === 1 ? '1 day' : `${days} days`;
-}
 </script>
 
 <template>
@@ -234,33 +222,9 @@ function formatDays(days: number): string {
                     :key="item.id"
                     class="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
                 >
-                    <p>
-                        <span class="font-medium"
-                            >{{ formatDate(item.first_date) }} –
-                            {{ formatDate(item.last_date) }}</span
-                        >
-                        <span class="text-muted-foreground">
-                            · {{ formatDays(item.days) }} ·
-                            {{ item.is_paid ? 'Paid' : 'Unpaid' }}</span
-                        >
-                        <span
-                            v-if="item.decided_by !== null"
-                            class="block text-muted-foreground"
-                            >{{
-                                item.state === 'declined'
-                                    ? 'Declined'
-                                    : 'Approved'
-                            }}
-                            by {{ item.decided_by
-                            }}<template v-if="item.decline_reason !== null"
-                                >: “{{ item.decline_reason }}”</template
-                            ></span
-                        >
-                    </p>
+                    <TimeOffSummary :time-off="item" />
                     <div class="flex items-center gap-2">
-                        <Badge variant="outline">{{
-                            stateNames[item.state]
-                        }}</Badge>
+                        <TimeOffStateBadge :state="item.state" />
                         <Form
                             v-if="item.can_cancel"
                             v-bind="
