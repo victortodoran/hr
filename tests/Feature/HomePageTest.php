@@ -1,16 +1,130 @@
 <?php
 
+use App\Enums\Permission;
+use App\Http\Controllers\HomeController;
 use App\Models\Employee;
+use App\Models\PaidDays;
+use App\Models\TimeOff;
+use App\Models\WorkEntry;
+use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\post;
+use function Pest\Laravel\travelTo;
+
+covers(HomeController::class, Employee::class);
+
+beforeEach(function () {
+    travelTo('2026-11-11 09:00');
+});
 
 it('sends guests from the home page straight to sign in', function () {
     get('/')->assertRedirect(route('login'));
+    get(route('landing'))->assertRedirect(route('login'));
 });
 
-it('sends a signed-in Employee from the home page to where they land', function () {
-    actingAs(Employee::factory()->create())
-        ->get('/')
-        ->assertRedirect(route('landing'));
+it('lands every Employee on Home after signing in', function () {
+    $cara = recorder();
+
+    post(route('login.store'), ['email' => $cara->email, 'password' => 'password'])
+        ->assertRedirect(route('landing', absolute: false));
+
+    actingAs($cara)->get('/')->assertRedirect(route('landing'));
+    actingAs($cara)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page->component('Home'));
+});
+
+it('shows a regular Employee their hours this week, Paid Days left and next Time Off, with nothing waiting for them', function () {
+    $cara = recorder(['manager_id' => Employee::factory()->create()->id]);
+    $relaunch = assignmentOf($cara);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-09', 'minutes' => 90]);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-15', 'minutes' => 360]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-08', 'minutes' => 480]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-16', 'minutes' => 480]);
+    PaidDays::factory()->for($cara)->create(['days' => 20]);
+    $next = TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-23']);
+
+    actingAs($cara)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Home')
+            ->where('hoursThisWeek', ['week' => '2026-11-09', 'hours' => 7.5, 'pending' => 1])
+            ->where('paidDaysLeft', ['year' => 2026, 'days' => 17])
+            ->where('nextTimeOff.id', $next->id)
+            ->where('nextTimeOff.state', 'approved')
+            ->where('declinedAhead', null)
+            ->where('waitingForYou', null),
+        );
+});
+
+it('shows a Manager what waits for them, matching the Approvals badge', function () {
+    $ada = recorder(['name' => 'Ada']);
+    $ben = recorder(['name' => 'Ben', 'manager_id' => $ada->id]);
+    $relaunch = assignmentOf($ben);
+    WorkEntry::factory()->for($relaunch)->count(2)->create(['date' => '2026-11-10']);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
+    TimeOff::factory()->for($ben)->create();
+
+    actingAs($ada)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Home')
+            ->where('waitingForYou', ['workEntries' => 2, 'timeOff' => 1])
+            ->where('auth.approvalsWaiting', 3)
+            ->where('hoursThisWeek', ['week' => '2026-11-09', 'hours' => 0, 'pending' => 0])
+            ->where('nextTimeOff', null),
+        );
+});
+
+it('leaves hours this week out for the top Employee, who records no Work Entries', function () {
+    $ana = recorder(['is_top' => true]);
+    TimeOff::factory()->for($ana)->approved()->create(['first_date' => '2026-11-11', 'last_date' => '2026-11-11']);
+
+    actingAs($ana)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Home')
+            ->where('hoursThisWeek', null)
+            ->where('paidDaysLeft', ['year' => 2026, 'days' => -1])
+            ->where('nextTimeOff.first_date', '2026-11-11')
+            ->where('waitingForYou', null),
+        );
+});
+
+it('leaves hours this week out for an Employee who can\'t see their Work Entries', function () {
+    $cara = employeeWith([Permission::ViewDirectory->value => null]);
+
+    actingAs($cara)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Home')
+            ->where('hoursThisWeek', null)
+            ->where('paidDaysLeft', ['year' => 2026, 'days' => 0]),
+        );
+});
+
+it('shows as next Time Off the soonest Pending or Approved Time Off that hasn\'t ended', function () {
+    $cara = recorder();
+    TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-11-02', 'last_date' => '2026-11-10']);
+    TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-11-12', 'last_date' => '2026-11-12']);
+    TimeOff::factory()->for($cara)->cancelled()->create(['first_date' => '2026-11-13', 'last_date' => '2026-11-13']);
+    TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-01', 'last_date' => '2026-12-01']);
+    $next = TimeOff::factory()->for($cara)->create(['first_date' => '2026-11-11', 'last_date' => '2026-11-11']);
+
+    actingAs($cara)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('nextTimeOff.id', $next->id)
+            ->where('nextTimeOff.state', 'pending'),
+        );
+});
+
+it('shows Declined Time Off still to come, with the reason, and only that', function () {
+    $cara = recorder();
+    $ahead = TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-11-12', 'last_date' => '2026-11-12', 'decline_reason' => 'Launch week']);
+    TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-11-11', 'last_date' => '2026-11-11']);
+    TimeOff::factory()->for($cara)->create(['first_date' => '2026-11-20', 'last_date' => '2026-11-20']);
+
+    actingAs($cara)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('declinedAhead', 1)
+            ->where('declinedAhead.0.id', $ahead->id)
+            ->where('declinedAhead.0.decline_reason', 'Launch week'),
+        );
 });

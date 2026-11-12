@@ -49,8 +49,7 @@ class HandleInertiaRequests extends Middleware
                 'canSeeOwnPage' => fn (): bool => $employee instanceof Employee && $employee->can('view', $employee),
                 'canListEmployees' => fn (): bool => $employee instanceof Employee
                     && ($employee->widestScopeFor(Permission::ViewEmployeeRecords)?->coversOthers() ?? false),
-                'canSeeWorkEntries' => fn (): bool => $employee instanceof Employee
-                    && ($employee->holds(Permission::ViewWorkEntries) || $employee->holds(Permission::ManageWorkEntries)),
+                'canSeeWorkEntries' => fn (): bool => $employee instanceof Employee && $employee->canSeeWorkEntries(),
                 'canSeeTeam' => fn (): bool => $employee instanceof Employee && $employee->can('viewTeam', Employee::class),
                 'canSeeApprovals' => fn (): bool => $employee instanceof Employee && $employee->can('viewApprovals', WorkEntry::class),
                 'approvalsWaiting' => fn (): int => $employee instanceof Employee ? array_sum($employee->waitingForDecision()) : 0,

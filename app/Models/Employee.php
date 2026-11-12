@@ -408,6 +408,15 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Whether the Employee may open the Work Entries page: any of their Roles
+     * lets them view or manage Work Entries.
+     */
+    public function canSeeWorkEntries(): bool
+    {
+        return $this->holds(Permission::ViewWorkEntries) || $this->holds(Permission::ManageWorkEntries);
+    }
+
+    /**
      * The widest Scope the Employee's Roles give them for a Permission about
      * Employees, or null when no Role grants it.
      */

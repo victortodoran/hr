@@ -10,7 +10,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeInvitationController;
-use App\Http\Controllers\LandingController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LockController;
 use App\Http\Controllers\PaidDaysController;
 use App\Http\Controllers\PayEntryController;
@@ -39,7 +39,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('landing', LandingController::class)->name('landing');
+    Route::get('home', HomeController::class)->name('landing');
 
     Route::middleware('can:create,'.Employee::class)->group(function () {
         Route::get('employees/create', [EmployeeController::class, 'create'])->name('employees.create');

@@ -7,6 +7,7 @@ import {
     Clock,
     Building2,
     FolderKanban,
+    House,
     Landmark,
     Network,
     ShieldCheck,
@@ -46,6 +47,7 @@ const page = usePage();
 const auth = computed(() => page.props.auth);
 
 const meItems = computed<NavItem[]>(() => [
+    { title: 'Home', href: landing(), icon: House },
     ...(auth.value.canSeeOwnPage
         ? [
               {

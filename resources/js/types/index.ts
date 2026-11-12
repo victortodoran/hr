@@ -15,3 +15,4 @@ export * from './table';
 export * from './team';
 export * from './status';
 export * from './time-off';
+export * from './home';
