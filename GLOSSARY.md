@@ -34,7 +34,11 @@ _Avoid_: Boss, supervisor, line manager, team lead
 
 **Report**:
 An Employee anywhere below another Employee in the reporting line, whether directly or through other Managers.
-_Avoid_: Subordinate, team member, direct
+_Avoid_: Subordinate, team member
+
+**Direct Report**:
+An Employee one level below another in the reporting line: one whose Manager they are, or, while that Manager has left, the next Manager up who hasn't. Future Employees count, Former ones don't. The Team page lists an Employee's Direct Reports, so "Team" means those, never a Department.
+_Avoid_: Direct, team member, subordinate
 
 **Reporting Chain**:
 An Employee's place in the reporting line: their Manager, that Manager's Manager, and so on up to the single Employee at the top of the company, then the Employee themselves, then the Employees they are the Manager of. It reaches only one level down, not to every Report.

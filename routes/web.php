@@ -16,6 +16,7 @@ use App\Http\Controllers\PayEntryController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RoleHolderController;
+use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TopEmployeeController;
 use App\Http\Controllers\WorkEntryController;
 use App\Models\Assignment;
@@ -57,6 +58,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('assignments/{assignment}/pay', [PayEntryController::class, 'store'])->name('assignments.pay.store');
         Route::delete('assignments/{assignment}/pay/{payEntry}', [PayEntryController::class, 'destroy'])->scopeBindings()->name('assignments.pay.destroy');
     });
+
+    Route::get('team', TeamController::class)->middleware('can:viewTeam,'.Employee::class)->name('team.index');
 
     Route::get('work-entries', [WorkEntryController::class, 'index'])->name('work-entries.index');
     Route::post('employees/{employee}/work-entries', [WorkEntryController::class, 'store'])->middleware('can:create,'.WorkEntry::class.',employee')->name('employees.work-entries.store');

@@ -34,6 +34,15 @@ class EmployeePolicy
     }
 
     /**
+     * The Team page is for Employees with Direct Reports. It needs no
+     * Permission.
+     */
+    public function viewTeam(Employee $actor): bool
+    {
+        return $actor->hasDirectReports();
+    }
+
+    /**
      * Adding an Employee needs manage employees.
      */
     public function create(Employee $actor): bool
