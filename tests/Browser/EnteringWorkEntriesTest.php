@@ -61,3 +61,23 @@ it('asks before leaving the week with an unsaved Work Entry', function () {
         ->assertSee('Nov 2, 2026')
         ->assertNoJavaScriptErrors();
 });
+
+it('forgets unsaved changes to a Work Entry deleted while open', function () {
+    $cara = recorder();
+    $entry = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10', 'description' => 'Reviewing the API']);
+
+    actingAs($cara);
+
+    visit(route('work-entries.index'))
+        ->click('Edit')
+        ->fill('#work-entry-hours-'.$entry->id, '6')
+        ->click('Delete')
+        ->click('internal:role=dialog[name="Delete this Work Entry?"s] >> internal:role=button[name="Delete"s]')
+        ->assertDontSee('Reviewing the API')
+        ->click('[aria-label="Previous week"]')
+        ->assertSee('Nov 2, 2026')
+        ->assertDontSee('Leave without saving?')
+        ->assertNoJavaScriptErrors();
+
+    expect($entry->fresh())->toBeNull();
+});

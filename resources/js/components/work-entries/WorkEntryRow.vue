@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -105,6 +105,9 @@ const isDirty = computed((): boolean =>
 );
 
 watch(isDirty, (dirty) => emit('dirty', dirty), { immediate: true });
+
+/** A row that goes away, such as a deleted Work Entry's, holds nothing unsaved. */
+onBeforeUnmount(() => emit('dirty', false));
 
 function pickAssignment(assignmentId: unknown): void {
     assignmentPickedByHand.value = true;
