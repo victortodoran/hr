@@ -20,6 +20,8 @@ export type Auth = {
     canListEmployees: boolean;
     /** Whether the signed-in Employee may see any Work Entries. */
     canSeeWorkEntries: boolean;
+    /** Whether the signed-in Employee may open the Approvals page. */
+    canSeeApprovals: boolean;
 };
 
 export type Passkey = {

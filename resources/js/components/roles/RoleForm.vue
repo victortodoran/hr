@@ -30,11 +30,11 @@ const props = defineProps<{
     role?: RoleRecord;
 }>();
 
-const scopes: { value: Scope; label: string }[] = [
-    { value: 'own', label: 'Own' },
-    { value: 'reports', label: 'Reports' },
-    { value: 'everyone', label: 'Everyone' },
-];
+const scopeLabels: Record<Scope, string> = {
+    own: 'Own',
+    reports: 'Reports',
+    everyone: 'Everyone',
+};
 
 const open = ref(false);
 
@@ -54,7 +54,7 @@ function isGranted(permission: PermissionChoice): boolean {
 
 function toggle(permission: PermissionChoice, granted: boolean): void {
     if (granted) {
-        form.permissions[permission.value] = permission.scoped ? 'own' : null;
+        form.permissions[permission.value] = permission.scopes[0] ?? null;
     } else {
         delete form.permissions[permission.value];
     }
@@ -135,7 +135,10 @@ function submit(): void {
                             {{ permission.label }}
                         </Label>
                         <Select
-                            v-if="permission.scoped && isGranted(permission)"
+                            v-if="
+                                permission.scopes.length > 0 &&
+                                isGranted(permission)
+                            "
                             :model-value="form.permissions[permission.value]!"
                             @update:model-value="
                                 form.permissions[permission.value] =
@@ -150,11 +153,11 @@ function submit(): void {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem
-                                    v-for="scope in scopes"
-                                    :key="scope.value"
-                                    :value="scope.value"
+                                    v-for="scope in permission.scopes"
+                                    :key="scope"
+                                    :value="scope"
                                 >
-                                    {{ scope.label }}
+                                    {{ scopeLabels[scope] }}
                                 </SelectItem>
                             </SelectContent>
                         </Select>

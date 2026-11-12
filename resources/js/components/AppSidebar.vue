@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     Briefcase,
+    CheckCheck,
     Clock,
     Building2,
     FolderKanban,
@@ -25,6 +26,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { landing } from '@/routes';
+import { index as approvals } from '@/routes/approvals';
 import { index as clients } from '@/routes/clients';
 import { edit as company } from '@/routes/company';
 import { index as departments } from '@/routes/departments';
@@ -49,6 +51,9 @@ const mainNavItems = computed<NavItem[]>(() => [
         : []),
     ...(page.props.auth.canSeeWorkEntries
         ? [{ title: 'Work Entries', href: workEntries(), icon: Clock }]
+        : []),
+    ...(page.props.auth.canSeeApprovals
+        ? [{ title: 'Approvals', href: approvals(), icon: CheckCheck }]
         : []),
     ...(page.props.auth.canListEmployees
         ? [{ title: 'Employees', href: employees(), icon: UsersRound }]

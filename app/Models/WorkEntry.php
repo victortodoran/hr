@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\WorkEntryState;
+use Carbon\CarbonInterface;
 use Database\Factories\WorkEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -107,6 +108,40 @@ class WorkEntry extends Model
     public function isPending(): bool
     {
         return $this->state === WorkEntryState::Pending;
+    }
+
+    /**
+     * Who approved the Work Entry and on which day, or null while it is
+     * Pending. Needs the approver loaded.
+     *
+     * @return array{by: string, on: string}|null
+     */
+    public function approval(): ?array
+    {
+        return self::signOff($this->approver, $this->approved_at);
+    }
+
+    /**
+     * Who locked the Work Entry and on which day, or null until it is
+     * Locked. Needs the locker loaded.
+     *
+     * @return array{by: string, on: string}|null
+     */
+    public function lock(): ?array
+    {
+        return self::signOff($this->locker, $this->locked_at);
+    }
+
+    /**
+     * @return array{by: string, on: string}|null
+     */
+    private static function signOff(?Employee $employee, ?CarbonInterface $at): ?array
+    {
+        if ($employee === null || $at === null) { // @pest-mutate-ignore (the work_entries_state constraint keeps who and when both set or both empty)
+            return null;
+        }
+
+        return ['by' => $employee->name, 'on' => $at->toDateString()];
     }
 
     /**

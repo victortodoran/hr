@@ -84,6 +84,7 @@ class InstallCompany
                 Permission::ViewAssignments->value => Scope::Reports->value,
                 Permission::ManageAssignments->value => Scope::Reports->value,
                 Permission::ViewWorkEntries->value => Scope::Reports->value,
+                Permission::ApproveWorkEntries->value => Scope::Reports->value,
                 Permission::ViewProjects->value => null,
             ], 'givenToNewEmployees' => false],
             'Employee' => ['grants' => [
