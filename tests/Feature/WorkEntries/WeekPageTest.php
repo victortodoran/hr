@@ -4,6 +4,7 @@ use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Http\Controllers\WorkEntryController;
 use App\Models\Employee;
+use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use App\Policies\WorkEntryPolicy;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -11,7 +12,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(WorkEntryController::class, WorkEntryPolicy::class, WorkEntry::class);
+covers(WorkEntryController::class, WorkEntryPolicy::class, WorkEntry::class, TimeOff::class);
 
 beforeEach(function () {
     travelTo('2026-11-11 09:00');
@@ -28,7 +29,7 @@ it('opens on the viewer\'s own current week, Monday to Sunday', function () {
         ->where('week', '2026-11-09')
         ->where('today', '2026-11-11')
         ->where('days', collect(['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15'])
-            ->map(fn (string $date): array => ['date' => $date, 'entries' => [], 'hours' => 0])
+            ->map(fn (string $date): array => ['date' => $date, 'entries' => [], 'hours' => 0, 'time_off' => null, 'nothing_logged' => $date < '2026-11-11'])
             ->all())
         ->where('total', 0));
 });
@@ -50,11 +51,11 @@ it('shows the week holding the given day, with totals for each day, each Assignm
         ->where('days.1', ['date' => '2026-11-03', 'hours' => 3.5, 'entries' => [
             ['id' => $review->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2, 'description' => 'Review', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
             ['id' => $api->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
-        ]])
+        ], 'time_off' => null, 'nothing_logged' => false])
         ->where('days.4', ['date' => '2026-11-06', 'hours' => 0.75, 'entries' => [
             ['id' => $invoices->id, 'assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75, 'description' => 'Invoices', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
-        ]])
-        ->where('days.6', ['date' => '2026-11-08', 'hours' => 0, 'entries' => []])
+        ], 'time_off' => null, 'nothing_logged' => false])
+        ->where('days.6', ['date' => '2026-11-08', 'hours' => 0, 'entries' => [], 'time_off' => null, 'nothing_logged' => false])
         ->where('assignmentTotals', [
             ['assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75],
             ['assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 3.5],
@@ -78,6 +79,94 @@ it('shows who approved and locked each Work Entry, and offers to change only Pen
         ['id' => $approved->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Approved', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => null, 'can_edit' => false, 'can_delete' => false],
         ['id' => $locked->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Locked', 'state' => 'locked', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => ['by' => 'Fay', 'on' => '2026-11-11'], 'can_edit' => false, 'can_delete' => false],
     ]));
+});
+
+it('labels weekdays covered by Pending or Approved Time Off as Paid or Unpaid, but not weekends', function () {
+    $cara = recorder();
+    TimeOff::factory()->for($cara)->create(['first_date' => '2026-10-30', 'last_date' => '2026-11-03']);
+    TimeOff::factory()->for($cara)->unpaid()->approved()->create(['first_date' => '2026-11-05', 'last_date' => '2026-11-09']);
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-02']));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('days.0.time_off', 'paid')
+        ->where('days.1.time_off', 'paid')
+        ->where('days.2.time_off', null)
+        ->where('days.3.time_off', 'unpaid')
+        ->where('days.4.time_off', 'unpaid')
+        ->where('days.5.time_off', null)
+        ->where('days.6.time_off', null));
+});
+
+it('labels no day covered by Declined or Cancelled Time Off, nor anyone else\'s', function () {
+    $cara = recorder();
+    TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-11-02', 'last_date' => '2026-11-03']);
+    TimeOff::factory()->for($cara)->cancelled()->create(['first_date' => '2026-11-04', 'last_date' => '2026-11-04']);
+    TimeOff::factory()->approved()->create(['first_date' => '2026-11-05', 'last_date' => '2026-11-06']);
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-02']));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('days.0.time_off', null)
+        ->where('days.1.time_off', null)
+        ->where('days.2.time_off', null)
+        ->where('days.3.time_off', null)
+        ->where('days.4.time_off', null)
+        ->where('days.0.nothing_logged', true)
+        ->where('days.2.nothing_logged', true)
+        ->where('days.4.nothing_logged', true));
+});
+
+it('marks a past weekday with no Work Entries and no Time Off as nothing logged, but no other day', function () {
+    $cara = recorder();
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03']);
+    TimeOff::factory()->for($cara)->create(['first_date' => '2026-11-04', 'last_date' => '2026-11-04']);
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-02']));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('days.0.nothing_logged', true)
+        ->where('days.1.nothing_logged', false)
+        ->where('days.2.nothing_logged', false)
+        ->where('days.3.nothing_logged', true)
+        ->where('days.5.nothing_logged', false)
+        ->where('days.6.nothing_logged', false));
+});
+
+it('marks neither today nor days still to come as nothing logged', function () {
+    $cara = recorder();
+
+    $response = actingAs($cara)->get(route('work-entries.index'));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('days.1.nothing_logged', true)
+        ->where('days.2.nothing_logged', false)
+        ->where('days.3.nothing_logged', false));
+});
+
+it('marks no day before the Start Date or after the Leaving Date as nothing logged', function () {
+    $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
+    $cara = Employee::factory()->create(['start_date' => '2026-11-03', 'leaving_date' => '2026-11-05']);
+
+    $response = actingAs($ben)->get(route('work-entries.index', ['employee' => $cara->id, 'week' => '2026-11-02']));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('days.0.nothing_logged', false)
+        ->where('days.1.nothing_logged', true)
+        ->where('days.3.nothing_logged', true)
+        ->where('days.4.nothing_logged', false));
+});
+
+it('shows a Manager the Time Off and nothing logged days of their Direct Report\'s week', function () {
+    $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Reports], ['name' => 'Ben']);
+    $cara = Employee::factory()->create(['manager_id' => $ben->id, 'start_date' => '2025-01-06']);
+    TimeOff::factory()->for($cara)->unpaid()->approved($ben)->create(['first_date' => '2026-11-03', 'last_date' => '2026-11-03']);
+
+    $response = actingAs($ben)->get(route('work-entries.index', ['employee' => $cara->id, 'week' => '2026-11-02']));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('days.0.nothing_logged', true)
+        ->where('days.1.time_off', 'unpaid'));
 });
 
 it('offers to change no Work Entry to someone who can only see them', function () {
