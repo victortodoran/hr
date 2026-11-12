@@ -233,6 +233,14 @@ function switchEmployee(employeeId: unknown): void {
                                 v-else-if="entry.can_delete"
                                 :entry="entry"
                             />
+                            <WorkEntryDialog
+                                v-if="canManage"
+                                :employee="employee"
+                                :assignments="assignments"
+                                :date="day.date"
+                                :today="today"
+                                :repeat-of="entry"
+                            />
                         </div>
                     </li>
                 </ul>
