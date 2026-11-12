@@ -37,6 +37,10 @@ export type WorkEntryDay = {
     date: string;
     entries: WorkEntryRecord[];
     hours: number;
+    /** Whether Pending or Approved Time Off covers the weekday, and which kind; null when none does. */
+    time_off: 'paid' | 'unpaid' | null;
+    /** A past weekday while employed, with no Work Entries and no Time Off. */
+    nothing_logged: boolean;
 };
 
 /**

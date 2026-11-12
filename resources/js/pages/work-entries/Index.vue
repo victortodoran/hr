@@ -3,7 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -159,6 +159,12 @@ function switchEmployee(employeeId: unknown): void {
                 >
                     <Link :href="weekOf(employee.id, today)">This week</Link>
                 </Button>
+                <span class="ml-2 text-sm text-muted-foreground"
+                    >Total
+                    <span class="font-medium text-foreground tabular-nums">{{
+                        formatHours(total)
+                    }}</span></span
+                >
             </div>
         </div>
 
@@ -170,6 +176,20 @@ function switchEmployee(employeeId: unknown): void {
                         <span class="ml-2 text-sm text-muted-foreground">{{
                             formatHours(day.hours)
                         }}</span>
+                        <span
+                            v-if="day.time_off"
+                            class="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+                            >{{
+                                day.time_off === 'paid'
+                                    ? 'Paid Time Off'
+                                    : 'Unpaid Time Off'
+                            }}</span
+                        >
+                        <span
+                            v-else-if="day.nothing_logged"
+                            class="ml-2 text-xs text-muted-foreground italic"
+                            >Nothing logged</span
+                        >
                     </p>
                     <WorkEntryDialog
                         v-if="canManage && day.date <= today"
@@ -197,15 +217,7 @@ function switchEmployee(employeeId: unknown): void {
                             >
                         </p>
                         <div class="flex items-center gap-2">
-                            <Badge
-                                v-if="entry.state !== 'pending'"
-                                variant="outline"
-                                >{{
-                                    entry.state === 'approved'
-                                        ? 'Approved'
-                                        : 'Locked'
-                                }}</Badge
-                            >
+                            <StatusBadge :state="entry.state" />
                             <span class="tabular-nums">{{
                                 formatHours(entry.hours)
                             }}</span>
@@ -227,7 +239,7 @@ function switchEmployee(employeeId: unknown): void {
             </li>
         </ul>
 
-        <section class="space-y-2">
+        <section v-if="assignmentTotals.length > 0" class="space-y-2">
             <h2 class="text-sm font-medium">This week</h2>
             <ul class="divide-y rounded-lg border text-sm">
                 <li
@@ -239,10 +251,6 @@ function switchEmployee(employeeId: unknown): void {
                     <span class="tabular-nums">{{
                         formatHours(assignmentTotal.hours)
                     }}</span>
-                </li>
-                <li class="flex justify-between px-4 py-2 font-medium">
-                    <span>Total</span>
-                    <span class="tabular-nums">{{ formatHours(total) }}</span>
                 </li>
             </ul>
         </section>

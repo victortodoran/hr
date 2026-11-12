@@ -7,6 +7,7 @@ use App\Enums\Scope;
 use App\Http\Requests\WorkEntryRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
+use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -49,6 +50,7 @@ class WorkEntryController extends Controller
             ->orderBy('work_entries.date')
             ->orderBy('work_entries.id')
             ->get();
+        $timeOff = $employee->timeOff()->standing()->overlapping($monday, $sunday)->get();
 
         $canManage = $actor->can('create', [WorkEntry::class, $employee]);
         $canDelete = $actor->can(Permission::ManageWorkEntries->value, $employee);
@@ -57,7 +59,7 @@ class WorkEntryController extends Controller
             'employee' => $employee->only('id', 'name'),
             'week' => $monday->toDateString(),
             'today' => today()->toDateString(),
-            'days' => $this->days($monday, $entries, $canManage, $canDelete),
+            'days' => $this->days($employee, $monday, $entries, $timeOff, $canManage, $canDelete),
             'assignmentTotals' => $entries->groupBy('assignment_id')
                 ->map(fn (Collection $onAssignment): array => [
                     'assignment_id' => $onAssignment->firstOrFail()->assignment_id,
@@ -93,14 +95,25 @@ class WorkEntryController extends Controller
      * changing needs what recording does, and deleting needs only manage
      * work entries for the Employee, the top Employee included.
      *
+     * A weekday covered by Pending or Approved Time Off says whether that
+     * Time Off is Paid or Unpaid. A past weekday while the Employee works
+     * here, with neither Work Entries nor such Time Off, is nothing logged.
+     *
      * @param  Collection<int, WorkEntry>  $entries
-     * @return array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int}>
+     * @param  Collection<int, TimeOff>  $timeOff  the Employee's Pending and Approved Time Off overlapping the week
+     * @return array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool}>
      */
-    private function days(CarbonImmutable $monday, Collection $entries, bool $canManage, bool $canDelete): array
+    private function days(Employee $employee, CarbonImmutable $monday, Collection $entries, Collection $timeOff, bool $canManage, bool $canDelete): array
     {
-        return collect(range(0, 6))->map(function (int $offset) use ($monday, $entries, $canManage, $canDelete): array {
-            $date = $monday->addDays($offset)->toDateString();
+        return collect(range(0, 6))->map(function (int $offset) use ($employee, $monday, $entries, $timeOff, $canManage, $canDelete): array {
+            $day = $monday->addDays($offset);
+            $date = $day->toDateString();
             $onDay = $entries->filter(fn (WorkEntry $entry): bool => $entry->date->toDateString() === $date);
+            $away = $day->isWeekday()
+                ? $timeOff->first(fn (TimeOff $covering): bool => $day->between($covering->first_date, $covering->last_date))
+                : null;
+            $employed = ! $day->isBefore($employee->start_date)
+                && ($employee->leaving_date === null || ! $day->isAfter($employee->leaving_date));
 
             return [
                 'date' => $date,
@@ -117,6 +130,8 @@ class WorkEntryController extends Controller
                     'can_delete' => $canDelete && $entry->isPending(),
                 ])->values()->all(),
                 'hours' => $onDay->sum('hours'),
+                'time_off' => $away === null ? null : ($away->is_paid ? 'paid' : 'unpaid'),
+                'nothing_logged' => $day->isWeekday() && $day->isBefore(today()) && $employed && $onDay->isEmpty() && $away === null,
             ];
         })->all();
     }
