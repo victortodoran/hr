@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { Network } from '@lucide/vue';
+import DataTable from '@/components/DataTable.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import ValueOr from '@/components/ValueOr.vue';
 import { show } from '@/routes/employees';
 import { index } from '@/routes/team';
-import type { DirectReport } from '@/types';
+import type { DirectReport, TableColumn } from '@/types';
 
 defineOptions({
     layout: {
@@ -15,52 +19,50 @@ defineOptions({
 defineProps<{
     directReports: DirectReport[];
 }>();
+
+const columns: TableColumn[] = [
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'job_title', label: 'Job Title', minor: true },
+    { key: 'department', label: 'Department', minor: true },
+];
 </script>
 
 <template>
     <Head title="Team" />
 
-    <div class="flex max-w-4xl flex-col gap-6 p-4">
+    <PageContainer width="wide">
         <Heading
             title="Team"
             description="The Employees you are the Manager of"
         />
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
-                    <tr>
-                        <th class="px-4 py-2 font-medium">Name</th>
-                        <th class="px-4 py-2 font-medium">Email</th>
-                        <th class="px-4 py-2 font-medium">Job Title</th>
-                        <th class="px-4 py-2 font-medium">Department</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y">
-                    <tr v-for="report in directReports" :key="report.id">
-                        <td class="px-4 py-2 font-medium">
-                            <Link
-                                v-if="report.can_view"
-                                :href="show(report.id)"
-                                class="underline-offset-4 hover:underline"
-                                >{{ report.name }}</Link
-                            >
-                            <template v-else>{{ report.name }}</template>
-                        </td>
-                        <td class="px-4 py-2">
-                            <a
-                                :href="`mailto:${report.email}`"
-                                class="underline-offset-4 hover:underline"
-                                >{{ report.email }}</a
-                            >
-                        </td>
-                        <td class="px-4 py-2">
-                            <ValueOr :value="report.job_title" />
-                        </td>
-                        <td class="px-4 py-2">{{ report.department }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+        <DataTable :columns="columns" :rows="directReports">
+            <template #cell-name="{ row }">
+                <Link
+                    v-if="row.can_view"
+                    :href="show(row.id)"
+                    class="font-medium underline-offset-4 hover:underline"
+                    >{{ row.name }}</Link
+                >
+                <span v-else class="font-medium">{{ row.name }}</span>
+            </template>
+            <template #cell-email="{ row }">
+                <a
+                    :href="`mailto:${row.email}`"
+                    class="break-all underline-offset-4 hover:underline"
+                    >{{ row.email }}</a
+                >
+            </template>
+            <template #cell-job_title="{ row }">
+                <ValueOr :value="row.job_title" />
+            </template>
+            <template #empty>
+                <EmptyState
+                    :icon="Network"
+                    message="Your Direct Reports appear here. Nobody reports to you right now."
+                />
+            </template>
+        </DataTable>
+    </PageContainer>
 </template>

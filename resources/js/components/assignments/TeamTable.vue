@@ -1,60 +1,44 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import { UsersRound } from '@lucide/vue';
+import DataTable from '@/components/DataTable.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import ValueOr from '@/components/ValueOr.vue';
 import { formatPeriod } from '@/lib/dates';
 import { show } from '@/routes/employees';
-import type { TeamAssignment } from '@/types';
+import type { TableColumn, TeamAssignment } from '@/types';
 
 defineProps<{
     assignments: TeamAssignment[];
     empty: string;
 }>();
+
+const columns: TableColumn[] = [
+    { key: 'employee', label: 'Employee' },
+    { key: 'job_title', label: 'Job Title', minor: true },
+    { key: 'dates', label: 'Dates', minor: true },
+    { key: 'capacity', label: 'Capacity', align: 'end' },
+];
 </script>
 
 <template>
-    <div class="overflow-x-auto rounded-lg border">
-        <table class="w-full text-sm">
-            <thead class="bg-muted/50 text-left text-muted-foreground">
-                <tr>
-                    <th class="px-4 py-2 font-medium">Employee</th>
-                    <th class="px-4 py-2 font-medium">Job Title</th>
-                    <th class="px-4 py-2 font-medium">Dates</th>
-                    <th class="px-4 py-2 text-right font-medium">Capacity</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y">
-                <tr v-for="assignment in assignments" :key="assignment.id">
-                    <td class="px-4 py-2 font-medium">
-                        <Link
-                            :href="show(assignment.employee.id)"
-                            class="underline-offset-4 hover:underline"
-                            >{{ assignment.employee.name }}</Link
-                        >
-                    </td>
-                    <td class="px-4 py-2">
-                        <ValueOr :value="assignment.job_title" />
-                    </td>
-                    <td class="px-4 py-2">
-                        {{
-                            formatPeriod(
-                                assignment.start_date,
-                                assignment.end_date,
-                            )
-                        }}
-                    </td>
-                    <td class="px-4 py-2 text-right">
-                        {{ assignment.capacity }}%
-                    </td>
-                </tr>
-                <tr v-if="assignments.length === 0">
-                    <td
-                        colspan="4"
-                        class="px-4 py-6 text-center text-muted-foreground"
-                    >
-                        {{ empty }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+    <DataTable :columns="columns" :rows="assignments">
+        <template #cell-employee="{ row }">
+            <Link
+                :href="show(row.employee.id)"
+                class="font-medium underline-offset-4 hover:underline"
+                >{{ row.employee.name }}</Link
+            >
+        </template>
+        <template #cell-job_title="{ row }">
+            <ValueOr :value="row.job_title" />
+        </template>
+        <template #cell-dates="{ row }">
+            {{ formatPeriod(row.start_date, row.end_date) }}
+        </template>
+        <template #cell-capacity="{ row }"> {{ row.capacity }}% </template>
+        <template #empty>
+            <EmptyState :icon="UsersRound" :message="empty" />
+        </template>
+    </DataTable>
 </template>

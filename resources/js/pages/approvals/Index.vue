@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
+import { CheckCheck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ApprovalController from '@/actions/App/Http/Controllers/ApprovalController';
 import LockDialog from '@/components/approvals/LockDialog.vue';
+import DataTable from '@/components/DataTable.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
-import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -23,6 +27,7 @@ import type {
     ApprovalFilters,
     Choice,
     Paginated,
+    TableColumn,
     WorkEntryState,
 } from '@/types';
 
@@ -50,6 +55,15 @@ const states: { value: WorkEntryState; label: string }[] = [
     { value: 'pending', label: 'Pending' },
     { value: 'approved', label: 'Approved' },
     { value: 'locked', label: 'Locked' },
+];
+
+const columns: TableColumn[] = [
+    { key: 'select', label: 'Select' },
+    { key: 'date', label: 'Date' },
+    { key: 'employee', label: 'Employee' },
+    { key: 'project', label: 'Project', minor: true },
+    { key: 'description', label: 'Description', minor: true },
+    { key: 'hours', label: 'Hours', align: 'end' },
 ];
 
 const employee = ref(props.filters.employee?.toString() ?? 'all');
@@ -171,7 +185,7 @@ function signOffs(entry: ApprovalEntry): string {
 <template>
     <Head title="Approvals" />
 
-    <div class="flex max-w-5xl flex-col gap-6 p-4">
+    <PageContainer width="wide">
         <Heading
             title="Approvals"
             description="Approve, reopen and lock Work Entries"
@@ -280,94 +294,66 @@ function signOffs(entry: ApprovalEntry): string {
             </div>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-sm">
-                <thead class="bg-muted/50 text-left text-muted-foreground">
-                    <tr>
-                        <th class="w-10 px-4 py-2">
-                            <Checkbox
-                                v-if="selectableOnPage.length > 0"
-                                :model-value="isPageSelected"
-                                aria-label="Select this page"
-                                @update:model-value="
-                                    togglePage($event === true)
-                                "
-                            />
-                        </th>
-                        <th class="px-4 py-2 font-medium">Date</th>
-                        <th class="px-4 py-2 font-medium">Employee</th>
-                        <th class="px-4 py-2 font-medium">Project</th>
-                        <th class="px-4 py-2 font-medium">Description</th>
-                        <th class="px-4 py-2 text-right font-medium">Hours</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y">
-                    <tr v-for="entry in entries.data" :key="entry.id">
-                        <td class="px-4 py-2">
-                            <Checkbox
-                                v-if="
-                                    entry.can_approve ||
-                                    entry.can_reopen ||
-                                    entry.can_lock
-                                "
-                                :model-value="selected.includes(entry.id)"
-                                :aria-label="`Select ${entry.employee.name}'s Work Entry on ${formatDate(entry.date)}`"
-                                @update:model-value="
-                                    toggle(entry.id, $event === true)
-                                "
-                            />
-                        </td>
-                        <td class="px-4 py-2 whitespace-nowrap">
-                            {{ formatDate(entry.date) }}
-                        </td>
-                        <td class="px-4 py-2">{{ entry.employee.name }}</td>
-                        <td class="px-4 py-2">{{ entry.project }}</td>
-                        <td class="px-4 py-2">
-                            {{ entry.description }}
-                            <span
-                                v-if="entry.approved"
-                                class="block text-xs text-muted-foreground"
-                                >{{ signOffs(entry) }}</span
-                            >
-                        </td>
-                        <td class="px-4 py-2 text-right whitespace-nowrap">
-                            <Badge
-                                v-if="entry.state !== 'pending'"
-                                variant="outline"
-                                class="mr-2"
-                                >{{
-                                    entry.state === 'approved'
-                                        ? 'Approved'
-                                        : 'Locked'
-                                }}</Badge
-                            >
-                            <span class="tabular-nums">{{
-                                formatHours(entry.hours)
-                            }}</span>
-                        </td>
-                    </tr>
-                    <tr v-if="entries.data.length === 0">
-                        <td
-                            colspan="6"
-                            class="px-4 py-6 text-center text-muted-foreground"
-                        >
-                            No Work Entries match.
-                        </td>
-                    </tr>
-                </tbody>
-                <tfoot v-if="entries.total > 0" class="border-t font-medium">
-                    <tr>
-                        <td colspan="5" class="px-4 py-2">
-                            Total of all {{ entries.total }} matching
-                        </td>
-                        <td class="px-4 py-2 text-right tabular-nums">
-                            {{ formatHours(total) }}
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+        <DataTable :columns="columns" :rows="entries.data">
+            <template #head-select>
+                <Checkbox
+                    v-if="selectableOnPage.length > 0"
+                    :model-value="isPageSelected"
+                    aria-label="Select this page"
+                    @update:model-value="togglePage($event === true)"
+                />
+            </template>
+            <template #cell-select="{ row }">
+                <Checkbox
+                    v-if="row.can_approve || row.can_reopen || row.can_lock"
+                    :model-value="selected.includes(row.id)"
+                    :aria-label="`Select ${row.employee.name}'s Work Entry on ${formatDate(row.date)}`"
+                    @update:model-value="toggle(row.id, $event === true)"
+                />
+            </template>
+            <template #cell-date="{ row }">
+                <span class="whitespace-nowrap">{{
+                    formatDate(row.date)
+                }}</span>
+            </template>
+            <template #cell-employee="{ row }">
+                {{ row.employee.name }}
+            </template>
+            <template #cell-description="{ row }">
+                {{ row.description }}
+                <span
+                    v-if="row.approved"
+                    class="block text-xs text-muted-foreground"
+                    >{{ signOffs(row) }}</span
+                >
+            </template>
+            <template #cell-hours="{ row }">
+                <span class="inline-flex items-center gap-2 whitespace-nowrap">
+                    <StatusBadge
+                        v-if="row.state !== 'pending'"
+                        :state="row.state"
+                    />
+                    <span class="tabular-nums">{{
+                        formatHours(row.hours)
+                    }}</span>
+                </span>
+            </template>
+            <template #empty>
+                <EmptyState
+                    :icon="CheckCheck"
+                    message="Work Entries you may approve, reopen or lock appear here. None match these filters."
+                />
+            </template>
+        </DataTable>
+
+        <p
+            v-if="entries.total > 0"
+            class="flex justify-between gap-4 px-4 text-sm font-medium"
+        >
+            <span>Total of all {{ entries.total }} matching</span>
+            <span class="tabular-nums">{{ formatHours(total) }}</span>
+        </p>
 
         <Pagination :page="entries" />
-    </div>
+    </PageContainer>
 </template>

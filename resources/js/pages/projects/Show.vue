@@ -2,6 +2,7 @@
 import { Head, setLayoutProps } from '@inertiajs/vue3';
 import TeamTable from '@/components/assignments/TeamTable.vue';
 import Heading from '@/components/Heading.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import { formatPeriod } from '@/lib/dates';
 import { index, show } from '@/routes/projects';
 import type { ProjectRecord, TeamAssignment } from '@/types';
@@ -35,7 +36,7 @@ setLayoutProps({
 <template>
     <Head :title="project.name" />
 
-    <div class="flex max-w-4xl flex-col gap-6 p-4">
+    <PageContainer width="wide">
         <Heading :title="project.name" :description="summary()" />
 
         <section class="flex flex-col gap-3">
@@ -45,5 +46,5 @@ setLayoutProps({
                 empty="Nobody you can see is assigned to this Project."
             />
         </section>
-    </div>
+    </PageContainer>
 </template>
