@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Refuses every way of signing in (password, two-factor, passkey) to an
- * Employee before their Start Date or after their Leaving Date.
+ * Refuses signing in to an Employee before their Start Date or after their
+ * Leaving Date.
  */
 class RefuseSignInOutsideEmployment
 {
