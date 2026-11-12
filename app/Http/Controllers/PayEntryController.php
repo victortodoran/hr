@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EmployeePageTab;
 use App\Http\Requests\PayEntryRequest;
 use App\Models\Assignment;
 use App\Models\PayEntry;
@@ -23,7 +24,7 @@ class PayEntryController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Pay added.')]);
 
-        return to_route('employees.show', $assignment->employee_id);
+        return to_route('employees.show', ['employee' => $assignment->employee_id, 'tab' => EmployeePageTab::Assignments]);
     }
 
     /**
@@ -35,6 +36,6 @@ class PayEntryController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Pay removed.')]);
 
-        return to_route('employees.show', $assignment->employee_id);
+        return to_route('employees.show', ['employee' => $assignment->employee_id, 'tab' => EmployeePageTab::Assignments]);
     }
 }

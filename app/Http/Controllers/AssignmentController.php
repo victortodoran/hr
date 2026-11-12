@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EmployeePageTab;
 use App\Http\Requests\AssignmentRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
@@ -25,7 +26,7 @@ class AssignmentController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Assignment created.')]);
 
-        return to_route('employees.show', $employee);
+        return to_route('employees.show', ['employee' => $employee, 'tab' => EmployeePageTab::Assignments]);
     }
 
     /**
@@ -38,6 +39,6 @@ class AssignmentController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Assignment saved.')]);
 
-        return to_route('employees.show', $assignment->employee_id);
+        return to_route('employees.show', ['employee' => $assignment->employee_id, 'tab' => EmployeePageTab::Assignments]);
     }
 }

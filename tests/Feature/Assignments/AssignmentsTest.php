@@ -46,7 +46,7 @@ it('lets an assignment manager put an Employee on a Project', function () {
 
     actingAs(assignmentManager())
         ->post(route('employees.assignments.store', $ana), assignmentForm($project))
-        ->assertRedirect(route('employees.show', $ana))
+        ->assertRedirect(route('employees.show', ['employee' => $ana, 'tab' => 'assignments']))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Assignment created.']);
 
     $assignment = Assignment::query()->sole();
@@ -158,7 +158,7 @@ it('lets an assignment manager change an Assignment\'s Job Title, dates and Capa
 
     actingAs(assignmentManager())
         ->patch(route('assignments.update', $assignment), assignmentForm(Project::factory()->create(), ['job_title' => 'Tech Lead', 'start_date' => '2026-01-05', 'end_date' => '2026-12-31', 'capacity' => $capacity]))
-        ->assertRedirect(route('employees.show', $ana))
+        ->assertRedirect(route('employees.show', ['employee' => $ana, 'tab' => 'assignments']))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Assignment saved.']);
 
     $assignment->refresh();

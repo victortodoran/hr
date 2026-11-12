@@ -5,6 +5,7 @@ use App\Enums\Scope;
 use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EmployeeController;
 use App\Models\Assignment;
+use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Policies\EmployeePolicy;
@@ -12,6 +13,7 @@ use App\Support\ReportingChain;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 
 covers(EmployeeController::class, EmployeePolicy::class, DirectoryController::class, ReportingChain::class);
 
@@ -40,7 +42,7 @@ it('shows an Employee their own record, with no Assignments or Pay when they may
                 'manager' => ['id' => $ben->id, 'name' => 'Ben Ford'],
                 'is_top' => false,
             ])
-            ->where('assignments', null)
+            ->where('tabs', ['overview'])
             ->where('canEdit', false),
         );
 });
@@ -48,10 +50,15 @@ it('shows an Employee their own record, with no Assignments or Pay when they may
 it('opens an Employee\'s page to a viewer who may only see their Assignments, without their record', function () {
     $eve = Employee::factory()->create();
     $assignment = Assignment::factory()->internal()->for($eve)->create(['job_title' => 'Designer']);
+    $viewer = employeeWith([Permission::ViewAssignments->value => Scope::Everyone]);
 
-    actingAs(employeeWith([Permission::ViewAssignments->value => Scope::Everyone]))->get(route('employees.show', $eve))
+    actingAs($viewer)->get(route('employees.show', $eve))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('record', null)
+            ->where('tabs', ['overview', 'assignments'])
+            ->where('record', null),
+        );
+    actingAs($viewer)->get(route('employees.show', ['employee' => $eve, 'tab' => 'assignments']))
+        ->assertInertia(fn (Assert $page) => $page
             ->where('assignments.0.id', $assignment->id)
             ->where('canViewPay', false),
         );
@@ -103,8 +110,9 @@ it('shows a Manager their Report\'s record and Assignments but no Pay', function
     Assignment::factory()->internal()->for($cara)->create();
 
     actingAs($ben)->get(route('employees.show', $cara))
+        ->assertInertia(fn (Assert $page) => $page->where('record.manager.id', $ben->id));
+    actingAs($ben)->get(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('record.manager.id', $ben->id)
             ->has('assignments', 1)
             ->missing('assignments.0.pay')
             ->where('canViewPay', false)
@@ -174,3 +182,77 @@ it('shows no Reporting Chain on a Former Employee\'s page', function () {
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page->where('reportingChain', null));
 });
+
+/*
+ * Ben ── Cara
+ */
+it('offers each viewer only the tabs they may see, each carrying only its own data, and opens Overview for a tab they may not see', function (Closure $viewer, array $offered) {
+    CompanySettings::factory()->create();
+    $ben = Employee::factory()->create(['manager_id' => Employee::factory()->top()->create()->id]);
+    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
+    $props = [
+        'overview' => ['record', 'reportsNeedingAManager', 'reportingChain'],
+        'assignments' => ['assignments', 'projects'],
+        'time-off' => ['paidDays', 'timeOff'],
+    ];
+    actingAs($viewer($ben, $cara));
+
+    foreach (array_keys($props) as $asked) {
+        $opened = in_array($asked, $offered, true) ? $asked : 'overview';
+
+        get(route('employees.show', ['employee' => $cara, 'tab' => $asked]))->assertOk()
+            ->assertInertia(function (Assert $page) use ($props, $offered, $opened) {
+                $page->where('tab', $opened)->where('tabs', $offered);
+                foreach ($props as $tab => $keys) {
+                    foreach ($keys as $key) {
+                        $tab === $opened ? $page->has($key) : $page->missing($key);
+                    }
+                }
+            });
+    }
+})->with([
+    'themselves, with the starter Employee Role' => [fn (Employee $ben, Employee $cara) => tap($cara, fn () => giveRole($cara, [
+        Permission::ViewDirectory->value => null,
+        Permission::ViewEmployeeRecords->value => Scope::Own,
+        Permission::ViewAssignments->value => Scope::Own,
+        Permission::ViewPay->value => Scope::Own,
+        Permission::ViewTimeOff->value => Scope::Own,
+    ])), ['overview', 'assignments', 'time-off']],
+    'their Manager, with the starter Manager Role' => [fn (Employee $ben) => tap($ben, fn () => giveRole($ben, [
+        Permission::ViewEmployeeRecords->value => Scope::Reports,
+        Permission::ViewAssignments->value => Scope::Reports,
+        Permission::ManageAssignments->value => Scope::Reports,
+        Permission::ViewTimeOff->value => Scope::Reports,
+        Permission::ViewProjects->value => null,
+    ])), ['overview', 'assignments', 'time-off']],
+    'HR, with full access' => [fn () => employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+        Permission::ManageEmployees->value => null,
+        Permission::ViewAssignments->value => Scope::Everyone,
+        Permission::ManageAssignments->value => Scope::Everyone,
+        Permission::ViewPay->value => Scope::Everyone,
+        Permission::ManagePay->value => Scope::Everyone,
+        Permission::ManagePaidDays->value => Scope::Everyone,
+        Permission::ViewProjects->value => null,
+    ]), ['overview', 'assignments', 'time-off']],
+    'an Employee who may only see records across the directory' => [fn () => employeeWith([
+        Permission::ViewDirectory->value => null,
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+    ]), ['overview']],
+]);
+
+it('opens Overview when no tab, or an unknown one, is asked for', function (array $query) {
+    $cara = Employee::factory()->create();
+
+    actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ViewAssignments->value => Scope::Everyone]))
+        ->get(route('employees.show', ['employee' => $cara, ...$query]))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('tab', 'overview')
+            ->has('record')
+            ->missing('assignments'));
+})->with([
+    'no tab' => [[]],
+    'an unknown tab' => [['tab' => 'pay']],
+    'a tab in the wrong case' => [['tab' => 'Assignments']],
+    'a list instead of a tab' => [['tab' => ['assignments']]],
+]);
