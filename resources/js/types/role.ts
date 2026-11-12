@@ -23,5 +23,6 @@ export type RoleRecord = {
 export type PermissionChoice = {
     value: string;
     label: string;
-    scoped: boolean;
+    /** The Scopes it can be given with, narrowest first; none when company-wide. */
+    scopes: Scope[];
 };

@@ -50,7 +50,7 @@ class RoleController extends Controller
                 ->map(fn (Permission $permission): array => [
                     'value' => $permission->value,
                     'label' => $permission->label(),
-                    'scoped' => $permission->isScoped(),
+                    'scopes' => $permission->scopes(),
                 ])
                 ->all(),
             'employees' => Employee::query()

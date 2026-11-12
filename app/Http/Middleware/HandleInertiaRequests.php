@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\Permission;
 use App\Models\Employee;
+use App\Models\WorkEntry;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -50,6 +51,7 @@ class HandleInertiaRequests extends Middleware
                     && ($employee->widestScopeFor(Permission::ViewEmployeeRecords)?->coversOthers() ?? false),
                 'canSeeWorkEntries' => fn (): bool => $employee instanceof Employee
                     && ($employee->holds(Permission::ViewWorkEntries) || $employee->holds(Permission::ManageWorkEntries)),
+                'canSeeApprovals' => fn (): bool => $employee instanceof Employee && $employee->can('viewApprovals', WorkEntry::class),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

@@ -59,7 +59,8 @@ class RoleRequest extends FormRequest
 
     /**
      * Accepts only Permissions the HR system defines, where each one about
-     * Employees has a Scope and every other one has none.
+     * Employees has one of the Scopes it can carry and every other one has
+     * none.
      */
     private function eachPermissionWithItsScope(): Closure
     {
@@ -69,8 +70,11 @@ class RoleRequest extends FormRequest
 
                 if ($permission === null) {
                     $fail(__('The HR system has no Permission called ":name".', ['name' => $name]));
-                } elseif ($permission->isScoped() && ! in_array($scope, array_column(Scope::cases(), 'value'), true)) {
-                    $fail(__('Choose a Scope for :permission: own, reports or everyone.', ['permission' => $permission->label()]));
+                } elseif ($permission->isScoped() && ! in_array($scope, array_column($permission->scopes(), 'value'), true)) {
+                    $fail(__('Choose a Scope for :permission: :scopes.', [
+                        'permission' => $permission->label(),
+                        'scopes' => collect($permission->scopes())->map(fn (Scope $choice): string => $choice->value)->join(', ', ' or '),
+                    ]));
                 } elseif (! $permission->isScoped() && $scope !== null) {
                     $fail(__(':permission always applies company-wide, so it takes no Scope.', ['permission' => $permission->label()]));
                 }

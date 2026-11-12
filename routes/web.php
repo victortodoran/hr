@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Permission;
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\ClientController;
@@ -58,6 +59,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('work-entries', [WorkEntryController::class, 'index'])->name('work-entries.index');
     Route::post('employees/{employee}/work-entries', [WorkEntryController::class, 'store'])->middleware('can:create,'.WorkEntry::class.',employee')->name('employees.work-entries.store');
+    Route::middleware('can:viewApprovals,'.WorkEntry::class)->group(function () {
+        Route::get('approvals', [ApprovalController::class, 'index'])->name('approvals.index');
+        Route::post('approvals', [ApprovalController::class, 'store'])->name('approvals.store');
+        Route::delete('approvals', [ApprovalController::class, 'destroy'])->name('approvals.destroy');
+    });
     Route::middleware('can:update,workEntry')->group(function () {
         Route::patch('work-entries/{workEntry}', [WorkEntryController::class, 'update'])->name('work-entries.update');
         Route::delete('work-entries/{workEntry}', [WorkEntryController::class, 'destroy'])->name('work-entries.destroy');

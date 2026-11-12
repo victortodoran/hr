@@ -53,14 +53,16 @@ it('shows an Employee who manages Roles every Role with its Permissions, Scopes 
         );
 });
 
-it('offers every Permission, saying which ones carry a Scope', function () {
+it('offers every Permission with the Scopes it can carry', function () {
     actingAs(roleManager())->get(route('roles.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('permissions', count(Permission::cases()))
-            ->where('permissions.0', ['value' => 'view-employee-records', 'label' => 'View employee records', 'scoped' => true])
-            ->where('permissions.6', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scoped' => true])
-            ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scoped' => true])
-            ->where('permissions.13', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scoped' => false])
+            ->where('permissions.0', ['value' => 'view-employee-records', 'label' => 'View employee records', 'scopes' => ['own', 'reports', 'everyone']])
+            ->where('permissions.6', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scopes' => ['own', 'reports', 'everyone']])
+            ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scopes' => ['own', 'reports', 'everyone']])
+            ->where('permissions.8', ['value' => 'approve-work-entries', 'label' => 'Approve work entries', 'scopes' => ['reports', 'everyone']])
+            ->where('permissions.9', ['value' => 'reopen-work-entries', 'label' => 'Reopen work entries', 'scopes' => ['reports', 'everyone']])
+            ->where('permissions.15', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => []])
             ->etc(),
         );
 });
@@ -115,6 +117,8 @@ it('rejects a Role whose name or Permissions are invalid', function (array $inpu
     'unknown Permission' => [['permissions' => ['fly' => null]], 'permissions', 'The HR system has no Permission called "fly".'],
     'scoped Permission without a Scope' => [['permissions' => ['view-pay' => null]], 'permissions', 'Choose a Scope for View pay: own, reports or everyone.'],
     'scoped Permission with an unknown Scope' => [['permissions' => ['view-pay' => 'department']], 'permissions', 'Choose a Scope for View pay: own, reports or everyone.'],
+    'approve work entries for own' => [['permissions' => ['approve-work-entries' => 'own']], 'permissions', 'Choose a Scope for Approve work entries: reports or everyone.'],
+    'reopen work entries for own' => [['permissions' => ['reopen-work-entries' => 'own']], 'permissions', 'Choose a Scope for Reopen work entries: reports or everyone.'],
     'company-wide Permission with a Scope' => [['permissions' => ['manage-roles' => 'own']], 'permissions', 'Manage roles always applies company-wide, so it takes no Scope.'],
     'mark missing' => [['given_to_new_employees' => null], 'given_to_new_employees', 'The given to new employees field is required.'],
     'mark not true or false' => [['given_to_new_employees' => 'maybe'], 'given_to_new_employees', 'The given to new employees field must be true or false.'],

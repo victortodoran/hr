@@ -109,28 +109,13 @@ class WorkEntryController extends Controller
                     'hours' => $entry->hours,
                     'description' => $entry->description,
                     'state' => $entry->state->value,
-                    'approved' => $this->signOff($entry->approver, $entry->approved_at),
-                    'locked' => $this->signOff($entry->locker, $entry->locked_at),
+                    'approved' => $entry->approval(),
+                    'locked' => $entry->lock(),
                     'can_change' => $canManage && $entry->isPending(),
                 ])->values()->all(),
                 'hours' => $onDay->sum('hours'),
             ];
         })->all();
-    }
-
-    /**
-     * Who approved or locked a Work Entry and on which day, or null while it
-     * hasn't been.
-     *
-     * @return array{by: string, on: string}|null
-     */
-    private function signOff(?Employee $employee, ?CarbonInterface $at): ?array
-    {
-        if ($employee === null || $at === null) { // @pest-mutate-ignore (the work_entries_state constraint keeps who and when both set or both empty)
-            return null;
-        }
-
-        return ['by' => $employee->name, 'on' => $at->toDateString()];
     }
 
     /**

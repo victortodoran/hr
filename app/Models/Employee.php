@@ -376,6 +376,26 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * Limit the query to the Employees the acting Employee's widest Scope
+     * for a Permission covers, or to none when no Role grants it.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function coveredBy(Builder $query, Employee $actor, Permission $permission): void
+    {
+        $scope = $actor->widestScopeFor($permission);
+
+        if ($scope === null) {
+            $query->whereRaw('false'); // @pest-mutate-ignore (every page using it is only open to holders of the Permission)
+
+            return;
+        }
+
+        $query->where(fn (Builder $covered) => $scope->limit($covered, $actor));
+    }
+
+    /**
      * Limit the query to Employees who are current today.
      *
      * @param  Builder<Employee>  $query

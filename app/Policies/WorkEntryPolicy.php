@@ -41,4 +41,12 @@ class WorkEntryPolicy
     {
         return $workEntry->isPending() && $this->create($actor, $workEntry->employee);
     }
+
+    /**
+     * The Approvals page is for those who approve or reopen Work Entries.
+     */
+    public function viewApprovals(Employee $actor): bool
+    {
+        return $actor->holds(Permission::ApproveWorkEntries) || $actor->holds(Permission::ReopenWorkEntries);
+    }
 }

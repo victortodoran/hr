@@ -17,6 +17,8 @@ enum Permission: string
     case ManagePay = 'manage-pay';
     case ViewWorkEntries = 'view-work-entries';
     case ManageWorkEntries = 'manage-work-entries';
+    case ApproveWorkEntries = 'approve-work-entries';
+    case ReopenWorkEntries = 'reopen-work-entries';
     case ViewDirectory = 'view-directory';
     case ViewProjects = 'view-projects';
     case ManageProjects = 'manage-projects';
@@ -46,8 +48,26 @@ enum Permission: string
             self::ViewPay,
             self::ManagePay,
             self::ViewWorkEntries,
-            self::ManageWorkEntries => true,
+            self::ManageWorkEntries,
+            self::ApproveWorkEntries,
+            self::ReopenWorkEntries => true,
             default => false,
         };
+    }
+
+    /**
+     * The Scopes a Role can give this Permission with, narrowest first, or
+     * none when it applies company-wide. No Employee may approve or reopen
+     * their own Work Entries, so neither can be given for own.
+     *
+     * @return list<Scope>
+     */
+    public function scopes(): array
+    {
+        if ($this === self::ApproveWorkEntries || $this === self::ReopenWorkEntries) {
+            return [Scope::Reports, Scope::Everyone];
+        }
+
+        return $this->isScoped() ? [Scope::Own, Scope::Reports, Scope::Everyone] : [];
     }
 }
