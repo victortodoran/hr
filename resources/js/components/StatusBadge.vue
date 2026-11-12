@@ -4,7 +4,7 @@ import type { StatusBadgeState } from '@/types';
 
 /**
  * Shows a state in its status colour: Pending amber, Approved green, Declined
- * red, Locked and Cancelled grey. The label defaults to the state's name; pass
+ * red, Locked and Cancelled grey, Upcoming blue. The label defaults to the state's name; pass
  * slot content to word it differently.
  */
 defineProps<{
@@ -17,6 +17,7 @@ const labels: Record<StatusBadgeState, string> = {
     declined: 'Declined',
     locked: 'Locked',
     cancelled: 'Cancelled',
+    upcoming: 'Upcoming',
 };
 
 const colours: Record<StatusBadgeState, string> = {
@@ -25,6 +26,7 @@ const colours: Record<StatusBadgeState, string> = {
     declined: 'bg-status-declined text-status-declined-foreground',
     locked: 'bg-status-closed text-status-closed-foreground',
     cancelled: 'bg-status-closed text-status-closed-foreground',
+    upcoming: 'bg-status-upcoming text-status-upcoming-foreground',
 };
 </script>
 

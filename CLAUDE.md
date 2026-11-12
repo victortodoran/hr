@@ -20,7 +20,7 @@ Commit first, run `git fetch origin main:main` so the review diffs against the r
 
 ### Delivery
 
-One issue, one branch from `origin/main`, one PR. Open the PR when the issue is done, then start the next issue only after that PR is merged.
+One issue, one branch from `origin/main`, one PR. Open the PR when the issue is done, then start the next issue only after that PR is merged. Before implementing an issue, or briefing a subagent to, read `docs/agents/implementing-an-issue.md`.
 
 ### Mutation testing
 

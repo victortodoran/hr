@@ -16,6 +16,8 @@ One line per rule; list each place a diff breaks one.
 
 - Pages use the shared page container (`PageContainer`): `width="narrow"` for forms, `width="wide"` for lists.
 - States are shown with the status badge (`StatusBadge`), never with ad-hoc colours; colour is used only for state.
+- Each status colour means one thing across the app: amber waiting on someone, green settled or active, red refused, grey over or closed, blue not started yet. A new state takes the colour of its meaning, or a new colour, never one with another meaning.
+- Tabbed pages resolve `?tab=` through an enum and fall back to the default tab when it's unknown or not allowed (see `ApprovalsTab` and `EmployeePageTab`).
 - Submit buttons show a spinner while saving (`SubmitButton`).
 - Every delete asks for confirmation (the dialog pattern in `DeleteClient`).
 - Lists use the shared table (`DataTable`) and mark their minor columns, so a row fits on a phone without scrolling sideways; no hand-written `<table>`s or bordered `ul` lists.

@@ -68,6 +68,8 @@
     --color-status-declined-foreground: var(--status-declined-foreground);
     --color-status-closed: var(--status-closed);
     --color-status-closed-foreground: var(--status-closed-foreground);
+    --color-status-upcoming: var(--status-upcoming);
+    --color-status-upcoming-foreground: var(--status-upcoming-foreground);
 }
 
 /*
@@ -141,6 +143,8 @@
     --status-declined-foreground: hsl(0 70% 35%);
     --status-closed: hsl(0 0% 93%);
     --status-closed-foreground: hsl(0 0% 32%);
+    --status-upcoming: hsl(214 95% 93%);
+    --status-upcoming-foreground: hsl(224 64% 33%);
 }
 
 .dark {
@@ -185,6 +189,8 @@
     --status-declined-foreground: hsl(0 91% 75%);
     --status-closed: hsl(0 0% 16%);
     --status-closed-foreground: hsl(0 0% 70%);
+    --status-upcoming: hsl(224 50% 18%);
+    --status-upcoming-foreground: hsl(213 94% 78%);
 }
 
 @layer base {
