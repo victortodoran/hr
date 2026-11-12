@@ -37,11 +37,26 @@ const props = defineProps<{
     today: string;
     /** The Work Entry to correct; a new one is added without it. */
     entry?: WorkEntryRecord;
+    /** A Work Entry to copy into a new one, dated today unless changed. */
+    repeatOf?: WorkEntryRecord;
 }>();
 
 const open = ref(false);
-const fieldId = (field: string): string =>
-    `work-entry-${field}-${props.entry?.id ?? props.date}`;
+
+/** Where the form's starting values come from. */
+const source = computed(() => props.entry ?? props.repeatOf);
+
+const fieldId = (field: string): string => {
+    if (props.entry) {
+        return `work-entry-${field}-${props.entry.id}`;
+    }
+
+    if (props.repeatOf) {
+        return `work-entry-${field}-repeat-${props.repeatOf.id}`;
+    }
+
+    return `work-entry-${field}-${props.date}`;
+};
 
 const form = useForm({
     assignment_id: '',
@@ -56,10 +71,10 @@ watch(open, (isOpen) => {
     }
 
     form.clearErrors();
-    form.assignment_id = props.entry ? String(props.entry.assignment_id) : '';
-    form.date = props.date;
-    form.hours = props.entry ? String(props.entry.hours) : '';
-    form.description = props.entry?.description ?? '';
+    form.assignment_id = source.value ? String(source.value.assignment_id) : '';
+    form.date = props.repeatOf ? props.today : props.date;
+    form.hours = source.value ? String(source.value.hours) : '';
+    form.description = source.value?.description ?? '';
 });
 
 /**
@@ -93,12 +108,22 @@ function save(): void {
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
             <Button v-if="entry" variant="ghost" size="sm">Edit</Button>
+            <Button v-else-if="repeatOf" variant="ghost" size="sm"
+                >Repeat</Button
+            >
             <Button v-else variant="outline" size="sm">Add</Button>
         </DialogTrigger>
         <DialogContent>
             <DialogHeader>
                 <DialogTitle
-                    >{{ entry ? 'Change Work Entry' : 'Add Work Entry' }} for
+                    >{{
+                        entry
+                            ? 'Change Work Entry'
+                            : repeatOf
+                              ? 'Repeat Work Entry'
+                              : 'Add Work Entry'
+                    }}
+                    for
                     {{ employee.name }}</DialogTitle
                 >
                 <DialogDescription>
