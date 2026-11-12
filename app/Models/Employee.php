@@ -6,6 +6,7 @@ use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Notifications\Invitation;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\EmployeeFactory;
 use Illuminate\Auth\Passwords\PasswordBroker;
@@ -128,6 +129,34 @@ class Employee extends Authenticatable implements MustVerifyEmail
         $days = $this->paidDays()->where('year', '<=', $year)->orderByDesc('year')->value('days');
 
         return $days ?? 0;
+    }
+
+    /**
+     * The Time Off the Employee has requested, in every state.
+     *
+     * @return HasMany<TimeOff, $this>
+     */
+    public function timeOff(): HasMany
+    {
+        return $this->hasMany(TimeOff::class);
+    }
+
+    /**
+     * How many Paid Days the Employee has left in a year: their Paid Days
+     * minus the weekdays that year of their Pending and Approved Paid Time
+     * Off. It is negative when their Paid Days were lowered below what is
+     * already taken.
+     */
+    public function paidDaysLeftIn(int $year): int
+    {
+        $taken = $this->timeOff()
+            ->standing()
+            ->where('is_paid', true)
+            ->overlapping(CarbonImmutable::createFromDate($year, 1, 1), CarbonImmutable::createFromDate($year, 12, 31)) // @pest-mutate-ignore (the surviving mutants only widen the year, and weekdaysIn() counts nothing outside it; the narrowing ones are tested)
+            ->get()
+            ->sum(fn (TimeOff $timeOff): int => $timeOff->weekdaysIn($year));
+
+        return $this->paidDaysIn($year) - $taken;
     }
 
     /**

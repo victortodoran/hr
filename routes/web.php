@@ -18,6 +18,8 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RoleHolderController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\TimeOffCancellationController;
+use App\Http\Controllers\TimeOffController;
 use App\Http\Controllers\TopEmployeeController;
 use App\Http\Controllers\WorkEntryController;
 use App\Models\Assignment;
@@ -76,6 +78,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     Route::patch('work-entries/{workEntry}', [WorkEntryController::class, 'update'])->middleware('can:update,workEntry')->name('work-entries.update');
     Route::delete('work-entries/{workEntry}', [WorkEntryController::class, 'destroy'])->middleware('can:delete,workEntry')->name('work-entries.destroy');
+
+    Route::get('time-off', [TimeOffController::class, 'index'])->name('time-off.index');
+    Route::post('time-off', [TimeOffController::class, 'store'])->name('time-off.store');
+    Route::post('time-off/{timeOff}/cancellation', [TimeOffCancellationController::class, 'store'])->middleware('can:cancel,timeOff')->name('time-off.cancellation.store');
 
     Route::middleware('can:'.Permission::ViewDirectory->value)->group(function () {
         Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');
