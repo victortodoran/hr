@@ -20,7 +20,7 @@ it('asks before deleting a Work Entry, and Cancel keeps it', function () {
 
     visit(route('work-entries.index'))
         ->click('Edit')
-        ->click('internal:role=dialog >> internal:role=button[name="Delete"s]')
+        ->click('Delete')
         ->assertSee('Delete this Work Entry?')
         ->click('internal:role=dialog[name="Delete this Work Entry?"s] >> internal:role=button[name="Cancel"s]')
         ->assertDontSee('Delete this Work Entry?')
