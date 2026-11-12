@@ -120,6 +120,13 @@ function submit(): void {
                     <legend class="mb-2 text-sm font-medium">
                         Permissions
                     </legend>
+                    <p
+                        v-if="role?.is_admin"
+                        class="text-sm text-muted-foreground"
+                    >
+                        Admin always holds every Permission, so they can't be
+                        changed.
+                    </p>
                     <div
                         v-for="permission in permissions"
                         :key="permission.value"
@@ -127,6 +134,7 @@ function submit(): void {
                     >
                         <Label class="flex items-center gap-3 font-normal">
                             <Checkbox
+                                :disabled="role?.is_admin"
                                 :model-value="isGranted(permission)"
                                 @update:model-value="
                                     toggle(permission, $event === true)
@@ -139,6 +147,7 @@ function submit(): void {
                                 permission.scopes.length > 0 &&
                                 isGranted(permission)
                             "
+                            :disabled="role?.is_admin"
                             :model-value="form.permissions[permission.value]!"
                             @update:model-value="
                                 form.permissions[permission.value] =

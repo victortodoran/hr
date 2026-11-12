@@ -3,13 +3,15 @@
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Models\Employee;
+use App\Models\Role;
 use App\Models\RolePermission;
 use App\Providers\AccessServiceProvider;
 use Illuminate\Support\Facades\Route;
+use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 
-covers(AccessServiceProvider::class, Employee::class, Permission::class, Scope::class, RolePermission::class);
+covers(AccessServiceProvider::class, Employee::class, Permission::class, Scope::class, RolePermission::class, Role::class);
 
 /*
  * Throwaway routes keep the Permission check apart from any real page: one
@@ -87,4 +89,25 @@ it('allows a company-wide Permission only to Employees holding it', function () 
 
     actingAs($admin)->get('/_test/departments')->assertOk();
     actingAs($cara)->get('/_test/departments')->assertForbidden();
+});
+
+it('lets an Admin holder use every Permission on every Employee, with no grants stored', function () {
+    $ana = Employee::factory()->create();
+    $ana->roles()->attach(Role::factory()->admin()->create());
+    $colleague = Employee::factory()->create();
+
+    actingAs($ana)->get("/_test/employees/{$colleague->id}")->assertOk();
+    actingAs($ana)->get('/_test/departments')->assertOk();
+    expect(RolePermission::query()->exists())->toBeFalse()
+        ->and($ana->widestScopeFor(Permission::ManagePay))->toBe(Scope::Everyone);
+});
+
+it('tells pages an Admin holder has every company-wide Permission, so the menu shows everything', function () {
+    $ana = Employee::factory()->create();
+    $ana->roles()->attach(Role::factory()->admin()->create());
+
+    actingAs($ana)->get(route('profile.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('auth.can', [
+            'lock-work-entries', 'manage-clients', 'manage-company', 'manage-departments', 'manage-employees', 'manage-projects', 'manage-roles', 'view-directory', 'view-projects',
+        ]));
 });

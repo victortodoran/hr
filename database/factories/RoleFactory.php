@@ -17,7 +17,7 @@ class RoleFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->jobTitle(),
+            'name' => fake()->unique()->jobTitle().' Role',
         ];
     }
 
@@ -34,5 +34,16 @@ class RoleFactory extends Factory
                 $role->permissions()->create(['permission' => $permission, 'scope' => $scope]);
             }
         });
+    }
+
+    /**
+     * The Admin Role, which always holds every Permission.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'name' => 'Admin',
+            'is_admin' => true,
+        ]);
     }
 }

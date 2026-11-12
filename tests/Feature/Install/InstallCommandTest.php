@@ -116,6 +116,15 @@ it('gives the first Employee the Admin Role, able to do everything to everyone',
     }
 });
 
+it('makes the starter Admin the Admin Role, storing no grants since it always holds every Permission', function () {
+    install(installOptions())->assertSuccessful();
+
+    $admin = Role::query()->where('is_admin', true)->sole();
+
+    expect($admin->name)->toBe('Admin')
+        ->and($admin->permissions()->exists())->toBeFalse();
+});
+
 it('creates the starter Employee Role: directory, plus own records, Assignments and Pay, and recording their own Work Entries', function () {
     install(installOptions())->assertSuccessful();
 
@@ -241,6 +250,7 @@ it('logs the starter Roles being created and Admin given to the first Employee, 
         [AccessChange::RoleGiven, 'Admin', $dana->id],
     ])
         ->and($entries->pluck('actor_id')->unique()->all())->toBe([$dana->id])
+        ->and($entries->get(0)?->after)->toBe(['name' => 'Admin', 'admin' => true, 'given_to_new_employees' => false])
         ->and($entries->get(2)?->after)->toBe([
             'name' => 'Employee',
             'permissions' => ['view-employee-records' => 'own', 'view-assignments' => 'own', 'view-pay' => 'own', 'manage-work-entries' => 'own', 'view-directory' => null],

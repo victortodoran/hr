@@ -114,6 +114,10 @@ _Avoid_: Invoiced, closed, final, frozen, archived
 A named, customizable set of Permissions, such as "Admin", "Manager" or "Employee". An Employee can hold several Roles.
 _Avoid_: Group, profile, user type
 
+**Admin**:
+The one built-in Role that always holds every Permission with the everyone Scope, including Permissions added to the HR system later. It can be renamed and given to new Employees, but its Permissions can't be changed and it can't be deleted.
+_Avoid_: Superuser, root, owner, administrator
+
 **Permission**:
 A single thing an Employee is allowed to do in the HR system, granted through a Role together with a Scope. The HR system defines every Permission; companies choose which ones go into each Role but cannot invent new ones.
 _Avoid_: Right, privilege, ability
