@@ -48,7 +48,7 @@ it('opens Approvals on the Approved Work Entries of the Employees someone may re
         ->where('canApprove', false)
         ->where('canReopen', true)
         ->where('entries.data', [
-            ['id' => $approved->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'API', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => null, 'can_approve' => false, 'can_reopen' => true],
+            ['id' => $approved->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'API', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => null, 'can_approve' => false, 'can_reopen' => true, 'can_lock' => false],
         ])
         ->where('employees', [['id' => $cara->id, 'name' => 'Cara']]));
 });

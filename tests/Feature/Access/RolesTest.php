@@ -62,7 +62,8 @@ it('offers every Permission with the Scopes it can carry', function () {
             ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scopes' => ['own', 'reports', 'everyone']])
             ->where('permissions.8', ['value' => 'approve-work-entries', 'label' => 'Approve work entries', 'scopes' => ['reports', 'everyone']])
             ->where('permissions.9', ['value' => 'reopen-work-entries', 'label' => 'Reopen work entries', 'scopes' => ['reports', 'everyone']])
-            ->where('permissions.15', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => []])
+            ->where('permissions.10', ['value' => 'lock-work-entries', 'label' => 'Lock work entries', 'scopes' => []])
+            ->where('permissions.16', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => []])
             ->etc(),
         );
 });

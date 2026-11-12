@@ -19,6 +19,7 @@ enum Permission: string
     case ManageWorkEntries = 'manage-work-entries';
     case ApproveWorkEntries = 'approve-work-entries';
     case ReopenWorkEntries = 'reopen-work-entries';
+    case LockWorkEntries = 'lock-work-entries';
     case ViewDirectory = 'view-directory';
     case ViewProjects = 'view-projects';
     case ManageProjects = 'manage-projects';

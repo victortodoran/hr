@@ -59,7 +59,7 @@ export type WorkEntryAssignment = {
 
 /**
  * A Work Entry on the Approvals page, with whose it is and whether the
- * viewer may approve or reopen it.
+ * viewer may approve, reopen or lock it.
  */
 export type ApprovalEntry = {
     id: number;
@@ -73,6 +73,7 @@ export type ApprovalEntry = {
     locked: WorkEntrySignOff | null;
     can_approve: boolean;
     can_reopen: boolean;
+    can_lock: boolean;
 };
 
 /**
@@ -84,4 +85,15 @@ export type ApprovalFilters = {
     from: string | null;
     to: string | null;
     state: WorkEntryState;
+};
+
+/**
+ * What locking the selected Work Entries would do: the Approved ones to be
+ * locked, by Project and Employee, and the Pending ones matching the same
+ * filters that won't be.
+ */
+export type LockSummary = {
+    locking: { count: number; hours: number };
+    breakdown: { project: string; employee: string; hours: number }[];
+    pending: { count: number; hours: number };
 };

@@ -11,6 +11,7 @@ use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeInvitationController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\LockController;
 use App\Http\Controllers\PayEntryController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
@@ -63,6 +64,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('approvals', [ApprovalController::class, 'index'])->name('approvals.index');
         Route::post('approvals', [ApprovalController::class, 'store'])->name('approvals.store');
         Route::delete('approvals', [ApprovalController::class, 'destroy'])->name('approvals.destroy');
+    });
+    Route::middleware('can:lock,'.WorkEntry::class)->group(function () {
+        Route::get('locks/create', [LockController::class, 'create'])->name('locks.create');
+        Route::post('locks', [LockController::class, 'store'])->name('locks.store');
     });
     Route::middleware('can:update,workEntry')->group(function () {
         Route::patch('work-entries/{workEntry}', [WorkEntryController::class, 'update'])->name('work-entries.update');

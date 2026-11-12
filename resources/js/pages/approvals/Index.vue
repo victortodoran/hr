@@ -2,6 +2,7 @@
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import ApprovalController from '@/actions/App/Http/Controllers/ApprovalController';
+import LockDialog from '@/components/approvals/LockDialog.vue';
 import Heading from '@/components/Heading.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ const props = defineProps<{
     filters: ApprovalFilters;
     canApprove: boolean;
     canReopen: boolean;
+    canLock: boolean;
     entries: Paginated<ApprovalEntry>;
     /** Total hours of every Work Entry matching the filters. */
     total: number;
@@ -79,7 +81,9 @@ function reloadList(): void {
 }
 
 const selectableOnPage = computed(() =>
-    props.entries.data.filter((entry) => entry.can_approve || entry.can_reopen),
+    props.entries.data.filter(
+        (entry) => entry.can_approve || entry.can_reopen || entry.can_lock,
+    ),
 );
 
 const isPageSelected = computed(
@@ -115,7 +119,8 @@ function selectAllMatching(): void {
 const canActOnState = computed(
     () =>
         (props.filters.state === 'pending' && props.canApprove) ||
-        (props.filters.state === 'approved' && props.canReopen),
+        (props.filters.state === 'approved' &&
+            (props.canReopen || props.canLock)),
 );
 
 const afterAction = {
@@ -169,7 +174,7 @@ function signOffs(entry: ApprovalEntry): string {
     <div class="flex max-w-5xl flex-col gap-6 p-4">
         <Heading
             title="Approvals"
-            description="Work Entries of the Employees you approve or reopen for"
+            description="Approve, reopen and lock Work Entries"
         />
 
         <div class="flex flex-wrap items-end gap-3">
@@ -253,6 +258,12 @@ function signOffs(entry: ApprovalEntry): string {
                 >
             </div>
             <div class="flex gap-2">
+                <LockDialog
+                    v-if="canLock"
+                    :ids="selected"
+                    :filters="filters"
+                    @locked="selected = []"
+                />
                 <Button
                     v-if="canReopen"
                     variant="outline"
@@ -294,7 +305,11 @@ function signOffs(entry: ApprovalEntry): string {
                     <tr v-for="entry in entries.data" :key="entry.id">
                         <td class="px-4 py-2">
                             <Checkbox
-                                v-if="entry.can_approve || entry.can_reopen"
+                                v-if="
+                                    entry.can_approve ||
+                                    entry.can_reopen ||
+                                    entry.can_lock
+                                "
                                 :model-value="selected.includes(entry.id)"
                                 :aria-label="`Select ${entry.employee.name}'s Work Entry on ${formatDate(entry.date)}`"
                                 @update:model-value="
