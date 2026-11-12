@@ -3,8 +3,8 @@ import { Form } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import RoleHolderController from '@/actions/App/Http/Controllers/RoleHolderController';
 import InputError from '@/components/InputError.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     Select,
     SelectContent,
@@ -59,12 +59,11 @@ const candidates = computed(() =>
                     v-slot="{ errors, processing }"
                 >
                     <InputError :message="errors.role" />
-                    <Button
-                        type="submit"
+                    <SubmitButton
+                        :processing="processing"
                         variant="ghost"
                         size="sm"
-                        :disabled="processing"
-                        >Take away</Button
+                        >Take away</SubmitButton
                     >
                 </Form>
             </li>
@@ -98,8 +97,8 @@ const candidates = computed(() =>
                         </SelectItem>
                     </SelectContent>
                 </Select>
-                <Button type="submit" variant="outline" :disabled="processing"
-                    >Give</Button
+                <SubmitButton :processing="processing" variant="outline"
+                    >Give</SubmitButton
                 >
             </div>
             <InputError :message="errors.employee_id" />

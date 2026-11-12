@@ -3,6 +3,7 @@ import { useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import RoleController from '@/actions/App/Http/Controllers/RoleController';
 import InputError from '@/components/InputError.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -185,8 +186,8 @@ function submit(): void {
                             >Cancel</Button
                         >
                     </DialogClose>
-                    <Button type="submit" :disabled="form.processing"
-                        >Save</Button
+                    <SubmitButton :processing="form.processing"
+                        >Save</SubmitButton
                     >
                 </DialogFooter>
             </form>

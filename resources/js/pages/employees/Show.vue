@@ -4,8 +4,8 @@ import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
 import PaidDaysForm from '@/components/time-off/PaidDaysForm.vue';
-import TimeOffStateBadge from '@/components/time-off/TimeOffStateBadge.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
 import ReportingChain from '@/components/employees/ReportingChain.vue';
 import { Badge } from '@/components/ui/badge';
@@ -198,7 +198,7 @@ setLayoutProps({
                     class="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
                 >
                     <TimeOffSummary :time-off="item" />
-                    <TimeOffStateBadge :state="item.state" />
+                    <StatusBadge :state="item.state" />
                 </li>
             </ul>
         </section>

@@ -3,6 +3,7 @@ import { Form, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
 import InputError from '@/components/InputError.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -185,12 +186,11 @@ function save(): void {
                         class="mr-auto"
                         v-slot="{ processing }"
                     >
-                        <Button
-                            type="submit"
+                        <SubmitButton
+                            :processing="processing"
                             variant="ghost"
                             class="text-destructive"
-                            :disabled="processing"
-                            >Delete</Button
+                            >Delete</SubmitButton
                         >
                     </Form>
                     <DialogClose as-child>
@@ -198,9 +198,9 @@ function save(): void {
                             >Cancel</Button
                         >
                     </DialogClose>
-                    <Button type="submit" :disabled="form.processing">{{
+                    <SubmitButton :processing="form.processing">{{
                         entry ? 'Save' : 'Add'
-                    }}</Button>
+                    }}</SubmitButton>
                 </DialogFooter>
             </form>
         </DialogContent>

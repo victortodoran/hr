@@ -3,6 +3,7 @@ import { Form } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import TopEmployeeController from '@/actions/App/Http/Controllers/TopEmployeeController';
 import InputError from '@/components/InputError.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -52,9 +53,9 @@ const open = ref(false);
                     <DialogClose as-child>
                         <Button variant="secondary">Cancel</Button>
                     </DialogClose>
-                    <Button type="submit" :disabled="processing">
-                        Make top Employee
-                    </Button>
+                    <SubmitButton :processing="processing"
+                        >Make top Employee</SubmitButton
+                    >
                 </DialogFooter>
             </Form>
         </DialogContent>

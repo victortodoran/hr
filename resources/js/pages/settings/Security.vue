@@ -4,7 +4,7 @@ import SecurityController from '@/actions/App/Http/Controllers/Settings/Security
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
-import { Button } from '@/components/ui/button';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/security';
 
@@ -89,12 +89,11 @@ defineOptions({
             </div>
 
             <div class="flex items-center gap-4">
-                <Button
-                    :disabled="processing"
+                <SubmitButton
+                    :processing="processing"
                     data-test="update-password-button"
+                    >Save</SubmitButton
                 >
-                    Save
-                </Button>
             </div>
         </Form>
     </div>

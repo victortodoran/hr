@@ -4,11 +4,10 @@ import { ref } from 'vue';
 import AlertError from '@/components/AlertError.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/invitation';
 import { login } from '@/routes';
 
@@ -94,15 +93,12 @@ const inputEmail = ref(props.email);
                 <InputError :message="errors.password_confirmation" />
             </div>
 
-            <Button
-                type="submit"
+            <SubmitButton
+                :processing="processing"
                 class="mt-4 w-full"
-                :disabled="processing"
                 data-test="set-password-button"
+                >Set password</SubmitButton
             >
-                <Spinner v-if="processing" />
-                Set password
-            </Button>
         </div>
     </Form>
 </template>

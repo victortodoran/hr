@@ -3,8 +3,7 @@ import { Form, Head } from '@inertiajs/vue3';
 import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import Heading from '@/components/Heading.vue';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { create } from '@/routes/employees';
 import type { Choice, ManagerChoice } from '@/types';
 
@@ -41,10 +40,9 @@ defineProps<{
             />
 
             <div>
-                <Button type="submit" :disabled="processing">
-                    <Spinner v-if="processing" />
-                    Add Employee
-                </Button>
+                <SubmitButton :processing="processing"
+                    >Add Employee</SubmitButton
+                >
             </div>
         </Form>
     </div>

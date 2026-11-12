@@ -3,7 +3,7 @@ import { Form, Head } from '@inertiajs/vue3';
 import CompanySettingsController from '@/actions/App/Http/Controllers/CompanySettingsController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/company';
@@ -68,7 +68,7 @@ defineProps<{
                 <InputError :message="errors.currency" />
             </div>
 
-            <Button type="submit" :disabled="processing">Save</Button>
+            <SubmitButton :processing="processing">Save</SubmitButton>
         </Form>
     </div>
 </template>

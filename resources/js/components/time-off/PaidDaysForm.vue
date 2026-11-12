@@ -2,7 +2,7 @@
 import { Form } from '@inertiajs/vue3';
 import PaidDaysController from '@/actions/App/Http/Controllers/PaidDaysController';
 import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Choice, PaidDaysRecord } from '@/types';
@@ -37,8 +37,8 @@ const fieldId = `paid-days-${props.paidDays.year}`;
                 :default-value="paidDays.days"
                 required
             />
-            <Button type="submit" variant="outline" :disabled="processing"
-                >Save</Button
+            <SubmitButton :processing="processing" variant="outline"
+                >Save</SubmitButton
             >
         </div>
         <InputError :message="errors.days ?? errors.year" />

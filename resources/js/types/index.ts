@@ -11,5 +11,7 @@ export * from './ui';
 export * from './role';
 export * from './pay';
 export * from './work-entry';
+export * from './table';
 export * from './team';
+export * from './status';
 export * from './time-off';

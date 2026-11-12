@@ -3,10 +3,9 @@ import { Form, Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
-import { Button } from '@/components/ui/button';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { update } from '@/routes/password';
 
 defineOptions({
@@ -76,15 +75,12 @@ const inputEmail = ref(props.email);
                 <InputError :message="errors.password_confirmation" />
             </div>
 
-            <Button
-                type="submit"
+            <SubmitButton
+                :processing="processing"
                 class="mt-4 w-full"
-                :disabled="processing"
                 data-test="reset-password-button"
+                >Reset password</SubmitButton
             >
-                <Spinner v-if="processing" />
-                Reset password
-            </Button>
         </div>
     </Form>
 </template>

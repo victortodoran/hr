@@ -2,9 +2,8 @@
 import { Form, Head } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
-import { Button } from '@/components/ui/button';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/password/confirm';
 
 defineOptions({
@@ -40,14 +39,12 @@ defineOptions({
             </div>
 
             <div class="flex items-center">
-                <Button
+                <SubmitButton
+                    :processing="processing"
                     class="w-full"
-                    :disabled="processing"
                     data-test="confirm-password-button"
+                    >Confirm password</SubmitButton
                 >
-                    <Spinner v-if="processing" />
-                    Confirm password
-                </Button>
             </div>
         </div>
     </Form>

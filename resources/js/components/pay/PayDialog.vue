@@ -3,6 +3,7 @@ import { Form, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import PayEntryController from '@/actions/App/Http/Controllers/PayEntryController';
 import InputError from '@/components/InputError.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -137,13 +138,12 @@ function add(): void {
                             :options="{ preserveScroll: true }"
                             v-slot="{ processing }"
                         >
-                            <Button
-                                type="submit"
+                            <SubmitButton
+                                :processing="processing"
                                 variant="ghost"
                                 size="sm"
                                 class="text-destructive"
-                                :disabled="processing"
-                                >Remove</Button
+                                >Remove</SubmitButton
                             >
                         </Form>
                     </div>
@@ -203,8 +203,8 @@ function add(): void {
                     <DialogClose as-child>
                         <Button variant="secondary" type="button">Close</Button>
                     </DialogClose>
-                    <Button type="submit" :disabled="form.processing"
-                        >Add Pay</Button
+                    <SubmitButton :processing="form.processing"
+                        >Add Pay</SubmitButton
                     >
                 </DialogFooter>
             </form>

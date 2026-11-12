@@ -2,12 +2,11 @@
 import { Form, Head } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
@@ -86,16 +85,13 @@ defineProps<{
                 </Label>
             </div>
 
-            <Button
-                type="submit"
+            <SubmitButton
+                :processing="processing"
                 class="mt-4 w-full"
                 :tabindex="4"
-                :disabled="processing"
                 data-test="login-button"
+                >Log in</SubmitButton
             >
-                <Spinner v-if="processing" />
-                Log in
-            </Button>
         </div>
     </Form>
 </template>
