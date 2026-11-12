@@ -4,7 +4,6 @@ use App\Http\Middleware\EnsureEmployeeCanSignIn;
 use App\Listeners\RefuseSignInOutsideEmployment;
 use App\Models\Employee;
 use Illuminate\Support\Facades\Password;
-use PragmaRX\Google2FA\Google2FA;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertAuthenticatedAs;
@@ -88,17 +87,4 @@ it('lets a Future Employee set their password before their Start Date', function
 
     expect($cara->refresh()->hasPendingInvitation())->toBeFalse();
     assertGuest();
-});
-
-it('refuses sign-in through the two-factor challenge outside employment too', function () {
-    $cara = employeeWithDates(['start_date' => '2026-03-02', 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
-
-    post(route('login.store'), ['email' => 'cara@acme.test', 'password' => 'password'])
-        ->assertRedirect(route('two-factor.login'));
-
-    post(route('two-factor.login.store'), ['code' => (new Google2FA)->getCurrentOtp('JBSWY3DPEHPK3PXP')])
-        ->assertSessionHasErrors(['email' => 'You can sign in from your Start Date, 2 March 2026.']);
-
-    assertGuest();
-    expect($cara->refresh()->two_factor_confirmed_at)->not->toBeNull();
 });

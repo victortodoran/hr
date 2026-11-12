@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Attributes\Scope as QueryScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,11 +27,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
-use Laravel\Fortify\Contracts\PasskeyUser;
-use Laravel\Fortify\PasskeyAuthenticatable;
-use Laravel\Fortify\TwoFactorAuthenticatable;
-use Laravel\Passkeys\Passkey;
-use Laravel\Passkeys\Passkeys;
 
 /**
  * @property int $id
@@ -46,19 +40,16 @@ use Laravel\Passkeys\Passkeys;
  * @property int|null $effective_manager_id Only on Employees queried with withEffectiveManager()
  * @property Carbon|null $email_verified_at
  * @property string $password
- * @property string|null $two_factor_secret
- * @property string|null $two_factor_recovery_codes
- * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
 #[Fillable(['name', 'email', 'password', 'department_id', 'start_date', 'leaving_date', 'manager_id'])] // @pest-mutate-ignore (class attributes never show as covered)
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])] // @pest-mutate-ignore (class attributes never show as covered)
-class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
+#[Hidden(['password', 'remember_token'])] // @pest-mutate-ignore (class attributes never show as covered)
+class Employee extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<EmployeeFactory> */
-    use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable;
 
     /**
      * Emails are stored in lowercase, so capitals never make two addresses
@@ -84,7 +75,6 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'is_top' => 'boolean', // @pest-mutate-ignore (PostgreSQL already returns a boolean)
             'start_date' => 'date',
             'leaving_date' => 'date',
-            'two_factor_confirmed_at' => 'datetime', // @pest-mutate-ignore (starter-kit two-factor code)
         ];
     }
 
@@ -463,29 +453,5 @@ class Employee extends Authenticatable implements MustVerifyEmail, PasskeyUser
             ->whereIn('role_id', $this->roles()->select('roles.id'))
             ->where('permission', $permission)
             ->get();
-    }
-
-    /**
-     * Get the Employee's passkeys.
-     *
-     * laravel/passkeys stores the owner in a column named user_id, so the
-     * foreign key is named explicitly rather than guessed from this model.
-     *
-     * @return HasMany<Passkey, Model>
-     */
-    public function passkeys(): HasMany
-    {
-        return self::passkeysOwnedBy($this);
-    }
-
-    /**
-     * Build the passkeys relation for an owner typed as a plain Model, which
-     * is the relation type the PasskeyUser contract declares.
-     *
-     * @return HasMany<Passkey, Model>
-     */
-    private static function passkeysOwnedBy(Model $owner): HasMany
-    {
-        return $owner->hasMany(Passkeys::passkeyModel(), 'user_id');
     }
 }

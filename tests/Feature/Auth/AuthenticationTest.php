@@ -5,7 +5,6 @@ namespace Tests\Feature\Auth;
 use App\Models\Employee;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
-use Laravel\Fortify\Features;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -30,27 +29,6 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('landing', absolute: false));
-    }
-
-    public function test_employees_with_two_factor_enabled_are_redirected_to_two_factor_challenge(): void
-    {
-        $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
-
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-        ]);
-
-        $employee = Employee::factory()->withTwoFactor()->create();
-
-        $response = $this->post(route('login'), [
-            'email' => $employee->email,
-            'password' => 'password',
-        ]);
-
-        $response->assertRedirect(route('two-factor.login'));
-        $response->assertSessionHas('login.id', $employee->id);
-        $this->assertGuest();
     }
 
     public function test_employees_can_not_authenticate_with_invalid_password(): void
