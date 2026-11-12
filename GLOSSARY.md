@@ -115,7 +115,7 @@ A named, customizable set of Permissions, such as "Admin", "Manager" or "Employe
 _Avoid_: Group, profile, user type
 
 **Admin**:
-The one built-in Role that always holds every Permission with the everyone Scope, including Permissions added to the HR system later. It can be renamed and given to new Employees, but its Permissions can't be changed and it can't be deleted.
+The one built-in Role that always holds every Permission with the everyone Scope, including Permissions added to the HR system later. It can be renamed, but its Permissions can't be changed, it is never given to every new Employee, and it can't be deleted.
 _Avoid_: Superuser, root, owner, administrator
 
 **Permission**:

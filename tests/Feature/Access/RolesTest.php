@@ -284,7 +284,7 @@ it('counts an Admin holder as able to manage Roles, so the last other Role that 
     expect(Role::query()->whereKey($roleManagers->id)->exists())->toBeFalse();
 });
 
-it('lets Admin be renamed and change who gets it, but keeps every Permission and logs the marker instead of grants', function () {
+it('lets Admin be renamed, but keeps every Permission, never gives it to new Employees, and logs the marker instead of grants', function () {
     $admin = roleManager();
     $adminRole = Role::factory()->admin()->create(['name' => 'Owners']);
 
@@ -293,12 +293,12 @@ it('lets Admin be renamed and change who gets it, but keeps every Permission and
         ->assertSessionHasNoErrors();
 
     expect($adminRole->refresh()->name)->toBe('Superusers')
-        ->and($adminRole->is_given_to_new_employees)->toBeTrue()
+        ->and($adminRole->is_given_to_new_employees)->toBeFalse()
         ->and($adminRole->permissions()->exists())->toBeFalse();
 
     $entry = AccessLogEntry::query()->sole();
     expect($entry->before)->toBe(['name' => 'Owners', 'admin' => true, 'given_to_new_employees' => false])
-        ->and($entry->after)->toBe(['name' => 'Superusers', 'admin' => true, 'given_to_new_employees' => true]);
+        ->and($entry->after)->toBe(['name' => 'Superusers', 'admin' => true, 'given_to_new_employees' => false]);
 });
 
 it('refuses to delete Admin', function () {

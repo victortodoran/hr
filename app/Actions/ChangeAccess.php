@@ -54,7 +54,8 @@ class ChangeAccess
     /**
      * Rename the Role, replace its Permissions and Scopes, and say whether
      * every new Employee gets it. Admin always holds every Permission, so
-     * the grants sent for it are ignored.
+     * the grants sent for it are ignored, and it is only ever given to
+     * Employees one by one, never to every new Employee.
      *
      * @param  array<string, string|null>  $grants
      */
@@ -64,7 +65,7 @@ class ChangeAccess
             $someoneCouldManageRoles = $this->someoneCanManageRoles();
             $before = $this->snapshot($role);
 
-            $role->update(['name' => $name, 'is_given_to_new_employees' => $givenToNewEmployees]);
+            $role->update(['name' => $name, 'is_given_to_new_employees' => $givenToNewEmployees && ! $role->is_admin]);
 
             if (! $role->is_admin) {
                 $role->permissions()->delete();

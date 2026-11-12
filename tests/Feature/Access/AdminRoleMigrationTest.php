@@ -26,7 +26,7 @@ function migrateAdminRoleAfter(Closure $before): void
  */
 function roleBeforeAdmin(string $name): int
 {
-    $id = DB::table('roles')->insertGetId(['name' => $name, 'is_given_to_new_employees' => false]);
+    $id = DB::table('roles')->insertGetId(['name' => $name, 'is_given_to_new_employees' => true]);
     DB::table('role_permissions')->insert(['role_id' => $id, 'permission' => Permission::ManageRoles->value, 'scope' => null]);
 
     return $id;
@@ -39,6 +39,7 @@ it('makes the Role named Admin the Admin Role and drops its stored grants', func
     });
 
     expect(Role::query()->where('is_admin', true)->sole()->id)->toBe($admin)
+        ->and(Role::query()->where('is_given_to_new_employees', true)->pluck('id')->all())->toBe([$manager])
         ->and(DB::table('role_permissions')->pluck('role_id')->all())->toBe([$manager]);
 });
 

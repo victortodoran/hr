@@ -106,6 +106,7 @@ function submit(): void {
                 <div class="grid gap-2">
                     <Label class="flex items-center gap-3 font-normal">
                         <Checkbox
+                            :disabled="role?.is_admin"
                             :model-value="form.given_to_new_employees"
                             @update:model-value="
                                 form.given_to_new_employees = $event === true

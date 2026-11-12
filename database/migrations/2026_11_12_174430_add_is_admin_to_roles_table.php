@@ -13,7 +13,8 @@ return new class extends Migration
      * Marks the one Admin Role, which always holds every Permission, so its
      * stored grants go. A partial unique index keeps it to a single Role. On
      * an existing install, Admin is the Role named Admin, or else the oldest
-     * Role, the starter Admin being created first.
+     * Role, the starter Admin being created first. Admin is never given to
+     * every new Employee.
      */
     public function up(): void
     {
@@ -30,7 +31,7 @@ return new class extends Migration
             return;
         }
 
-        DB::table('roles')->where('id', $adminId)->update(['is_admin' => true]);
+        DB::table('roles')->where('id', $adminId)->update(['is_admin' => true, 'is_given_to_new_employees' => false]);
         DB::table('role_permissions')->where('role_id', $adminId)->delete();
     }
 
