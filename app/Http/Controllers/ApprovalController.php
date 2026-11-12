@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ApprovalsTab;
 use App\Enums\Permission;
+use App\Enums\TimeOffState;
 use App\Enums\WorkEntryState;
 use App\Http\Requests\ApprovalFiltersRequest;
 use App\Http\Requests\SelectedWorkEntriesRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Project;
+use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,25 +20,50 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * The Approvals page: Work Entries across the Employees the viewer may
+ * The Approvals page, in two tabs. Work Entries: Work Entries across the Employees the viewer may
  * approve or reopen for (everyone, for someone who can lock), filtered, and
  * approving or reopening many of them at once. Only an Employee's effective
  * Manager approves their Work Entries; reopening is also open to a Role that
  * grants it. Nobody approves or reopens their own Work Entries; locking is
- * done by the LockController.
+ * done by the LockController. Time Off: the Pending Time Off the viewer
+ * decides as an effective Manager, answered by the TimeOffApprovalController
+ * and TimeOffDeclineController.
  */
 class ApprovalController extends Controller
 {
     /**
-     * The Work Entries matching the filters, oldest first, with their total
-     * hours. Only Employees the viewer may approve or reopen for are listed,
-     * never the viewer themselves, unless they can lock, which covers
-     * everyone. Opens on Pending Work Entries, or on Approved ones for
-     * someone who manages nobody and so can't approve.
+     * The open tab, Work Entries unless Time Off is asked for by someone who
+     * decides it, with how many Work Entries and Time Off wait for the viewer's
+     * decision. Only the open tab's list is loaded.
      */
     public function index(#[CurrentUser] Employee $actor, ApprovalFiltersRequest $request): Response
     {
-        $canApprove = $actor->managesAnyone();
+        $decidesTimeOff = $actor->managesAnyone();
+        $tab = $request->tab($decidesTimeOff);
+
+        return Inertia::render('approvals/Index', [
+            'tab' => $tab->value,
+            'decidesTimeOff' => $decidesTimeOff,
+            'waiting' => $actor->waitingForDecision(),
+            ...match ($tab) {
+                ApprovalsTab::WorkEntries => $this->workEntriesTab($actor, $request, $decidesTimeOff),
+                ApprovalsTab::TimeOff => ['toApprove' => $this->timeOffToApprove($actor)],
+            },
+        ]);
+    }
+
+    /**
+     * The Work Entries tab: the Work Entries matching the filters, oldest
+     * first, with their total hours. Only Employees the viewer may approve or
+     * reopen for are listed, never the viewer themselves, unless they can
+     * lock, which covers everyone. Opens on Pending Work Entries, or on
+     * Approved ones for someone who manages nobody and so can't approve,
+     * which is whoever doesn't decide Time Off either.
+     *
+     * @return array<string, mixed>
+     */
+    private function workEntriesTab(Employee $actor, ApprovalFiltersRequest $request, bool $canApprove): array
+    {
         $canLock = $actor->can('lock', WorkEntry::class);
         $filters = $request->filters($canApprove ? WorkEntryState::Pending : WorkEntryState::Approved);
         $listed = $canLock ? Employee::query() : $this->reopenable($actor);
@@ -43,7 +71,7 @@ class ApprovalController extends Controller
         $approvable = $this->approvable($actor)->pluck('id');
         $reopenable = $this->reopenable($actor)->pluck('id');
 
-        return Inertia::render('approvals/Index', [
+        return [
             'filters' => $filters,
             'canApprove' => $canApprove,
             'canReopen' => $canApprove || $actor->holds(Permission::ReopenWorkEntries),
@@ -82,7 +110,39 @@ class ApprovalController extends Controller
                 ->get(['id', 'name'])
                 ->map(fn (Project $project): array => $project->only('id', 'name'))
                 ->all(),
-        ]);
+        ];
+    }
+
+    /**
+     * The Time Off tab: the Pending Time Off of the Employees whose effective
+     * Manager the actor is, earliest first, each with that Employee's Paid
+     * Days left in every year it touches. Paid Days left already count the
+     * Pending Time Off.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function timeOffToApprove(Employee $actor): array
+    {
+        return TimeOff::query()
+            ->whereIn('employee_id', Employee::query()->effectivelyManagedBy($actor)->select('employees.id'))
+            ->where('state', TimeOffState::Pending)
+            ->with('employee:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+            ->orderBy('first_date')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (TimeOff $timeOff): array => [
+                'id' => $timeOff->id,
+                'employee' => $timeOff->employee->only('id', 'name'),
+                'first_date' => $timeOff->first_date->toDateString(),
+                'last_date' => $timeOff->last_date->toDateString(),
+                'days' => $timeOff->weekdays(),
+                'is_paid' => $timeOff->is_paid,
+                'paid_days_left' => array_map(fn (int $year): array => [
+                    'year' => $year,
+                    'days' => $timeOff->employee->paidDaysLeftIn($year),
+                ], range($timeOff->first_date->year, $timeOff->last_date->year)),
+            ])
+            ->all();
     }
 
     /**

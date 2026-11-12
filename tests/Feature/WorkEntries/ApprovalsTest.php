@@ -61,6 +61,10 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('approvals/Index')
+        ->where('tab', 'work-entries')
+        ->where('decidesTimeOff', true)
+        ->where('waiting', ['workEntries' => 2, 'timeOff' => 0])
+        ->missing('toApprove')
         ->where('canApprove', true)
         ->where('canReopen', true)
         ->where('canLock', false)
@@ -112,6 +116,29 @@ it('lets a Manager approve the remaining Work Entries of a Direct Report who has
     actingAs($ben)->post(route('approvals.store'), ['ids' => [$pending->id]]);
 
     expect($pending->refresh()->state)->toBe(WorkEntryState::Approved);
+});
+
+it('offers the Time Off tab only to someone who decides Time Off, opening Work Entries for anyone else', function () {
+    $ada = Employee::factory()->top()->create();
+    $locker = employeeWith([Permission::LockWorkEntries->value => Scope::Everyone], ['manager_id' => $ada->id]);
+    $reopener = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone], ['manager_id' => $ada->id]);
+
+    foreach ([$locker, $reopener] as $nonManager) {
+        actingAs($nonManager)->get(route('approvals.index', ['tab' => 'time-off']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('tab', 'work-entries')
+                ->where('decidesTimeOff', false)
+                ->missing('toApprove')
+                ->has('entries'));
+    }
+});
+
+it('opens Work Entries for a tab it doesn\'t know', function () {
+    actingAs(managingApprover())->get(route('approvals.index', ['tab' => 'payroll']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('tab', 'work-entries')
+            ->has('entries'));
 });
 
 it('refuses the Approvals page to someone who neither approves, reopens nor locks Work Entries', function () {

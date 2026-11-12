@@ -78,6 +78,15 @@ export type ApprovalEntry = {
     can_lock: boolean;
 };
 
+/** The tabs of the Approvals page. */
+export type ApprovalsTab = 'work-entries' | 'time-off';
+
+/** How many Pending Work Entries and Time Off wait for the viewer's decision. */
+export type ApprovalsWaiting = {
+    workEntries: number;
+    timeOff: number;
+};
+
 /**
  * The filters on the Approvals page; null means any.
  */
