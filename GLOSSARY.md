@@ -92,6 +92,22 @@ _Avoid_: Role, position, function
 A record of how many hours an Employee worked on one Assignment on one date, with a description of what was done, as in "Cara worked 3 hours on Relaunch on 10 Nov reviewing the API". An Employee can record several Work Entries for the same Assignment on the same date. Work Entries stand on their own and are not grouped into Timesheets.
 _Avoid_: Booking, time entry, timesheet, timesheet item, time log, worked hours
 
+**Pending**:
+The state of a Work Entry that has not been approved yet, or whose approval was withdrawn. A Pending Work Entry can still be changed or deleted.
+_Avoid_: Draft, open, submitted, unapproved
+
+**Approved**:
+The state of a Work Entry whose hours have been accepted as correct. It cannot be changed or deleted, but it can be Reopened so it can be corrected and then approved again. Several Work Entries can be approved at once, but each is approved in its own right. No Employee can approve their own Work Entries.
+_Avoid_: Signed off, confirmed, validated, accepted
+
+**Reopen**:
+To send an Approved Work Entry back to Pending, withdrawing its approval so it can be corrected. No Employee can reopen their own Work Entries.
+_Avoid_: Unlock, unapprove, reject, revert
+
+**Locked**:
+The final state of an Approved Work Entry, closed for good, for example because it has been invoiced to a Client or paid. A Locked Work Entry can never be changed, deleted or sent back to Pending.
+_Avoid_: Invoiced, closed, final, frozen, archived
+
 ### Access
 
 **Role**:

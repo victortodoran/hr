@@ -45,16 +45,18 @@ class WorkEntryController extends Controller
 
         $entries = $employee->workEntries()
             ->whereBetween('work_entries.date', [$monday->toDateString(), $sunday->toDateString()])
-            ->with('assignment.project:id,name')
+            ->with(['assignment.project:id,name', 'approver:id,name', 'locker:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
             ->orderBy('work_entries.date')
             ->orderBy('work_entries.id')
             ->get();
+
+        $canManage = $actor->can('create', [WorkEntry::class, $employee]);
 
         return Inertia::render('work-entries/Index', [
             'employee' => $employee->only('id', 'name'),
             'week' => $monday->toDateString(),
             'today' => today()->toDateString(),
-            'days' => $this->days($monday, $entries),
+            'days' => $this->days($monday, $entries, $canManage),
             'assignmentTotals' => $entries->groupBy('assignment_id')
                 ->map(fn (Collection $onAssignment): array => [
                     'assignment_id' => $onAssignment->firstOrFail()->assignment_id,
@@ -78,20 +80,23 @@ class WorkEntryController extends Controller
                     'end_date' => $assignment->end_date?->toDateString(),
                 ])
                 ->values(),
-            'canManage' => $actor->can('create', [WorkEntry::class, $employee]),
+            'canManage' => $canManage,
             'employees' => $this->pickableEmployees($actor),
         ]);
     }
 
     /**
-     * Monday to Sunday, each with its Work Entries and their total.
+     * Monday to Sunday, each with its Work Entries and their total. Each
+     * Work Entry carries its state, who approved and locked it, and whether
+     * the viewer can change it, which needs manage work entries for the
+     * Employee and a Pending Work Entry.
      *
      * @param  Collection<int, WorkEntry>  $entries
      * @return array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int}>
      */
-    private function days(CarbonImmutable $monday, Collection $entries): array
+    private function days(CarbonImmutable $monday, Collection $entries, bool $canManage): array
     {
-        return collect(range(0, 6))->map(function (int $offset) use ($monday, $entries): array {
+        return collect(range(0, 6))->map(function (int $offset) use ($monday, $entries, $canManage): array {
             $date = $monday->addDays($offset)->toDateString();
             $onDay = $entries->filter(fn (WorkEntry $entry): bool => $entry->date->toDateString() === $date);
 
@@ -103,10 +108,29 @@ class WorkEntryController extends Controller
                     'project' => $entry->assignment->project->name,
                     'hours' => $entry->hours,
                     'description' => $entry->description,
+                    'state' => $entry->state->value,
+                    'approved' => $this->signOff($entry->approver, $entry->approved_at),
+                    'locked' => $this->signOff($entry->locker, $entry->locked_at),
+                    'can_change' => $canManage && $entry->isPending(),
                 ])->values()->all(),
                 'hours' => $onDay->sum('hours'),
             ];
         })->all();
+    }
+
+    /**
+     * Who approved or locked a Work Entry and on which day, or null while it
+     * hasn't been.
+     *
+     * @return array{by: string, on: string}|null
+     */
+    private function signOff(?Employee $employee, ?CarbonInterface $at): ?array
+    {
+        if ($employee === null || $at === null) { // @pest-mutate-ignore (the work_entries_state constraint keeps who and when both set or both empty)
+            return null;
+        }
+
+        return ['by' => $employee->name, 'on' => $at->toDateString()];
     }
 
     /**

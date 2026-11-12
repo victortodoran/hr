@@ -66,6 +66,21 @@ it('lets an Employee delete one of their Work Entries', function () {
     assertModelMissing($workEntry);
 });
 
+it('forbids changing or deleting a Work Entry once it is Approved or Locked', function (string $state, string $method, string $route) {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    $workEntry = WorkEntry::factory()->for($relaunch)->{$state}()->create(['date' => '2026-11-10', 'minutes' => 60]);
+
+    actingAs($cara)->{$method}(route($route, $workEntry), workEntryForm($relaunch, ['hours' => '5']))
+        ->assertForbidden();
+
+    assertModelExists($workEntry);
+    assertDatabaseHas('work_entries', ['id' => $workEntry->id, 'minutes' => 60]);
+})->with(['approved', 'locked'])->with([
+    'change' => ['patch', 'work-entries.update'],
+    'delete' => ['delete', 'work-entries.destroy'],
+]);
+
 it('forbids changing or deleting Work Entries of an Employee outside the manage work entries Scope', function (string $method, string $route) {
     $ben = employeeWith([Permission::ManageWorkEntries->value => Scope::Own, Permission::ViewWorkEntries->value => Scope::Everyone]);
     $cara = Employee::factory()->create();

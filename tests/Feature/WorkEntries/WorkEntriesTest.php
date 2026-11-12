@@ -21,7 +21,7 @@ beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
 
-it('lets an Employee record hours on their own Assignment and see them on that week', function () {
+it('lets an Employee record hours on their own Assignment and see them Pending on that week', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
 
@@ -29,7 +29,7 @@ it('lets an Employee record hours on their own Assignment and see them on that w
 
     $response->assertRedirect(route('work-entries.index', ['employee' => $cara->id, 'week' => '2026-11-09']))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Work Entry added.']);
-    assertDatabaseHas('work_entries', ['assignment_id' => $relaunch->id, 'date' => '2026-11-10', 'minutes' => 165, 'description' => 'Reviewing the API']);
+    assertDatabaseHas('work_entries', ['assignment_id' => $relaunch->id, 'date' => '2026-11-10', 'minutes' => 165, 'description' => 'Reviewing the API', 'state' => 'pending', 'approved_by' => null, 'locked_by' => null]);
     actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-10']))
         ->assertInertia(fn (Assert $page) => $page
             ->component('work-entries/Index')
@@ -37,7 +37,7 @@ it('lets an Employee record hours on their own Assignment and see them on that w
             ->where('week', '2026-11-09')
             ->where('days.1.date', '2026-11-10')
             ->where('days.1.entries', [
-                ['id' => WorkEntry::query()->sole()->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2.75, 'description' => 'Reviewing the API'],
+                ['id' => WorkEntry::query()->sole()->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2.75, 'description' => 'Reviewing the API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_change' => true],
             ])
             ->where('canManage', true));
 });
@@ -121,6 +121,17 @@ it('refuses hours that would take the Employee past 24 hours on the day, across 
     'whole hours left' => [120, '2.5', 'Cara already has 22 hours on 10 Nov 2026, so at most 2 more can be recorded that day.'],
     'half hours left' => [210, '1', 'Cara already has 23.5 hours on 10 Nov 2026, so at most 0.5 more can be recorded that day.'],
 ]);
+
+it('counts Approved and Locked Work Entries towards the 24 hours on the day', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10', 'minutes' => 12 * 60]);
+    WorkEntry::factory()->for($relaunch)->locked()->create(['date' => '2026-11-10', 'minutes' => 11 * 60]);
+
+    $response = actingAs($cara)->post(route('employees.work-entries.store', $cara), workEntryForm($relaunch, ['date' => '2026-11-10', 'hours' => '2']));
+
+    $response->assertInvalid(['hours' => 'Cara already has 23 hours on 10 Nov 2026, so at most 1 more can be recorded that day.']);
+});
 
 it('accepts hours that bring the Employee to exactly 24 on the day, ignoring other days and other Employees', function () {
     $cara = recorder();

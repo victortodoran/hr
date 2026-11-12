@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -19,6 +20,7 @@ import type {
     WorkEntryAssignment,
     WorkEntryAssignmentTotal,
     WorkEntryDay,
+    WorkEntryRecord,
 } from '@/types';
 
 defineOptions({
@@ -74,6 +76,21 @@ function formatDay(date: string): string {
  */
 function weekOf(employeeId: number, day: string) {
     return index({ query: { employee: employeeId, week: day } });
+}
+
+/**
+ * Who approved and locked a Work Entry, such as "Approved by Ben on
+ * 10 Nov 2026 · Locked by Fay on 11 Nov 2026".
+ */
+function signOffs(entry: WorkEntryRecord): string {
+    return [
+        entry.approved &&
+            `Approved by ${entry.approved.by} on ${formatDate(entry.approved.on)}`,
+        entry.locked &&
+            `Locked by ${entry.locked.by} on ${formatDate(entry.locked.on)}`,
+    ]
+        .filter(Boolean)
+        .join(' · ');
 }
 
 const isCurrentWeek = computed(
@@ -172,13 +189,27 @@ function switchEmployee(employeeId: unknown): void {
                             <span class="text-muted-foreground">
                                 · {{ entry.description }}</span
                             >
+                            <span
+                                v-if="entry.approved"
+                                class="block text-xs text-muted-foreground"
+                                >{{ signOffs(entry) }}</span
+                            >
                         </p>
                         <div class="flex items-center gap-2">
+                            <Badge
+                                v-if="entry.state !== 'pending'"
+                                variant="outline"
+                                >{{
+                                    entry.state === 'approved'
+                                        ? 'Approved'
+                                        : 'Locked'
+                                }}</Badge
+                            >
                             <span class="tabular-nums">{{
                                 formatHours(entry.hours)
                             }}</span>
                             <WorkEntryDialog
-                                v-if="canManage"
+                                v-if="entry.can_change"
                                 :employee="employee"
                                 :assignments="assignments"
                                 :date="day.date"
