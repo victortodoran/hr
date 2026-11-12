@@ -44,11 +44,12 @@ class WorkEntryPolicy
 
     /**
      * The Approvals page is for those who approve, reopen or lock Work
-     * Entries.
+     * Entries: anyone who is someone's effective Manager, or whose Role
+     * grants reopen or lock.
      */
     public function viewApprovals(Employee $actor): bool
     {
-        return $actor->holds(Permission::ApproveWorkEntries)
+        return $actor->managesAnyone()
             || $actor->holds(Permission::ReopenWorkEntries)
             || $this->lock($actor);
     }

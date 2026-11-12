@@ -33,15 +33,17 @@ it('seeds a demo company with at least one of everything to try by hand', functi
         ->toEqualCanonicalizing([EmploymentStatus::Future, EmploymentStatus::Current, EmploymentStatus::Former]);
 });
 
-it('gives Ana Pending Work Entries of her Reports to approve, next to Approved and Locked ones', function () {
+it('gives Ben Pending Work Entries of the Employees he manages to approve, next to ones he Approved and Locked ones', function () {
     seed(DemoSeeder::class);
-    $ana = Employee::query()->where('email', 'ana@acme.test')->sole();
+    $ben = Employee::query()->where('email', 'ben@acme.test')->sole();
+    $managedByBen = Employee::query()->effectivelyManagedBy($ben)->pluck('id');
 
     $pending = WorkEntry::query()->where('state', WorkEntryState::Pending)->with('employee')->get();
 
     expect($pending->pluck('employee.name')->unique()->count())->toBeGreaterThan(1)
-        ->and($pending->every(fn (WorkEntry $entry): bool => $entry->employee->isNot($ana) && $entry->date->lte(today())))->toBeTrue()
-        ->and(WorkEntry::query()->where('state', WorkEntryState::Approved)->where('approved_by', $ana->id)->exists())->toBeTrue()
+        ->and($pending->every(fn (WorkEntry $entry): bool => $entry->date->lte(today())))->toBeTrue()
+        ->and($pending->filter(fn (WorkEntry $entry): bool => $managedByBen->contains($entry->employee->id))->count())->toBeGreaterThan(1)
+        ->and(WorkEntry::query()->where('state', WorkEntryState::Approved)->where('approved_by', $ben->id)->exists())->toBeTrue()
         ->and(WorkEntry::query()->where('state', WorkEntryState::Locked)->exists())->toBeTrue();
 });
 

@@ -19,8 +19,10 @@ use Inertia\Response;
 /**
  * The Approvals page: Work Entries across the Employees the viewer may
  * approve or reopen for (everyone, for someone who can lock), filtered, and
- * approving or reopening many of them at once. Nobody approves or reopens
- * their own Work Entries; locking is done by the LockController.
+ * approving or reopening many of them at once. Only an Employee's effective
+ * Manager approves their Work Entries; reopening is also open to a Role that
+ * grants it. Nobody approves or reopens their own Work Entries; locking is
+ * done by the LockController.
  */
 class ApprovalController extends Controller
 {
@@ -29,22 +31,22 @@ class ApprovalController extends Controller
      * hours. Only Employees the viewer may approve or reopen for are listed,
      * never the viewer themselves, unless they can lock, which covers
      * everyone. Opens on Pending Work Entries, or on Approved ones for
-     * someone who can't approve.
+     * someone who manages nobody and so can't approve.
      */
     public function index(#[CurrentUser] Employee $actor, ApprovalFiltersRequest $request): Response
     {
-        $canApprove = $actor->holds(Permission::ApproveWorkEntries);
+        $canApprove = $actor->managesAnyone();
         $canLock = $actor->can('lock', WorkEntry::class);
         $filters = $request->filters($canApprove ? WorkEntryState::Pending : WorkEntryState::Approved);
-        $listed = $this->listed($actor, $canLock);
+        $listed = $canLock ? Employee::query() : $this->reopenable($actor);
         $matching = $this->entriesOf(clone $listed)->filteredBy($filters);
-        $approvable = $this->others($actor, Permission::ApproveWorkEntries)->pluck('id');
-        $reopenable = $this->others($actor, Permission::ReopenWorkEntries)->pluck('id');
+        $approvable = $this->approvable($actor)->pluck('id');
+        $reopenable = $this->reopenable($actor)->pluck('id');
 
         return Inertia::render('approvals/Index', [
             'filters' => $filters,
             'canApprove' => $canApprove,
-            'canReopen' => $actor->holds(Permission::ReopenWorkEntries),
+            'canReopen' => $canApprove || $actor->holds(Permission::ReopenWorkEntries),
             'canLock' => $canLock,
             'entries' => (clone $matching)
                 ->with(['assignment.employee:id,name', 'assignment.project:id,name', 'approver:id,name', 'locker:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
@@ -85,14 +87,14 @@ class ApprovalController extends Controller
 
     /**
      * Approve the selected Work Entries the actor may approve: Pending ones
-     * of Employees their Scope covers, never their own. The rest are skipped,
+     * of Employees whose effective Manager they are. The rest are skipped,
      * and the toast says how many of each.
      */
     public function store(#[CurrentUser] Employee $actor, SelectedWorkEntriesRequest $request): RedirectResponse
     {
         $ids = $request->ids();
 
-        $approved = $this->entriesOf($this->others($actor, Permission::ApproveWorkEntries))
+        $approved = $this->entriesOf($this->approvable($actor))
             ->whereKey($ids)
             ->where('state', WorkEntryState::Pending)
             ->update(['state' => WorkEntryState::Approved, 'approved_by' => $actor->id, 'approved_at' => now()]);
@@ -107,7 +109,8 @@ class ApprovalController extends Controller
 
     /**
      * Reopen the selected Work Entries the actor may reopen: Approved ones of
-     * Employees their Scope covers, never their own, sent back to Pending
+     * Employees whose effective Manager they are or whom their reopen Scope
+     * covers, never their own, sent back to Pending
      * with their approval withdrawn. The rest are skipped, and the toast says
      * how many of each.
      */
@@ -115,7 +118,7 @@ class ApprovalController extends Controller
     {
         $ids = $request->ids();
 
-        $reopened = $this->entriesOf($this->others($actor, Permission::ReopenWorkEntries))
+        $reopened = $this->entriesOf($this->reopenable($actor))
             ->whereKey($ids)
             ->where('state', WorkEntryState::Approved)
             ->update(['state' => WorkEntryState::Pending, 'approved_by' => null, 'approved_at' => null]);
@@ -129,31 +132,36 @@ class ApprovalController extends Controller
     }
 
     /**
-     * The Employees other than the actor that any of the Permissions covers
-     * for them.
+     * The Employees whose Work Entries the actor may approve: those whose
+     * effective Manager they are.
      *
      * @return Builder<Employee>
      */
-    private function others(Employee $actor, Permission ...$permissions): Builder
+    private function approvable(Employee $actor): Builder
     {
-        return Employee::query()
-            ->where(function (Builder $covered) use ($actor, $permissions): void {
-                foreach ($permissions as $permission) {
-                    $covered->orWhere(fn (Builder $employee) => $employee->coveredBy($actor, $permission));
-                }
-            })
-            ->whereKeyNot($actor->id);
+        return Employee::query()->effectivelyManagedBy($actor);
     }
 
     /**
-     * The Employees whose Work Entries the page lists: everyone for someone
-     * who can lock, otherwise those the actor may approve or reopen for.
+     * The Employees whose Work Entries the actor may reopen: those whose
+     * effective Manager they are, and those their reopen Scope covers, never
+     * the actor themselves.
      *
      * @return Builder<Employee>
      */
-    private function listed(Employee $actor, bool $canLock): Builder
+    private function reopenable(Employee $actor): Builder
     {
-        return $canLock ? Employee::query() : $this->others($actor, Permission::ApproveWorkEntries, Permission::ReopenWorkEntries);
+        $scope = $actor->widestScopeFor(Permission::ReopenWorkEntries);
+
+        return Employee::query()
+            ->where(function (Builder $covered) use ($actor, $scope): void {
+                $covered->effectivelyManagedBy($actor);
+
+                if ($scope !== null) {
+                    $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $actor));
+                }
+            })
+            ->whereKeyNot($actor->id);
     }
 
     /**

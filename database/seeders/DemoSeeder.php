@@ -27,9 +27,10 @@ use Illuminate\Support\Str;
  * Employees, Roles, Clients, Projects, Assignments and Pay through the same
  * actions the app uses, and four weeks of Work Entries. Dates are relative to
  * today, so the Future and Former Employees stay that way, and the last two
- * weeks of Work Entries are always Pending, waiting for Ana to approve them. Everyone except the Future Employee can sign in
- * with the password "password"; the Future Employee still has an invitation
- * waiting. Invitations are not emailed.
+ * weeks of Work Entries are always Pending, waiting for each Employee's
+ * Manager (Ben or Hana) to approve them. Everyone except the Future Employee
+ * can sign in with the password "password"; the Future Employee still has an
+ * invitation waiting. Invitations are not emailed.
  *
  *   Ana (top, Admin)
  *   ├── Ben (Senior Manager: Pay of his Reports)
@@ -138,9 +139,9 @@ class DemoSeeder extends Seeder
         $ivanOnWebsite = $this->assign($ivan, $website, 'Designer', 50, $today->subMonths(6), $today->addMonths(4), [['hourly', 3000, null]]);
         $this->assign($dan, $mobileApp, 'Developer', 100, $today->addMonths(2), null, []);
 
-        $this->recordWeeks($caraOnRelaunch, 5, ['Reviewing pull requests', 'Checkout API', 'Sprint planning', 'Fixing payment bugs'], $ana, $finn);
-        $this->recordWeeks($liaOnRelaunch, 6, ['Product listing page', 'Unit tests for the cart', 'Pairing with Cara'], $ana, $finn);
-        $this->recordWeeks($ivanOnWebsite, 4, ['Homepage mock-ups', 'Design review with Hana', 'Icon set'], $ana, $finn);
+        $this->recordWeeks($caraOnRelaunch, 5, ['Reviewing pull requests', 'Checkout API', 'Sprint planning', 'Fixing payment bugs'], $ben, $finn);
+        $this->recordWeeks($liaOnRelaunch, 6, ['Product listing page', 'Unit tests for the cart', 'Pairing with Cara'], $ben, $finn);
+        $this->recordWeeks($ivanOnWebsite, 4, ['Homepage mock-ups', 'Design review with Hana', 'Icon set'], $hana, $finn);
 
         $this->command?->info('Demo company seeded. Sign in as ana@acme.test (Admin), ben@acme.test, hana@acme.test, finn@acme.test, cara@acme.test, ivan@acme.test or lia@acme.test with the password "password".');
     }

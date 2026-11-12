@@ -234,6 +234,15 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Whether the Employee is the effective Manager of anyone, Former
+     * Employees included, and so approves someone's Work Entries.
+     */
+    public function managesAnyone(): bool
+    {
+        return self::query()->effectivelyManagedBy($this)->exists();
+    }
+
+    /**
      * The Employees whose effective Manager this Employee is, Former ones
      * left out.
      *
@@ -242,8 +251,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
     private function managedEmployeesQuery(): Builder
     {
         return self::query()
-            ->fromSub(self::query()->withEffectiveManager(), 'employees')
-            ->where('effective_manager_id', $this->id)
+            ->effectivelyManagedBy($this)
             ->where(fn (Builder $staying) => $staying->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today()));
     }
 
@@ -377,6 +385,22 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Limit the query to the Employees whose effective Manager the given
+     * Employee is: one level below them, Future and Former Employees
+     * included.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function effectivelyManagedBy(Builder $query, Employee $manager): void
+    {
+        $query->whereIn('employees.id', self::query()
+            ->fromSub(self::query()->withEffectiveManager(), 'employees')
+            ->where('effective_manager_id', $manager->id)
+            ->select('id'));
+    }
+
+    /**
      * Limit the query to the Manager's Reports: everyone below them in the
      * reporting line, the same Employees hasInReports() accepts.
      *
@@ -395,26 +419,6 @@ class Employee extends Authenticatable implements MustVerifyEmail
                 SELECT id FROM below
             )
             SQL, [$manager->id]);
-    }
-
-    /**
-     * Limit the query to the Employees the acting Employee's widest Scope
-     * for a Permission covers, or to none when no Role grants it.
-     *
-     * @param  Builder<Employee>  $query
-     */
-    #[QueryScope]
-    protected function coveredBy(Builder $query, Employee $actor, Permission $permission): void
-    {
-        $scope = $actor->widestScopeFor($permission);
-
-        if ($scope === null) {
-            $query->whereRaw('false'); // @pest-mutate-ignore (every page using it is only open to holders of the Permission)
-
-            return;
-        }
-
-        $query->where(fn (Builder $covered) => $scope->limit($covered, $actor));
     }
 
     /**

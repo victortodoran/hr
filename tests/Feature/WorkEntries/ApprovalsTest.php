@@ -22,22 +22,37 @@ beforeEach(function () {
 });
 
 /**
- * Ben, who approves the Work Entries of his Reports, below Ada at the top.
+ * Ben, below Ada at the top, who approves the Work Entries of the Employees
+ * he is the Manager of. No Role is involved.
  */
-function approver(Scope $scope = Scope::Reports): Employee
+function approver(): Employee
 {
     $ada = Employee::factory()->top()->create(['name' => 'Ada']);
 
-    return employeeWith([Permission::ApproveWorkEntries->value => $scope], ['name' => 'Ben', 'manager_id' => $ada->id]);
+    return Employee::factory()->create(['name' => 'Ben', 'manager_id' => $ada->id]);
 }
 
-it('lists the Pending Work Entries of the approver\'s Reports, oldest first', function () {
+/**
+ * An approver who is already some Employee's Manager, so the Approvals page
+ * is open to them.
+ */
+function managingApprover(): Employee
+{
+    $ben = approver();
+    Employee::factory()->create(['manager_id' => $ben->id]);
+
+    return $ben;
+}
+
+it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest first, but not of Reports further down', function () {
     $ben = approver();
     $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
     $dev = Employee::factory()->create(['name' => 'Dev', 'manager_id' => $cara->id]);
     $carasRelaunch = assignmentOf($cara);
     $later = WorkEntry::factory()->for($carasRelaunch)->create(['date' => '2026-11-10', 'minutes' => 90, 'description' => 'API']);
-    $earlier = WorkEntry::factory()->for(assignmentOf($dev, 'Billing'))->create(['date' => '2026-11-03', 'minutes' => 60, 'description' => 'Invoices']);
+    $earlier = WorkEntry::factory()->for($carasRelaunch)->create(['date' => '2026-11-03', 'minutes' => 60, 'description' => 'Specs']);
+    $devsBilling = assignmentOf($dev, 'Billing');
+    WorkEntry::factory()->for($devsBilling)->create(['date' => '2026-11-04']);
     WorkEntry::factory()->for($carasRelaunch)->approved()->create(['date' => '2026-11-02']);
     $outsiders = assignmentOf(Employee::factory()->create(['manager_id' => $ben->manager_id]), 'Archive');
     WorkEntry::factory()->for($outsiders)->create(['date' => '2026-11-04']);
@@ -47,33 +62,56 @@ it('lists the Pending Work Entries of the approver\'s Reports, oldest first', fu
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('approvals/Index')
         ->where('canApprove', true)
-        ->where('canReopen', false)
+        ->where('canReopen', true)
         ->where('canLock', false)
         ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null, 'state' => 'pending'])
         ->where('entries.data', [
-            ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'project' => 'Billing', 'hours' => 1, 'description' => 'Invoices', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_approve' => true, 'can_reopen' => false, 'can_lock' => false],
+            ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Specs', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_approve' => true, 'can_reopen' => false, 'can_lock' => false],
             ['id' => $later->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_approve' => true, 'can_reopen' => false, 'can_lock' => false],
         ])
         ->where('total', 2.5)
-        ->where('employees', [['id' => $cara->id, 'name' => 'Cara'], ['id' => $dev->id, 'name' => 'Dev']])
+        ->where('employees', [['id' => $cara->id, 'name' => 'Cara']])
         ->where('projects', [
             ['id' => $outsiders->project_id, 'name' => 'Archive'],
-            ['id' => $earlier->assignment->project_id, 'name' => 'Billing'],
+            ['id' => $devsBilling->project_id, 'name' => 'Billing'],
             ['id' => $carasRelaunch->project_id, 'name' => 'Relaunch'],
         ]));
 });
 
-it('never lists the approver\'s own Work Entries, even when they may approve everyone', function () {
-    $ben = approver(Scope::Everyone);
-    $ada = Employee::query()->findOrFail($ben->manager_id);
-    $adas = WorkEntry::factory()->for(assignmentOf($ada))->create(['date' => '2026-11-10']);
-    WorkEntry::factory()->for(assignmentOf($ben))->create(['date' => '2026-11-10']);
+it('never lists the approver\'s own Work Entries, nor their Manager\'s', function () {
+    $ben = approver();
+    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
+    $caras = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10']);
+    WorkEntry::factory()->for(assignmentOf($ben, 'Billing'))->create(['date' => '2026-11-10']);
+    WorkEntry::factory()->for(assignmentOf(Employee::query()->findOrFail($ben->manager_id), 'Archive'))->create(['date' => '2026-11-10']);
 
     $response = actingAs($ben)->get(route('approvals.index'));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$adas->id])
-        ->where('employees', [['id' => $ada->id, 'name' => 'Ada']]));
+        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$caras->id])
+        ->where('employees', [['id' => $cara->id, 'name' => 'Cara']]));
+});
+
+it('lets the next Manager up approve for a Manager who has left', function () {
+    $ben = approver();
+    $fay = Employee::factory()->former()->create(['manager_id' => $ben->id]);
+    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $fay->id])))->create(['date' => '2026-11-10']);
+
+    actingAs($ben)->post(route('approvals.store'), ['ids' => [$pending->id]])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry approved.']);
+
+    expect($pending->refresh()->state)->toBe(WorkEntryState::Approved);
+});
+
+it('lets a Manager approve the remaining Work Entries of a Direct Report who has left, and open the page for them', function () {
+    $ben = approver();
+    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->former()->create(['manager_id' => $ben->id])))->create(['date' => '2026-11-01']);
+
+    actingAs($ben)->get(route('approvals.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('entries.data.0.id', $pending->id));
+    actingAs($ben)->post(route('approvals.store'), ['ids' => [$pending->id]]);
+
+    expect($pending->refresh()->state)->toBe(WorkEntryState::Approved);
 });
 
 it('refuses the Approvals page to someone who neither approves, reopens nor locks Work Entries', function () {
@@ -117,7 +155,7 @@ it('filters by Employee, Project, dates and state, keeping the total to what mat
 ]);
 
 it('treats empty filters as no filter', function () {
-    $ben = approver();
+    $ben = managingApprover();
 
     $response = actingAs($ben)->get(route('approvals.index', ['employee' => '', 'project' => '', 'from' => '', 'to' => '', 'state' => '']));
 
@@ -126,7 +164,7 @@ it('treats empty filters as no filter', function () {
 });
 
 it('refuses malformed filters', function (array $filters, string $field, string $message) {
-    $ben = approver();
+    $ben = managingApprover();
 
     actingAs($ben)->get(route('approvals.index', $filters))->assertInvalid([$field => $message]);
 })->with([
@@ -186,7 +224,7 @@ it('approves the selected Pending Work Entries, recording who approved them and 
 });
 
 it('approves only the selected Work Entries it may, counting each once, and says how many it skipped', function () {
-    $ben = approver(Scope::Everyone);
+    $ben = approver();
     $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $ben->id]));
     $pending = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     $own = WorkEntry::factory()->for(assignmentOf($ben))->create(['date' => '2026-11-10']);
@@ -203,18 +241,21 @@ it('approves only the selected Work Entries it may, counting each once, and says
         ->and($locked->refresh()->state)->toBe(WorkEntryState::Locked);
 });
 
-it('skips Work Entries of Employees outside the approver\'s Scope', function () {
+it('skips Work Entries of Employees the approver is not the Manager of, Reports further down included', function () {
     $ben = approver();
+    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
     $outside = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create()))->create(['date' => '2026-11-10']);
+    $below = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $cara->id])))->create(['date' => '2026-11-10']);
 
-    $response = actingAs($ben)->post(route('approvals.store'), ['ids' => [$outside->id]]);
+    $response = actingAs($ben)->post(route('approvals.store'), ['ids' => [$outside->id, $below->id]]);
 
-    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Work Entries approved, 1 skipped.']);
-    expect($outside->refresh()->state)->toBe(WorkEntryState::Pending);
+    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Work Entries approved, 2 skipped.']);
+    expect($outside->refresh()->state)->toBe(WorkEntryState::Pending)
+        ->and($below->refresh()->state)->toBe(WorkEntryState::Pending);
 });
 
 it('refuses a selection that is not a list of Work Entry IDs', function (mixed $ids, string $field, string $message) {
-    $ben = approver();
+    $ben = managingApprover();
 
     actingAs($ben)->post(route('approvals.store'), ['ids' => $ids])->assertInvalid([$field => $message]);
 })->with([
@@ -224,13 +265,13 @@ it('refuses a selection that is not a list of Work Entry IDs', function (mixed $
     'not numbers' => [['first'], 'ids.0', 'The ids.0 field must be an integer.'],
 ]);
 
-it('shows the Approvals item in the navigation only to those who approve Work Entries', function (array $grants, bool $shown) {
-    $ben = employeeWith($grants);
+it('shows the Approvals item in the navigation to Managers, and not to someone who only manages Work Entries', function () {
+    $ben = approver();
+    Employee::factory()->create(['manager_id' => $ben->id]);
+    $cara = employeeWith([Permission::ManageWorkEntries->value => Scope::Everyone]);
 
-    $response = actingAs($ben)->get(route('profile.edit'));
-
-    $response->assertInertia(fn (Assert $page) => $page->where('auth.canSeeApprovals', $shown));
-})->with([
-    'approve reports' => [[Permission::ApproveWorkEntries->value => Scope::Reports], true],
-    'manage everyone' => [[Permission::ManageWorkEntries->value => Scope::Everyone], false],
-]);
+    actingAs($ben)->get(route('profile.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeApprovals', true));
+    actingAs($cara)->get(route('profile.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeApprovals', false));
+});
