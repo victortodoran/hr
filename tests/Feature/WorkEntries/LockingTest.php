@@ -55,8 +55,8 @@ it('opens Approvals on everyone\'s Approved Work Entries, the locker\'s own incl
 });
 
 it('offers to lock only Approved Work Entries', function () {
-    $finn = employeeWith([Permission::LockWorkEntries->value => null, Permission::ApproveWorkEntries->value => Scope::Everyone]);
-    $relaunch = assignmentOf(Employee::factory()->create());
+    $finn = locker();
+    $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $finn->id]));
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     WorkEntry::factory()->for($relaunch)->locked($finn)->create(['date' => '2026-11-10']);
 
@@ -146,7 +146,7 @@ it('says when a single Work Entry is locked', function () {
 });
 
 it('refuses locking and its summary to someone who can\'t lock', function () {
-    $ben = employeeWith([Permission::ApproveWorkEntries->value => Scope::Everyone, Permission::ReopenWorkEntries->value => Scope::Everyone]);
+    $ben = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone]);
     $approved = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create()))->approved()->create(['date' => '2026-11-09']);
 
     actingAs($ben)->getJson(route('locks.create', ['ids' => [$approved->id]]))->assertForbidden();

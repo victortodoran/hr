@@ -101,11 +101,11 @@ The state of a Work Entry that has not been approved yet, or whose approval was 
 _Avoid_: Draft, open, submitted, unapproved
 
 **Approved**:
-The state of a Work Entry whose hours have been accepted as correct. It cannot be changed or deleted, but it can be Reopened so it can be corrected and then approved again. Several Work Entries can be approved at once, but each is approved in its own right. No Employee can approve their own Work Entries.
+The state of a Work Entry whose hours have been accepted as correct. It cannot be changed or deleted, but it can be Reopened so it can be corrected and then approved again. Several Work Entries can be approved at once, but each is approved in its own right. Only the Employee's Manager approves their Work Entries (while that Manager has left, the next Manager up who hasn't), even after the Employee has left. No Role can grant approving, and no Employee can approve their own Work Entries.
 _Avoid_: Signed off, confirmed, validated, accepted
 
 **Reopen**:
-To send an Approved Work Entry back to Pending, withdrawing its approval so it can be corrected. No Employee can reopen their own Work Entries.
+To send an Approved Work Entry back to Pending, withdrawing its approval so it can be corrected. The Employee's Manager can reopen it, and so can anyone whose Role grants reopening for that Employee. No Employee can reopen their own Work Entries.
 _Avoid_: Unlock, unapprove, reject, revert
 
 **Locked**:

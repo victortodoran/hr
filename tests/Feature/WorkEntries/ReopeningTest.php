@@ -13,7 +13,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(ApprovalController::class, WorkEntryPolicy::class);
+covers(ApprovalController::class, WorkEntryPolicy::class, Employee::class);
 
 beforeEach(function () {
     travelTo('2026-11-11 09:00');
@@ -32,14 +32,15 @@ function reopener(?array $grants = null): Employee
     return employeeWith($grants ?? [Permission::ReopenWorkEntries->value => Scope::Reports], ['name' => 'Rae', 'manager_id' => $ada->id]);
 }
 
-it('opens Approvals on the Approved Work Entries of the Employees someone may reopen for', function () {
-    $rae = reopener();
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $rae->id]);
+it('opens Approvals on the Approved Work Entries of the Employees someone who manages nobody may reopen for', function () {
+    $rae = reopener([Permission::ReopenWorkEntries->value => Scope::Everyone]);
+    $ada = Employee::query()->findOrFail($rae->manager_id);
+    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ada->id]);
     $relaunch = assignmentOf($cara);
     $ben = Employee::factory()->create(['name' => 'Ben']);
     $approved = WorkEntry::factory()->for($relaunch)->approved($ben)->create(['date' => '2026-11-10', 'minutes' => 60, 'description' => 'API', 'approved_at' => '2026-11-10 17:00']);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
-    WorkEntry::factory()->for(assignmentOf(Employee::factory()->create()))->approved()->create(['date' => '2026-11-10']);
+    WorkEntry::factory()->for(assignmentOf($rae, 'Archive'))->approved($ben)->create(['date' => '2026-11-10']);
 
     $response = actingAs($rae)->get(route('approvals.index'));
 
@@ -50,12 +51,12 @@ it('opens Approvals on the Approved Work Entries of the Employees someone may re
         ->where('entries.data', [
             ['id' => $approved->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'API', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => null, 'can_approve' => false, 'can_reopen' => true, 'can_lock' => false],
         ])
-        ->where('employees', [['id' => $cara->id, 'name' => 'Cara']]));
+        ->where('employees', [['id' => $ada->id, 'name' => 'Ada'], ['id' => $ben->id, 'name' => 'Ben'], ['id' => $cara->id, 'name' => 'Cara']]));
 });
 
-it('offers to approve and reopen only for the Employees each Permission covers', function () {
+it('offers to approve only for the Manager\'s Direct Reports, and to reopen for everyone a reopen Scope covers', function () {
     $ada = Employee::factory()->top()->create(['name' => 'Ada']);
-    $rae = employeeWith([Permission::ApproveWorkEntries->value => Scope::Reports, Permission::ReopenWorkEntries->value => Scope::Everyone], ['name' => 'Rae', 'manager_id' => $ada->id]);
+    $rae = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone], ['name' => 'Rae', 'manager_id' => $ada->id]);
     $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $rae->id]);
     $carasPending = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10']);
     $adasPending = WorkEntry::factory()->for(assignmentOf($ada))->create(['date' => '2026-11-10']);
@@ -113,21 +114,32 @@ it('reopens only the selected Work Entries it may, and says how many it skipped'
         ->and($locked->refresh()->state)->toBe(WorkEntryState::Locked);
 });
 
-it('keeps approving and reopening apart: each needs its own Permission', function () {
+it('lets a Manager reopen their Direct Report\'s Work Entries with no Role, while a reopen Role never lets anyone approve', function () {
     $ada = Employee::factory()->top()->create();
-    $approver = employeeWith([Permission::ApproveWorkEntries->value => Scope::Everyone], ['manager_id' => $ada->id]);
+    $manager = Employee::factory()->create(['manager_id' => $ada->id]);
     $reopener = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone], ['manager_id' => $ada->id]);
-    $relaunch = assignmentOf($ada);
+    $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $manager->id]));
     $approved = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
     $pending = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
 
-    actingAs($approver)->delete(route('approvals.destroy'), ['ids' => [$approved->id]])
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Work Entries reopened, 1 skipped.']);
+    actingAs($manager)->delete(route('approvals.destroy'), ['ids' => [$approved->id]])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry reopened.']);
     actingAs($reopener)->post(route('approvals.store'), ['ids' => [$pending->id]])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Work Entries approved, 1 skipped.']);
 
-    expect($approved->refresh()->state)->toBe(WorkEntryState::Approved)
+    expect($approved->refresh()->state)->toBe(WorkEntryState::Pending)
         ->and($pending->refresh()->state)->toBe(WorkEntryState::Pending);
+});
+
+it('refuses reopening to a Manager two levels up who holds no reopen Role', function () {
+    $ada = Employee::factory()->top()->create();
+    $ben = Employee::factory()->create(['manager_id' => $ada->id]);
+    $approved = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $ben->id])))->approved()->create(['date' => '2026-11-10']);
+
+    actingAs($ada)->delete(route('approvals.destroy'), ['ids' => [$approved->id]])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Work Entries reopened, 1 skipped.']);
+
+    expect($approved->refresh()->state)->toBe(WorkEntryState::Approved);
 });
 
 it('refuses a reopening selection that is not a list of Work Entry IDs', function () {
