@@ -281,9 +281,11 @@ function leaveWeek(): void {
             </div>
         </div>
 
-        <ul class="divide-y rounded-lg border">
-            <li v-for="day in days" :key="day.date" class="space-y-2 px-4 py-3">
-                <div class="flex items-center justify-between gap-4">
+        <ul class="divide-y overflow-hidden rounded-lg border">
+            <li v-for="day in days" :key="day.date">
+                <div
+                    class="flex items-center justify-between gap-4 bg-muted/50 px-4 py-2"
+                >
                     <p class="font-medium">
                         {{ formatDay(day.date) }}
                         <span class="ml-2 text-sm text-muted-foreground">{{
@@ -305,71 +307,81 @@ function leaveWeek(): void {
                         >
                     </p>
                 </div>
-                <ul v-if="day.entries.length > 0" class="space-y-1">
-                    <li
-                        v-for="entry in day.entries"
-                        :key="entry.id"
-                        class="text-sm"
-                    >
-                        <WorkEntryRow
-                            v-if="editing.has(entry.id)"
-                            :employee="employee"
-                            :assignments="assignments"
-                            :date="day.date"
-                            :today="today"
-                            :entry="entry"
-                            @saved="stopEditing(entry.id)"
-                            @cancel="stopEditing(entry.id)"
-                            @dirty="markUnsaved(`entry-${entry.id}`, $event)"
-                        />
-                        <div
-                            v-else
-                            class="flex items-center justify-between gap-4"
+                <div
+                    v-if="
+                        day.entries.length > 0 ||
+                        (canManage && day.date <= today)
+                    "
+                    class="space-y-2 border-t px-4 py-3"
+                >
+                    <ul v-if="day.entries.length > 0" class="space-y-1">
+                        <li
+                            v-for="entry in day.entries"
+                            :key="entry.id"
+                            class="text-sm"
                         >
-                            <p>
-                                <span class="font-medium">{{
-                                    entry.project
-                                }}</span>
-                                <span class="text-muted-foreground">
-                                    · {{ entry.description }}</span
-                                >
-                                <span
-                                    v-if="entry.approved"
-                                    class="block text-xs text-muted-foreground"
-                                    >{{ signOffs(entry) }}</span
-                                >
-                            </p>
-                            <div class="flex items-center gap-2">
-                                <StatusBadge :state="entry.state" />
-                                <span class="tabular-nums">{{
-                                    formatHours(entry.hours)
-                                }}</span>
-                                <Button
-                                    v-if="entry.can_edit"
-                                    variant="ghost"
-                                    size="sm"
-                                    @click="editing.add(entry.id)"
-                                    >Edit</Button
-                                >
-                                <DeleteWorkEntry
-                                    v-else-if="entry.can_delete"
-                                    :entry="entry"
-                                />
+                            <WorkEntryRow
+                                v-if="editing.has(entry.id)"
+                                :employee="employee"
+                                :assignments="assignments"
+                                :date="day.date"
+                                :today="today"
+                                :entry="entry"
+                                @saved="stopEditing(entry.id)"
+                                @cancel="stopEditing(entry.id)"
+                                @dirty="
+                                    markUnsaved(`entry-${entry.id}`, $event)
+                                "
+                            />
+                            <div
+                                v-else
+                                class="flex items-center justify-between gap-4"
+                            >
+                                <p>
+                                    <span class="font-medium">{{
+                                        entry.project
+                                    }}</span>
+                                    <span class="text-muted-foreground">
+                                        · {{ entry.description }}</span
+                                    >
+                                    <span
+                                        v-if="entry.approved"
+                                        class="block text-xs text-muted-foreground"
+                                        >{{ signOffs(entry) }}</span
+                                    >
+                                </p>
+                                <div class="flex items-center gap-2">
+                                    <StatusBadge :state="entry.state" />
+                                    <span class="tabular-nums">{{
+                                        formatHours(entry.hours)
+                                    }}</span>
+                                    <Button
+                                        v-if="entry.can_edit"
+                                        variant="ghost"
+                                        size="sm"
+                                        @click="editing.add(entry.id)"
+                                        >Edit</Button
+                                    >
+                                    <DeleteWorkEntry
+                                        v-else-if="entry.can_delete"
+                                        :entry="entry"
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    </li>
-                </ul>
-                <WorkEntryRow
-                    v-if="canManage && day.date <= today"
-                    :ref="(row) => rememberNewRow(day.date, row)"
-                    :employee="employee"
-                    :assignments="assignments"
-                    :date="day.date"
-                    :today="today"
-                    :last-assignment-id="lastAssignmentId"
-                    @saved="entryAdded(day.date, $event)"
-                    @dirty="markUnsaved(`new-${day.date}`, $event)"
-                />
+                        </li>
+                    </ul>
+                    <WorkEntryRow
+                        v-if="canManage && day.date <= today"
+                        :ref="(row) => rememberNewRow(day.date, row)"
+                        :employee="employee"
+                        :assignments="assignments"
+                        :date="day.date"
+                        :today="today"
+                        :last-assignment-id="lastAssignmentId"
+                        @saved="entryAdded(day.date, $event)"
+                        @dirty="markUnsaved(`new-${day.date}`, $event)"
+                    />
+                </div>
             </li>
         </ul>
 
