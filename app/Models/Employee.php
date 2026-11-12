@@ -217,14 +217,34 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function managedEmployees(): Collection
     {
-        return self::query()
-            ->fromSub(self::query()->withEffectiveManager(), 'employees')
-            ->where('effective_manager_id', $this->id)
-            ->where(fn (Builder $staying) => $staying->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today()))
+        return $this->managedEmployeesQuery()
             ->with(['department', 'internalAssignment'])
             ->orderBy('name')
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * Whether the Employee has any Direct Reports: Employees, Future ones
+     * included, whose effective Manager they are.
+     */
+    public function hasDirectReports(): bool
+    {
+        return $this->managedEmployeesQuery()->exists();
+    }
+
+    /**
+     * The Employees whose effective Manager this Employee is, Former ones
+     * left out.
+     *
+     * @return Builder<Employee>
+     */
+    private function managedEmployeesQuery(): Builder
+    {
+        return self::query()
+            ->fromSub(self::query()->withEffectiveManager(), 'employees')
+            ->where('effective_manager_id', $this->id)
+            ->where(fn (Builder $staying) => $staying->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today()));
     }
 
     /**

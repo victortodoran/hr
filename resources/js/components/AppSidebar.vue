@@ -7,6 +7,7 @@ import {
     Building2,
     FolderKanban,
     Landmark,
+    Network,
     ShieldCheck,
     UserRound,
     UsersRound,
@@ -34,6 +35,7 @@ import { index as directory } from '@/routes/directory';
 import { index as employees, show as employeePage } from '@/routes/employees';
 import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
+import { index as team } from '@/routes/team';
 import { index as workEntries } from '@/routes/work-entries';
 import type { NavItem } from '@/types';
 
@@ -48,6 +50,9 @@ const mainNavItems = computed<NavItem[]>(() => [
                   icon: UserRound,
               },
           ]
+        : []),
+    ...(page.props.auth.canSeeTeam
+        ? [{ title: 'Team', href: team(), icon: Network }]
         : []),
     ...(page.props.auth.canSeeWorkEntries
         ? [{ title: 'Work Entries', href: workEntries(), icon: Clock }]

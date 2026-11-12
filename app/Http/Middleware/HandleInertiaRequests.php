@@ -51,6 +51,7 @@ class HandleInertiaRequests extends Middleware
                     && ($employee->widestScopeFor(Permission::ViewEmployeeRecords)?->coversOthers() ?? false),
                 'canSeeWorkEntries' => fn (): bool => $employee instanceof Employee
                     && ($employee->holds(Permission::ViewWorkEntries) || $employee->holds(Permission::ManageWorkEntries)),
+                'canSeeTeam' => fn (): bool => $employee instanceof Employee && $employee->can('viewTeam', Employee::class),
                 'canSeeApprovals' => fn (): bool => $employee instanceof Employee && $employee->can('viewApprovals', WorkEntry::class),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
