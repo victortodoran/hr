@@ -25,7 +25,7 @@ Point it at this doc for the rest.
 
 1. `git fetch origin && git checkout -b <branch> origin/main`.
 2. Implement the issue until every acceptance-criteria checkbox holds, following sibling files and `CODING_STANDARDS.md`.
-3. Write feature tests through HTTP and Inertia prop assertions; give new test files `covers()`.
+3. Write feature tests through HTTP and Inertia prop assertions; give new test files `covers()`. When a change is mostly UI (a page, dialog, tab or layout), also add or extend a browser test in `tests/Browser` that opens it and asserts no JavaScript errors; browser tests run against built assets, so run `npm run build` first.
 4. Run `npm run build` when routes or controllers changed, and `vendor/bin/pint --dirty --format agent` after PHP edits.
 5. `composer ci:check` passes; run mutation as `CLAUDE.md` says.
 6. When the demo should show the feature, update the DemoSeeder and its test.

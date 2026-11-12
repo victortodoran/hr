@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\Project;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Browser\BrowserTestCase;
 use Tests\TestCase;
 
 /*
@@ -30,6 +31,7 @@ if (getenv('TEST_TOKEN') === false) {
 }
 
 pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature');
+pest()->extend(BrowserTestCase::class)->use(RefreshDatabase::class)->in('Browser');
 
 /*
 |--------------------------------------------------------------------------
