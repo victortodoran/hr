@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import TimeOffApprovalController from '@/actions/App/Http/Controllers/TimeOffApprovalController';
 import TimeOffCancellationController from '@/actions/App/Http/Controllers/TimeOffCancellationController';
 import TimeOffController from '@/actions/App/Http/Controllers/TimeOffController';
-import TimeOffDeclineController from '@/actions/App/Http/Controllers/TimeOffDeclineController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -11,10 +9,8 @@ import SubmitButton from '@/components/SubmitButton.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatDate } from '@/lib/dates';
-import { formatDays } from '@/lib/time-off';
 import { index } from '@/routes/time-off';
-import type { TimeOffRecord, TimeOffToApprove } from '@/types';
+import type { TimeOffRecord } from '@/types';
 
 defineOptions({
     layout: {
@@ -28,8 +24,6 @@ defineProps<{
     /** Paid Days minus Pending and Approved Paid Time Off this year. */
     paidDaysLeft: number;
     timeOff: TimeOffRecord[];
-    /** Direct Reports' Pending Time Off; null for someone who manages nobody. */
-    toApprove: TimeOffToApprove[] | null;
 }>();
 </script>
 
@@ -113,95 +107,6 @@ defineProps<{
                     >Request Time Off</SubmitButton
                 >
             </Form>
-        </section>
-
-        <section v-if="toApprove !== null" class="space-y-2">
-            <h2 class="text-sm font-medium">To approve</h2>
-            <p
-                v-if="toApprove.length === 0"
-                class="text-sm text-muted-foreground"
-            >
-                No Time Off is waiting for your answer.
-            </p>
-            <ul v-else class="divide-y rounded-lg border text-sm">
-                <li
-                    v-for="item in toApprove"
-                    :key="item.id"
-                    class="space-y-3 px-4 py-3"
-                >
-                    <div>
-                        <p>
-                            <span class="font-medium">{{
-                                item.employee.name
-                            }}</span>
-                            ·
-                            {{ formatDate(item.first_date) }} –
-                            {{ formatDate(item.last_date) }}
-                            <span class="text-muted-foreground">
-                                · {{ formatDays(item.days) }} ·
-                                {{ item.is_paid ? 'Paid' : 'Unpaid' }}</span
-                            >
-                        </p>
-                        <p class="text-muted-foreground">
-                            Paid Days left:
-                            <span
-                                v-for="(left, position) in item.paid_days_left"
-                                :key="left.year"
-                                ><template v-if="position > 0">, </template
-                                ><span
-                                    class="tabular-nums"
-                                    :class="{
-                                        'text-destructive': left.days < 0,
-                                    }"
-                                    >{{ left.days }}</span
-                                >
-                                in {{ left.year }}</span
-                            >
-                        </p>
-                    </div>
-                    <div class="flex flex-wrap items-start gap-2">
-                        <Form
-                            v-bind="
-                                TimeOffApprovalController.store.form(item.id)
-                            "
-                            :options="{ preserveScroll: true }"
-                            v-slot="{ errors, processing }"
-                            class="space-y-1"
-                        >
-                            <SubmitButton :processing="processing" size="sm"
-                                >Approve</SubmitButton
-                            >
-                            <InputError :message="errors.approval" />
-                        </Form>
-                        <Form
-                            v-bind="
-                                TimeOffDeclineController.store.form(item.id)
-                            "
-                            :options="{ preserveScroll: true }"
-                            v-slot="{ errors, processing }"
-                            class="flex flex-1 flex-wrap items-start gap-2"
-                        >
-                            <div class="grid min-w-48 flex-1 gap-1">
-                                <Input
-                                    :id="`decline-reason-${item.id}`"
-                                    name="decline_reason"
-                                    aria-label="Reason for declining"
-                                    placeholder="Reason for declining"
-                                    required
-                                />
-                                <InputError :message="errors.decline_reason" />
-                            </div>
-                            <SubmitButton
-                                :processing="processing"
-                                variant="outline"
-                                size="sm"
-                                class="text-destructive"
-                                >Decline</SubmitButton
-                            >
-                        </Form>
-                    </div>
-                </li>
-            </ul>
         </section>
 
         <section class="space-y-2">

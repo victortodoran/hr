@@ -2,14 +2,15 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ApprovalsTab;
 use App\Enums\WorkEntryState;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * The filters on the Approvals page: an Employee, a Project, a date range
- * and a state, each optional.
+ * The Approvals page's query: the open tab and the Work Entries filters (an
+ * Employee, a Project, a date range and a state), each optional.
  */
 class ApprovalFiltersRequest extends FormRequest
 {
@@ -42,5 +43,16 @@ class ApprovalFiltersRequest extends FormRequest
             'to' => $this->filled('to') ? $this->string('to')->value() : null,
             'state' => $this->filled('state') ? $this->string('state')->value() : $state->value,
         ];
+    }
+
+    /**
+     * The tab asked for. Time Off is open only to someone who decides it;
+     * anything else, or no tab, opens Work Entries.
+     */
+    public function tab(bool $decidesTimeOff): ApprovalsTab
+    {
+        $asked = ApprovalsTab::tryFrom($this->string('tab')->value());
+
+        return $asked === ApprovalsTab::TimeOff && $decidesTimeOff ? ApprovalsTab::TimeOff : ApprovalsTab::WorkEntries;
     }
 }

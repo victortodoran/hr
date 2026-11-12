@@ -13,16 +13,15 @@ use Inertia\Response;
 
 /**
  * The Time Off page: the signed-in Employee's own Time Off and Paid Days
- * left, requesting Time Off and, for a Manager, their Direct Reports'
- * Pending Time Off to approve or decline.
+ * left, and requesting Time Off. Managers answer their Direct Reports'
+ * Time Off on the Approvals page.
  */
 class TimeOffController extends Controller
 {
     /**
      * Show the Employee's Time Off, latest first, with the weekdays each
      * counts, who decided it and why it was declined, and whether they may
-     * still cancel it, and their Paid Days left this year. For an Employee
-     * who manages anyone, also the Time Off they are to answer.
+     * still cancel it, and their Paid Days left this year.
      */
     public function index(#[CurrentUser] Employee $actor): Response
     {
@@ -40,39 +39,7 @@ class TimeOffController extends Controller
                     'can_cancel' => $actor->can('cancel', $timeOff),
                 ])
                 ->all(),
-            'toApprove' => $actor->managesAnyone() ? $this->toApprove($actor) : null,
         ]);
-    }
-
-    /**
-     * The Pending Time Off of the Employees whose effective Manager the actor
-     * is, earliest first, each with that Employee's Paid Days left in every
-     * year it touches. Paid Days left already count the Pending Time Off.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function toApprove(Employee $actor): array
-    {
-        return TimeOff::query()
-            ->whereIn('employee_id', Employee::query()->effectivelyManagedBy($actor)->select('employees.id'))
-            ->where('state', TimeOffState::Pending)
-            ->with('employee:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
-            ->orderBy('first_date')
-            ->orderBy('id')
-            ->get()
-            ->map(fn (TimeOff $timeOff): array => [
-                'id' => $timeOff->id,
-                'employee' => $timeOff->employee->only('id', 'name'),
-                'first_date' => $timeOff->first_date->toDateString(),
-                'last_date' => $timeOff->last_date->toDateString(),
-                'days' => $timeOff->weekdays(),
-                'is_paid' => $timeOff->is_paid,
-                'paid_days_left' => array_map(fn (int $year): array => [
-                    'year' => $year,
-                    'days' => $timeOff->employee->paidDaysLeftIn($year),
-                ], range($timeOff->first_date->year, $timeOff->last_date->year)),
-            ])
-            ->all();
     }
 
     /**

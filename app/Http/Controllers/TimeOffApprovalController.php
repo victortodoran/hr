@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ApprovalsTab;
 use App\Enums\TimeOffState;
 use App\Http\Requests\TimeOffApprovalRequest;
 use App\Models\Employee;
@@ -24,6 +25,6 @@ class TimeOffApprovalController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Time Off approved.')]);
 
-        return to_route('time-off.index');
+        return to_route('approvals.index', ['tab' => ApprovalsTab::TimeOff]);
     }
 }

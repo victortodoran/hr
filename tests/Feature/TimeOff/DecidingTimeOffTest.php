@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\TimeOffState;
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\TimeOffApprovalController;
 use App\Http\Controllers\TimeOffController;
 use App\Http\Controllers\TimeOffDeclineController;
@@ -16,7 +17,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(TimeOffApprovalController::class, TimeOffController::class, TimeOffApprovalRequest::class, TimeOffDeclineController::class, TimeOffDeclineRequest::class, TimeOffPolicy::class, TimeOff::class);
+covers(ApprovalController::class, TimeOffApprovalController::class, TimeOffController::class, TimeOffApprovalRequest::class, TimeOffDeclineController::class, TimeOffDeclineRequest::class, TimeOffPolicy::class, TimeOff::class);
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
@@ -48,7 +49,7 @@ it('lets the Manager approve their Direct Report\'s Pending Time Off, recording 
     $timeOff = pendingTimeOffOf($ben);
 
     actingAs($ben)->post(route('time-off.approval.store', $timeOff))
-        ->assertRedirect(route('time-off.index'))
+        ->assertRedirect(route('approvals.index', ['tab' => 'time-off']))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Time Off approved.']);
 
     $timeOff->refresh();
@@ -62,7 +63,7 @@ it('lets the Manager decline their Direct Report\'s Pending Time Off with a reas
     $timeOff = pendingTimeOffOf($ben);
 
     actingAs($ben)->post(route('time-off.decline.store', $timeOff), ['decline_reason' => 'The release is that week.'])
-        ->assertRedirect(route('time-off.index'))
+        ->assertRedirect(route('approvals.index', ['tab' => 'time-off']))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Time Off declined.']);
 
     $timeOff->refresh();
@@ -119,7 +120,7 @@ it('lets the Employee\'s current Manager answer after they move, and not the one
     $timeOff->employee->update(['manager_id' => $hana->id]);
 
     actingAs($ben)->post(route($route, $timeOff), $form)->assertForbidden();
-    actingAs($hana)->post(route($route, $timeOff), $form)->assertRedirect(route('time-off.index'));
+    actingAs($hana)->post(route($route, $timeOff), $form)->assertRedirect(route('approvals.index', ['tab' => 'time-off']));
 
     expect($timeOff->refresh()->decided_by)->toBe($hana->id);
 })->with('answers');
@@ -129,7 +130,7 @@ it('lets the next Manager up answer once the Employee\'s Manager has left', func
     $timeOff = pendingTimeOffOf($ben);
     $ben->update(['leaving_date' => '2026-11-30']);
 
-    actingAs(Employee::query()->findOrFail($ben->manager_id))->post(route($route, $timeOff), $form)->assertRedirect(route('time-off.index'));
+    actingAs(Employee::query()->findOrFail($ben->manager_id))->post(route($route, $timeOff), $form)->assertRedirect(route('approvals.index', ['tab' => 'time-off']));
 
     expect($timeOff->refresh()->decided_by)->toBe($ben->manager_id);
 })->with('answers');
@@ -148,7 +149,7 @@ it('lets the Manager answer Pending Time Off whose first date has passed', funct
     $timeOff = pendingTimeOffOf($ben);
     travelTo('2026-12-17 09:00');
 
-    actingAs($ben)->post(route($route, $timeOff), $form)->assertRedirect(route('time-off.index'));
+    actingAs($ben)->post(route($route, $timeOff), $form)->assertRedirect(route('approvals.index', ['tab' => 'time-off']));
 
     expect($timeOff->refresh()->state)->not->toBe(TimeOffState::Pending);
 })->with('answers');
@@ -214,7 +215,7 @@ it('shows the Employee who declined their Time Off and why', function () {
             ->where('timeOff.0.decline_reason', 'The release is that week.'));
 });
 
-it('lists the Pending Time Off of the Manager\'s Direct Reports to approve, earliest first, with the Paid Days they leave', function () {
+it('lists the Pending Time Off of the Manager\'s Direct Reports on the Approvals Time Off tab, earliest first, with the Paid Days they leave', function () {
     $ben = timeOffManager();
     $newYear = pendingPaidTimeOffOverNewYear($ben);
     $cara = $newYear->employee;
@@ -225,17 +226,23 @@ it('lists the Pending Time Off of the Manager\'s Direct Reports to approve, earl
     TimeOff::factory()->for(Employee::factory()->create(['manager_id' => $cara->id]))->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-14']);
     TimeOff::factory()->for($ben)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-14']);
 
-    actingAs($ben)->get(route('time-off.index'))
+    actingAs($ben)->get(route('approvals.index', ['tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page
+            ->where('tab', 'time-off')
+            ->where('decidesTimeOff', true)
+            ->where('waiting', ['workEntries' => 0, 'timeOff' => 2])
             ->where('toApprove', [
                 ['id' => $devs->id, 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'first_date' => '2026-11-16', 'last_date' => '2026-11-17', 'days' => 2, 'is_paid' => false, 'paid_days_left' => [['year' => 2026, 'days' => 0]]],
                 ['id' => $newYear->id, 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'first_date' => '2026-12-28', 'last_date' => '2027-01-08', 'days' => 10, 'is_paid' => true, 'paid_days_left' => [['year' => 2026, 'days' => 11], ['year' => 2027, 'days' => 14]]],
-            ]));
+            ])
+            ->missing('entries')
+            ->missing('filters'));
 });
 
-it('leaves out the list to approve for an Employee who manages nobody', function () {
-    $cara = pendingTimeOffOf(timeOffManager())->employee;
+it('no longer lists Time Off to approve on the Time Off page', function () {
+    $ben = timeOffManager();
+    pendingTimeOffOf($ben);
 
-    actingAs($cara)->get(route('time-off.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('toApprove', null));
+    actingAs($ben)->get(route('time-off.index'))
+        ->assertInertia(fn (Assert $page) => $page->missing('toApprove'));
 });
