@@ -66,7 +66,7 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
         ->where('waiting', ['workEntries' => 2, 'timeOff' => 0])
         ->missing('toApprove')
         ->where('canApprove', true)
-        ->where('canReopen', true)
+        ->where('canReopen', false)
         ->where('canLock', false)
         ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null, 'state' => 'pending'])
         ->where('entries.data', [

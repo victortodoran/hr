@@ -105,7 +105,7 @@ The state of a Work Entry whose hours have been accepted as correct. It cannot b
 _Avoid_: Signed off, confirmed, validated, accepted
 
 **Reopen**:
-To send an Approved Work Entry back to Pending, withdrawing its approval so it can be corrected. The Employee's Manager can reopen it, and so can anyone whose Role grants reopening for that Employee. No Employee can reopen their own Work Entries.
+To send an Approved Work Entry back to Pending, withdrawing its approval so it can be corrected. Only someone whose Role grants reopening for that Employee can reopen it; being the Employee's Manager is not enough on its own. No Employee can reopen their own Work Entries.
 _Avoid_: Unlock, unapprove, reject, revert
 
 **Locked**:
