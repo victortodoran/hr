@@ -185,7 +185,7 @@ setLayoutProps({
 
                     <div
                         v-if="reportsNeedingAManager.length > 0"
-                        class="grid gap-2 rounded-lg border border-amber-300 p-4 text-sm dark:border-amber-500/40"
+                        class="grid gap-2 rounded-lg border border-amber-300 p-4 text-sm"
                     >
                         <p class="font-medium">
                             {{ employee.name }} has left, but these Employees
