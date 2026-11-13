@@ -29,8 +29,10 @@ class WorkEntryController extends Controller
     /**
      * One Employee's Work Entries for one week, Monday to Sunday, with totals
      * for each day, each Assignment and the week. Opens on the viewer's own
-     * current week. An Employee who doesn't exist is refused just like one
-     * outside the viewer's Scope, so the page never reveals who exists.
+     * current week; another Employee's week is reached only by a link, such
+     * as from the Work Entries page. An Employee who doesn't exist is refused
+     * just like one outside the viewer's Scope, so the page never reveals who
+     * exists.
      */
     public function index(#[CurrentUser] Employee $actor, Request $request): Response
     {
@@ -84,7 +86,7 @@ class WorkEntryController extends Controller
                 ])
                 ->values(),
             'canManage' => $canManage,
-            'employees' => $this->pickableEmployees($actor),
+            'isOwn' => $employee->is($actor),
         ]);
     }
 
@@ -134,28 +136,6 @@ class WorkEntryController extends Controller
                 'nothing_logged' => $day->isWeekday() && $day->isBefore(today()) && $employed && $onDay->isEmpty() && $away === null,
             ];
         })->all();
-    }
-
-    /**
-     * The Employees whose Work Entries the viewer may see, for switching
-     * between them, or null when they may only see their own. The same
-     * Employees the Work Entries page lists.
-     *
-     * @return array<int, array{id: int, name: string}>|null
-     */
-    private function pickableEmployees(Employee $actor): ?array
-    {
-        if (! $actor->seesOthersWorkEntries()) {
-            return null;
-        }
-
-        return Employee::query()
-            ->withWorkEntriesVisibleTo($actor)
-            ->orderBy('name')
-            ->orderBy('id')
-            ->get(['id', 'name'])
-            ->map(fn (Employee $employee): array => $employee->only('id', 'name'))
-            ->all();
     }
 
     /**

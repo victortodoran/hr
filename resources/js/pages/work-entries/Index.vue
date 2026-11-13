@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
@@ -13,13 +13,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
 import { formatDate } from '@/lib/dates';
@@ -32,12 +25,6 @@ import type {
     WorkEntryRecord,
 } from '@/types';
 
-defineOptions({
-    layout: {
-        breadcrumbs: [{ title: 'My Work Entries', href: index() }],
-    },
-});
-
 const props = defineProps<{
     employee: Choice;
     /** The Monday the week starts on. */
@@ -48,9 +35,26 @@ const props = defineProps<{
     total: number;
     assignments: WorkEntryAssignment[];
     canManage: boolean;
-    /** The Employees the viewer may switch to; null when only their own. */
-    employees: Choice[] | null;
+    /** Whether the week is the viewer's own. */
+    isOwn: boolean;
 }>();
+
+/** "My Work Entries" for the viewer's own week, "Ben's Work Entries" for another Employee's. */
+const title = computed(() =>
+    props.isOwn ? 'My Work Entries' : `${props.employee.name}'s Work Entries`,
+);
+
+/** The breadcrumb opens the current week of whoever's week this is, so it holds whichever week is shown. */
+setLayoutProps({
+    breadcrumbs: [
+        {
+            title: title.value,
+            href: index(
+                props.isOwn ? {} : { query: { employee: props.employee.id } },
+            ),
+        },
+    ],
+});
 
 /**
  * The date a number of days away, as a YYYY-MM-DD date.
@@ -81,10 +85,15 @@ function formatDay(date: string): string {
 }
 
 /**
- * The week page for an Employee and the week holding a day.
+ * This page for the week holding a day, naming the Employee only when the
+ * week isn't the viewer's own.
  */
-function weekOf(employeeId: number, day: string) {
-    return index({ query: { employee: employeeId, week: day } });
+function weekOf(day: string) {
+    return index({
+        query: props.isOwn
+            ? { week: day }
+            : { employee: props.employee.id, week: day },
+    });
 }
 
 /**
@@ -105,10 +114,6 @@ function signOffs(entry: WorkEntryRecord): string {
 const isCurrentWeek = computed(
     () => props.today >= props.week && props.today <= addDays(props.week, 6),
 );
-
-function switchEmployee(employeeId: unknown): void {
-    router.get(weekOf(Number(employeeId), props.week).url);
-}
 
 /** The Work Entries turned into fields to change them. */
 const editing = reactive(new Set<number>());
@@ -217,37 +222,19 @@ function leaveWeek(): void {
 </script>
 
 <template>
-    <Head title="My Work Entries" />
+    <Head :title="title" />
 
     <div class="flex max-w-4xl flex-col gap-6 p-4">
         <Heading
-            title="My Work Entries"
+            :title="title"
             :description="`Hours ${employee.name} worked, one week at a time`"
         />
 
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <Select
-                v-if="employees"
-                :model-value="String(employee.id)"
-                @update:model-value="switchEmployee"
-            >
-                <SelectTrigger class="w-56" aria-label="Employee">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem
-                        v-for="choice in employees"
-                        :key="choice.id"
-                        :value="String(choice.id)"
-                        >{{ choice.name }}</SelectItem
-                    >
-                </SelectContent>
-            </Select>
-
             <div class="flex items-center gap-2">
                 <Button variant="outline" size="icon" as-child>
                     <Link
-                        :href="weekOf(employee.id, addDays(week, -7))"
+                        :href="weekOf(addDays(week, -7))"
                         aria-label="Previous week"
                     >
                         <ChevronLeft />
@@ -258,7 +245,7 @@ function leaveWeek(): void {
                 </span>
                 <Button variant="outline" size="icon" as-child>
                     <Link
-                        :href="weekOf(employee.id, addDays(week, 7))"
+                        :href="weekOf(addDays(week, 7))"
                         aria-label="Next week"
                     >
                         <ChevronRight />
@@ -270,7 +257,7 @@ function leaveWeek(): void {
                     size="sm"
                     as-child
                 >
-                    <Link :href="weekOf(employee.id, today)">This week</Link>
+                    <Link :href="weekOf(today)">This week</Link>
                 </Button>
                 <span class="ml-2 text-sm text-muted-foreground"
                     >Total

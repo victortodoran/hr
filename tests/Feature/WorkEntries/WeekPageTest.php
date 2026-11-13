@@ -194,24 +194,23 @@ it('offers the Employee\'s Assignments that run during the week', function () {
     ]));
 });
 
-it('lets someone see the week of an Employee their Scope covers, and pick from those Employees', function (array $grants, bool $canManage) {
+it('lets someone see the week of an Employee their Scope covers, as not their own', function (array $grants, bool $canManage) {
     $top = Employee::factory()->top()->create(['name' => 'Ada']);
     $ben = employeeWith($grants, ['name' => 'Ben', 'manager_id' => $top->id]);
     $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
-    $dev = Employee::factory()->create(['name' => 'Dev', 'manager_id' => $cara->id]);
 
     $response = actingAs($ben)->get(route('work-entries.index', ['employee' => $cara->id]));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('employee', ['id' => $cara->id, 'name' => 'Cara'])
         ->where('canManage', $canManage)
-        ->where('employees', [['id' => $cara->id, 'name' => 'Cara'], ['id' => $dev->id, 'name' => 'Dev']]));
+        ->where('isOwn', false));
 })->with([
     'view reports' => [[Permission::ViewWorkEntries->value => Scope::Reports], false],
     'manage reports' => [[Permission::ManageWorkEntries->value => Scope::Reports], true],
 ]);
 
-it('lets someone who may reopen or lock open the week of anyone that covers, read-only, and pick from them', function (array $grants) {
+it('lets someone who may reopen or lock open the week of anyone that covers, read-only', function (array $grants) {
     $top = Employee::factory()->top()->create(['name' => 'Ada']);
     $ben = employeeWith($grants, ['name' => 'Ben', 'manager_id' => $top->id]);
 
@@ -220,29 +219,22 @@ it('lets someone who may reopen or lock open the week of anyone that covers, rea
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('employee', ['id' => $top->id, 'name' => 'Ada'])
         ->where('canManage', false)
-        ->where('employees', [['id' => $top->id, 'name' => 'Ada'], ['id' => $ben->id, 'name' => 'Ben']]));
+        ->where('isOwn', false));
 })->with([
     'reopen everyone' => [[Permission::ReopenWorkEntries->value => Scope::Everyone]],
     'lock' => [[Permission::LockWorkEntries->value => null]],
 ]);
 
-it('lists everyone covered by either Work Entries Permission in the picker', function () {
+it("opens on the viewer's own week, even when they may see other Employees' weeks", function () {
     $top = Employee::factory()->top()->create(['name' => 'Ada']);
-    $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone, Permission::ManageWorkEntries->value => Scope::Own], ['name' => 'Ben', 'manager_id' => $top->id]);
+    $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Ben', 'manager_id' => $top->id]);
 
     $response = actingAs($ben)->get(route('work-entries.index'));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('canManage', true)
-        ->where('employees', [['id' => $top->id, 'name' => 'Ada'], ['id' => $ben->id, 'name' => 'Ben']]));
-});
-
-it('offers no picker to someone who can only see their own Work Entries', function () {
-    $cara = recorder();
-
-    $response = actingAs($cara)->get(route('work-entries.index'));
-
-    $response->assertInertia(fn (Assert $page) => $page->where('employees', null));
+        ->where('employee', ['id' => $ben->id, 'name' => 'Ben'])
+        ->where('isOwn', true)
+        ->missing('employees'));
 });
 
 it('refuses a malformed Employee or week', function (string $field, string $value, string $message) {
