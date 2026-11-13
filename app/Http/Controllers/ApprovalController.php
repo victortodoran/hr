@@ -12,6 +12,7 @@ use App\Models\Project;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,8 +20,8 @@ use Inertia\Response;
 /**
  * The Approvals page, an inbox of what waits for the viewer's decision as an
  * effective Manager, in two tabs. Work Entries: the Pending Work Entries of
- * the Employees whose effective Manager the viewer is, filtered, and
- * approving many of them at once. Nobody approves their own Work Entries.
+ * the Employees whose effective Manager the viewer is, one Employee at a
+ * time, and approving many of them at once. Nobody approves their own Work Entries.
  * Reopening and locking happen on the Work Entries page. Time Off: the
  * Pending Time Off the viewer decides, answered by the
  * TimeOffApprovalController and TimeOffDeclineController.
@@ -47,19 +48,45 @@ class ApprovalController extends Controller
     }
 
     /**
-     * The Work Entries tab: the Pending Work Entries of the Employees whose
-     * effective Manager the viewer is, matching the filters, oldest first,
-     * with their total hours.
+     * The Work Entries tab, one Employee at a time: the Pending Work Entries
+     * of the chosen Employee, on the chosen Project or any, oldest first,
+     * with their total hours. The Employees to choose from are those whose
+     * effective Manager the viewer is and who have Pending Work Entries, by
+     * name with how many. An Employee not among them, or none, falls back to
+     * the first; a Project the Employee has nothing Pending on falls back to
+     * any Project. With nothing Pending at all, there is nobody to choose.
      *
      * @return array<string, mixed>
      */
     private function workEntriesTab(Employee $actor, ApprovalFiltersRequest $request): array
     {
-        $filters = $request->filters();
+        $requested = $request->filters();
+        $isPending = fn (Builder $entries): Builder => $entries->where('work_entries.state', WorkEntryState::Pending);
+        $employees = Employee::query()
+            ->effectivelyManagedBy($actor)
+            ->whereHas('workEntries', $isPending)
+            ->withCount(['workEntries as pending' => $isPending])
+            ->orderBy('name')
+            ->orderBy('id') // @pest-mutate-ignore (only orders Employees who share a name)
+            ->get(['id', 'name'])
+            ->map(fn (Employee $employee): array => [...$employee->only('id', 'name'), 'pending' => (int) $employee->getAttribute('pending')])
+            ->all();
+        $employee = collect($employees)->firstWhere('id', $requested['employee']) ?? $employees[0] ?? null;
+        $projects = $employee === null ? [] : Project::query()
+            ->whereHas('workEntries', fn (Builder $entries): Builder => $isPending($entries)->where('assignments.employee_id', $employee['id']))
+            ->orderBy('name')
+            ->orderBy('id') // @pest-mutate-ignore (only orders Projects that share a name)
+            ->get(['id', 'name'])
+            ->map(fn (Project $project): array => $project->only('id', 'name'))
+            ->all();
+        $filters = [
+            'employee' => $employee['id'] ?? null,
+            'project' => collect($projects)->firstWhere('id', $requested['project'])['id'] ?? null,
+        ];
         $matching = WorkEntry::query()
-            ->ofEmployees(Employee::query()->effectivelyManagedBy($actor))
             ->where('state', WorkEntryState::Pending)
-            ->filteredBy($filters);
+            ->whereRelation('assignment', 'employee_id', $filters['employee'])
+            ->when($filters['project'], fn (Builder $entries, int $project) => $entries->whereRelation('assignment', 'project_id', $project));
 
         return [
             'filters' => $filters,
@@ -79,14 +106,8 @@ class ApprovalController extends Controller
                 ]),
             'total' => (int) (clone $matching)->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)
             'matchingIds' => Inertia::optional(fn (): array => (clone $matching)->orderBy('id')->pluck('id')->all()),
-            'employees' => Employee::query()
-                ->effectivelyManagedBy($actor)
-                ->orderBy('name')
-                ->orderBy('id') // @pest-mutate-ignore (only orders Employees who share a name)
-                ->get(['id', 'name'])
-                ->map(fn (Employee $employee): array => $employee->only('id', 'name'))
-                ->all(),
-            'projects' => Project::choices(),
+            'employees' => $employees,
+            'projects' => $projects,
         ];
     }
 

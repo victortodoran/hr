@@ -16,7 +16,7 @@ beforeEach(function () {
     travelTo('2026-12-01 09:00');
 });
 
-it('lets a Manager switch tabs, kept in the URL, and approve Time Off from its tab', function () {
+it('lets a Manager work through one Employee\'s Work Entries, switch tabs, kept in the URL, and approve Time Off from its tab', function () {
     $ben = Employee::factory()->create(['name' => 'Ben', 'manager_id' => Employee::factory()->top()->create()->id]);
     $cara = recorder(['manager_id' => $ben->id]);
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-30', 'description' => 'Reviewing the API']);
@@ -25,6 +25,8 @@ it('lets a Manager switch tabs, kept in the URL, and approve Time Off from its t
     actingAs($ben);
 
     $page = visit(route('approvals.index'))
+        ->assertSee('Cara (1)')
+        ->assertDontSee('Any Employee')
         ->assertSee('Reviewing the API')
         ->click('internal:role=tab[name="Time Off"i]')
         ->assertQueryStringHas('tab', 'time-off')

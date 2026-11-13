@@ -3,35 +3,36 @@ import { router } from '@inertiajs/vue3';
 import { CheckCheck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ApprovalController from '@/actions/App/Http/Controllers/ApprovalController';
+import ApprovalFilterBar from '@/components/approvals/ApprovalFilterBar.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import WorkEntryFilterBar from '@/components/work-entries/WorkEntryFilterBar.vue';
 import { formatDate } from '@/lib/dates';
 import { index } from '@/routes/approvals';
 import type {
     ApprovalEntry,
+    ApprovalFilters,
     Choice,
+    EmployeeToApprove,
     Paginated,
     TableColumn,
-    WorkEntryFilters,
 } from '@/types';
 
 /**
  * The Work Entries tab of the Approvals page: the Pending Work Entries
- * waiting for the viewer's approval, filtered, and approving the selected
- * ones.
+ * waiting for the viewer's approval, one Employee at a time, and approving
+ * the selected ones. With nothing waiting there is no Employee to choose.
  */
 const props = defineProps<{
-    filters: WorkEntryFilters;
+    filters: ApprovalFilters;
     entries: Paginated<ApprovalEntry>;
     /** Total hours of every Work Entry matching the filters. */
     total: number;
     /** Every matching Work Entry's ID; only sent when asked for. */
     matchingIds?: number[];
-    employees: Choice[];
+    employees: EmployeeToApprove[];
     projects: Choice[];
 }>();
 
@@ -106,7 +107,8 @@ function formatHours(hours: number): string {
 
 <template>
     <div class="flex flex-col gap-6">
-        <WorkEntryFilterBar
+        <ApprovalFilterBar
+            v-if="employees.length > 0"
             :filters="filters"
             :employees="employees"
             :projects="projects"
@@ -172,7 +174,7 @@ function formatHours(hours: number): string {
             <template #empty>
                 <EmptyState
                     :icon="CheckCheck"
-                    message="Pending Work Entries waiting for your approval appear here. None match these filters."
+                    message="Pending Work Entries waiting for your approval appear here. None are waiting."
                 />
             </template>
         </DataTable>

@@ -8,12 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { index } from '@/routes/approvals';
 import type {
     ApprovalEntry,
+    ApprovalFilters,
     ApprovalsTab,
     ApprovalsWaiting,
     Choice,
     Paginated,
+    EmployeeToApprove,
     TimeOffToApprove,
-    WorkEntryFilters,
 } from '@/types';
 
 defineOptions({
@@ -29,13 +30,13 @@ defineOptions({
 defineProps<{
     tab: ApprovalsTab;
     waiting: ApprovalsWaiting;
-    filters?: WorkEntryFilters;
+    filters?: ApprovalFilters;
     entries?: Paginated<ApprovalEntry>;
     /** Total hours of every Work Entry matching the filters. */
     total?: number;
     /** Every matching Work Entry's ID; only sent when asked for. */
     matchingIds?: number[];
-    employees?: Choice[];
+    employees?: EmployeeToApprove[];
     projects?: Choice[];
     /** Direct Reports' Pending Time Off. */
     toApprove?: TimeOffToApprove[];
