@@ -22,12 +22,9 @@ Commit first, run `git fetch origin main:main` so the review diffs against the r
 
 One issue, one branch from `origin/main`, one PR. Open the PR when the issue is done, then start the next issue only after that PR is merged. Before implementing an issue, or briefing a subagent to, read `docs/agents/implementing-an-issue.md`.
 
-### Mutation testing
+### Before committing
 
-New domain code under `app/` must keep the mutation score at 80% or above. CI doesn't run mutation, so run it locally with `composer test:mutate -- --path=<paths>`. Give new test files `covers()`. A mutant reported UNTESTED on a line your tests do run means no test file that runs it lists its class in `covers()`: add the class there. Use `// @pest-mutate-ignore (reason)` only for mutants that make no observable difference, never to skip writing a test.
-
-- **While iterating:** run only the affected test files, and run mutation with `--path` set to the `app/` files you changed.
-- **Once, before committing:** run `composer ci:check` and `composer test:mutate -- --path=app`.
+Run the affected test files while iterating, and `composer ci:check` once before committing. Mutation testing isn't required; `composer test:mutate -- --path=<paths>` is there to run by hand.
 
 ### Wayfinder
 
