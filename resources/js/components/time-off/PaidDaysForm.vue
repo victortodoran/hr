@@ -5,14 +5,13 @@ import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { Choice, PaidDaysRecord } from '@/types';
+import type { Choice } from '@/types';
 
-const props = defineProps<{
+defineProps<{
     employee: Choice;
-    paidDays: PaidDaysRecord;
+    /** The Employee's Paid Days, the same number for every year. */
+    paidDays: number;
 }>();
-
-const fieldId = `paid-days-${props.paidDays.year}`;
 </script>
 
 <template>
@@ -22,25 +21,24 @@ const fieldId = `paid-days-${props.paidDays.year}`;
         class="grid gap-2"
         v-slot="{ errors, processing }"
     >
-        <input type="hidden" name="year" :value="paidDays.year" />
-        <Label :for="fieldId">{{ paidDays.year }}</Label>
+        <Label for="paid-days">Paid Days per year</Label>
         <div class="flex items-center gap-2">
             <Input
-                :id="fieldId"
-                :key="paidDays.days"
+                id="paid-days"
+                :key="paidDays"
                 name="days"
                 type="number"
                 min="0"
                 max="366"
                 step="1"
                 class="w-24"
-                :default-value="paidDays.days"
+                :default-value="paidDays"
                 required
             />
             <SubmitButton :processing="processing" variant="outline"
                 >Save</SubmitButton
             >
         </div>
-        <InputError :message="errors.days ?? errors.year" />
+        <InputError :message="errors.days" />
     </Form>
 </template>

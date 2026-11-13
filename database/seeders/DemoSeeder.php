@@ -282,12 +282,12 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Give the Employee Paid Days from last year on, so their past Time Off
-     * has Paid Days too.
+     * Give the Employee Paid Days, which every year gets, past ones included.
      */
     private function paidDays(Employee $employee, int $days): void
     {
-        $employee->paidDays()->create(['year' => today()->year - 1, 'days' => $days]);
+        $employee->paid_days = $days;
+        $employee->save();
     }
 
     /**

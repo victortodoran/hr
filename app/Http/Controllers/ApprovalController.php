@@ -103,7 +103,7 @@ class ApprovalController extends Controller
         return TimeOff::query()
             ->whereIn('employee_id', Employee::query()->effectivelyManagedBy($actor)->select('employees.id'))
             ->where('state', TimeOffState::Pending)
-            ->with('employee:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+            ->with('employee:id,name,paid_days') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
             ->orderBy('first_date')
             ->orderBy('id')
             ->get()

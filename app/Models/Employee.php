@@ -40,6 +40,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $leaving_date
  * @property int|null $manager_id
  * @property bool $is_top
+ * @property int $paid_days How many days of Paid Time Off they get each calendar year, the same number for every year
  * @property int|null $effective_manager_id Only on Employees queried with withEffectiveManager()
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -64,6 +65,15 @@ class Employee extends Authenticatable implements MustVerifyEmail
         Permission::ViewWorkEntries,
         Permission::ManageWorkEntries,
         Permission::ReopenWorkEntries,
+    ];
+
+    /**
+     * A new Employee starts with no Paid Days, as the database does.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'paid_days' => 0,
     ];
 
     /**
@@ -122,30 +132,6 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * The Employee's Paid Days, one row for each year that has its own
-     * number.
-     *
-     * @return HasMany<PaidDays, $this>
-     */
-    public function paidDays(): HasMany
-    {
-        return $this->hasMany(PaidDays::class);
-    }
-
-    /**
-     * How many Paid Days the Employee gets in a year: that year's own
-     * number, or else the most recent earlier year's, or 0 when no year up
-     * to it has one.
-     */
-    public function paidDaysIn(int $year): int
-    {
-        /** @var int|null $days */
-        $days = $this->paidDays()->where('year', '<=', $year)->orderByDesc('year')->value('days');
-
-        return $days ?? 0;
-    }
-
-    /**
      * The Time Off the Employee has requested, in every state.
      *
      * @return HasMany<TimeOff, $this>
@@ -156,10 +142,10 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * How many Paid Days the Employee has left in a year: their Paid Days
-     * minus the weekdays that year of their Pending and Approved Paid Time
-     * Off. It is negative when their Paid Days were lowered below what is
-     * already taken.
+     * How many Paid Days the Employee has left in a year: their Paid Days,
+     * which every year gets in full, minus the weekdays that year of their
+     * Pending and Approved Paid Time Off. It is negative when their Paid Days
+     * were lowered below what is already taken.
      */
     public function paidDaysLeftIn(int $year): int
     {
@@ -170,7 +156,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
             ->get()
             ->sum(fn (TimeOff $timeOff): int => $timeOff->weekdaysIn($year));
 
-        return $this->paidDaysIn($year) - $taken;
+        return $this->paid_days - $taken;
     }
 
     /**

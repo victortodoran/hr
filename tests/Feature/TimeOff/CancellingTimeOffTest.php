@@ -3,7 +3,6 @@
 use App\Enums\TimeOffState;
 use App\Http\Controllers\TimeOffCancellationController;
 use App\Models\Employee;
-use App\Models\PaidDays;
 use App\Models\TimeOff;
 use App\Policies\TimeOffPolicy;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -23,7 +22,7 @@ beforeEach(function () {
  */
 function carasTimeOff(?string $state = null): TimeOff
 {
-    $factory = TimeOff::factory()->for(Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06']));
+    $factory = TimeOff::factory()->for(Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'paid_days' => 20]));
 
     return ($state === null ? $factory : $factory->{$state}())->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
 }
@@ -44,7 +43,6 @@ it('lets an Employee cancel their Pending or Approved Time Off before its first 
 
 it('frees the Paid Days of cancelled Time Off', function () {
     $timeOff = carasTimeOff();
-    PaidDays::factory()->for($timeOff->employee)->create(['year' => 2026, 'days' => 20]);
 
     actingAs($timeOff->employee)->post(route('time-off.cancellation.store', $timeOff));
 

@@ -27,7 +27,6 @@ import type {
     EmployeePageTab,
     EmployeeTimeOff,
     OpenProject,
-    PaidDaysRecord,
     PayEntryRecord,
     ReportingChainView,
     TableColumn,
@@ -57,8 +56,8 @@ const props = withDefaults(
         /** The company currency; only sent to those who may manage Pay. */
         currency?: string;
         canEdit: boolean;
-        /** This year's and next year's; null unless the viewer may set them. */
-        paidDays?: PaidDaysRecord[] | null;
+        /** The same number for every year; null unless the viewer may set it. */
+        paidDays?: number | null;
         /** Null unless the viewer may see the Employee's Time Off. */
         timeOff?: EmployeeTimeOff | null;
     }>(),
@@ -287,20 +286,21 @@ setLayoutProps({
                 </section>
             </TabsContent>
             <TabsContent value="time-off" class="mt-4 flex flex-col gap-8">
-                <section v-if="paidDays" class="flex flex-col gap-4">
+                <section
+                    v-if="paidDays !== null && paidDays !== undefined"
+                    class="flex flex-col gap-4"
+                >
                     <div>
                         <h2 class="text-lg font-semibold">Paid Days</h2>
                         <p class="text-sm text-muted-foreground">
-                            Days of Paid Time Off each year. A year with no
-                            number of its own keeps the year before's.
+                            Days of Paid Time Off every year gets. Changing them
+                            changes past years too.
                         </p>
                     </div>
-                    <div class="flex flex-wrap gap-8 rounded-lg border p-4">
+                    <div class="rounded-lg border p-4">
                         <PaidDaysForm
-                            v-for="year in paidDays"
-                            :key="year.year"
                             :employee="employee"
-                            :paid-days="year"
+                            :paid-days="paidDays"
                         />
                     </div>
                 </section>

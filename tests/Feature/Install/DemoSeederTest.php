@@ -52,7 +52,7 @@ it('gives Ben Pending Work Entries of the Employees he manages to approve, next 
 
 it('gives most Employees Paid Days and one none, and Time Off in every state for their Managers to see', function () {
     seed(DemoSeeder::class);
-    $paidDays = Employee::query()->get()->map(fn (Employee $employee): int => $employee->paidDaysIn(today()->year));
+    $paidDays = Employee::query()->pluck('paid_days');
     $ben = Employee::query()->where('email', 'ben@acme.test')->sole();
     $pendingForBen = TimeOff::query()->where('state', TimeOffState::Pending)
         ->whereIn('employee_id', Employee::query()->effectivelyManagedBy($ben)->select('employees.id'));

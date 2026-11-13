@@ -8,7 +8,6 @@ use App\Http\Controllers\TimeOffDeclineController;
 use App\Http\Requests\TimeOffApprovalRequest;
 use App\Http\Requests\TimeOffDeclineRequest;
 use App\Models\Employee;
-use App\Models\PaidDays;
 use App\Models\Role;
 use App\Models\TimeOff;
 use App\Policies\TimeOffPolicy;
@@ -157,12 +156,11 @@ it('lets the Manager answer Pending Time Off whose first date has passed', funct
 /**
  * Cara's Paid Time Off from Mon 28 Dec 2026 to Fri 8 Jan 2027: 4 weekdays in
  * 2026 and 6 in 2027, Pending with Ben as her Manager. She has 20 Paid Days
- * a year from 2026.
+ * a year unless given others.
  */
-function pendingPaidTimeOffOverNewYear(Employee $ben): TimeOff
+function pendingPaidTimeOffOverNewYear(Employee $ben, int $paidDays = 20): TimeOff
 {
-    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'manager_id' => $ben->id]);
-    PaidDays::factory()->for($cara)->create(['year' => 2026, 'days' => 20]);
+    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'manager_id' => $ben->id, 'paid_days' => $paidDays]);
 
     return TimeOff::factory()->for($cara)->create(['first_date' => '2026-12-28', 'last_date' => '2027-01-08']);
 }
@@ -170,28 +168,30 @@ function pendingPaidTimeOffOverNewYear(Employee $ben): TimeOff
 it('approves Paid Time Off that takes exactly the Paid Days left', function () {
     $ben = timeOffManager();
     $timeOff = pendingPaidTimeOffOverNewYear($ben);
-    PaidDays::factory()->for($timeOff->employee)->create(['year' => 2027, 'days' => 6]);
     TimeOff::factory()->for($timeOff->employee)->approved()->create(['first_date' => '2026-12-04', 'last_date' => '2026-12-25']);
+    TimeOff::factory()->for($timeOff->employee)->approved()->create(['first_date' => '2027-02-01', 'last_date' => '2027-02-18']);
 
     actingAs($ben)->post(route('time-off.approval.store', $timeOff))->assertSessionHasNoErrors();
 
     expect($timeOff->refresh()->state)->toBe(TimeOffState::Approved);
 });
 
-it('refuses approving Paid Time Off once Paid Days were lowered below what it takes, saying how many are left', function (int $year, int $days, string $message) {
+it('refuses approving Paid Time Off once Paid Days left fall below what it takes, saying how many are left', function (int $paidDays, ?array $taken, string $message) {
     $ben = timeOffManager();
-    $timeOff = pendingPaidTimeOffOverNewYear($ben);
-    PaidDays::factory()->for($timeOff->employee)->create(['year' => 2027, 'days' => 20]);
-    $timeOff->employee->paidDays()->where('year', $year)->update(['days' => $days]);
+    $timeOff = pendingPaidTimeOffOverNewYear($ben, $paidDays);
+    if ($taken !== null) {
+        TimeOff::factory()->for($timeOff->employee)->approved()->create(['first_date' => $taken[0], 'last_date' => $taken[1]]);
+    }
 
     actingAs($ben)->post(route('time-off.approval.store', $timeOff))
         ->assertSessionHasErrors(['approval' => $message]);
 
     expect($timeOff->refresh()->state)->toBe(TimeOffState::Pending);
 })->with([
-    'in its first year' => [2026, 3, 'Cara has 3 Paid Days left in 2026 besides this Time Off, but it takes 4. Decline it instead, so the rest can be requested as Unpaid Time Off.'],
-    'in its last year' => [2027, 5, 'Cara has 5 Paid Days left in 2027 besides this Time Off, but it takes 6. Decline it instead, so the rest can be requested as Unpaid Time Off.'],
-    'down to one' => [2027, 1, 'Cara has 1 Paid Day left in 2027 besides this Time Off, but it takes 6. Decline it instead, so the rest can be requested as Unpaid Time Off.'],
+    'in its first year, 17 taken' => [20, ['2026-11-02', '2026-11-24'], 'Cara has 3 Paid Days left in 2026 besides this Time Off, but it takes 4. Decline it instead, so the rest can be requested as Unpaid Time Off.'],
+    'in its last year, lowered to 5' => [5, null, 'Cara has 5 Paid Days left in 2027 besides this Time Off, but it takes 6. Decline it instead, so the rest can be requested as Unpaid Time Off.'],
+    'down to one, 19 taken' => [20, ['2027-02-01', '2027-02-25'], 'Cara has 1 Paid Day left in 2027 besides this Time Off, but it takes 6. Decline it instead, so the rest can be requested as Unpaid Time Off.'],
+    'below none, 22 taken' => [20, ['2026-11-02', '2026-12-01'], 'Cara has no Paid Days left in 2026 besides this Time Off, since 2 more are already taken than they have. Decline it instead, so it can be requested as Unpaid Time Off.'],
 ]);
 
 it('approves Unpaid Time Off whatever Paid Days are left', function () {

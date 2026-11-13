@@ -4,7 +4,6 @@ use App\Enums\TimeOffState;
 use App\Http\Controllers\TimeOffController;
 use App\Http\Requests\TimeOffRequest;
 use App\Models\Employee;
-use App\Models\PaidDays;
 use App\Models\TimeOff;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -19,16 +18,13 @@ beforeEach(function () {
 });
 
 /**
- * Cara, who started on 6 Jan 2025 and has 20 Paid Days a year from 2025.
+ * Cara, who started on 6 Jan 2025 and has 20 Paid Days a year.
  *
  * @param  array<string, mixed>  $attributes
  */
 function timeOffRequester(array $attributes = []): Employee
 {
-    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', ...$attributes]);
-    PaidDays::factory()->for($cara)->create(['year' => 2025, 'days' => 20]);
-
-    return $cara;
+    return Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'paid_days' => 20, ...$attributes]);
 }
 
 /**
@@ -210,29 +206,28 @@ it('accepts Paid Time Off using exactly the Paid Days left, not counting Unpaid,
     expect(storedTimeOff($cara))->toHaveCount(5);
 });
 
-it('checks Time Off across New Year against each year\'s own Paid Days: 28 Dec 2026 to 8 Jan 2027 is 4 days in 2026 and 6 in 2027', function (int $days2026, int $days2027, ?string $message) {
-    $cara = Employee::factory()->create(['start_date' => '2025-01-06']);
-    PaidDays::factory()->for($cara)->create(['year' => 2026, 'days' => $days2026]);
-    PaidDays::factory()->for($cara)->create(['year' => 2027, 'days' => $days2027]);
+it('checks Time Off across New Year against each year\'s own days left from the same Paid Days: 28 Dec 2026 to 8 Jan 2027 is 4 days in 2026 and 6 in 2027', function (string $taken2026, string $taken2027, ?string $message) {
+    $cara = Employee::factory()->create(['start_date' => '2025-01-06', 'paid_days' => 10]);
+    TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => $taken2026]);
+    TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2027-02-01', 'last_date' => $taken2027]);
 
     $response = actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-28', 'last_date' => '2027-01-08']));
 
     if ($message === null) {
         $response->assertSessionHasNoErrors();
-        expect(storedTimeOff($cara))->toHaveCount(1);
+        expect(storedTimeOff($cara))->toHaveCount(3);
     } else {
         $response->assertSessionHasErrors(['is_paid' => $message]);
-        expect(storedTimeOff($cara))->toBe([]);
+        expect(storedTimeOff($cara))->toHaveCount(2);
     }
 })->with([
-    'enough in both years' => [4, 6, null],
-    'too few in 2026' => [3, 6, 'You have 3 Paid Days left in 2026, but this Paid Time Off takes 4. Request the rest as Unpaid Time Off.'],
-    'too few in 2027' => [4, 5, 'You have 5 Paid Days left in 2027, but this Paid Time Off takes 6. Request the rest as Unpaid Time Off.'],
+    '6 taken in 2026 and 4 in 2027, leaving exactly enough' => ['2026-02-09', '2027-02-04', null],
+    '7 taken in 2026, leaving too few' => ['2026-02-10', '2027-02-04', 'You have 3 Paid Days left in 2026, but this Paid Time Off takes 4. Request the rest as Unpaid Time Off.'],
+    '5 taken in 2027, leaving too few' => ['2026-02-09', '2027-02-05', 'You have 5 Paid Days left in 2027, but this Paid Time Off takes 6. Request the rest as Unpaid Time Off.'],
 ]);
 
 it('counts Paid Time Off on the last and first day of a year in that year only', function () {
-    $cara = Employee::factory()->create(['start_date' => '2025-01-06']);
-    PaidDays::factory()->for($cara)->create(['year' => 2026, 'days' => 1]);
+    $cara = Employee::factory()->create(['start_date' => '2025-01-06', 'paid_days' => 1]);
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-31', 'last_date' => '2026-12-31']);
     TimeOff::factory()->for($cara)->create(['first_date' => '2027-01-01', 'last_date' => '2027-01-01']);
 
@@ -244,7 +239,6 @@ it('counts Paid Time Off on the last and first day of a year in that year only',
 
 it('shows the Employee their own Time Off, latest first, and the Paid Days left this year', function () {
     $cara = timeOffRequester();
-    PaidDays::factory()->for($cara)->create(['year' => 2027, 'days' => 25]);
     $february = TimeOff::factory()->for($cara)->approved(Employee::factory()->create(['name' => 'Ben']))->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-06']);
     $unpaid = TimeOff::factory()->for($cara)->unpaid()->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-14']);
     $newYear = TimeOff::factory()->for($cara)->create(['first_date' => '2026-12-28', 'last_date' => '2027-01-08']);
@@ -266,12 +260,23 @@ it('shows the Employee their own Time Off, latest first, and the Paid Days left 
 });
 
 it('shows negative Paid Days left once HR has lowered them below what is taken', function () {
-    $cara = timeOffRequester();
+    $cara = timeOffRequester(['paid_days' => 15]);
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-27']);
-    PaidDays::factory()->for($cara)->create(['year' => 2026, 'days' => 15]);
 
     actingAs($cara)->get(route('time-off.index'))
         ->assertInertia(fn (Assert $page) => $page->where('paidDaysLeft', -5));
+});
+
+it('refuses Paid Time Off while Paid Days left are negative, but still takes Unpaid', function () {
+    $cara = timeOffRequester(['paid_days' => 15]);
+    TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-27']);
+
+    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-14', 'last_date' => '2026-12-14']))
+        ->assertSessionHasErrors(['is_paid' => 'You have no Paid Days left in 2026, since 5 more are already taken than you have. Request this as Unpaid Time Off.']);
+    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-14', 'last_date' => '2026-12-14', 'is_paid' => false]))
+        ->assertSessionHasNoErrors();
+
+    expect(storedTimeOff($cara))->toHaveCount(2);
 });
 
 it('needs signing in to see or request Time Off', function () {

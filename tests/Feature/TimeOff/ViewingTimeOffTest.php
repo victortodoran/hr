@@ -5,7 +5,6 @@ use App\Enums\Scope;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\TimeOffController;
 use App\Models\Employee;
-use App\Models\PaidDays;
 use App\Models\TimeOff;
 use App\Policies\EmployeePolicy;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -20,15 +19,14 @@ beforeEach(function () {
 });
 
 /**
- * Cara, who reports to Ben, with 20 Paid Days in 2026 and Time Off in
+ * Cara, who reports to Ben, with 20 Paid Days a year and Time Off in
  * every state: 5 days of Approved Paid Time Off already taken, Declined
  * Paid Time Off, 2 days of Pending Paid Time Off and Cancelled Unpaid
  * Time Off, all decided by Ben.
  */
 function caraWithTimeOff(Employee $ben): Employee
 {
-    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'manager_id' => $ben->id]);
-    PaidDays::factory()->for($cara)->create(['year' => 2026, 'days' => 20]);
+    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'manager_id' => $ben->id, 'paid_days' => 20]);
 
     TimeOff::factory()->for($cara)->approved($ben)->create(['first_date' => '2026-02-16', 'last_date' => '2026-02-20']);
     TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-04-06', 'last_date' => '2026-04-07', 'decided_by' => $ben->id, 'decline_reason' => 'Release week']);
@@ -90,7 +88,7 @@ it('shows Cara\'s Time Off to someone who manages her Paid Days', function () {
     actingAs(employeeWith([Permission::ManagePaidDays->value => Scope::Everyone]))
         ->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('paidDays', 2)
+            ->where('paidDays', 20)
             ->where('timeOff.paid_days', 20)
             ->has('timeOff.requests', 4));
 });

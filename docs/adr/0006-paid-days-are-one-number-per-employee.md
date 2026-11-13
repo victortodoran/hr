@@ -1,0 +1,3 @@
+# Paid Days are one number per Employee, not one per year
+
+Paid Days used to be kept per year, so changing 2027 never touched 2026. We replaced that with a single number on each Employee that applies to every year. Changing it rewrites past years' Paid Days and days left, and we accept that: unused Paid Days are lost when the year ends, so a closed year's days left is history nobody acts on, and one number is simpler for HR to set and for everyone to read. When we moved over, each Employee kept the number that applied in the current year, and numbers set in advance for later years were dropped. Don't bring back per-year history without revisiting this.

@@ -6,15 +6,15 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\PaidDaysController;
 use App\Http\Requests\PaidDaysRequest;
 use App\Models\Employee;
-use App\Models\PaidDays;
 use App\Models\Role;
+use App\Models\TimeOff;
 use App\Policies\EmployeePolicy;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(PaidDaysController::class, PaidDaysRequest::class, PaidDays::class, EmployeeController::class, EmployeePolicy::class, Employee::class, Permission::class);
+covers(PaidDaysController::class, PaidDaysRequest::class, EmployeeController::class, EmployeePolicy::class, Employee::class, Permission::class);
 
 beforeEach(function () {
     travelTo('2026-03-01 09:00');
@@ -30,92 +30,89 @@ function paidDaysManager(): Employee
 
 /**
  * An Employee named Cara.
+ *
+ * @param  array<string, mixed>  $attributes
  */
-function cara(): Employee
+function cara(array $attributes = []): Employee
 {
-    return Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06']);
+    return Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', ...$attributes]);
 }
 
 /**
- * Cara's Paid Days for each year, as stored.
- *
- * @return array<int, int>
+ * The Paid Days the Employee's page shows on its Time Off tab to someone who
+ * manages them.
  */
-function storedPaidDays(Employee $employee): array
+function shownPaidDays(Employee $employee): mixed
 {
-    return PaidDays::query()->where('employee_id', $employee->id)->orderBy('year')->pluck('days', 'year')->all();
+    return actingAs(paidDaysManager())
+        ->get(route('employees.show', ['employee' => $employee, 'tab' => 'time-off']))
+        ->inertiaProps('paidDays');
 }
 
-it('lets someone who manages Paid Days set an Employee\'s Paid Days for a year, leaving other years alone', function () {
+it('lets someone who manages Paid Days set an Employee\'s Paid Days, with no year', function () {
     $cara = cara();
-    PaidDays::factory()->for($cara)->create(['year' => 2025, 'days' => 18]);
-    PaidDays::factory()->for($cara)->create(['year' => 2027, 'days' => 25]);
 
     actingAs(paidDaysManager())
-        ->post(route('employees.paid-days.store', $cara), ['year' => 2026, 'days' => 20])
+        ->post(route('employees.paid-days.store', $cara), ['days' => 20])
         ->assertRedirect(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Paid Days for 2026 saved.']);
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Paid Days saved.']);
 
-    expect(storedPaidDays($cara))->toBe([2025 => 18, 2026 => 20, 2027 => 25]);
+    expect(shownPaidDays($cara))->toBe(20);
 });
 
-it('changes a year\'s Paid Days that are already set', function () {
+it('applies the one number to every year, past ones included', function (string $date) {
     $cara = cara();
-    PaidDays::factory()->for($cara)->create(['year' => 2026, 'days' => 20]);
+    actingAs(paidDaysManager())->post(route('employees.paid-days.store', $cara), ['days' => 20]);
+    travelTo($date);
 
-    actingAs(paidDaysManager())
-        ->post(route('employees.paid-days.store', $cara), ['year' => 2026, 'days' => 8])
-        ->assertSessionHasNoErrors();
-
-    expect(storedPaidDays($cara))->toBe([2026 => 8]);
-});
-
-it('allows 0 Paid Days and next year\'s', function (int $year, int $days) {
-    $cara = cara();
-
-    actingAs(paidDaysManager())
-        ->post(route('employees.paid-days.store', $cara), ['year' => $year, 'days' => $days])
-        ->assertSessionHasNoErrors();
-
-    expect(storedPaidDays($cara))->toBe([$year => $days]);
+    actingAs($cara->refresh())->get(route('time-off.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('paidDaysLeft', 20));
 })->with([
-    'none this year' => [2026, 0],
-    'next year' => [2027, 22],
+    'last year' => ['2025-06-01 09:00'],
+    'this year' => ['2026-06-01 09:00'],
+    'next year' => ['2027-06-01 09:00'],
 ]);
 
-it('shows Paid Days for this year and next, a year with no number copying the most recent earlier one', function (array $set, array $shown) {
-    $cara = cara();
-    foreach ($set as $year => $days) {
-        PaidDays::factory()->for($cara)->create(['year' => $year, 'days' => $days]);
-    }
+it('changes Paid Days that are already set', function () {
+    $cara = cara(['paid_days' => 20]);
+
+    actingAs(paidDaysManager())
+        ->post(route('employees.paid-days.store', $cara), ['days' => 8])
+        ->assertSessionHasNoErrors();
+
+    expect(shownPaidDays($cara))->toBe(8);
+});
+
+it('gives a new Employee no Paid Days', function () {
+    expect(shownPaidDays(cara()))->toBe(0);
+});
+
+it('allows 0 Paid Days and as many as a leap year has', function (int $days) {
+    $cara = cara(['paid_days' => 20]);
+
+    actingAs(paidDaysManager())
+        ->post(route('employees.paid-days.store', $cara), ['days' => $days])
+        ->assertSessionHasNoErrors();
+
+    expect(shownPaidDays($cara))->toBe($days);
+})->with([0, 366]);
+
+it('saves Paid Days lowered below what is booked, leaving the booked Time Off as it is and days left negative', function () {
+    $cara = cara(['paid_days' => 20]);
+    $booked = TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-20']);
+
+    actingAs(paidDaysManager())
+        ->post(route('employees.paid-days.store', $cara), ['days' => 10])
+        ->assertSessionHasNoErrors();
 
     actingAs(paidDaysManager())->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('paidDays', [
-                ['year' => 2026, 'days' => $shown[0]],
-                ['year' => 2027, 'days' => $shown[1]],
-            ]));
-})->with([
-    'nothing set at all' => [[], [0, 0]],
-    'this year copied forward' => [[2026 => 20], [20, 20]],
-    'an earlier year copied forward' => [[2024 => 15, 2025 => 18], [18, 18]],
-    'each year its own' => [[2026 => 8, 2027 => 20], [8, 20]],
-    'a later year never copied back' => [[2027 => 20], [0, 20]],
-    'a year far ahead ignored' => [[2025 => 18, 2030 => 30], [18, 18]],
-]);
-
-it('keeps copying forward into the new year', function () {
-    $cara = cara();
-    PaidDays::factory()->for($cara)->create(['year' => 2026, 'days' => 20]);
-    PaidDays::factory()->for(Employee::factory())->create(['year' => 2027, 'days' => 5]);
-    travelTo('2027-01-01 09:00');
-
-    actingAs(paidDaysManager())->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('paidDays', [
-                ['year' => 2027, 'days' => 20],
-                ['year' => 2028, 'days' => 20],
-            ]));
+            ->where('paidDays', 10)
+            ->where('timeOff.paid_days', 10)
+            ->where('timeOff.paid_days_left', -5)
+            ->where('timeOff.requests.0.id', $booked->id)
+            ->where('timeOff.requests.0.state', 'approved')
+            ->where('timeOff.requests.0.days', 15));
 });
 
 it('shows Paid Days only to those who manage them for the Employee', function () {
@@ -127,23 +124,23 @@ it('shows Paid Days only to those who manage them for the Employee', function ()
 });
 
 it('lets someone who only manages Paid Days open the Employee\'s page to set them', function () {
-    $cara = cara();
+    $cara = cara(['paid_days' => 20]);
 
     actingAs(paidDaysManager())->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('tabs', ['overview', 'time-off'])
             ->where('tab', 'time-off')
-            ->has('paidDays', 2));
+            ->where('paidDays', 20));
 });
 
 it('refuses setting Paid Days to someone without Manage Paid Days for the Employee', function (array $grants) {
-    $cara = cara();
+    $cara = cara(['paid_days' => 20]);
 
     actingAs(employeeWith($grants))
-        ->post(route('employees.paid-days.store', $cara), ['year' => 2026, 'days' => 20])
+        ->post(route('employees.paid-days.store', $cara), ['days' => 5])
         ->assertForbidden();
 
-    expect(storedPaidDays($cara))->toBe([]);
+    expect(shownPaidDays($cara))->toBe(20);
 })->with([
     'no Permission' => [[]],
     'managing Employees and Pay' => [[Permission::ManageEmployees->value => null, Permission::ManagePay->value => Scope::Everyone]],
@@ -163,13 +160,13 @@ it('lets someone with the reports Scope set Paid Days for their Reports only', f
     $eve = Employee::factory()->create(['manager_id' => $dana->id]);
 
     foreach ([$cara, $dev] as $report) {
-        actingAs($ben)->post(route('employees.paid-days.store', $report), ['year' => 2026, 'days' => 20])->assertSessionHasNoErrors();
+        actingAs($ben)->post(route('employees.paid-days.store', $report), ['days' => 20])->assertSessionHasNoErrors();
     }
     foreach ([$ben, $dana, $eve] as $other) {
-        actingAs($ben)->post(route('employees.paid-days.store', $other), ['year' => 2026, 'days' => 20])->assertForbidden();
+        actingAs($ben)->post(route('employees.paid-days.store', $other), ['days' => 20])->assertForbidden();
     }
 
-    expect(PaidDays::query()->pluck('employee_id')->sort()->values()->all())->toBe([$cara->id, $dev->id]);
+    expect(array_map(shownPaidDays(...), [$cara, $dev, $ben, $dana, $eve]))->toBe([20, 20, 0, 0, 0]);
 });
 
 it('lets Admin set Paid Days without being granted Manage Paid Days', function () {
@@ -178,27 +175,23 @@ it('lets Admin set Paid Days without being granted Manage Paid Days', function (
     $ana->roles()->attach(Role::factory()->admin()->create());
 
     actingAs($ana)
-        ->post(route('employees.paid-days.store', $cara), ['year' => 2026, 'days' => 20])
+        ->post(route('employees.paid-days.store', $cara), ['days' => 20])
         ->assertSessionHasNoErrors();
 
-    expect(storedPaidDays($cara))->toBe([2026 => 20]);
+    expect(shownPaidDays($cara))->toBe(20);
 });
 
-it('refuses Paid Days that are negative, fractions or too many, and years already past', function (array $input, string $field, string $message) {
-    $cara = cara();
+it('refuses Paid Days that are missing, negative, fractions or too many', function (mixed $days, string $message) {
+    $cara = cara(['paid_days' => 20]);
 
     actingAs(paidDaysManager())
-        ->post(route('employees.paid-days.store', $cara), ['year' => 2026, 'days' => 20, ...$input])
-        ->assertSessionHasErrors([$field => $message]);
+        ->post(route('employees.paid-days.store', $cara), ['days' => $days])
+        ->assertSessionHasErrors(['days' => $message]);
 
-    expect(storedPaidDays($cara))->toBe([]);
+    expect(shownPaidDays($cara))->toBe(20);
 })->with([
-    'no days' => [['days' => ''], 'days', 'The Paid Days field is required.'],
-    'negative' => [['days' => -1], 'days', 'The Paid Days field must be at least 0.'],
-    'a fraction' => [['days' => '2.5'], 'days', 'The Paid Days field must be an integer.'],
-    'more days than a year has' => [['days' => 367], 'days', 'The Paid Days field must not be greater than 366.'],
-    'no year' => [['year' => ''], 'year', 'The year field is required.'],
-    'not a year' => [['year' => 'next'], 'year', 'The year field must be an integer.'],
-    'last year' => [['year' => 2025], 'year', 'Paid Days can only be set from 2026 onward.'],
-    'too far ahead' => [['year' => 10000], 'year', 'The year field must not be greater than 9999.'],
+    'no days' => ['', 'The Paid Days field is required.'],
+    'negative' => [-1, 'The Paid Days field must be at least 0.'],
+    'a fraction' => ['2.5', 'The Paid Days field must be an integer.'],
+    'more days than a year has' => [367, 'The Paid Days field must not be greater than 366.'],
 ]);

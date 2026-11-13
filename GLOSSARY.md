@@ -127,7 +127,7 @@ Time Off the company doesn't pay for. It uses no Paid Days, so any Employee can 
 _Avoid_: Unpaid leave
 
 **Paid Days**:
-How many days of Paid Time Off an Employee gets in one calendar year, as in "Cara has 20 Paid Days in 2026". Each year has its own number: a new year starts with the previous year's number until HR changes it, and changing one year never changes another. Unused Paid Days are lost when the year ends.
+How many days of Paid Time Off an Employee gets each calendar year, as in "Cara has 20 Paid Days a year". Each Employee has one number that applies to every year, starting at none; changing it changes every year, past ones included. Unused Paid Days are lost when the year ends.
 _Avoid_: Allowance, entitlement, balance, holiday days, PTO days
 
 **Declined**:
