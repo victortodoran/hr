@@ -23,9 +23,9 @@ use Inertia\Response;
  * The Approvals page, in two tabs. Work Entries: Work Entries across the Employees the viewer may
  * approve or reopen for (everyone, for someone who can lock), filtered, and
  * approving or reopening many of them at once. Only an Employee's effective
- * Manager approves their Work Entries; reopening is also open to a Role that
- * grants it. Nobody approves or reopens their own Work Entries; locking is
- * done by the LockController. Time Off: the Pending Time Off the viewer
+ * Manager approves their Work Entries; only a Role that grants reopening
+ * reopens them, being the Manager is not enough. Nobody approves or reopens
+ * their own Work Entries; locking is done by the LockController. Time Off: the Pending Time Off the viewer
  * decides as an effective Manager, answered by the TimeOffApprovalController
  * and TimeOffDeclineController.
  */
@@ -66,7 +66,7 @@ class ApprovalController extends Controller
     {
         $canLock = $actor->can('lock', WorkEntry::class);
         $filters = $request->filters($canApprove ? WorkEntryState::Pending : WorkEntryState::Approved);
-        $listed = $canLock ? Employee::query() : $this->reopenable($actor);
+        $listed = $canLock ? Employee::query() : $this->approvableOrReopenable($actor);
         $matching = $this->entriesOf(clone $listed)->filteredBy($filters);
         $approvable = $this->approvable($actor)->pluck('id');
         $reopenable = $this->reopenable($actor)->pluck('id');
@@ -74,7 +74,7 @@ class ApprovalController extends Controller
         return [
             'filters' => $filters,
             'canApprove' => $canApprove,
-            'canReopen' => $canApprove || $actor->holds(Permission::ReopenWorkEntries),
+            'canReopen' => $actor->holds(Permission::ReopenWorkEntries),
             'canLock' => $canLock,
             'entries' => (clone $matching)
                 ->with(['assignment.employee:id,name', 'assignment.project:id,name', 'approver:id,name', 'locker:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
@@ -169,8 +169,7 @@ class ApprovalController extends Controller
 
     /**
      * Reopen the selected Work Entries the actor may reopen: Approved ones of
-     * Employees whose effective Manager they are or whom their reopen Scope
-     * covers, never their own, sent back to Pending
+     * Employees their reopen Scope covers, never their own, sent back to Pending
      * with their approval withdrawn. The rest are skipped, and the toast says
      * how many of each.
      */
@@ -203,13 +202,34 @@ class ApprovalController extends Controller
     }
 
     /**
-     * The Employees whose Work Entries the actor may reopen: those whose
-     * effective Manager they are, and those their reopen Scope covers, never
-     * the actor themselves.
+     * The Employees whose Work Entries the actor may reopen: those their
+     * reopen Scope covers, never the actor themselves. Being an Employee's
+     * Manager doesn't count, so without the Permission this is nobody.
      *
      * @return Builder<Employee>
      */
     private function reopenable(Employee $actor): Builder
+    {
+        $scope = $actor->widestScopeFor(Permission::ReopenWorkEntries);
+        $employees = Employee::query()->whereKeyNot($actor->id);
+
+        if ($scope === null) {
+            return $employees->whereRaw('false');
+        }
+
+        $scope->limit($employees, $actor);
+
+        return $employees;
+    }
+
+    /**
+     * The Employees the actor may approve or reopen for, never the actor
+     * themselves: whose Work Entries the Work Entries tab lists for someone
+     * who can't lock.
+     *
+     * @return Builder<Employee>
+     */
+    private function approvableOrReopenable(Employee $actor): Builder
     {
         $scope = $actor->widestScopeFor(Permission::ReopenWorkEntries);
 

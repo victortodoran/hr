@@ -114,32 +114,43 @@ it('reopens only the selected Work Entries it may, and says how many it skipped'
         ->and($locked->refresh()->state)->toBe(WorkEntryState::Locked);
 });
 
-it('lets a Manager reopen their Direct Report\'s Work Entries with no Role, while a reopen Role never lets anyone approve', function () {
-    $ada = Employee::factory()->top()->create();
-    $manager = Employee::factory()->create(['manager_id' => $ada->id]);
-    $reopener = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone], ['manager_id' => $ada->id]);
-    $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $manager->id]));
-    $approved = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
-    $pending = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
-
-    actingAs($manager)->delete(route('approvals.destroy'), ['ids' => [$approved->id]])
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry reopened.']);
-    actingAs($reopener)->post(route('approvals.store'), ['ids' => [$pending->id]])
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Work Entries approved, 1 skipped.']);
-
-    expect($approved->refresh()->state)->toBe(WorkEntryState::Pending)
-        ->and($pending->refresh()->state)->toBe(WorkEntryState::Pending);
-});
-
-it('refuses reopening to a Manager two levels up who holds no reopen Role', function () {
+it('neither offers nor lets a Manager with no reopen Role reopen their Direct Report\'s Work Entries', function () {
     $ada = Employee::factory()->top()->create();
     $ben = Employee::factory()->create(['manager_id' => $ada->id]);
     $approved = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $ben->id])))->approved()->create(['date' => '2026-11-10']);
 
-    actingAs($ada)->delete(route('approvals.destroy'), ['ids' => [$approved->id]])
+    actingAs($ben)->get(route('approvals.index', ['state' => 'approved']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('canReopen', false)
+            ->where('entries.data.0.id', $approved->id)
+            ->where('entries.data.0.can_reopen', false));
+    actingAs($ben)->delete(route('approvals.destroy'), ['ids' => [$approved->id]])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Work Entries reopened, 1 skipped.']);
 
     expect($approved->refresh()->state)->toBe(WorkEntryState::Approved);
+});
+
+it('reopens only for the Reports a reopen Scope of reports covers', function () {
+    $rae = reopener();
+    $report = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $rae->id])))->approved()->create(['date' => '2026-11-10']);
+    $peer = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $rae->manager_id])))->approved()->create(['date' => '2026-11-10']);
+
+    actingAs($rae)->delete(route('approvals.destroy'), ['ids' => [$report->id, $peer->id]])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry reopened, 1 skipped.']);
+
+    expect($report->refresh()->state)->toBe(WorkEntryState::Pending)
+        ->and($peer->refresh()->state)->toBe(WorkEntryState::Approved);
+});
+
+it('never lets a reopen Role approve', function () {
+    $ada = Employee::factory()->top()->create();
+    $reopener = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone], ['manager_id' => $ada->id]);
+    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $ada->id])))->create(['date' => '2026-11-10']);
+
+    actingAs($reopener)->post(route('approvals.store'), ['ids' => [$pending->id]])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Work Entries approved, 1 skipped.']);
+
+    expect($pending->refresh()->state)->toBe(WorkEntryState::Pending);
 });
 
 it('refuses a reopening selection that is not a list of Work Entry IDs', function () {

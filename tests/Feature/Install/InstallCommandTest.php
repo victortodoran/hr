@@ -150,7 +150,7 @@ it('marks only the starter Employee Role as given to new Employees', function ()
     expect(Role::query()->where('is_given_to_new_employees', true)->pluck('name')->all())->toBe(['Employee']);
 });
 
-it('creates the starter Manager Role: Reports\' records, Assignments, Work Entries and Time Off, plus Projects', function () {
+it('creates the starter Manager Role: Reports\' records, Assignments, Work Entries, reopening them, and Time Off, plus Projects', function () {
     install(installOptions())->assertSuccessful();
 
     $ben = Employee::factory()->create();
@@ -162,6 +162,7 @@ it('creates the starter Manager Role: Reports\' records, Assignments, Work Entri
         ->and($ben->widestScopeFor(Permission::ViewAssignments)?->value)->toBe('reports')
         ->and($ben->widestScopeFor(Permission::ManageAssignments)?->value)->toBe('reports')
         ->and($ben->widestScopeFor(Permission::ViewWorkEntries)?->value)->toBe('reports')
+        ->and($ben->widestScopeFor(Permission::ReopenWorkEntries)?->value)->toBe('reports')
         ->and($ben->widestScopeFor(Permission::ViewTimeOff)?->value)->toBe('reports')
         ->and($ben->widestScopeFor(Permission::ManagePaidDays))->toBeNull()
         ->and(Role::query()->where('name', 'Manager')->sole()->grants())->not->toHaveKey('approve-work-entries')
