@@ -7,8 +7,8 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 
 /**
- * The Work Entries page's filters: an Employee, a Project, a date range and
- * a state, each optional, every state when none is chosen.
+ * The Work Entries page's filters: a month, an Employee or "all" for any
+ * Employee, a Project and a state, any state when none is chosen.
  */
 class WorkEntryListRequest extends WorkEntryFiltersRequest
 {
@@ -17,16 +17,27 @@ class WorkEntryListRequest extends WorkEntryFiltersRequest
      */
     public function rules(): array
     {
-        return [...parent::rules(), 'state' => ['nullable', Rule::enum(WorkEntryState::class)]];
+        return [
+            ...parent::rules(),
+            'employee' => ['nullable', 'regex:/^(all|[0-9]+)$/'],
+            'state' => ['nullable', Rule::enum(WorkEntryState::class)],
+        ];
     }
 
     /**
-     * The filters, null where none is set.
+     * The filters asked for, null where none is set; the Employee is "all"
+     * when any Employee is asked for.
      *
-     * @return array{employee: int|null, project: int|null, from: string|null, to: string|null, state: string|null}
+     * @return array{month: string, employee: int|'all'|null, project: int|null, state: string|null}
      */
     public function filters(): array
     {
-        return [...parent::filters(), 'state' => $this->filled('state') ? $this->string('state')->value() : null];
+        $filters = parent::filters();
+
+        return [
+            ...$filters,
+            'employee' => $this->input('employee') === 'all' ? 'all' : $filters['employee'],
+            'state' => $this->filled('state') ? $this->string('state')->value() : null,
+        ];
     }
 }

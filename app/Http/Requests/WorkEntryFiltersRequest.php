@@ -6,8 +6,8 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Filters for a list of Work Entries: an Employee, a Project and a date
- * range, each optional.
+ * Filters for a month of Work Entries: the month, as YYYY-MM, and an
+ * Employee and a Project, each optional.
  */
 class WorkEntryFiltersRequest extends FormRequest
 {
@@ -17,25 +17,28 @@ class WorkEntryFiltersRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'month' => ['nullable', 'date_format:Y-m'],
             'employee' => ['nullable', 'integer'],
             'project' => ['nullable', 'integer'],
-            'from' => ['nullable', 'date_format:Y-m-d'],
-            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
         ];
     }
 
     /**
-     * The filters, null where none is set.
+     * The filters, null where none is set. The month is the current one when
+     * none is asked for, or one after it, as Work Entries are never in the
+     * future.
      *
-     * @return array{employee: int|null, project: int|null, from: string|null, to: string|null}
+     * @return array{month: string, employee: int|null, project: int|null}
      */
     public function filters(): array
     {
+        $current = now()->format('Y-m');
+        $month = $this->filled('month') ? $this->string('month')->value() : $current;
+
         return [
+            'month' => min($month, $current),
             'employee' => $this->filled('employee') ? $this->integer('employee') : null,
             'project' => $this->filled('project') ? $this->integer('project') : null,
-            'from' => $this->filled('from') ? $this->string('from')->value() : null,
-            'to' => $this->filled('to') ? $this->string('to')->value() : null,
         ];
     }
 }

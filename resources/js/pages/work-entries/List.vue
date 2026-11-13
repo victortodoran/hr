@@ -12,12 +12,13 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import LockDialog from '@/components/work-entries/LockDialog.vue';
-import WorkEntryFilterBar from '@/components/work-entries/WorkEntryFilterBar.vue';
-import { formatDate } from '@/lib/dates';
+import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
+import { formatDate, formatMonth } from '@/lib/dates';
 import { index as week } from '@/routes/work-entries';
 import { index } from '@/routes/work-entry-list';
 import type {
     Choice,
+    EmployeeWithWorkEntries,
     ListedWorkEntry,
     Paginated,
     TableColumn,
@@ -31,8 +32,9 @@ defineOptions({
 });
 
 /**
- * Work Entries across the Employees the viewer may see, filtered, with
- * reopening and locking the selected ones. Approving happens on Approvals.
+ * Work Entries of the Employees the viewer may see, a month and an Employee
+ * at a time, or every Employee at once, with reopening and locking the
+ * selected ones. Approving happens on Approvals.
  */
 const props = defineProps<{
     filters: WorkEntryListFilters;
@@ -43,7 +45,9 @@ const props = defineProps<{
     total: number;
     /** Every matching Work Entry's ID; only sent when asked for. */
     matchingIds?: number[];
-    employees: Choice[];
+    /** Who has Work Entries that month, by name, with how many. */
+    employees: EmployeeWithWorkEntries[];
+    /** The Projects the Employee shown, or anyone, has Work Entries on that month. */
     projects: Choice[];
 }>();
 
@@ -170,11 +174,10 @@ function signOffs(entry: ListedWorkEntry): string {
         />
 
         <div class="flex flex-col gap-6">
-            <WorkEntryFilterBar
+            <WorkEntryListFilterBar
                 :filters="filters"
                 :employees="employees"
                 :projects="projects"
-                with-state
                 @change="reloadList"
             />
 
@@ -272,7 +275,11 @@ function signOffs(entry: ListedWorkEntry): string {
                 <template #empty>
                     <EmptyState
                         :icon="Clock"
-                        message="No Work Entries match these filters."
+                        :message="
+                            employees.length > 0
+                                ? 'No Work Entries match these filters.'
+                                : `No Work Entries in ${formatMonth(filters.month)}.`
+                        "
                     />
                 </template>
             </DataTable>

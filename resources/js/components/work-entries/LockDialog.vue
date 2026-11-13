@@ -13,13 +13,16 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import type { LockSummary, WorkEntryFilters } from '@/types';
+import type { LockSummary, WorkEntryListFilters } from '@/types';
 
 const props = defineProps<{
     /** The selected Work Entries. */
     ids: number[];
-    /** The filters they were selected under, for the Pending warning. */
-    filters: WorkEntryFilters;
+    /**
+     * The filters they were selected under, for the Pending warning: the
+     * same month, Employee and Project.
+     */
+    filters: WorkEntryListFilters;
 }>();
 
 const emit = defineEmits<{
@@ -51,14 +54,13 @@ async function loadSummary(isOpen: boolean): Promise<void> {
             LockController.create({
                 query: {
                     ids: props.ids,
-                    ...(props.filters.employee
+                    month: props.filters.month,
+                    ...(typeof props.filters.employee === 'number'
                         ? { employee: props.filters.employee }
                         : {}),
                     ...(props.filters.project
                         ? { project: props.filters.project }
                         : {}),
-                    ...(props.filters.from ? { from: props.filters.from } : {}),
-                    ...(props.filters.to ? { to: props.filters.to } : {}),
                 },
             }),
         )) as LockSummary;
