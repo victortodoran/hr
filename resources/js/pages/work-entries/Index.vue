@@ -34,7 +34,7 @@ import type {
 
 defineOptions({
     layout: {
-        breadcrumbs: [{ title: 'Work Entries', href: index() }],
+        breadcrumbs: [{ title: 'My Work Entries', href: index() }],
     },
 });
 
@@ -217,11 +217,11 @@ function leaveWeek(): void {
 </script>
 
 <template>
-    <Head title="Work Entries" />
+    <Head title="My Work Entries" />
 
     <div class="flex max-w-4xl flex-col gap-6 p-4">
         <Heading
-            title="Work Entries"
+            title="My Work Entries"
             :description="`Hours ${employee.name} worked, one week at a time`"
         />
 

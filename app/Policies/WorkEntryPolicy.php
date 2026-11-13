@@ -14,13 +14,25 @@ use App\Models\WorkEntry;
 class WorkEntryPolicy
 {
     /**
-     * Seeing an Employee's Work Entries needs view work entries for them, or
-     * manage work entries, since managing them means seeing them.
+     * Seeing an Employee's Work Entries needs view, manage or reopen work
+     * entries for them, or lock work entries, which covers everyone: you can
+     * always see what you can act on.
      */
     public function viewAny(Employee $actor, Employee $employee): bool
     {
         return $actor->can(Permission::ViewWorkEntries->value, $employee)
-            || $actor->can(Permission::ManageWorkEntries->value, $employee);
+            || $actor->can(Permission::ManageWorkEntries->value, $employee)
+            || $actor->can(Permission::ReopenWorkEntries->value, $employee)
+            || $this->lock($actor);
+    }
+
+    /**
+     * The Work Entries page, across Employees, is for someone who sees the
+     * Work Entries of anyone besides themselves.
+     */
+    public function viewList(Employee $actor): bool
+    {
+        return $actor->seesOthersWorkEntries();
     }
 
     /**
@@ -57,15 +69,22 @@ class WorkEntryPolicy
     }
 
     /**
-     * The Approvals page is for those who approve, reopen or lock Work
-     * Entries: anyone who is someone's effective Manager, or whose Role
-     * grants reopen or lock.
+     * The Approvals page is an inbox for those who approve: anyone who is
+     * someone's effective Manager. Reopening and locking happen on the Work
+     * Entries page instead.
      */
     public function viewApprovals(Employee $actor): bool
     {
-        return $actor->managesAnyone()
-            || $actor->holds(Permission::ReopenWorkEntries)
-            || $this->lock($actor);
+        return $actor->managesAnyone();
+    }
+
+    /**
+     * Reopening Work Entries needs reopen work entries from a Role; whose
+     * Work Entries it covers depends on its Scope.
+     */
+    public function reopen(Employee $actor): bool
+    {
+        return $actor->holds(Permission::ReopenWorkEntries);
     }
 
     /**

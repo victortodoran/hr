@@ -40,6 +40,7 @@ import { index as roles } from '@/routes/roles';
 import { index as team } from '@/routes/team';
 import { index as timeOff } from '@/routes/time-off';
 import { index as workEntries } from '@/routes/work-entries';
+import { index as workEntryList } from '@/routes/work-entry-list';
 import type { NavItem } from '@/types';
 
 const page = usePage();
@@ -58,7 +59,7 @@ const meItems = computed<NavItem[]>(() => [
           ]
         : []),
     ...(auth.value.canSeeWorkEntries
-        ? [{ title: 'Work Entries', href: workEntries(), icon: Clock }]
+        ? [{ title: 'My Work Entries', href: workEntries(), icon: Clock }]
         : []),
     { title: 'Time Off', href: timeOff(), icon: CalendarDays },
 ]);
@@ -76,6 +77,9 @@ const manageItems = computed<NavItem[]>(() => [
                   badge: auth.value.approvalsWaiting,
               },
           ]
+        : []),
+    ...(auth.value.canSeeWorkEntryList
+        ? [{ title: 'Work Entries', href: workEntryList(), icon: Clock }]
         : []),
 ]);
 

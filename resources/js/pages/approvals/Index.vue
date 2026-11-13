@@ -8,12 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { index } from '@/routes/approvals';
 import type {
     ApprovalEntry,
-    ApprovalFilters,
     ApprovalsTab,
     ApprovalsWaiting,
     Choice,
     Paginated,
     TimeOffToApprove,
+    WorkEntryFilters,
 } from '@/types';
 
 defineOptions({
@@ -28,13 +28,8 @@ defineOptions({
  */
 defineProps<{
     tab: ApprovalsTab;
-    /** Whether the viewer decides anyone's Time Off, so the Time Off tab is offered. */
-    decidesTimeOff: boolean;
     waiting: ApprovalsWaiting;
-    filters?: ApprovalFilters;
-    canApprove?: boolean;
-    canReopen?: boolean;
-    canLock?: boolean;
+    filters?: WorkEntryFilters;
     entries?: Paginated<ApprovalEntry>;
     /** Total hours of every Work Entry matching the filters. */
     total?: number;
@@ -57,15 +52,11 @@ function openTab(tab: string | number): void {
     <PageContainer width="wide">
         <Heading
             title="Approvals"
-            :description="
-                decidesTimeOff
-                    ? 'Approve, reopen and lock Work Entries, and answer Time Off'
-                    : 'Approve, reopen and lock Work Entries'
-            "
+            description="Pending Work Entries and Time Off waiting for your decision"
         />
 
         <Tabs :model-value="tab" @update:model-value="openTab">
-            <TabsList v-if="decidesTimeOff" class="self-start">
+            <TabsList class="self-start">
                 <TabsTrigger value="work-entries"
                     >Work Entries
                     <span class="text-muted-foreground tabular-nums">{{
@@ -83,9 +74,6 @@ function openTab(tab: string | number): void {
                 <WorkEntriesTab
                     v-if="tab === 'work-entries' && entries"
                     :filters="filters!"
-                    :can-approve="canApprove!"
-                    :can-reopen="canReopen!"
-                    :can-lock="canLock!"
                     :entries="entries"
                     :total="total!"
                     :matching-ids="matchingIds"

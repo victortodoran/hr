@@ -3,8 +3,8 @@
 namespace App\Enums;
 
 /**
- * The tabs of the Approvals page: Work Entries to approve, reopen or lock,
- * and Time Off to approve or decline.
+ * The tabs of the Approvals page: Pending Work Entries to approve, and Time
+ * Off to approve or decline.
  */
 enum ApprovalsTab: string
 {

@@ -55,6 +55,18 @@ class Employee extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable;
 
     /**
+     * The Permissions whose Scope decides whose Work Entries someone sees
+     * across Employees, besides locking, which shows everyone's.
+     *
+     * @var list<Permission>
+     */
+    private const array WORK_ENTRY_SEEING_PERMISSIONS = [
+        Permission::ViewWorkEntries,
+        Permission::ManageWorkEntries,
+        Permission::ReopenWorkEntries,
+    ];
+
+    /**
      * Emails are stored in lowercase, so capitals never make two addresses
      * different.
      *
@@ -433,6 +445,19 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Whether the Employee sees Work Entries of anyone besides themselves
+     * across Employees: they can lock, or their view, manage or reopen Scope
+     * reaches beyond themselves.
+     */
+    public function seesOthersWorkEntries(): bool
+    {
+        return $this->holds(Permission::LockWorkEntries)
+            || collect(self::WORK_ENTRY_SEEING_PERMISSIONS)->contains(
+                fn (Permission $permission): bool => $this->widestScopeFor($permission)?->coversOthers() ?? false,
+            );
+    }
+
+    /**
      * The widest Scope the Employee's Roles give them for a Permission about
      * Employees, or null when no Role grants it.
      */
@@ -522,6 +547,60 @@ class Employee extends Authenticatable implements MustVerifyEmail
                 SELECT id FROM below
             )
             SQL, [$manager->id]);
+    }
+
+    /**
+     * Limit the query to the Employees whose Work Entries the given Employee
+     * may reopen: those their reopen Scope covers, never themselves. Being
+     * someone's Manager doesn't count, so without the Permission it's nobody.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function reopenableBy(Builder $query, Employee $reopener): void
+    {
+        $scope = $reopener->widestScopeFor(Permission::ReopenWorkEntries);
+
+        if ($scope === null) {
+            $query->whereRaw('false');
+
+            return;
+        }
+
+        $scope->limit($query, $reopener);
+        $query->whereKeyNot($reopener->id);
+    }
+
+    /**
+     * Limit the query to the Employees whose Work Entries the given Employee
+     * may see across Employees: everyone for someone who can lock, otherwise
+     * those their view, manage or reopen Scope covers. You can always see
+     * what you can act on.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function withWorkEntriesVisibleTo(Builder $query, Employee $viewer): void
+    {
+        if ($viewer->holds(Permission::LockWorkEntries)) {
+            return;
+        }
+
+        $scopes = collect(self::WORK_ENTRY_SEEING_PERMISSIONS)
+            ->map(fn (Permission $permission): ?Scope => $viewer->widestScopeFor($permission))
+            ->filter();
+
+        if ($scopes->isEmpty()) {
+            $query->whereRaw('false');
+
+            return;
+        }
+
+        $query->where(function (Builder $covered) use ($scopes, $viewer): void {
+            foreach ($scopes as $scope) {
+                $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $viewer));
+            }
+        });
     }
 
     /**

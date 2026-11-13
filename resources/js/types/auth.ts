@@ -17,8 +17,10 @@ export type Auth = {
     canSeeOwnPage: boolean;
     /** Whether the Employees list holds more than the signed-in Employee. */
     canListEmployees: boolean;
-    /** Whether the signed-in Employee may see any Work Entries. */
+    /** Whether the signed-in Employee may see any Work Entries, for My Work Entries. */
     canSeeWorkEntries: boolean;
+    /** Whether the signed-in Employee may see Work Entries of anyone besides themselves, for the Work Entries page. */
+    canSeeWorkEntryList: boolean;
     /** Whether the signed-in Employee has Direct Reports, for the Team page. */
     canSeeTeam: boolean;
     /** Whether the signed-in Employee may open the Approvals page. */

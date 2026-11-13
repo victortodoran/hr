@@ -64,8 +64,7 @@ export type WorkEntryAssignment = {
 };
 
 /**
- * A Work Entry on the Approvals page, with whose it is and whether the
- * viewer may approve, reopen or lock it.
+ * A Pending Work Entry waiting in the Approvals inbox, with whose it is.
  */
 export type ApprovalEntry = {
     id: number;
@@ -74,10 +73,16 @@ export type ApprovalEntry = {
     project: string;
     hours: number;
     description: string;
+};
+
+/**
+ * A Work Entry on the Work Entries page, with whose it is, who signed it off
+ * and whether the viewer may reopen or lock it.
+ */
+export type ListedWorkEntry = ApprovalEntry & {
     state: WorkEntryState;
     approved: WorkEntrySignOff | null;
     locked: WorkEntrySignOff | null;
-    can_approve: boolean;
     can_reopen: boolean;
     can_lock: boolean;
 };
@@ -92,14 +97,21 @@ export type ApprovalsWaiting = {
 };
 
 /**
- * The filters on the Approvals page; null means any.
+ * Filters on a list of Work Entries; null means any.
  */
-export type ApprovalFilters = {
+export type WorkEntryFilters = {
     employee: number | null;
     project: number | null;
     from: string | null;
     to: string | null;
-    state: WorkEntryState;
+};
+
+/**
+ * The filters on the Work Entries page, which can also pick a state; null
+ * means any.
+ */
+export type WorkEntryListFilters = WorkEntryFilters & {
+    state: WorkEntryState | null;
 };
 
 /**

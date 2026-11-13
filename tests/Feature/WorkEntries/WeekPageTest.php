@@ -211,6 +211,21 @@ it('lets someone see the week of an Employee their Scope covers, and pick from t
     'manage reports' => [[Permission::ManageWorkEntries->value => Scope::Reports], true],
 ]);
 
+it('lets someone who may reopen or lock open the week of anyone that covers, read-only, and pick from them', function (array $grants) {
+    $top = Employee::factory()->top()->create(['name' => 'Ada']);
+    $ben = employeeWith($grants, ['name' => 'Ben', 'manager_id' => $top->id]);
+
+    $response = actingAs($ben)->get(route('work-entries.index', ['employee' => $top->id]));
+
+    $response->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('employee', ['id' => $top->id, 'name' => 'Ada'])
+        ->where('canManage', false)
+        ->where('employees', [['id' => $top->id, 'name' => 'Ada'], ['id' => $ben->id, 'name' => 'Ben']]));
+})->with([
+    'reopen everyone' => [[Permission::ReopenWorkEntries->value => Scope::Everyone]],
+    'lock' => [[Permission::LockWorkEntries->value => null]],
+]);
+
 it('lists everyone covered by either Work Entries Permission in the picker', function () {
     $top = Employee::factory()->top()->create(['name' => 'Ada']);
     $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone, Permission::ManageWorkEntries->value => Scope::Own], ['name' => 'Ben', 'manager_id' => $top->id]);
