@@ -38,6 +38,10 @@ Multi-context repo (presence of `GLOSSARY-MAP.md` at the root):
         └── docs/adr/
 ```
 
+## Where glossary and ADR edits go
+
+Commit `GLOSSARY.md` and ADR edits on the branch of the issue they produce, so they ship in the same PR as the code they describe. When a grilling ends before that branch exists, carry the edits onto it and leave the checked-out branch clean.
+
 ## Use the glossary's vocabulary
 
 When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
