@@ -22,3 +22,24 @@ export function formatPeriod(start: string, end: string | null): string {
 export function today(): string {
     return new Date().toLocaleDateString('en-CA');
 }
+
+/**
+ * The month a number of months after one, both as YYYY-MM; a negative
+ * number goes back.
+ */
+export function addMonths(month: string, months: number): string {
+    const [year, monthNumber] = month.split('-').map(Number);
+    const date = new Date(year, monthNumber - 1 + months, 1);
+
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * A YYYY-MM month as people read it, such as "November 2026".
+ */
+export function formatMonth(month: string): string {
+    return new Date(`${month}-01T00:00:00`).toLocaleDateString(undefined, {
+        month: 'long',
+        year: 'numeric',
+    });
+}

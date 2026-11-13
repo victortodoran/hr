@@ -169,19 +169,21 @@ class WorkEntry extends Model
 
     /**
      * Limit the query to the Work Entries matching the filters, each applied
-     * only when set; with no state, every state matches.
+     * only when set: an Employee, a Project, a month as YYYY-MM and a state.
      *
      * @param  Builder<WorkEntry>  $query
-     * @param  array{employee: int|null, project: int|null, from: string|null, to: string|null, state?: string|null}  $filters
+     * @param  array{employee?: int|null, project?: int|null, month?: string|null, state?: string|null}  $filters
      */
     #[QueryScope]
     protected function filteredBy(Builder $query, array $filters): void
     {
-        $query->when($filters['employee'], fn (Builder $entries, int $employee) => $entries->whereRelation('assignment', 'employee_id', $employee))
-            ->when($filters['project'], fn (Builder $entries, int $project) => $entries->whereRelation('assignment', 'project_id', $project))
-            ->when($filters['from'], fn (Builder $entries, string $from) => $entries->whereDate('date', '>=', $from))
-            ->when($filters['to'], fn (Builder $entries, string $to) => $entries->whereDate('date', '<=', $to))
-            ->when($filters['state'] ?? null, fn (Builder $entries, string $state) => $entries->where('state', $state));
+        $query->when($filters['employee'] ?? null, fn (Builder $entries, int $employee) => $entries->whereRelation('assignment', 'employee_id', $employee))
+            ->when($filters['project'] ?? null, fn (Builder $entries, int $project) => $entries->whereRelation('assignment', 'project_id', $project))
+            ->when($filters['month'] ?? null, fn (Builder $entries, string $month) => $entries->whereBetween($entries->qualifyColumn('date'), [
+                Carbon::parse("{$month}-01")->toDateString(),
+                Carbon::parse("{$month}-01")->endOfMonth()->toDateString(),
+            ]))
+            ->when($filters['state'] ?? null, fn (Builder $entries, string $state) => $entries->where($entries->qualifyColumn('state'), $state));
     }
 
     /**

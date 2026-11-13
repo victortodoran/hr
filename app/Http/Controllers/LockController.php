@@ -23,8 +23,8 @@ class LockController extends Controller
     /**
      * What locking the selected Work Entries would do, for the confirmation:
      * how many are still Approved and their hours, broken down by Project and
-     * Employee, and how many Pending Work Entries match the same filters, so
-     * the locker can wait for them instead.
+     * Employee, and how many Pending Work Entries match the same month,
+     * Employee and Project, so the locker can wait for them instead.
      */
     public function create(LockPreviewRequest $request): JsonResponse
     {

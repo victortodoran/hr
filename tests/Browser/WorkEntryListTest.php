@@ -50,6 +50,34 @@ it('filters to Approved Work Entries, then reopens one and locks another', funct
         ->and($toLock->refresh()->state)->toBe(WorkEntryState::Locked);
 });
 
+it('steps back a month, picks a month from the picker, and returns to this month, one Employee at a time', function () {
+    $finn = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Finn']);
+    $cara = Employee::factory()->create(['name' => 'Cara']);
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-09-01']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-11', 'description' => 'Writing specs']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-10-20', 'description' => 'Reviewing the API']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-09-15', 'description' => 'Planning the relaunch']);
+
+    actingAs($finn);
+
+    visit(route('work-entry-list.index'))
+        ->assertSee('November 2026')
+        ->assertSee('Cara (1)')
+        ->assertSee('Writing specs')
+        ->assertButtonDisabled('[aria-label="Next month"]')
+        ->click('[aria-label="Previous month"]')
+        ->assertQueryStringHas('month', '2026-10')
+        ->assertSee('Reviewing the API')
+        ->assertDontSee('Writing specs')
+        ->click('internal:role=button[name="October 2026"s]')
+        ->click('internal:role=menuitem[name="Sep"s]')
+        ->assertQueryStringHas('month', '2026-09')
+        ->assertSee('Planning the relaunch')
+        ->click('This month')
+        ->assertSee('Writing specs')
+        ->assertNoJavaScriptErrors();
+});
+
 it("opens an Employee's week from the list under their name, while the viewer's own week has no Employee picker", function () {
     $finn = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Finn']);
     $cara = Employee::factory()->create(['name' => 'Cara']);

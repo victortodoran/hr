@@ -43,18 +43,18 @@ it('lists everyone a reopen Scope covers, offering to reopen their Approved Work
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     $own = WorkEntry::factory()->for(assignmentOf($rae, 'Archive'))->approved($ben)->create(['date' => '2026-11-10']);
 
-    $response = actingAs($rae)->get(route('work-entry-list.index', ['state' => 'approved']));
+    $response = actingAs($rae)->get(route('work-entry-list.index', ['employee' => 'all', 'state' => 'approved']));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('work-entries/List')
-        ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null, 'state' => 'approved'])
+        ->where('filters', ['month' => '2026-11', 'employee' => 'all', 'project' => null, 'state' => 'approved'])
         ->where('canReopen', true)
         ->where('canLock', false)
         ->where('entries.data', [
             ['id' => $approved->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'API', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => null, 'can_reopen' => true, 'can_lock' => false],
             ['id' => $own->id, 'date' => '2026-11-10', 'employee' => ['id' => $rae->id, 'name' => 'Rae'], 'project' => 'Archive', 'hours' => $own->hours, 'description' => $own->description, 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-11'], 'locked' => null, 'can_reopen' => false, 'can_lock' => false],
         ])
-        ->where('employees', [['id' => $ada->id, 'name' => 'Ada'], ['id' => $ben->id, 'name' => 'Ben'], ['id' => $cara->id, 'name' => 'Cara'], ['id' => $rae->id, 'name' => 'Rae']]));
+        ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'count' => 1], ['id' => $rae->id, 'name' => 'Rae', 'count' => 1]]));
 });
 
 it('reopens the selected Approved Work Entries, withdrawing their approval', function () {

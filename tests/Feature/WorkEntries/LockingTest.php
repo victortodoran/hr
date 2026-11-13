@@ -40,7 +40,7 @@ it('lists everyone\'s Work Entries, the locker\'s own included, offering to lock
     $ownApproved = WorkEntry::factory()->for(assignmentOf($finn))->approved($ben)->create(['date' => '2026-11-10']);
     $carasPending = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10']);
 
-    $response = actingAs($finn)->get(route('work-entry-list.index'));
+    $response = actingAs($finn)->get(route('work-entry-list.index', ['employee' => 'all']));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('filters.state', null)
@@ -51,7 +51,7 @@ it('lists everyone\'s Work Entries, the locker\'s own included, offering to lock
             [$ownApproved->id, false, true],
             [$carasPending->id, false, false],
         ])
-        ->where('employees', [['id' => $ben->id, 'name' => 'Ben'], ['id' => $cara->id, 'name' => 'Cara'], ['id' => $finn->id, 'name' => 'Finn']]));
+        ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'count' => 2], ['id' => $finn->id, 'name' => 'Finn', 'count' => 1]]));
 });
 
 it('offers to lock only Approved Work Entries', function () {
@@ -66,7 +66,7 @@ it('offers to lock only Approved Work Entries', function () {
         ->assertInertia(fn (Assert $page) => $page->where('entries.data.0.can_lock', false));
 });
 
-it('sums up the selected Approved Work Entries by Project and Employee, warning of Pending ones matching the filters whatever state is shown', function () {
+it('sums up the selected Approved Work Entries by Project and Employee, warning of Pending ones in the same month and Project whatever state is shown', function () {
     $finn = locker();
     $cara = Employee::factory()->create(['name' => 'Cara']);
     $dev = Employee::factory()->create(['name' => 'Dev']);
@@ -87,9 +87,8 @@ it('sums up the selected Approved Work Entries by Project and Employee, warning 
 
     $response = actingAs($finn)->getJson(route('locks.create', [
         'ids' => collect($selected)->pluck('id')->all(),
+        'month' => '2026-11',
         'project' => $carasRelaunch->project_id,
-        'from' => '2026-11-01',
-        'to' => '2026-11-30',
         'state' => 'approved',
     ]));
 
@@ -102,6 +101,8 @@ it('sums up the selected Approved Work Entries by Project and Employee, warning 
         ],
         'pending' => ['count' => 2, 'hours' => 2],
     ]);
+    actingAs($finn)->getJson(route('locks.create', ['ids' => [$selected[0]->id], 'month' => '2026-11', 'employee' => $dev->id]))
+        ->assertJsonPath('pending', ['count' => 2, 'hours' => 11.25]);
 });
 
 it('locks the selected Work Entries that are still Approved, the locker\'s own included, recording who locked them and when', function () {
@@ -134,8 +135,8 @@ it('refuses malformed filters on the lock summary', function () {
     $finn = locker();
     $approved = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create()))->approved()->create(['date' => '2026-11-09']);
 
-    actingAs($finn)->getJson(route('locks.create', ['ids' => [$approved->id], 'from' => 'soon']))
-        ->assertJsonValidationErrors(['from' => 'The from field must match the format Y-m-d.']);
+    actingAs($finn)->getJson(route('locks.create', ['ids' => [$approved->id], 'month' => 'soon']))
+        ->assertJsonValidationErrors(['month' => 'The month field must match the format Y-m.']);
 });
 
 it('says when a single Work Entry is locked', function () {

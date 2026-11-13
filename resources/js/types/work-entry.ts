@@ -113,21 +113,22 @@ export type EmployeeToApprove = {
 };
 
 /**
- * Filters on a list of Work Entries; null means any.
+ * The Work Entries page's filters, as the server resolved them: the month
+ * as YYYY-MM; the Employee shown, "all" for any Employee, null only when
+ * nobody has Work Entries that month; a Project and a state, null for any.
  */
-export type WorkEntryFilters = {
-    employee: number | null;
+export type WorkEntryListFilters = {
+    month: string;
+    employee: number | 'all' | null;
     project: number | null;
-    from: string | null;
-    to: string | null;
+    state: WorkEntryState | null;
 };
 
-/**
- * The filters on the Work Entries page, which can also pick a state; null
- * means any.
- */
-export type WorkEntryListFilters = WorkEntryFilters & {
-    state: WorkEntryState | null;
+/** An Employee with Work Entries in the month shown, and how many. */
+export type EmployeeWithWorkEntries = {
+    id: number;
+    name: string;
+    count: number;
 };
 
 /**
