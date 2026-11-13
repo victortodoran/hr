@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { CalendarDays, Clock } from '@lucide/vue';
+import { Clock } from '@lucide/vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
@@ -152,9 +152,9 @@ function formatHours(hours: number): string {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Paid Days left</CardTitle>
+                    <CardTitle>Time Off</CardTitle>
                 </CardHeader>
-                <CardContent class="space-y-2 text-sm">
+                <CardContent class="space-y-4 text-sm">
                     <p>
                         <span
                             class="text-2xl font-semibold tabular-nums"
@@ -164,37 +164,35 @@ function formatHours(hours: number): string {
                             >{{ paidDaysLeft.days }}</span
                         >
                         <span class="ml-2 text-muted-foreground"
-                            >in {{ paidDaysLeft.year }}</span
+                            >Paid Days left in {{ paidDaysLeft.year }}</span
                         >
                     </p>
+                    <div class="space-y-2">
+                        <p class="font-medium">Next Time Off</p>
+                        <p
+                            v-if="nextTimeOff === null"
+                            class="text-muted-foreground"
+                        >
+                            You have no upcoming Time Off.
+                        </p>
+                        <template v-else>
+                            <StatusBadge :state="nextTimeOff.state" />
+                            <TimeOffSummary :time-off="nextTimeOff" />
+                        </template>
+                    </div>
+                    <Button
+                        v-if="nextTimeOff === null"
+                        variant="outline"
+                        as-child
+                    >
+                        <Link :href="timeOff()">Request Time Off</Link>
+                    </Button>
                     <Link
+                        v-else
                         :href="timeOff()"
                         class="inline-block underline underline-offset-4"
                         >Open Time Off</Link
                     >
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Next Time Off</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <EmptyState
-                        v-if="nextTimeOff === null"
-                        :icon="CalendarDays"
-                        message="You have no upcoming Time Off."
-                    >
-                        <template #action>
-                            <Button variant="outline" as-child>
-                                <Link :href="timeOff()">Request Time Off</Link>
-                            </Button>
-                        </template>
-                    </EmptyState>
-                    <div v-else class="space-y-2 text-sm">
-                        <StatusBadge :state="nextTimeOff.state" />
-                        <TimeOffSummary :time-off="nextTimeOff" />
-                    </div>
                 </CardContent>
             </Card>
 

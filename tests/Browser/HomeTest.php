@@ -27,7 +27,7 @@ it('lands an Employee on Home after signing in, showing their week, Paid Days an
         ->assertPathIs('/home')
         ->assertSee('Hours this week')
         ->assertSee('1.5 h')
-        ->assertSee('Paid Days left')
+        ->assertSee('Paid Days left in 2026')
         ->assertSee('17')
         ->assertSee('Next Time Off')
         ->assertDontSee('Waiting for you')
@@ -46,5 +46,19 @@ it('shows a Manager what waits for them on Home', function () {
         ->assertSee('Waiting for you')
         ->assertSee('1 Pending Work Entry')
         ->assertSee('1 Pending Time Off')
+        ->assertNoJavaScriptErrors();
+});
+
+it('offers one way into Time Off on Home when none is upcoming', function () {
+    $cara = recorder();
+    PaidDays::factory()->for($cara)->create(['year' => 2026, 'days' => 20]);
+
+    actingAs($cara);
+
+    visit(route('landing'))
+        ->assertSee('Paid Days left in 2026')
+        ->assertSee('You have no upcoming Time Off.')
+        ->assertSee('Request Time Off')
+        ->assertDontSee('Open Time Off')
         ->assertNoJavaScriptErrors();
 });
