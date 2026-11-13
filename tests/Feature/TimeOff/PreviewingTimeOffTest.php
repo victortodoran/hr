@@ -3,7 +3,6 @@
 use App\Http\Controllers\TimeOffPreviewController;
 use App\Http\Requests\TimeOffPreviewRequest;
 use App\Models\Employee;
-use App\Models\PaidDays;
 use App\Models\TimeOff;
 
 use function Pest\Laravel\actingAs;
@@ -17,15 +16,11 @@ beforeEach(function () {
 });
 
 /**
- * Dev, who started on 6 Jan 2025 and has 20 Paid Days in 2026 and 25 in 2027.
+ * Dev, who started on 6 Jan 2025 and has 20 Paid Days a year.
  */
 function timeOffPreviewer(): Employee
 {
-    $dev = Employee::factory()->create(['name' => 'Dev', 'start_date' => '2025-01-06']);
-    PaidDays::factory()->for($dev)->create(['year' => 2026, 'days' => 20]);
-    PaidDays::factory()->for($dev)->create(['year' => 2027, 'days' => 25]);
-
-    return $dev;
+    return Employee::factory()->create(['name' => 'Dev', 'start_date' => '2025-01-06', 'paid_days' => 20]);
 }
 
 /**
@@ -50,7 +45,7 @@ it('splits Paid Time Off across New Year: 28 Dec 2026 to 8 Jan 2027 uses 4 days 
         ->assertOk()
         ->assertExactJson(['weekdays' => 10, 'years' => [
             ['year' => 2026, 'uses' => 4, 'left_after' => 16],
-            ['year' => 2027, 'uses' => 6, 'left_after' => 19],
+            ['year' => 2027, 'uses' => 6, 'left_after' => 14],
         ]]);
 });
 

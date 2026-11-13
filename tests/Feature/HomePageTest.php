@@ -3,7 +3,6 @@
 use App\Enums\Permission;
 use App\Http\Controllers\HomeController;
 use App\Models\Employee;
-use App\Models\PaidDays;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -36,13 +35,12 @@ it('lands every Employee on Home after signing in', function () {
 });
 
 it('shows a regular Employee their hours this week, Paid Days left and next Time Off, with nothing waiting for them', function () {
-    $cara = recorder(['manager_id' => Employee::factory()->create()->id]);
+    $cara = recorder(['manager_id' => Employee::factory()->create()->id, 'paid_days' => 20]);
     $relaunch = assignmentOf($cara);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-09', 'minutes' => 90]);
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-15', 'minutes' => 360]);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-08', 'minutes' => 480]);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-16', 'minutes' => 480]);
-    PaidDays::factory()->for($cara)->create(['days' => 20]);
     $next = TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-23']);
 
     actingAs($cara)->get(route('landing'))

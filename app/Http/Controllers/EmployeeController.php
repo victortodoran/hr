@@ -104,9 +104,9 @@ class EmployeeController extends Controller
      * see something on it. Overview: their record, the reports needing a new
      * Manager when they have left, and their Reporting Chain unless they have
      * left. Assignments & Pay: their Assignments, with Pay for viewers allowed
-     * to see it. Time Off: their Paid Days for this year and next to set, and
-     * their Time Off with this year's Paid Days left. Only the open tab's data
-     * is loaded; an unknown or forbidden tab opens Overview.
+     * to see it. Time Off: their Paid Days to set, and their Time Off with
+     * this year's Paid Days left. Only the open tab's data is loaded; an
+     * unknown or forbidden tab opens Overview.
      */
     public function show(#[CurrentUser] Employee $actor, Employee $employee, Request $request): Response
     {
@@ -207,20 +207,16 @@ class EmployeeController extends Controller
     }
 
     /**
-     * The Time Off tab: the Employee's Paid Days for this year and next, to
-     * those who may set them, and their Time Off, to those who may see it.
+     * The Time Off tab: the Employee's Paid Days, to those who may set them,
+     * and their Time Off, to those who may see it.
      *
-     * @return array{paidDays: array<int, array{year: int, days: int}>|null, timeOff: array<string, mixed>|null}
+     * @return array{paidDays: int|null, timeOff: array<string, mixed>|null}
      */
     private function timeOffTab(Employee $employee, bool $canSetPaidDays, bool $canViewTimeOff): array
     {
-        $thisYear = today()->year;
-
         return [
-            'paidDays' => $canSetPaidDays
-                ? array_map(fn (int $year): array => ['year' => $year, 'days' => $employee->paidDaysIn($year)], [$thisYear, $thisYear + 1])
-                : null,
-            'timeOff' => $canViewTimeOff ? $this->timeOff($employee, $thisYear) : null,
+            'paidDays' => $canSetPaidDays ? $employee->paid_days : null,
+            'timeOff' => $canViewTimeOff ? $this->timeOff($employee, today()->year) : null,
         ];
     }
 
@@ -255,7 +251,7 @@ class EmployeeController extends Controller
     {
         return [
             'year' => $year,
-            'paid_days' => $employee->paidDaysIn($year),
+            'paid_days' => $employee->paid_days,
             'paid_days_left' => $employee->paidDaysLeftIn($year),
             'requests' => $employee->timeOff()
                 ->with('decider:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)

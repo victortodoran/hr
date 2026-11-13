@@ -4,7 +4,6 @@ use App\Enums\TimeOffState;
 use App\Http\Controllers\TimeOffController;
 use App\Http\Controllers\TimeOffPreviewController;
 use App\Models\Employee;
-use App\Models\PaidDays;
 use App\Models\TimeOff;
 
 use function Pest\Laravel\actingAs;
@@ -17,8 +16,7 @@ beforeEach(function () {
 });
 
 it('previews the Paid Days chosen dates use and closes the dialog with a toast once requested', function () {
-    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06']);
-    PaidDays::factory()->for($cara)->create(['year' => 2025, 'days' => 20]);
+    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'paid_days' => 20]);
 
     actingAs($cara);
 

@@ -90,11 +90,16 @@ class TimeOffRequest extends TimeOffPreviewRequest
      * Refuse Paid Time Off whose weekdays in any year it touches would take
      * more than that year's Paid Days left, counting each day in its own
      * year, and say how many are left so the rest can be requested Unpaid.
+     * Days left below 0, after HR lowered Paid Days, are told as none left.
      */
     private function checkPaidDays(Validator $validator): void
     {
         foreach ($this->employee()->paidDaysUsedBy($this->unsavedTimeOff()) as ['year' => $year, 'uses' => $needed, 'left' => $left]) {
-            if ($needed > $left) {
+            if ($left < 0) {
+                $validator->errors()->add('is_paid', trans_choice('You have no Paid Days left in :year, since :count more is already taken than you have. Request this as Unpaid Time Off.|You have no Paid Days left in :year, since :count more are already taken than you have. Request this as Unpaid Time Off.', -$left, [
+                    'year' => $year,
+                ]));
+            } elseif ($needed > $left) {
                 $validator->errors()->add('is_paid', trans_choice('You have :count Paid Day left in :year, but this Paid Time Off takes :needed. Request the rest as Unpaid Time Off.|You have :count Paid Days left in :year, but this Paid Time Off takes :needed. Request the rest as Unpaid Time Off.', $left, [
                     'year' => $year,
                     'needed' => $needed,

@@ -27,7 +27,8 @@ class TimeOffApprovalRequest extends FormRequest
     /**
      * Refuse Paid Time Off whose weekdays in any year it touches no longer
      * fit that year's Paid Days left besides itself, and say how many are
-     * left so the Manager can decline it instead.
+     * left so the Manager can decline it instead. Days left below 0, after
+     * HR lowered Paid Days, are told as none left.
      *
      * @return array<int, Closure(Validator): void>
      */
@@ -44,7 +45,12 @@ class TimeOffApprovalRequest extends FormRequest
                 $needed = $timeOff->weekdaysIn($year);
                 $left = $timeOff->employee->paidDaysLeftIn($year) + $needed;
 
-                if ($needed > $left) {
+                if ($left < 0) {
+                    $validator->errors()->add('approval', trans_choice(':name has no Paid Days left in :year besides this Time Off, since :count more is already taken than they have. Decline it instead, so it can be requested as Unpaid Time Off.|:name has no Paid Days left in :year besides this Time Off, since :count more are already taken than they have. Decline it instead, so it can be requested as Unpaid Time Off.', -$left, [
+                        'name' => $timeOff->employee->name,
+                        'year' => $year,
+                    ]));
+                } elseif ($needed > $left) {
                     $validator->errors()->add('approval', trans_choice(':name has :count Paid Day left in :year besides this Time Off, but it takes :needed. Decline it instead, so the rest can be requested as Unpaid Time Off.|:name has :count Paid Days left in :year besides this Time Off, but it takes :needed. Decline it instead, so the rest can be requested as Unpaid Time Off.', $left, [
                         'name' => $timeOff->employee->name,
                         'year' => $year,

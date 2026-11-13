@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\HomeController;
-use App\Models\PaidDays;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;
 
@@ -15,9 +14,8 @@ beforeEach(function () {
 });
 
 it('lands an Employee on Home after signing in, showing their week, Paid Days and next Time Off', function () {
-    $cara = recorder();
+    $cara = recorder(['paid_days' => 20]);
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10', 'minutes' => 90]);
-    PaidDays::factory()->for($cara)->create(['year' => 2026, 'days' => 20]);
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-23']);
 
     visit(route('login'))
@@ -50,8 +48,7 @@ it('shows a Manager what waits for them on Home', function () {
 });
 
 it('offers one way into Time Off on Home when none is upcoming', function () {
-    $cara = recorder();
-    PaidDays::factory()->for($cara)->create(['year' => 2026, 'days' => 20]);
+    $cara = recorder(['paid_days' => 20]);
 
     actingAs($cara);
 
