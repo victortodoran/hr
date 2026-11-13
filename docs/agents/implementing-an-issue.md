@@ -17,7 +17,8 @@ Point it at this doc for the rest.
 ## Keep context small
 
 - Pipe long commands through `tail`, and re-run one in full only when it fails: `composer ci:check 2>&1 | tail -40`, `npm run build 2>&1 | tail -20`.
-- Run single test files with `php artisan test --compact <path>`.
+- Run single test files with `php artisan test --compact <path>`, one test command at a time: every run shares the `hr_testing` database, and overlapping runs deadlock.
+- When tests fail, read why with `composer test:readable -- <path>`.
 - Open the files the brief points to and their direct imports. Read the parent spec or the whole glossary only when the issue is unclear without them.
 - Read files in ranges when only part is needed.
 
@@ -25,8 +26,9 @@ Point it at this doc for the rest.
 
 1. `git fetch origin && git checkout -b <branch> origin/main`.
 2. Implement the issue until every acceptance-criteria checkbox holds, following sibling files and `CODING_STANDARDS.md`.
+   Check a migration that rewrites existing rows against a copy of the dev database, so `hr` stays usable from other branches: `createdb -T hr hr_scratch`, run with `DB_DATABASE=hr_scratch`, then `dropdb hr_scratch`.
 3. Write feature tests through HTTP and Inertia prop assertions. When a change is mostly UI (a page, dialog, tab or layout), also add or extend a browser test in `tests/Browser` that opens it and asserts no JavaScript errors; browser tests run against built assets, so run `npm run build` first.
-4. Run `npm run build` when routes or controllers changed, and `vendor/bin/pint --dirty --format agent` after PHP edits.
+4. Run `npm run build` when routes or controllers changed, `vendor/bin/pint --dirty --format agent` after PHP edits, and `npm run check:fix` after JS or Vue edits.
 5. `composer ci:check` passes.
 6. When the demo should show the feature, update the DemoSeeder and its test.
 7. Commit in the repo's style: subject line, wrapped body saying what and why, `Closes #<n>`, then the attribution line.
