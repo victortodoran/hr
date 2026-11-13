@@ -138,25 +138,19 @@ class WorkEntryController extends Controller
 
     /**
      * The Employees whose Work Entries the viewer may see, for switching
-     * between them, or null when they may only see their own.
+     * between them, or null when they may only see their own. The same
+     * Employees the Work Entries page lists.
      *
      * @return array<int, array{id: int, name: string}>|null
      */
     private function pickableEmployees(Employee $actor): ?array
     {
-        $scopes = collect([Permission::ViewWorkEntries, Permission::ManageWorkEntries])
-            ->map(fn (Permission $permission): ?Scope => $actor->widestScopeFor($permission))
-            ->filter();
-
-        if (! $scopes->contains(fn (Scope $scope): bool => $scope->coversOthers())) {
+        if (! $actor->seesOthersWorkEntries()) {
             return null;
         }
 
         return Employee::query()
-            ->where(function (Builder $covered) use ($scopes, $actor): void {
-                $covered->whereRaw('false');
-                $scopes->each(fn (Scope $scope) => $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $actor)));
-            })
+            ->withWorkEntriesVisibleTo($actor)
             ->orderBy('name')
             ->orderBy('id')
             ->get(['id', 'name'])

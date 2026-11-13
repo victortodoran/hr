@@ -13,13 +13,13 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import type { ApprovalFilters, LockSummary } from '@/types';
+import type { LockSummary, WorkEntryFilters } from '@/types';
 
 const props = defineProps<{
     /** The selected Work Entries. */
     ids: number[];
     /** The filters they were selected under, for the Pending warning. */
-    filters: ApprovalFilters;
+    filters: WorkEntryFilters;
 }>();
 
 const emit = defineEmits<{

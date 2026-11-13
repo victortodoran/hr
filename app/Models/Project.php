@@ -55,6 +55,21 @@ class Project extends Model
     }
 
     /**
+     * Every Project, as a filter's choices, by name.
+     *
+     * @return array<int, array{id: int, name: string}>
+     */
+    public static function choices(): array
+    {
+        return self::query()
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get(['id', 'name'])
+            ->map(fn (Project $project): array => $project->only('id', 'name'))
+            ->all();
+    }
+
+    /**
      * @return BelongsTo<Client, $this>
      */
     public function client(): BelongsTo

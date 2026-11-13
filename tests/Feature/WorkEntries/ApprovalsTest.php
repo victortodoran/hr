@@ -62,16 +62,14 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('approvals/Index')
         ->where('tab', 'work-entries')
-        ->where('decidesTimeOff', true)
         ->where('waiting', ['workEntries' => 2, 'timeOff' => 0])
         ->missing('toApprove')
-        ->where('canApprove', true)
-        ->where('canReopen', false)
-        ->where('canLock', false)
-        ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null, 'state' => 'pending'])
+        ->missing('canReopen')
+        ->missing('canLock')
+        ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null])
         ->where('entries.data', [
-            ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Specs', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_approve' => true, 'can_reopen' => false, 'can_lock' => false],
-            ['id' => $later->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_approve' => true, 'can_reopen' => false, 'can_lock' => false],
+            ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Specs'],
+            ['id' => $later->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API'],
         ])
         ->where('total', 2.5)
         ->where('employees', [['id' => $cara->id, 'name' => 'Cara']])
@@ -118,22 +116,6 @@ it('lets a Manager approve the remaining Work Entries of a Direct Report who has
     expect($pending->refresh()->state)->toBe(WorkEntryState::Approved);
 });
 
-it('offers the Time Off tab only to someone who decides Time Off, opening Work Entries for anyone else', function () {
-    $ada = Employee::factory()->top()->create();
-    $locker = employeeWith([Permission::LockWorkEntries->value => Scope::Everyone], ['manager_id' => $ada->id]);
-    $reopener = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone], ['manager_id' => $ada->id]);
-
-    foreach ([$locker, $reopener] as $nonManager) {
-        actingAs($nonManager)->get(route('approvals.index', ['tab' => 'time-off']))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('tab', 'work-entries')
-                ->where('decidesTimeOff', false)
-                ->missing('toApprove')
-                ->has('entries'));
-    }
-});
-
 it('opens Work Entries for a tab it doesn\'t know', function () {
     actingAs(managingApprover())->get(route('approvals.index', ['tab' => 'payroll']))
         ->assertInertia(fn (Assert $page) => $page
@@ -141,16 +123,19 @@ it('opens Work Entries for a tab it doesn\'t know', function () {
             ->has('entries'));
 });
 
-it('refuses the Approvals page to someone who neither approves, reopens nor locks Work Entries', function () {
-    $cara = employeeWith([Permission::ManageWorkEntries->value => Scope::Everyone, Permission::ViewWorkEntries->value => Scope::Everyone]);
+it('refuses the Approvals page to someone who manages nobody, however their Roles let them see, reopen or lock Work Entries', function () {
+    $cara = employeeWith([
+        Permission::ManageWorkEntries->value => Scope::Everyone,
+        Permission::ViewWorkEntries->value => Scope::Everyone,
+        Permission::ReopenWorkEntries->value => Scope::Everyone,
+        Permission::LockWorkEntries->value => null,
+    ]);
 
     actingAs($cara)->get(route('approvals.index'))->assertForbidden();
     actingAs($cara)->post(route('approvals.store'), ['ids' => []])->assertForbidden();
-    actingAs($cara)->delete(route('approvals.destroy'), ['ids' => []])->assertForbidden();
-    actingAs($cara)->post(route('locks.store'), ['ids' => []])->assertForbidden();
 });
 
-it('filters by Employee, Project, dates and state, keeping the total to what matches', function (array $filters, array $expected) {
+it('filters by Employee, Project and dates, keeping the total to what matches', function (array $filters, array $expected) {
     $ben = approver();
     $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
     $dev = Employee::factory()->create(['name' => 'Dev', 'manager_id' => $ben->id]);
@@ -170,7 +155,7 @@ it('filters by Employee, Project, dates and state, keeping the total to what mat
     $response = actingAs($ben)->get(route('approvals.index', $query));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null, 'state' => 'pending', ...$query])
+        ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null, ...$query])
         ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === collect($expected)->map(fn (string $name): int => $entries[$name]->id)->all())
         ->where('total', collect($expected)->sum(fn (string $name): int => $entries[$name]->minutes) / 60));
 })->with([
@@ -178,16 +163,15 @@ it('filters by Employee, Project, dates and state, keeping the total to what mat
     'Project' => [['project' => 'relaunch'], ['cara relaunch 3rd']],
     'from' => [['from' => '2026-11-04'], ['cara billing 5th', 'dev relaunch 9th']],
     'to' => [['to' => '2026-11-05'], ['cara relaunch 3rd', 'cara billing 5th']],
-    'state' => [['state' => 'approved'], ['cara relaunch 10th approved']],
 ]);
 
 it('treats empty filters as no filter', function () {
     $ben = managingApprover();
 
-    $response = actingAs($ben)->get(route('approvals.index', ['employee' => '', 'project' => '', 'from' => '', 'to' => '', 'state' => '']));
+    $response = actingAs($ben)->get(route('approvals.index', ['employee' => '', 'project' => '', 'from' => '', 'to' => '']));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null, 'state' => 'pending']));
+        ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null]));
 });
 
 it('refuses malformed filters', function (array $filters, string $field, string $message) {
@@ -200,7 +184,6 @@ it('refuses malformed filters', function (array $filters, string $field, string 
     'from not a date' => [['from' => 'soon'], 'from', 'The from field must match the format Y-m-d.'],
     'to not a date' => [['to' => 'later'], 'to', 'The to field must match the format Y-m-d.'],
     'to before from' => [['from' => '2026-11-05', 'to' => '2026-11-04'], 'to', 'The to field must be a date after or equal to from.'],
-    'unknown state' => [['state' => 'invoiced'], 'state', 'The selected state is invalid.'],
 ]);
 
 it('pages through 25 Work Entries at a time, keeping the filters', function () {
@@ -292,10 +275,14 @@ it('refuses a selection that is not a list of Work Entry IDs', function (mixed $
     'not numbers' => [['first'], 'ids.0', 'The ids.0 field must be an integer.'],
 ]);
 
-it('shows the Approvals item in the navigation to Managers, and not to someone who only manages Work Entries', function () {
+it('shows the Approvals item in the navigation to Managers only, not to someone who only manages, reopens or locks Work Entries', function () {
     $ben = approver();
     Employee::factory()->create(['manager_id' => $ben->id]);
-    $cara = employeeWith([Permission::ManageWorkEntries->value => Scope::Everyone]);
+    $cara = employeeWith([
+        Permission::ManageWorkEntries->value => Scope::Everyone,
+        Permission::ReopenWorkEntries->value => Scope::Everyone,
+        Permission::LockWorkEntries->value => null,
+    ]);
 
     actingAs($ben)->get(route('profile.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeApprovals', true));

@@ -5,10 +5,10 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * The Work Entries about to be locked, with the Approvals filters they were
+ * The Work Entries about to be locked, with the Work Entries filters they were
  * selected under, so Pending ones matching the same filters can be counted.
  */
-class LockPreviewRequest extends ApprovalFiltersRequest
+class LockPreviewRequest extends WorkEntryFiltersRequest
 {
     /**
      * @return array<string, ValidationRule|array<mixed>|string>

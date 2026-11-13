@@ -3,11 +3,11 @@
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\WorkEntryState;
-use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\LockController;
-use App\Http\Requests\ApprovalFiltersRequest;
+use App\Http\Controllers\WorkEntryListController;
 use App\Http\Requests\LockPreviewRequest;
 use App\Http\Requests\SelectedWorkEntriesRequest;
+use App\Http\Requests\WorkEntryFiltersRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\WorkEntry;
@@ -18,7 +18,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(LockController::class, ApprovalController::class, WorkEntryPolicy::class, ApprovalFiltersRequest::class, LockPreviewRequest::class, SelectedWorkEntriesRequest::class, WorkEntry::class);
+covers(LockController::class, WorkEntryListController::class, WorkEntryPolicy::class, WorkEntryFiltersRequest::class, LockPreviewRequest::class, SelectedWorkEntriesRequest::class, WorkEntry::class);
 
 beforeEach(function () {
     travelTo('2026-11-11 09:00');
@@ -32,24 +32,24 @@ function locker(): Employee
     return employeeWith([Permission::LockWorkEntries->value => null], ['name' => 'Finn']);
 }
 
-it('opens Approvals on everyone\'s Approved Work Entries, the locker\'s own included, for someone who can only lock', function () {
+it('lists everyone\'s Work Entries, the locker\'s own included, offering to lock the Approved ones, for someone who can only lock', function () {
     $finn = locker();
     $cara = Employee::factory()->create(['name' => 'Cara']);
     $ben = Employee::factory()->create(['name' => 'Ben']);
     $carasApproved = WorkEntry::factory()->for(assignmentOf($cara))->approved($ben)->create(['date' => '2026-11-09']);
     $ownApproved = WorkEntry::factory()->for(assignmentOf($finn))->approved($ben)->create(['date' => '2026-11-10']);
-    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10']);
+    $carasPending = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10']);
 
-    $response = actingAs($finn)->get(route('approvals.index'));
+    $response = actingAs($finn)->get(route('work-entry-list.index'));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('filters.state', 'approved')
-        ->where('canApprove', false)
+        ->where('filters.state', null)
         ->where('canReopen', false)
         ->where('canLock', true)
-        ->where('entries.data', fn (Collection $data): bool => $data->map(fn (array $row): array => [$row['id'], $row['can_approve'], $row['can_reopen'], $row['can_lock']])->all() === [
-            [$carasApproved->id, false, false, true],
-            [$ownApproved->id, false, false, true],
+        ->where('entries.data', fn (Collection $data): bool => $data->map(fn (array $row): array => [$row['id'], $row['can_reopen'], $row['can_lock']])->all() === [
+            [$carasApproved->id, false, true],
+            [$ownApproved->id, false, true],
+            [$carasPending->id, false, false],
         ])
         ->where('employees', [['id' => $ben->id, 'name' => 'Ben'], ['id' => $cara->id, 'name' => 'Cara'], ['id' => $finn->id, 'name' => 'Finn']]));
 });
@@ -60,13 +60,13 @@ it('offers to lock only Approved Work Entries', function () {
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     WorkEntry::factory()->for($relaunch)->locked($finn)->create(['date' => '2026-11-10']);
 
-    actingAs($finn)->get(route('approvals.index'))
+    actingAs($finn)->get(route('work-entry-list.index', ['state' => 'pending']))
         ->assertInertia(fn (Assert $page) => $page->where('entries.data.0.can_lock', false));
-    actingAs($finn)->get(route('approvals.index', ['state' => 'locked']))
+    actingAs($finn)->get(route('work-entry-list.index', ['state' => 'locked']))
         ->assertInertia(fn (Assert $page) => $page->where('entries.data.0.can_lock', false));
 });
 
-it('sums up the selected Approved Work Entries by Project and Employee, warning of Pending ones matching the filters', function () {
+it('sums up the selected Approved Work Entries by Project and Employee, warning of Pending ones matching the filters whatever state is shown', function () {
     $finn = locker();
     $cara = Employee::factory()->create(['name' => 'Cara']);
     $dev = Employee::factory()->create(['name' => 'Dev']);
@@ -90,6 +90,7 @@ it('sums up the selected Approved Work Entries by Project and Employee, warning 
         'project' => $carasRelaunch->project_id,
         'from' => '2026-11-01',
         'to' => '2026-11-30',
+        'state' => 'approved',
     ]));
 
     $response->assertOk()->assertExactJson([
@@ -151,7 +152,7 @@ it('refuses locking and its summary to someone who can\'t lock', function () {
 
     actingAs($ben)->getJson(route('locks.create', ['ids' => [$approved->id]]))->assertForbidden();
     actingAs($ben)->post(route('locks.store'), ['ids' => [$approved->id]])->assertForbidden();
-    actingAs($ben)->get(route('approvals.index'))->assertInertia(fn (Assert $page) => $page->where('canLock', false));
+    actingAs($ben)->get(route('work-entry-list.index'))->assertInertia(fn (Assert $page) => $page->where('canLock', false));
 
     expect($approved->refresh()->state)->toBe(WorkEntryState::Approved);
 });
@@ -165,7 +166,9 @@ it('refuses a lock selection that is not a list of Work Entry IDs', function () 
         ->assertInvalid(['ids' => 'Select at least one Work Entry.']);
 });
 
-it('shows the Approvals item to those who can only lock', function () {
+it('shows the Work Entries list, not Approvals, to those who can only lock', function () {
     actingAs(locker())->get(route('profile.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeApprovals', true));
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('auth.canSeeWorkEntryList', true)
+            ->where('auth.canSeeApprovals', false));
 });

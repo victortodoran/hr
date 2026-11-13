@@ -168,11 +168,11 @@ class WorkEntry extends Model
     }
 
     /**
-     * Limit the query to the Work Entries matching the Approvals filters,
-     * each applied only when set.
+     * Limit the query to the Work Entries matching the filters, each applied
+     * only when set; with no state, every state matches.
      *
      * @param  Builder<WorkEntry>  $query
-     * @param  array{employee: int|null, project: int|null, from: string|null, to: string|null, state: string}  $filters
+     * @param  array{employee: int|null, project: int|null, from: string|null, to: string|null, state?: string|null}  $filters
      */
     #[QueryScope]
     protected function filteredBy(Builder $query, array $filters): void
@@ -181,7 +181,22 @@ class WorkEntry extends Model
             ->when($filters['project'], fn (Builder $entries, int $project) => $entries->whereRelation('assignment', 'project_id', $project))
             ->when($filters['from'], fn (Builder $entries, string $from) => $entries->whereDate('date', '>=', $from))
             ->when($filters['to'], fn (Builder $entries, string $to) => $entries->whereDate('date', '<=', $to))
-            ->where('state', $filters['state']);
+            ->when($filters['state'] ?? null, fn (Builder $entries, string $state) => $entries->where('state', $state));
+    }
+
+    /**
+     * Limit the query to the Work Entries of the given Employees, on any of
+     * their Assignments.
+     *
+     * @param  Builder<WorkEntry>  $query
+     * @param  Builder<Employee>  $employees
+     */
+    #[QueryScope]
+    protected function ofEmployees(Builder $query, Builder $employees): void
+    {
+        $query->whereIn('assignment_id', Assignment::query()
+            ->select('id')
+            ->whereIn('employee_id', $employees->select('employees.id')));
     }
 
     /**

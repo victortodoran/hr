@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 use Inertia\Inertia;
 
 /**
- * Locking Work Entries for good from the Approvals page. Locking applies
+ * Locking Work Entries for good from the Work Entries page. Locking applies
  * company-wide, the locker's own Work Entries included, and only ever to
  * Approved ones (ADR 0005).
  */
@@ -33,7 +33,7 @@ class LockController extends Controller
             ->where('state', WorkEntryState::Approved)
             ->with(['assignment.employee:id,name', 'assignment.project:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same summary)
             ->get();
-        $pending = WorkEntry::query()->filteredBy($request->filters(WorkEntryState::Pending));
+        $pending = WorkEntry::query()->filteredBy([...$request->filters(), 'state' => WorkEntryState::Pending->value]);
         $byProjectThenEmployee = [
             fn (array $one, array $other): int => $one['project'] <=> $other['project'],
             fn (array $one, array $other): int => $one['employee'] <=> $other['employee'],

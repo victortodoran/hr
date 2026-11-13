@@ -229,7 +229,6 @@ it('lists the Pending Time Off of the Manager\'s Direct Reports on the Approvals
     actingAs($ben)->get(route('approvals.index', ['tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('tab', 'time-off')
-            ->where('decidesTimeOff', true)
             ->where('waiting', ['workEntries' => 0, 'timeOff' => 2])
             ->where('toApprove', [
                 ['id' => $devs->id, 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'first_date' => '2026-11-16', 'last_date' => '2026-11-17', 'days' => 2, 'is_paid' => false, 'paid_days_left' => [['year' => 2026, 'days' => 0]]],

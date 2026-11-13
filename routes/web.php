@@ -15,6 +15,7 @@ use App\Http\Controllers\LockController;
 use App\Http\Controllers\PaidDaysController;
 use App\Http\Controllers\PayEntryController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ReopeningController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RoleHolderController;
 use App\Http\Controllers\TeamController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\TimeOffDeclineController;
 use App\Http\Controllers\TimeOffPreviewController;
 use App\Http\Controllers\TopEmployeeController;
 use App\Http\Controllers\WorkEntryController;
+use App\Http\Controllers\WorkEntryListController;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Project;
@@ -73,8 +75,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('can:viewApprovals,'.WorkEntry::class)->group(function () {
         Route::get('approvals', [ApprovalController::class, 'index'])->name('approvals.index');
         Route::post('approvals', [ApprovalController::class, 'store'])->name('approvals.store');
-        Route::delete('approvals', [ApprovalController::class, 'destroy'])->name('approvals.destroy');
     });
+    Route::get('work-entries/all', [WorkEntryListController::class, 'index'])->middleware('can:viewList,'.WorkEntry::class)->name('work-entry-list.index');
+    Route::post('reopenings', [ReopeningController::class, 'store'])->middleware('can:reopen,'.WorkEntry::class)->name('reopenings.store');
     Route::middleware('can:lock,'.WorkEntry::class)->group(function () {
         Route::get('locks/create', [LockController::class, 'create'])->name('locks.create');
         Route::post('locks', [LockController::class, 'store'])->name('locks.store');

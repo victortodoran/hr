@@ -118,7 +118,7 @@ function formatHours(hours: number): string {
                         <template #action>
                             <Button variant="outline" as-child>
                                 <Link :href="workEntries()"
-                                    >Open Work Entries</Link
+                                    >Open My Work Entries</Link
                                 >
                             </Button>
                         </template>
@@ -144,7 +144,7 @@ function formatHours(hours: number): string {
                         <Link
                             :href="workEntries()"
                             class="inline-block underline underline-offset-4"
-                            >Open Work Entries</Link
+                            >Open My Work Entries</Link
                         >
                     </div>
                 </CardContent>
