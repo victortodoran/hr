@@ -66,18 +66,14 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
         ->missing('toApprove')
         ->missing('canReopen')
         ->missing('canLock')
-        ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null])
+        ->where('filters', ['employee' => $cara->id, 'project' => null])
         ->where('entries.data', [
             ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Specs'],
             ['id' => $later->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API'],
         ])
         ->where('total', 2.5)
-        ->where('employees', [['id' => $cara->id, 'name' => 'Cara']])
-        ->where('projects', [
-            ['id' => $outsiders->project_id, 'name' => 'Archive'],
-            ['id' => $devsBilling->project_id, 'name' => 'Billing'],
-            ['id' => $carasRelaunch->project_id, 'name' => 'Relaunch'],
-        ]));
+        ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'pending' => 2]])
+        ->where('projects', [['id' => $carasRelaunch->project_id, 'name' => 'Relaunch']]));
 });
 
 it('never lists the approver\'s own Work Entries, nor their Manager\'s', function () {
@@ -91,7 +87,7 @@ it('never lists the approver\'s own Work Entries, nor their Manager\'s', functio
 
     $response->assertInertia(fn (Assert $page) => $page
         ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$caras->id])
-        ->where('employees', [['id' => $cara->id, 'name' => 'Cara']]));
+        ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'pending' => 1]]));
 });
 
 it('lets the next Manager up approve for a Manager who has left', function () {
@@ -135,43 +131,147 @@ it('refuses the Approvals page to someone who manages nobody, however their Role
     actingAs($cara)->post(route('approvals.store'), ['ids' => []])->assertForbidden();
 });
 
-it('filters by Employee, Project and dates, keeping the total to what matches', function (array $filters, array $expected) {
+/**
+ * Ben approving for Cara and Dev, who will have Pending Work Entries, and
+ * Bea, who has only Approved ones.
+ *
+ * @return array{ben: Employee, cara: Employee, dev: Employee, bea: Employee}
+ */
+function approverOfCaraAndDev(): array
+{
     $ben = approver();
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
     $dev = Employee::factory()->create(['name' => 'Dev', 'manager_id' => $ben->id]);
-    $carasRelaunch = assignmentOf($cara);
-    $entries = [
-        'cara relaunch 3rd' => WorkEntry::factory()->for($carasRelaunch)->create(['date' => '2026-11-03', 'minutes' => 60]),
-        'cara relaunch 10th approved' => WorkEntry::factory()->for($carasRelaunch)->approved()->create(['date' => '2026-11-10', 'minutes' => 120]),
-        'cara billing 5th' => WorkEntry::factory()->for(assignmentOf($cara, 'Billing'))->create(['date' => '2026-11-05', 'minutes' => 180]),
-        'dev relaunch 9th' => WorkEntry::factory()->for(assignmentOf($dev, 'Relaunch'))->create(['date' => '2026-11-09', 'minutes' => 240]),
-    ];
-    $query = collect($filters)->map(fn (mixed $value): mixed => match ($value) {
-        'cara' => $cara->id,
-        'relaunch' => $carasRelaunch->project_id,
-        default => $value,
-    })->all();
+    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
+    $bea = Employee::factory()->create(['name' => 'Bea', 'manager_id' => $ben->id]);
+    WorkEntry::factory()->for(assignmentOf($bea, 'Archive'))->approved()->create(['date' => '2026-11-03']);
 
-    $response = actingAs($ben)->get(route('approvals.index', $query));
+    return ['ben' => $ben, 'cara' => $cara, 'dev' => $dev, 'bea' => $bea];
+}
+
+it('opens on the first Employee by name with Pending Work Entries, offering only those, each with how many', function () {
+    ['ben' => $ben, 'cara' => $cara, 'dev' => $dev] = approverOfCaraAndDev();
+    $carasRelaunch = assignmentOf($cara);
+    $caras = WorkEntry::factory()->for($carasRelaunch)->count(2)->create(['date' => '2026-11-03']);
+    WorkEntry::factory()->for(assignmentOf($dev, 'Billing'))->create(['date' => '2026-11-02']);
+
+    $response = actingAs($ben)->get(route('approvals.index'));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null, ...$query])
-        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === collect($expected)->map(fn (string $name): int => $entries[$name]->id)->all())
-        ->where('total', collect($expected)->sum(fn (string $name): int => $entries[$name]->minutes) / 60));
-})->with([
-    'Employee' => [['employee' => 'cara'], ['cara relaunch 3rd', 'cara billing 5th']],
-    'Project' => [['project' => 'relaunch'], ['cara relaunch 3rd']],
-    'from' => [['from' => '2026-11-04'], ['cara billing 5th', 'dev relaunch 9th']],
-    'to' => [['to' => '2026-11-05'], ['cara relaunch 3rd', 'cara billing 5th']],
-]);
+        ->where('filters', ['employee' => $cara->id, 'project' => null])
+        ->where('employees', [
+            ['id' => $cara->id, 'name' => 'Cara', 'pending' => 2],
+            ['id' => $dev->id, 'name' => 'Dev', 'pending' => 1],
+        ])
+        ->where('projects', [['id' => $carasRelaunch->project_id, 'name' => 'Relaunch']])
+        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === $caras->pluck('id')->all()));
+});
 
-it('treats empty filters as no filter', function () {
-    $ben = managingApprover();
+it('shows only the chosen Employee\'s Pending Work Entries, offering only the Projects they have Pending Work Entries on', function () {
+    ['ben' => $ben, 'cara' => $cara, 'dev' => $dev] = approverOfCaraAndDev();
+    WorkEntry::factory()->for(assignmentOf($cara, 'Archive'))->create(['date' => '2026-11-03']);
+    $devsBilling = assignmentOf($dev, 'Billing');
+    $devsRelaunch = assignmentOf($dev, 'Relaunch');
+    $later = WorkEntry::factory()->for($devsBilling)->create(['date' => '2026-11-09', 'minutes' => 120]);
+    $earlier = WorkEntry::factory()->for($devsRelaunch)->create(['date' => '2026-11-04', 'minutes' => 60]);
+    WorkEntry::factory()->for($devsBilling)->approved()->create(['date' => '2026-11-05']);
+    WorkEntry::factory()->for(assignmentOf($dev, 'Website'))->approved()->create(['date' => '2026-11-05']);
 
-    $response = actingAs($ben)->get(route('approvals.index', ['employee' => '', 'project' => '', 'from' => '', 'to' => '']));
+    $response = actingAs($ben)->get(route('approvals.index', ['employee' => $dev->id]));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('filters', ['employee' => $dev->id, 'project' => null])
+        ->where('projects', [
+            ['id' => $devsBilling->project_id, 'name' => 'Billing'],
+            ['id' => $devsRelaunch->project_id, 'name' => 'Relaunch'],
+        ])
+        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$earlier->id, $later->id])
+        ->where('total', 3));
+});
+
+it('narrows the chosen Employee\'s Pending Work Entries to a Project, keeping the total to what matches', function () {
+    ['ben' => $ben, 'dev' => $dev] = approverOfCaraAndDev();
+    $devsBilling = assignmentOf($dev, 'Billing');
+    $billing = WorkEntry::factory()->for($devsBilling)->create(['date' => '2026-11-09', 'minutes' => 120]);
+    WorkEntry::factory()->for(assignmentOf($dev, 'Relaunch'))->create(['date' => '2026-11-04', 'minutes' => 60]);
+
+    $response = actingAs($ben)->get(route('approvals.index', ['employee' => $dev->id, 'project' => $devsBilling->project_id]));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('filters', ['employee' => $dev->id, 'project' => $devsBilling->project_id])
+        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$billing->id])
+        ->where('total', 2));
+});
+
+it('falls back to the first Employee by name when asked for one with nothing waiting for the approver', function (string $asked) {
+    ['ben' => $ben, 'cara' => $cara, 'dev' => $dev, 'bea' => $bea] = approverOfCaraAndDev();
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03']);
+    WorkEntry::factory()->for(assignmentOf($dev, 'Billing'))->create(['date' => '2026-11-03']);
+    WorkEntry::factory()->for(assignmentOf($ben, 'Website'))->create(['date' => '2026-11-03']);
+    $outsider = Employee::factory()->create(['manager_id' => $ben->manager_id]);
+    WorkEntry::factory()->for(assignmentOf($outsider, 'Archive'))->create(['date' => '2026-11-03']);
+    $employee = match ($asked) {
+        'nothing waiting' => $bea->id,
+        'not approved by the approver' => $outsider->id,
+        'the approver' => $ben->id,
+        'unknown' => Employee::query()->max('id') + 1,
+        default => '',
+    };
+
+    $response = actingAs($ben)->get(route('approvals.index', ['employee' => $employee]));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('filters.employee', $cara->id)
+        ->where('entries.data', fn (Collection $data): bool => $data->pluck('employee.id')->all() === [$cara->id]));
+})->with(['nothing waiting', 'not approved by the approver', 'the approver', 'unknown', 'none']);
+
+it('treats a Project the Employee has nothing waiting on as any Project', function () {
+    ['ben' => $ben, 'cara' => $cara, 'dev' => $dev] = approverOfCaraAndDev();
+    $caras = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03']);
+    $devsBilling = assignmentOf($dev, 'Billing');
+    WorkEntry::factory()->for($devsBilling)->create(['date' => '2026-11-03']);
+
+    $response = actingAs($ben)->get(route('approvals.index', ['employee' => $cara->id, 'project' => $devsBilling->project_id]));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('filters', ['employee' => $cara->id, 'project' => null])
+        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$caras->id]));
+});
+
+it('moves on to the next Employee once the chosen one\'s Work Entries are all approved', function () {
+    ['ben' => $ben, 'cara' => $cara, 'dev' => $dev] = approverOfCaraAndDev();
+    $caras = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03']);
+    WorkEntry::factory()->for(assignmentOf($dev, 'Billing'))->create(['date' => '2026-11-03']);
+
+    actingAs($ben)->post(route('approvals.store'), ['ids' => [$caras->id]]);
+    $response = actingAs($ben)->get(route('approvals.index', ['employee' => $cara->id]));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('filters', ['employee' => $dev->id, 'project' => null])
+        ->where('employees', [['id' => $dev->id, 'name' => 'Dev', 'pending' => 1]]));
+});
+
+it('offers no Employee or Project to choose when nothing waits for the approver', function () {
+    ['ben' => $ben] = approverOfCaraAndDev();
+
+    $response = actingAs($ben)->get(route('approvals.index'));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('filters', ['employee' => null, 'project' => null, 'from' => null, 'to' => null]));
+        ->where('filters', ['employee' => null, 'project' => null])
+        ->where('employees', [])
+        ->where('projects', [])
+        ->where('entries.data', [])
+        ->where('total', 0));
+});
+
+it('has no date range to filter by', function () {
+    ['ben' => $ben, 'cara' => $cara] = approverOfCaraAndDev();
+    $caras = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03']);
+
+    $response = actingAs($ben)->get(route('approvals.index', ['from' => '2026-11-04', 'to' => 'later']));
+
+    $response->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('filters', ['employee' => $cara->id, 'project' => null])
+        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$caras->id]));
 });
 
 it('refuses malformed filters', function (array $filters, string $field, string $message) {
@@ -181,9 +281,6 @@ it('refuses malformed filters', function (array $filters, string $field, string 
 })->with([
     'Employee not a number' => [['employee' => 'Cara'], 'employee', 'The employee field must be an integer.'],
     'Project not a number' => [['project' => 'Relaunch'], 'project', 'The project field must be an integer.'],
-    'from not a date' => [['from' => 'soon'], 'from', 'The from field must match the format Y-m-d.'],
-    'to not a date' => [['to' => 'later'], 'to', 'The to field must match the format Y-m-d.'],
-    'to before from' => [['from' => '2026-11-05', 'to' => '2026-11-04'], 'to', 'The to field must be a date after or equal to from.'],
 ]);
 
 it('pages through 25 Work Entries at a time, keeping the filters', function () {
@@ -191,12 +288,12 @@ it('pages through 25 Work Entries at a time, keeping the filters', function () {
     $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $ben->id]));
     WorkEntry::factory()->for($relaunch)->count(26)->create(['date' => '2026-11-10', 'minutes' => 15]);
 
-    $response = actingAs($ben)->get(route('approvals.index', ['from' => '2026-11-01']));
+    $response = actingAs($ben)->get(route('approvals.index', ['project' => $relaunch->project_id]));
 
     $response->assertInertia(fn (Assert $page) => $page
         ->has('entries.data', 25)
         ->where('entries.total', 26)
-        ->where('entries.next_page_url', route('approvals.index', ['from' => '2026-11-01', 'page' => 2]))
+        ->where('entries.next_page_url', route('approvals.index', ['project' => $relaunch->project_id, 'page' => 2]))
         ->where('total', 6.5));
 });
 
@@ -219,10 +316,10 @@ it('approves the selected Pending Work Entries, recording who approved them and 
     $second = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     $untouched = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
 
-    $response = actingAs($ben)->from(route('approvals.index', ['from' => '2026-11-01']))
+    $response = actingAs($ben)->from(route('approvals.index', ['project' => $relaunch->project_id]))
         ->post(route('approvals.store'), ['ids' => [(string) $first->id, (string) $second->id]]);
 
-    $response->assertRedirect(route('approvals.index', ['from' => '2026-11-01']))
+    $response->assertRedirect(route('approvals.index', ['project' => $relaunch->project_id]))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '2 Work Entries approved.']);
     foreach ([$first, $second] as $workEntry) {
         $workEntry->refresh();
