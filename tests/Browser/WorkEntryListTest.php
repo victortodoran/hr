@@ -5,6 +5,7 @@ use App\Enums\Scope;
 use App\Enums\WorkEntryState;
 use App\Http\Controllers\LockController;
 use App\Http\Controllers\ReopeningController;
+use App\Http\Controllers\WorkEntryController;
 use App\Http\Controllers\WorkEntryListController;
 use App\Models\Employee;
 use App\Models\WorkEntry;
@@ -12,7 +13,7 @@ use App\Models\WorkEntry;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(WorkEntryListController::class, ReopeningController::class, LockController::class);
+covers(WorkEntryListController::class, ReopeningController::class, LockController::class, WorkEntryController::class);
 
 beforeEach(function () {
     travelTo('2026-11-13 09:00');
@@ -47,4 +48,24 @@ it('filters to Approved Work Entries, then reopens one and locks another', funct
 
     expect($toReopen->refresh()->state)->toBe(WorkEntryState::Pending)
         ->and($toLock->refresh()->state)->toBe(WorkEntryState::Locked);
+});
+
+it("opens an Employee's week from the list under their name, while the viewer's own week has no Employee picker", function () {
+    $finn = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Finn']);
+    $cara = Employee::factory()->create(['name' => 'Cara']);
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-11', 'description' => 'Writing specs']);
+
+    actingAs($finn);
+
+    visit(route('work-entries.index'))
+        ->assertSee('My Work Entries')
+        ->assertNotPresent('[aria-label="Employee"]')
+        ->assertNoJavaScriptErrors();
+
+    visit(route('work-entry-list.index'))
+        ->click('internal:role=link[name="Cara"s]')
+        ->assertSee("Cara's Work Entries")
+        ->assertSee('Writing specs')
+        ->assertNotPresent('[aria-label="Employee"]')
+        ->assertNoJavaScriptErrors();
 });
