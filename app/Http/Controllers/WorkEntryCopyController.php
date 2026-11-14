@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\WorkEntriesTab;
 use App\Http\Requests\CopyWorkEntriesRequest;
 use App\Models\Employee;
 use App\Models\WorkEntry;
-use App\Support\Period;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -18,8 +18,8 @@ class WorkEntryCopyController extends Controller
 {
     /**
      * Copy the source day's Work Entries onto the day as new Pending ones,
-     * all or none, then go back to the Period the page sent while it holds
-     * the day.
+     * all or none, then go back to the tab and Period the page sent,
+     * holding the day.
      */
     public function store(CopyWorkEntriesRequest $request, Employee $employee): RedirectResponse
     {
@@ -37,6 +37,6 @@ class WorkEntryCopyController extends Controller
             'source' => $request->sourceLabel(),
         ])]);
 
-        return to_route('work-entries.index', ['employee' => $employee->id, ...Period::holding($request->query(), $date)->query()]);
+        return to_route('work-entries.index', ['employee' => $employee->id, ...WorkEntriesTab::backTo($request->query(), $date)]);
     }
 }

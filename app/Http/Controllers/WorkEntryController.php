@@ -67,43 +67,39 @@ class WorkEntryController extends Controller
             'today' => today()->toDateString(),
             'total' => $entries->sum('hours'),
             'assignmentTotals' => $this->assignmentTotals($entries),
+            'assignments' => $this->assignments($employee, $period),
             'canManage' => $canManage,
             'isOwn' => $employee->is($actor),
             ...match ($tab) {
-                WorkEntriesTab::List => $this->listTab($employee, $period, $entries, $days),
+                WorkEntriesTab::List => ['days' => $days, 'weeks' => $this->weeks($days)],
                 WorkEntriesTab::Calendar => ['calendar' => $this->calendar($days)],
             },
         ]);
     }
 
     /**
-     * The List tab: the Period's days, its ISO weeks, and the Employee's
-     * Assignments that run during it.
+     * The Employee's Assignments that run during the Period, by Project
+     * name, for adding and changing Work Entries.
      *
-     * @param  Collection<int, WorkEntry>  $entries
-     * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool, copy_from: string|null}>  $days
-     * @return array<string, mixed>
+     * @return SupportCollection<int, array{id: int, project: string, job_title: string|null, start_date: string, end_date: string|null}>
      */
-    private function listTab(Employee $employee, Period $period, Collection $entries, array $days): array
+    private function assignments(Employee $employee, Period $period): SupportCollection
     {
-        return [
-            'days' => $days,
-            'weeks' => $this->weeks($days),
-            'assignments' => $employee->assignments()
-                ->whereDate('start_date', '<=', $period->to)
-                ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $period->from))
-                ->with('project:id,name')
-                ->get()
-                ->sortBy('project.name')
-                ->map(fn (Assignment $assignment): array => [
-                    'id' => $assignment->id,
-                    'project' => $assignment->project->name,
-                    'job_title' => $assignment->job_title,
-                    'start_date' => $assignment->start_date->toDateString(),
-                    'end_date' => $assignment->end_date?->toDateString(),
-                ])
-                ->values(),
-        ];
+        return $employee->assignments()
+            ->whereDate('start_date', '<=', $period->to)
+            ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $period->from))
+            ->with('project:id,name')
+            ->get()
+            ->sortBy('project.name')
+            ->map(fn (Assignment $assignment): array => [
+                'id' => $assignment->id,
+                'project' => $assignment->project->name,
+                'job_title' => $assignment->job_title,
+                'start_date' => $assignment->start_date->toDateString(),
+                'end_date' => $assignment->end_date?->toDateString(),
+            ])
+            ->values()
+            ->toBase();
     }
 
     /**
@@ -128,9 +124,8 @@ class WorkEntryController extends Controller
     /**
      * The Calendar tab: the month's ISO weeks, each with its number, its
      * hours, and its seven days from Monday to Sunday, null for a day of
-     * another month. Each day has its hours and its Work Entries in the
-     * order they were recorded, with its Time Off and nothing logged as the
-     * List has them.
+     * another month. Each day is the List's day, so it can be added to,
+     * copied onto and have Work Entries deleted from the Calendar.
      *
      * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool, copy_from: string|null}>  $days
      * @return list<array{number: int, hours: float|int, days: list<array<string, mixed>|null>}>
@@ -145,23 +140,7 @@ class WorkEntryController extends Controller
             return [
                 'number' => $week['number'],
                 'hours' => $week['hours'],
-                'days' => array_map(function (int $offset) use ($monday, $byDate): ?array {
-                    $day = $byDate->get($monday->addDays($offset)->toDateString());
-
-                    return $day === null ? null : [
-                        'date' => $day['date'],
-                        'hours' => $day['hours'],
-                        'entries' => array_map(fn (array $entry): array => [
-                            'id' => $entry['id'],
-                            'project' => $entry['project'],
-                            'description' => $entry['description'],
-                            'hours' => $entry['hours'],
-                            'state' => $entry['state'],
-                        ], $day['entries']),
-                        'time_off' => $day['time_off'],
-                        'nothing_logged' => $day['nothing_logged'],
-                    ];
-                }, range(0, 6)),
+                'days' => array_map(fn (int $offset): ?array => $byDate->get($monday->addDays($offset)->toDateString()), range(0, 6)),
             ];
         }, $this->weeks($days));
     }
@@ -301,13 +280,11 @@ class WorkEntryController extends Controller
     }
 
     /**
-     * Back to the Period the page sent in its query while the Work Entry
-     * falls within it, or else to the week it falls in.
+     * Back to the tab and Period the page sent in its query, holding the
+     * Work Entry's day (see WorkEntriesTab::backTo).
      */
     private function backTo(Request $request, Employee $employee, WorkEntry $workEntry): RedirectResponse
     {
-        $period = Period::holding($request->query(), $workEntry->date);
-
-        return to_route('work-entries.index', ['employee' => $employee->id, ...$period->query()]);
+        return to_route('work-entries.index', ['employee' => $employee->id, ...WorkEntriesTab::backTo($request->query(), $workEntry->date)]);
     }
 }

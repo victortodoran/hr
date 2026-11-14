@@ -43,3 +43,21 @@ export function formatMonth(month: string): string {
         year: 'numeric',
     });
 }
+
+/**
+ * A day's short name and number, such as "Thu 12".
+ */
+export function formatWeekdayAndDay(date: string): string {
+    const day = new Date(`${date}T00:00:00`);
+
+    return `${day.toLocaleDateString(undefined, { weekday: 'short' })} ${day.getDate()}`;
+}
+
+/**
+ * A day's full name, such as "Thursday 12 November".
+ */
+export function formatLongDay(date: string): string {
+    const day = new Date(`${date}T00:00:00`);
+
+    return `${day.toLocaleDateString(undefined, { weekday: 'long' })} ${day.getDate()} ${day.toLocaleDateString(undefined, { month: 'long' })}`;
+}

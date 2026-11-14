@@ -38,6 +38,14 @@ it('copies every Work Entry of the latest earlier day with any onto the day as P
     ]);
 });
 
+it('goes back to the Calendar when copying from it', function () {
+    $cara = recorder();
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-12']);
+
+    actingAs($cara)->post(route('employees.work-entry-copies.store', ['employee' => $cara, 'tab' => 'calendar', 'month' => '2026-11']), ['date' => '2026-11-13'])
+        ->assertRedirect(route('work-entries.index', ['employee' => $cara->id, 'tab' => 'calendar', 'month' => '2026-11']));
+});
+
 it('looks back across a weekend, and says one Work Entry in the singular', function () {
     $cara = recorder();
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-06', 'description' => 'Friday work']);

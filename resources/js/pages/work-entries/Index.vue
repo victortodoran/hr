@@ -26,9 +26,10 @@ import type {
 } from '@/types';
 
 /**
- * Only the open tab's props are sent: the days, weeks and Assignments on
- * the List tab, `calendar` on the Calendar tab, which always shows a month.
- * Both get the Period's total and the hours on each Assignment.
+ * Only the open tab's props are sent: the days and weeks on the List tab,
+ * `calendar` on the Calendar tab, which always shows a month. Both get the
+ * Period's total, the hours on each Assignment and the Assignments to add
+ * to.
  */
 const props = defineProps<{
     tab: WorkEntriesTab;
@@ -39,7 +40,7 @@ const props = defineProps<{
     weeks?: WorkEntryWeek[];
     assignmentTotals: WorkEntryAssignmentTotal[];
     total: number;
-    assignments?: WorkEntryAssignment[];
+    assignments: WorkEntryAssignment[];
     calendar?: WorkEntryCalendarWeek[];
     canManage: boolean;
     /** Whether the week is the viewer's own. */
@@ -200,10 +201,15 @@ function leaveWeek(): void {
             :weeks="calendar"
             :today="today"
             :show-weekends="showWeekends"
+            :employee="employee"
+            :period="period"
+            :assignments="assignments"
+            :can-manage="canManage"
+            @dirty="markUnsaved"
         />
 
         <WorkEntryList
-            v-if="tab === 'list' && days && weeks && assignments"
+            v-if="tab === 'list' && days && weeks"
             :employee="employee"
             :period="period"
             :today="today"
