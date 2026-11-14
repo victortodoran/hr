@@ -64,9 +64,10 @@ class HomeController extends Controller
     }
 
     /**
-     * The Employee's hours this week, Monday to Sunday, and how many of its
-     * Work Entries are Pending; null for the top Employee, who records no
-     * Work Entries, and for anyone who can't see their Work Entries.
+     * The Employee's hours this week, Monday to Sunday, leaving out Declined
+     * Work Entries, and how many of its Work Entries are Pending; null for
+     * the top Employee, who records no Work Entries, and for anyone who
+     * can't see their Work Entries.
      *
      * @return array{week: string, hours: float|int, pending: int}|null
      */
@@ -78,6 +79,7 @@ class HomeController extends Controller
 
         $monday = CarbonImmutable::today()->startOfWeek(CarbonInterface::MONDAY);
         $entries = $employee->workEntries()
+            ->counted()
             ->whereBetween('work_entries.date', [$monday->toDateString(), $monday->endOfWeek(CarbonInterface::SUNDAY)->toDateString()])
             ->get();
 

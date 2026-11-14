@@ -64,12 +64,14 @@ class WorkEntryRequest extends FormRequest
 
     /**
      * Refuse hours that would take the Employee past 24 on the day, counting
-     * their other Work Entries that day on every Assignment.
+     * their other Work Entries that day on every Assignment, all but the
+     * Declined ones, whose hours count nowhere.
      */
     private function checkDailyTotal(Validator $validator, Carbon $date): void
     {
         $workEntry = $this->route('workEntry');
         $recorded = (int) $this->employee()->workEntries()
+            ->counted()
             ->whereDate('work_entries.date', $date)
             ->when($workEntry instanceof WorkEntry ? $workEntry->id : null, fn (Builder $others, int $id) => $others->whereKeyNot($id))
             ->sum('minutes');

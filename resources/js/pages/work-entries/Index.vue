@@ -40,6 +40,8 @@ const props = defineProps<{
     weeks?: WorkEntryWeek[];
     assignmentTotals: WorkEntryAssignmentTotal[];
     total: number;
+    /** The hours of the Period's Declined Work Entries, which count nowhere. */
+    declinedHours: number;
     assignments: WorkEntryAssignment[];
     calendar?: WorkEntryCalendarWeek[];
     canManage: boolean;
@@ -192,6 +194,7 @@ function leaveWeek(): void {
         <WorkEntrySummary
             :period="period"
             :total="total"
+            :declined-hours="declinedHours"
             :assignment-totals="assignmentTotals"
             :week-number="weeks?.[0]?.number"
         />

@@ -1,7 +1,16 @@
 /**
- * Where a Work Entry stands: only a Pending one can be changed.
+ * Where a Work Entry stands: only a Pending or Declined one can be changed,
+ * and a Declined one's hours count nowhere.
  */
-export type WorkEntryState = 'pending' | 'approved' | 'locked';
+export type WorkEntryState = 'pending' | 'approved' | 'locked' | 'declined';
+
+/**
+ * Who declined a Work Entry, and why.
+ */
+export type WorkEntryDecline = {
+    by: string;
+    reason: string;
+};
 
 /**
  * Who approved or locked a Work Entry, and on which day.
@@ -26,6 +35,8 @@ export type WorkEntryRecord = {
     can_edit: boolean;
     /** Whether the viewer may delete it. */
     can_delete: boolean;
+    /** Who declined it and why, while it is Declined. */
+    declined: WorkEntryDecline | null;
 };
 
 /**
@@ -65,7 +76,8 @@ export type WorkEntryCalendarWeek = {
 };
 
 /**
- * One day of the Period, with its Work Entries and their total hours.
+ * One day of the Period, with its Work Entries and the hours of those that
+ * aren't Declined.
  */
 export type WorkEntryDay = {
     date: string;
@@ -113,12 +125,13 @@ export type ApprovalEntry = {
 
 /**
  * A Work Entry on the Work Entries page, with whose it is, who signed it off
- * and whether the viewer may reopen or lock it.
+ * or declined it, and whether the viewer may reopen or lock it.
  */
 export type ListedWorkEntry = ApprovalEntry & {
     state: WorkEntryState;
     approved: WorkEntrySignOff | null;
     locked: WorkEntrySignOff | null;
+    declined: WorkEntryDecline | null;
     can_reopen: boolean;
     can_lock: boolean;
 };

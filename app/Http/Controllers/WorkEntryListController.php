@@ -25,9 +25,10 @@ class WorkEntryListController extends Controller
 {
     /**
      * The Work Entries matching the filters, in every state unless one is
-     * chosen, oldest first, with their total hours. The Employees to choose
-     * from are those the viewer may see with Work Entries that month in the
-     * chosen state, by name with how many; an Employee not among them, or
+     * chosen, oldest first, with the total hours of those that aren't
+     * Declined, and of those that are. The Employees to choose from are those the viewer may see
+     * with Work Entries that month in the chosen state, by name with how
+     * many; an Employee not among them, or
      * none, falls back to the first, while "all" keeps every Employee. The
      * Projects to choose from are those the chosen Employee, or anyone, has
      * Work Entries on that month; one not among them falls back to any
@@ -74,7 +75,7 @@ class WorkEntryListController extends Controller
             'canReopen' => $actor->holds(Permission::ReopenWorkEntries),
             'canLock' => $canLock,
             'entries' => (clone $matching)
-                ->with(['assignment.employee:id,name', 'assignment.project:id,name', 'approver:id,name', 'locker:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+                ->with(['assignment.employee:id,name', 'assignment.project:id,name', 'approver:id,name', 'locker:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
                 ->orderBy('date')
                 ->orderBy('id')
                 ->paginate(25)
@@ -89,10 +90,12 @@ class WorkEntryListController extends Controller
                     'state' => $entry->state->value,
                     'approved' => $entry->approval(),
                     'locked' => $entry->lock(),
+                    'declined' => $entry->decline(),
                     'can_reopen' => $entry->state === WorkEntryState::Approved && $reopenable->contains($entry->assignment->employee_id),
                     'can_lock' => $entry->state === WorkEntryState::Approved && $canLock,
                 ]),
-            'total' => (int) (clone $matching)->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)
+            'total' => (int) (clone $matching)->counted()->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)
+            'declinedTotal' => (int) (clone $matching)->where('state', WorkEntryState::Declined)->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)
             'matchingIds' => Inertia::optional(fn (): array => (clone $matching)->orderBy('id')->pluck('id')->all()),
             'employees' => $employees,
             'projects' => $projects,

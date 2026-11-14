@@ -48,23 +48,23 @@ class WorkEntryPolicy
 
     /**
      * Changing a Work Entry needs what recording it does, and only a Pending
-     * one can be changed: an Approved one must be reopened first, and a
-     * Locked one never can be.
+     * or Declined one can be changed: an Approved one must be reopened
+     * first, and a Locked one never can be.
      */
     public function update(Employee $actor, WorkEntry $workEntry): bool
     {
-        return $workEntry->isPending() && $this->create($actor, $workEntry->employee);
+        return $workEntry->isOpen() && $this->create($actor, $workEntry->employee);
     }
 
     /**
      * Deleting a Work Entry needs manage work entries for the Employee whose
-     * Assignment it is on, and only a Pending one can be deleted. Unlike
-     * changing, it is allowed for the top Employee, so Pending Work Entries
-     * nobody can approve can be cleared away.
+     * Assignment it is on, and only a Pending or Declined one can be
+     * deleted. Unlike changing, it is allowed for the top Employee, so
+     * Pending Work Entries nobody can approve can be cleared away.
      */
     public function delete(Employee $actor, WorkEntry $workEntry): bool
     {
-        return $workEntry->isPending()
+        return $workEntry->isOpen()
             && $actor->can(Permission::ManageWorkEntries->value, $workEntry->employee);
     }
 

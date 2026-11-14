@@ -33,7 +33,7 @@ it('shows a month as ISO weeks, Monday to Sunday, each day as the List has it, l
 
     $entry = fn (WorkEntry $entry, string $project, float|int $hours, string $state): array => [
         'id' => $entry->id, 'assignment_id' => $entry->assignment_id, 'project' => $project, 'hours' => $hours,
-        'description' => $entry->description, 'state' => $state, 'can_edit' => $state === 'pending', 'can_delete' => $state === 'pending',
+        'description' => $entry->description, 'state' => $state, 'can_edit' => $state === 'pending', 'can_delete' => $state === 'pending', 'declined' => null,
     ];
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page

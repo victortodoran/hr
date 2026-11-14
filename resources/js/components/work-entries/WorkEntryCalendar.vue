@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import {
-    formatHours,
-    takesEntries as takesEntriesOn,
-} from '@/lib/work-entries';
 import { useMediaQuery } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
 import StatusDot from '@/components/StatusDot.vue';
@@ -22,6 +18,10 @@ import WorkEntryDayPanel from '@/components/work-entries/WorkEntryDayPanel.vue';
 import { formatLongDay, isWeekend } from '@/lib/dates';
 import { statusLabels } from '@/lib/status';
 import { timeOffKindLabel } from '@/lib/time-off';
+import {
+    formatHours,
+    takesEntries as takesEntriesOn,
+} from '@/lib/work-entries';
 import type {
     Choice,
     WorkEntryAssignment,
@@ -202,7 +202,7 @@ function shownDays(week: WorkEntryCalendarWeek): (WorkEntryDay | null)[] {
 }
 
 /** The Work Entry states, in the order the dots and legend show them. */
-const states = ['pending', 'approved', 'locked'] as const;
+const states = ['pending', 'approved', 'locked', 'declined'] as const;
 
 /**
  * A day's Work Entries and Time Off as its tooltip, one per line, such as
@@ -213,7 +213,7 @@ function dayTitle(day: WorkEntryDay): string {
     return [
         ...day.entries.map(
             (entry) =>
-                `${entry.project} · ${entry.description} · ${formatHours(entry.hours)}`,
+                `${entry.project} · ${entry.description} · ${formatHours(entry.hours)}${entry.declined ? ' · Declined' : ''}`,
         ),
         ...(day.time_off ? [timeOffLabel(day)] : []),
     ].join('\n');
@@ -379,11 +379,19 @@ const columns = computed(() =>
                                     :data-state="entry.state"
                                 >
                                     <StatusDot :state="entry.state" />
-                                    <span class="min-w-0 flex-1 truncate">{{
-                                        entry.description
-                                    }}</span>
                                     <span
-                                        class="shrink-0 text-muted-foreground tabular-nums"
+                                        :class="[
+                                            'min-w-0 flex-1 truncate',
+                                            entry.declined &&
+                                                'text-muted-foreground line-through',
+                                        ]"
+                                        >{{ entry.description }}</span
+                                    >
+                                    <span
+                                        :class="[
+                                            'shrink-0 text-muted-foreground tabular-nums',
+                                            entry.declined && 'line-through',
+                                        ]"
                                         >{{ formatHours(entry.hours) }}</span
                                     >
                                 </li>

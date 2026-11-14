@@ -51,8 +51,8 @@ it('lists everyone a reopen Scope covers, offering to reopen their Approved Work
         ->where('canReopen', true)
         ->where('canLock', false)
         ->where('entries.data', [
-            ['id' => $approved->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'API', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => null, 'can_reopen' => true, 'can_lock' => false],
-            ['id' => $own->id, 'date' => '2026-11-10', 'employee' => ['id' => $rae->id, 'name' => 'Rae'], 'project' => 'Archive', 'hours' => $own->hours, 'description' => $own->description, 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-11'], 'locked' => null, 'can_reopen' => false, 'can_lock' => false],
+            ['id' => $approved->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'API', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => null, 'declined' => null, 'can_reopen' => true, 'can_lock' => false],
+            ['id' => $own->id, 'date' => '2026-11-10', 'employee' => ['id' => $rae->id, 'name' => 'Rae'], 'project' => 'Archive', 'hours' => $own->hours, 'description' => $own->description, 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-11'], 'locked' => null, 'declined' => null, 'can_reopen' => false, 'can_lock' => false],
         ])
         ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'count' => 1], ['id' => $rae->id, 'name' => 'Rae', 'count' => 1]]));
 });

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { formatHours } from '@/lib/work-entries';
 import { Head, Link } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -15,6 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { formatHours } from '@/lib/work-entries';
 import { landing } from '@/routes';
 import { index as approvals } from '@/routes/approvals';
 import { index as timeOff } from '@/routes/time-off';

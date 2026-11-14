@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { formatHours } from '@/lib/work-entries';
 import { computed } from 'vue';
 import { formatMonth } from '@/lib/dates';
+import { formatHours } from '@/lib/work-entries';
 import type { WorkEntryAssignmentTotal, WorkEntryPeriod } from '@/types';
 
 /**
  * The Period's total hours in large type, saying what it covers, with the
- * hours on each Project beside it, most hours first.
+ * hours on each Project beside it, most hours first, and the hours of any
+ * Declined Work Entries, which count nowhere.
  */
 const props = defineProps<{
     period: WorkEntryPeriod;
     total: number;
+    declinedHours: number;
     assignmentTotals: WorkEntryAssignmentTotal[];
     /** The ISO week number, for a Period in Week mode. */
     weekNumber?: number;
@@ -52,6 +54,13 @@ const covers = computed((): string => {
                 formatHours(total)
             }}</span>
             <span class="ml-1.5 text-muted-foreground">{{ covers }}</span>
+        </p>
+        <p
+            v-if="declinedHours > 0"
+            class="text-status-declined-foreground"
+            data-test="declined-hours"
+        >
+            {{ formatHours(declinedHours) }} declined, not counted
         </p>
         <ul
             v-if="assignmentTotals.length > 0"
