@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\WorkEntriesTab;
 use App\Support\Period;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -9,8 +10,9 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 /**
- * The Work Entries week page's query: whose Work Entries, and the Period
- * shown, a week, a month or a custom period of at most three months.
+ * The Work Entries week page's query: whose Work Entries, the tab, and the
+ * Period shown, a week, a month or a custom period of at most three
+ * months. The Calendar always shows a month.
  */
 class WorkEntryPeriodRequest extends FormRequest
 {
@@ -50,10 +52,22 @@ class WorkEntryPeriodRequest extends FormRequest
     }
 
     /**
-     * The Period asked for, the current week when none is.
+     * The tab asked for: the Calendar when asked for, the List for anything
+     * else or no tab.
+     */
+    public function tab(): WorkEntriesTab
+    {
+        return WorkEntriesTab::tryFrom($this->string('tab')->value()) ?? WorkEntriesTab::List;
+    }
+
+    /**
+     * The Period asked for, the current week when none is. On the Calendar
+     * it is the month holding the first day of the Period asked for.
      */
     public function period(): Period
     {
-        return Period::fromQuery($this->query()) ?? Period::week(today());
+        $period = Period::fromQuery($this->query()) ?? Period::week(today());
+
+        return $this->tab() === WorkEntriesTab::Calendar ? Period::month($period->from->format('Y-m')) : $period;
     }
 }

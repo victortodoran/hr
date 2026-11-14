@@ -51,6 +51,31 @@ export type WorkEntryWeek = {
     hours: number;
 };
 
+/** The tabs of the Work Entries week page. */
+export type WorkEntriesTab = 'list' | 'calendar';
+
+/**
+ * One day on the Calendar: its hours on each Project, by name, and its Time
+ * Off or nothing logged, as the List has them.
+ */
+export type WorkEntryCalendarDay = {
+    date: string;
+    hours: number;
+    projects: { project: string; hours: number }[];
+    time_off: 'paid' | 'unpaid' | null;
+    nothing_logged: boolean;
+};
+
+/**
+ * One ISO week on the Calendar: its number, its hours, and its seven days
+ * from Monday to Sunday, null for a day of another month.
+ */
+export type WorkEntryCalendarWeek = {
+    number: number;
+    hours: number;
+    days: (WorkEntryCalendarDay | null)[];
+};
+
 /**
  * One day of the Period, with its Work Entries and their total hours.
  */

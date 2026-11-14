@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Permission;
 use App\Enums\Scope;
+use App\Enums\WorkEntriesTab;
 use App\Http\Requests\WorkEntryPeriodRequest;
 use App\Http\Requests\WorkEntryRequest;
 use App\Models\Assignment;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -55,10 +57,34 @@ class WorkEntryController extends Controller
         $canDelete = $actor->can(Permission::ManageWorkEntries->value, $employee);
         $days = $this->days($employee, $period, $entries, $timeOff, $canManage, $canDelete);
 
+        $tab = $request->tab();
+
         return Inertia::render('work-entries/Index', [
+            'tab' => $tab->value,
             'employee' => $employee->only('id', 'name'),
             'period' => $period->toArray(),
             'today' => today()->toDateString(),
+            'total' => $entries->sum('hours'),
+            'canManage' => $canManage,
+            'isOwn' => $employee->is($actor),
+            ...match ($tab) {
+                WorkEntriesTab::List => $this->listTab($employee, $period, $entries, $days),
+                WorkEntriesTab::Calendar => ['calendar' => $this->calendar($days)],
+            },
+        ]);
+    }
+
+    /**
+     * The List tab: the Period's days, its ISO weeks, the hours on each
+     * Assignment, and the Employee's Assignments that run during it.
+     *
+     * @param  Collection<int, WorkEntry>  $entries
+     * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool}>  $days
+     * @return array<string, mixed>
+     */
+    private function listTab(Employee $employee, Period $period, Collection $entries, array $days): array
+    {
+        return [
             'days' => $days,
             'weeks' => $this->weeks($days),
             'assignmentTotals' => $entries->groupBy('assignment_id')
@@ -69,7 +95,6 @@ class WorkEntryController extends Controller
                 ])
                 ->sortBy('project')
                 ->values(),
-            'total' => $entries->sum('hours'),
             'assignments' => $employee->assignments()
                 ->whereDate('start_date', '<=', $period->to)
                 ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $period->from))
@@ -84,9 +109,46 @@ class WorkEntryController extends Controller
                     'end_date' => $assignment->end_date?->toDateString(),
                 ])
                 ->values(),
-            'canManage' => $canManage,
-            'isOwn' => $employee->is($actor),
-        ]);
+        ];
+    }
+
+    /**
+     * The Calendar tab: the month's ISO weeks, each with its number, its
+     * hours, and its seven days from Monday to Sunday, null for a day of
+     * another month. Each day has its hours on each Project, by name, with
+     * its Time Off and nothing logged as the List has them.
+     *
+     * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool}>  $days
+     * @return list<array{number: int, hours: float|int, days: list<array<string, mixed>|null>}>
+     */
+    private function calendar(array $days): array
+    {
+        $byDate = collect($days)->keyBy('date');
+
+        return array_map(function (array $week) use ($byDate): array {
+            $monday = CarbonImmutable::parse($week['from'])->startOfWeek(CarbonInterface::MONDAY);
+
+            return [
+                'number' => $week['number'],
+                'hours' => $week['hours'],
+                'days' => array_map(function (int $offset) use ($monday, $byDate): ?array {
+                    $day = $byDate->get($monday->addDays($offset)->toDateString());
+
+                    return $day === null ? null : [
+                        'date' => $day['date'],
+                        'hours' => $day['hours'],
+                        'projects' => collect($day['entries'])
+                            ->groupBy('project')
+                            ->map(fn (SupportCollection $onProject, string $project): array => ['project' => $project, 'hours' => $onProject->sum('hours')])
+                            ->sortBy('project')
+                            ->values()
+                            ->all(),
+                        'time_off' => $day['time_off'],
+                        'nothing_logged' => $day['nothing_logged'],
+                    ];
+                }, range(0, 6)),
+            ];
+        }, $this->weeks($days));
     }
 
     /**
