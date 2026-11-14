@@ -63,7 +63,7 @@ it('adds Work Entries one day at a time, staying on the day, moving on with Next
     ]);
 });
 
-it('adds another Work Entry to a day that has one with its + button, which keeps its place beside the greyed-out edit and delete of a Work Entry that can\'t be changed', function () {
+it('adds another Work Entry to a day that has one with its + button, which keeps its place on a day it can\'t edit', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'description' => 'Reviewing the API']);
@@ -77,9 +77,8 @@ it('adds another Work Entry to a day that has one with its + button, which keeps
     expect($page->script($plusLeft('Tuesday 10 November')))->toBe($page->script($plusLeft('Wednesday 11 November')));
 
     $page
-        ->assertPresent('[data-date="2026-11-11"] [aria-label="Edit Work Entry"]:disabled')
-        ->assertPresent('[data-date="2026-11-11"] [aria-label="Delete Work Entry"]:disabled')
-        ->assertPresent('[data-date="2026-11-10"] [aria-label="Edit Work Entry"]:enabled')
+        ->assertNotPresent('[data-date="2026-11-11"] [aria-label="Edit Work Entry"]')
+        ->assertNotPresent('[data-date="2026-11-11"] [aria-label="Delete Work Entry"]')
         ->assertNotPresent('[data-date="2026-11-10"] [data-test="add-row"]')
         ->click('[aria-label="Add another entry on Tuesday 10 November"]')
         ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-10')

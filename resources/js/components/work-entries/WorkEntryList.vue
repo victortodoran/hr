@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, Pencil, Plus, Trash2 } from '@lucide/vue';
+import { ArrowRight, Pencil, Plus } from '@lucide/vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
@@ -96,7 +96,8 @@ function takesEntries(day: WorkEntryDay): boolean {
 
 /**
  * Whether a Work Entry row ends with the + adding another entry to its day:
- * the day's first row, while the day's add form isn't open.
+ * the day's first row, while the day's add form isn't open. Where edit or
+ * delete is missing, an empty space keeps the + in its place.
  */
 function offersAdd(day: WorkEntryDay, index: number): boolean {
     return index === 0 && takesEntries(day) && activeDate.value !== day.date;
@@ -511,31 +512,21 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                     @click="editing.add(entry.id)"
                                     ><Pencil
                                 /></Button>
-                                <Button
-                                    v-else
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    class="text-muted-foreground"
-                                    aria-label="Edit Work Entry"
-                                    disabled
-                                    ><Pencil
-                                /></Button>
+                                <span
+                                    v-else-if="offersAdd(segment.day, index)"
+                                    class="size-8"
+                                    aria-hidden="true"
+                                />
                                 <DeleteWorkEntry
                                     v-if="entry.can_delete"
                                     :entry="entry"
                                     :period-query="period.query"
                                 />
-                                <Button
-                                    v-else
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    class="text-muted-foreground"
-                                    aria-label="Delete Work Entry"
-                                    disabled
-                                    ><Trash2
-                                /></Button>
+                                <span
+                                    v-else-if="offersAdd(segment.day, index)"
+                                    class="size-8"
+                                    aria-hidden="true"
+                                />
                             </span>
                             <span
                                 v-if="entry.declined"
