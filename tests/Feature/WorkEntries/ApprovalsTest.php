@@ -66,14 +66,14 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
         ->missing('toApprove')
         ->missing('canReopen')
         ->missing('canLock')
-        ->where('filters', ['employee' => $cara->id, 'project' => null])
+        ->where('filters', ['employee' => $cara->id, 'project' => $carasRelaunch->project_id])
         ->where('entries.data', [
             ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Specs'],
             ['id' => $later->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API'],
         ])
         ->where('total', 2.5)
         ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'pending' => 2]])
-        ->where('projects', [['id' => $carasRelaunch->project_id, 'name' => 'Relaunch']]));
+        ->where('projects', [['id' => $carasRelaunch->project_id, 'name' => 'Relaunch', 'pending' => 2]]));
 });
 
 it('never lists the approver\'s own Work Entries, nor their Manager\'s', function () {
@@ -157,32 +157,33 @@ it('opens on the first Employee by name with Pending Work Entries, offering only
     $response = actingAs($ben)->get(route('approvals.index'));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('filters', ['employee' => $cara->id, 'project' => null])
+        ->where('filters', ['employee' => $cara->id, 'project' => $carasRelaunch->project_id])
         ->where('employees', [
             ['id' => $cara->id, 'name' => 'Cara', 'pending' => 2],
             ['id' => $dev->id, 'name' => 'Dev', 'pending' => 1],
         ])
-        ->where('projects', [['id' => $carasRelaunch->project_id, 'name' => 'Relaunch']])
+        ->where('projects', [['id' => $carasRelaunch->project_id, 'name' => 'Relaunch', 'pending' => 2]])
         ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === $caras->pluck('id')->all()));
 });
 
-it('shows only the chosen Employee\'s Pending Work Entries, offering only the Projects they have Pending Work Entries on', function () {
+it('shows the chosen Employee\'s Pending Work Entries on the first Project by name, offering only the Projects they have Pending Work Entries on, each with how many', function () {
     ['ben' => $ben, 'cara' => $cara, 'dev' => $dev] = approverOfCaraAndDev();
     WorkEntry::factory()->for(assignmentOf($cara, 'Archive'))->create(['date' => '2026-11-03']);
     $devsBilling = assignmentOf($dev, 'Billing');
     $devsRelaunch = assignmentOf($dev, 'Relaunch');
     $later = WorkEntry::factory()->for($devsBilling)->create(['date' => '2026-11-09', 'minutes' => 120]);
-    $earlier = WorkEntry::factory()->for($devsRelaunch)->create(['date' => '2026-11-04', 'minutes' => 60]);
+    $earlier = WorkEntry::factory()->for($devsBilling)->create(['date' => '2026-11-04', 'minutes' => 60]);
+    WorkEntry::factory()->for($devsRelaunch)->create(['date' => '2026-11-02', 'minutes' => 30]);
     WorkEntry::factory()->for($devsBilling)->approved()->create(['date' => '2026-11-05']);
     WorkEntry::factory()->for(assignmentOf($dev, 'Website'))->approved()->create(['date' => '2026-11-05']);
 
     $response = actingAs($ben)->get(route('approvals.index', ['employee' => $dev->id]));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('filters', ['employee' => $dev->id, 'project' => null])
+        ->where('filters', ['employee' => $dev->id, 'project' => $devsBilling->project_id])
         ->where('projects', [
-            ['id' => $devsBilling->project_id, 'name' => 'Billing'],
-            ['id' => $devsRelaunch->project_id, 'name' => 'Relaunch'],
+            ['id' => $devsBilling->project_id, 'name' => 'Billing', 'pending' => 2],
+            ['id' => $devsRelaunch->project_id, 'name' => 'Relaunch', 'pending' => 1],
         ])
         ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$earlier->id, $later->id])
         ->where('total', 3));
@@ -224,30 +225,56 @@ it('falls back to the first Employee by name when asked for one with nothing wai
         ->where('entries.data', fn (Collection $data): bool => $data->pluck('employee.id')->all() === [$cara->id]));
 })->with(['nothing waiting', 'not approved by the approver', 'the approver', 'unknown', 'none']);
 
-it('treats a Project the Employee has nothing waiting on as any Project', function () {
+it('falls back to the first Project by name when asked for one the Employee has nothing waiting on', function (string $asked) {
     ['ben' => $ben, 'cara' => $cara, 'dev' => $dev] = approverOfCaraAndDev();
-    $caras = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03']);
+    $carasAtlas = assignmentOf($cara, 'Atlas');
+    $atlas = WorkEntry::factory()->for($carasAtlas)->create(['date' => '2026-11-03']);
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-02']);
     $devsBilling = assignmentOf($dev, 'Billing');
     WorkEntry::factory()->for($devsBilling)->create(['date' => '2026-11-03']);
+    $project = match ($asked) {
+        'another Employee\'s' => $devsBilling->project_id,
+        'unknown' => $devsBilling->project_id + 100,
+        default => '',
+    };
 
-    $response = actingAs($ben)->get(route('approvals.index', ['employee' => $cara->id, 'project' => $devsBilling->project_id]));
+    $response = actingAs($ben)->get(route('approvals.index', ['employee' => $cara->id, 'project' => $project]));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('filters', ['employee' => $cara->id, 'project' => null])
-        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$caras->id]));
+        ->where('filters', ['employee' => $cara->id, 'project' => $carasAtlas->project_id])
+        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$atlas->id]));
+})->with(['another Employee\'s', 'unknown', 'none']);
+
+it('moves on to the first Project left, not the next one, once the chosen one\'s Work Entries are all approved', function () {
+    ['ben' => $ben, 'cara' => $cara] = approverOfCaraAndDev();
+    $carasAtlas = assignmentOf($cara, 'Atlas');
+    $carasRelaunch = assignmentOf($cara, 'Relaunch');
+    WorkEntry::factory()->for($carasAtlas)->create(['date' => '2026-11-03']);
+    $relaunch = WorkEntry::factory()->for($carasRelaunch)->create(['date' => '2026-11-03']);
+    WorkEntry::factory()->for(assignmentOf($cara, 'Zephyr'))->create(['date' => '2026-11-03']);
+
+    actingAs($ben)->post(route('approvals.store'), ['ids' => [$relaunch->id]]);
+    $response = actingAs($ben)->get(route('approvals.index', ['employee' => $cara->id, 'project' => $carasRelaunch->project_id]));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('filters', ['employee' => $cara->id, 'project' => $carasAtlas->project_id])
+        ->where('projects', fn (Collection $projects): bool => $projects->pluck('name')->all() === ['Atlas', 'Zephyr']));
 });
 
-it('moves on to the next Employee once the chosen one\'s Work Entries are all approved', function () {
+it('moves on to the next Employee\'s first Project once the chosen one\'s Work Entries are all approved', function () {
     ['ben' => $ben, 'cara' => $cara, 'dev' => $dev] = approverOfCaraAndDev();
-    $caras = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03']);
-    WorkEntry::factory()->for(assignmentOf($dev, 'Billing'))->create(['date' => '2026-11-03']);
+    $carasRelaunch = assignmentOf($cara);
+    $caras = WorkEntry::factory()->for($carasRelaunch)->create(['date' => '2026-11-03']);
+    $devsBilling = assignmentOf($dev, 'Billing');
+    WorkEntry::factory()->for($devsBilling)->create(['date' => '2026-11-03']);
+    WorkEntry::factory()->for(assignmentOf($dev, 'Relaunch'))->create(['date' => '2026-11-03']);
 
     actingAs($ben)->post(route('approvals.store'), ['ids' => [$caras->id]]);
-    $response = actingAs($ben)->get(route('approvals.index', ['employee' => $cara->id]));
+    $response = actingAs($ben)->get(route('approvals.index', ['employee' => $cara->id, 'project' => $carasRelaunch->project_id]));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('filters', ['employee' => $dev->id, 'project' => null])
-        ->where('employees', [['id' => $dev->id, 'name' => 'Dev', 'pending' => 1]]));
+        ->where('filters', ['employee' => $dev->id, 'project' => $devsBilling->project_id])
+        ->where('employees', [['id' => $dev->id, 'name' => 'Dev', 'pending' => 2]]));
 });
 
 it('offers no Employee or Project to choose when nothing waits for the approver', function () {
@@ -270,7 +297,7 @@ it('has no date range to filter by', function () {
     $response = actingAs($ben)->get(route('approvals.index', ['from' => '2026-11-04', 'to' => 'later']));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('filters', ['employee' => $cara->id, 'project' => null])
+        ->where('filters.employee', $cara->id)
         ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$caras->id]));
 });
 
@@ -297,11 +324,13 @@ it('pages through 25 Work Entries at a time, keeping the filters', function () {
         ->where('total', 6.5));
 });
 
-it('gives every matching Work Entry\'s ID when asked, for selecting them all', function () {
+it('gives every matching Work Entry\'s ID on the chosen Project when asked, for selecting them all', function () {
     $ben = approver();
-    $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $ben->id]));
+    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
+    $relaunch = assignmentOf($cara);
     $ids = WorkEntry::factory()->for($relaunch)->count(26)->create(['date' => '2026-11-10'])->pluck('id')->all();
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
+    WorkEntry::factory()->for(assignmentOf($cara, 'Website'))->create(['date' => '2026-11-10']);
 
     actingAs($ben)->get(route('approvals.index'))
         ->assertInertia(fn (Assert $page) => $page->missing('matchingIds'));

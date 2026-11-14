@@ -20,8 +20,8 @@ use Inertia\Response;
 /**
  * The Approvals page, an inbox of what waits for the viewer's decision as an
  * effective Manager, in two tabs. Work Entries: the Pending Work Entries of
- * the Employees whose effective Manager the viewer is, one Employee at a
- * time, and approving many of them at once. Nobody approves their own Work Entries.
+ * the Employees whose effective Manager the viewer is, one Employee and one
+ * Project at a time, and approving many of them at once. Nobody approves their own Work Entries.
  * Reopening and locking happen on the Work Entries page. Time Off: the
  * Pending Time Off the viewer decides, answered by the
  * TimeOffApprovalController and TimeOffDeclineController.
@@ -48,13 +48,15 @@ class ApprovalController extends Controller
     }
 
     /**
-     * The Work Entries tab, one Employee at a time: the Pending Work Entries
-     * of the chosen Employee, on the chosen Project or any, oldest first,
-     * with their total hours. The Employees to choose from are those whose
-     * effective Manager the viewer is and who have Pending Work Entries, by
-     * name with how many. An Employee not among them, or none, falls back to
-     * the first; a Project the Employee has nothing Pending on falls back to
-     * any Project. With nothing Pending at all, there is nobody to choose.
+     * The Work Entries tab, one Employee and one Project at a time: the
+     * Pending Work Entries of the chosen Employee on the chosen Project,
+     * oldest first, with their total hours. The Employees to choose from are
+     * those whose effective Manager the viewer is and who have Pending Work
+     * Entries, and the Projects those the chosen Employee has Pending Work
+     * Entries on, each by name with how many. An Employee or Project not
+     * among them, or none, falls back to the first, so approving the last of
+     * one moves on to the first left. With nothing Pending at all, there is
+     * nobody to choose.
      *
      * @return array<string, mixed>
      */
@@ -72,21 +74,24 @@ class ApprovalController extends Controller
             ->map(fn (Employee $employee): array => [...$employee->only('id', 'name'), 'pending' => (int) $employee->getAttribute('pending')])
             ->all();
         $employee = collect($employees)->firstWhere('id', $requested['employee']) ?? $employees[0] ?? null;
+        $isPendingOfEmployee = fn (Builder $entries): Builder => $isPending($entries)->where('assignments.employee_id', $employee['id'] ?? null);
         $projects = $employee === null ? [] : Project::query()
-            ->whereHas('workEntries', fn (Builder $entries): Builder => $isPending($entries)->where('assignments.employee_id', $employee['id']))
+            ->whereHas('workEntries', $isPendingOfEmployee)
+            ->withCount(['workEntries as pending' => $isPendingOfEmployee])
             ->orderBy('name')
             ->orderBy('id') // @pest-mutate-ignore (only orders Projects that share a name)
             ->get(['id', 'name'])
-            ->map(fn (Project $project): array => $project->only('id', 'name'))
+            ->map(fn (Project $project): array => [...$project->only('id', 'name'), 'pending' => (int) $project->getAttribute('pending')])
             ->all();
+        $project = collect($projects)->firstWhere('id', $requested['project']) ?? $projects[0] ?? null;
         $filters = [
             'employee' => $employee['id'] ?? null,
-            'project' => collect($projects)->firstWhere('id', $requested['project'])['id'] ?? null,
+            'project' => $project['id'] ?? null,
         ];
         $matching = WorkEntry::query()
             ->where('state', WorkEntryState::Pending)
             ->whereRelation('assignment', 'employee_id', $filters['employee'])
-            ->when($filters['project'], fn (Builder $entries, int $project) => $entries->whereRelation('assignment', 'project_id', $project));
+            ->whereRelation('assignment', 'project_id', $filters['project']);
 
         return [
             'filters' => $filters,
