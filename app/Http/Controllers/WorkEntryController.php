@@ -56,7 +56,8 @@ class WorkEntryController extends Controller
 
         $canManage = $actor->can('create', [WorkEntry::class, $employee]);
         $canDelete = $actor->can(Permission::ManageWorkEntries->value, $employee);
-        $days = $this->days($employee, $period, $entries, $timeOff, $canManage, $canDelete);
+        $copySources = $canManage ? $this->datesWithEntries($employee, $period, $entries) : collect();
+        $days = $this->days($employee, $period, $entries, $timeOff, $canManage, $canDelete, $copySources);
 
         $tab = $request->tab();
 
@@ -81,7 +82,7 @@ class WorkEntryController extends Controller
      * Assignments that run during it.
      *
      * @param  Collection<int, WorkEntry>  $entries
-     * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool}>  $days
+     * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool, copy_from: string|null}>  $days
      * @return array<string, mixed>
      */
     private function listTab(Employee $employee, Period $period, Collection $entries, array $days): array
@@ -132,7 +133,7 @@ class WorkEntryController extends Controller
      * by Project name then Pending, Approved and Locked, with its Time Off
      * and nothing logged as the List has them.
      *
-     * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool}>  $days
+     * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool, copy_from: string|null}>  $days
      * @return list<array{number: int, hours: float|int, days: list<array<string, mixed>|null>}>
      */
     private function calendar(array $days): array
@@ -180,14 +181,18 @@ class WorkEntryController extends Controller
      * A weekday covered by Pending or Approved Time Off says whether that
      * Time Off is Paid or Unpaid. A past weekday while the Employee works
      * here, with neither Work Entries nor such Time Off, is nothing logged.
+     * A day up to today with no Work Entries and no such Time Off, when the
+     * viewer can record hours, names the day copying Work Entries onto it
+     * would copy from: the latest day in the week before with any, or null.
      *
      * @param  Collection<int, WorkEntry>  $entries
      * @param  Collection<int, TimeOff>  $timeOff  the Employee's Pending and Approved Time Off overlapping the Period
-     * @return array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool}>
+     * @param  SupportCollection<int, string>  $copySources  the dates, in order, the Employee has Work Entries on from a week before the Period
+     * @return array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool, copy_from: string|null}>
      */
-    private function days(Employee $employee, Period $period, Collection $entries, Collection $timeOff, bool $canManage, bool $canDelete): array
+    private function days(Employee $employee, Period $period, Collection $entries, Collection $timeOff, bool $canManage, bool $canDelete, SupportCollection $copySources): array
     {
-        return collect($period->days())->map(function (CarbonImmutable $day) use ($employee, $entries, $timeOff, $canManage, $canDelete): array {
+        return collect($period->days())->map(function (CarbonImmutable $day) use ($employee, $entries, $timeOff, $canManage, $canDelete, $copySources): array {
             $date = $day->toDateString();
             $onDay = $entries->filter(fn (WorkEntry $entry): bool => $entry->date->toDateString() === $date);
             $away = $day->isWeekday()
@@ -211,8 +216,34 @@ class WorkEntryController extends Controller
                 'hours' => $onDay->sum('hours'),
                 'time_off' => $away === null ? null : ($away->is_paid ? 'paid' : 'unpaid'),
                 'nothing_logged' => $day->isWeekday() && $day->isBefore(today()) && $employed && $onDay->isEmpty() && $away === null,
+                'copy_from' => $canManage && ! $day->isAfter(today()) && $away === null && $onDay->isEmpty()
+                    ? $copySources->last(fn (string $source): bool => $source < $date && $source >= $day->subDays(WorkEntry::COPY_LOOKBACK_DAYS)->toDateString())
+                    : null,
             ];
         })->all();
+    }
+
+    /**
+     * The dates, in order, the Employee has Work Entries on from a week
+     * before the Period to its end: those in the week before are looked up,
+     * those within it come from its Work Entries.
+     *
+     * @param  Collection<int, WorkEntry>  $entries  the Employee's Work Entries in the Period
+     * @return SupportCollection<int, string>
+     */
+    private function datesWithEntries(Employee $employee, Period $period, Collection $entries): SupportCollection
+    {
+        $before = $employee->workEntries()
+            ->whereDate('work_entries.date', '>=', $period->from->subDays(WorkEntry::COPY_LOOKBACK_DAYS))
+            ->whereDate('work_entries.date', '<', $period->from)
+            ->get(['work_entries.date']);
+
+        return $before->toBase()
+            ->merge($entries)
+            ->map(fn (WorkEntry $entry): string => $entry->date->toDateString())
+            ->unique()
+            ->sort()
+            ->values();
     }
 
     /**
@@ -280,11 +311,7 @@ class WorkEntryController extends Controller
      */
     private function backTo(Request $request, Employee $employee, WorkEntry $workEntry): RedirectResponse
     {
-        $period = Period::fromQuery($request->query());
-
-        if ($period === null || ! $period->contains($workEntry->date)) {
-            $period = Period::week($workEntry->date);
-        }
+        $period = Period::holding($request->query(), $workEntry->date);
 
         return to_route('work-entries.index', ['employee' => $employee->id, ...$period->query()]);
     }

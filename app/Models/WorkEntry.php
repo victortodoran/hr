@@ -52,6 +52,12 @@ class WorkEntry extends Model
     public const int MINUTES_IN_A_DAY = 24 * 60; // @pest-mutate-ignore (constants are evaluated before coverage starts; the 24-hour tests pin the value)
 
     /**
+     * How many days before a day copying Work Entries onto it looks back
+     * for the latest day with any.
+     */
+    public const int COPY_LOOKBACK_DAYS = 7; // @pest-mutate-ignore (constants are evaluated before coverage starts; the look-back tests pin the value)
+
+    /**
      * Every Work Entry starts Pending.
      *
      * @var array<string, string>

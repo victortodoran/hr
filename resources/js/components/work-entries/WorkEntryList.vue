@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { ArrowRight, Pencil, Plus } from '@lucide/vue';
+import { useForm } from '@inertiajs/vue3';
+import { ArrowRight, Copy, Pencil, Plus } from '@lucide/vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
+import WorkEntryCopyController from '@/actions/App/Http/Controllers/WorkEntryCopyController';
+import InputError from '@/components/InputError.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
@@ -285,6 +289,7 @@ function openAdd(date: string): void {
 
 async function showAdd(date: string): Promise<void> {
     activeDate.value = date;
+    copyForm.clearErrors();
     await nextTick();
     addRow?.focusDescription();
 }
@@ -357,6 +362,35 @@ async function entryAdded(assignmentId: number): Promise<void> {
     lastAssignmentId.value = assignmentId;
     await nextTick();
     addRow?.focusDescription();
+}
+
+/** Copying the Work Entries of the latest earlier day with any onto a day. */
+const copyForm = useForm({ date: '' });
+
+function copyOnto(date: string): void {
+    copyForm.date = date;
+    copyForm.submit(
+        WorkEntryCopyController.store(props.employee.id, {
+            query: props.period.query,
+        }),
+        { preserveScroll: true },
+    );
+}
+
+/**
+ * The day Work Entries are copied from, such as "Thu 12", naming its month
+ * when it falls in another one than the day copied onto: "Fri 30 Oct".
+ */
+function formatSource(source: string, date: string): string {
+    if (source.slice(0, 7) === date.slice(0, 7)) {
+        return formatDay(source);
+    }
+
+    const month = new Date(`${source}T00:00:00`).toLocaleDateString(undefined, {
+        month: 'short',
+    });
+
+    return `${formatDay(source)} ${month}`;
 }
 
 /**
@@ -596,6 +630,10 @@ function formatLongDay(date: string): string {
                                     )
                                 "
                             />
+                            <InputError
+                                class="mt-2"
+                                :message="copyForm.errors.date"
+                            />
                             <div
                                 class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground"
                             >
@@ -614,6 +652,24 @@ function formatLongDay(date: string): string {
                                     close</span
                                 >
                                 <span class="flex-1" />
+                                <form
+                                    v-if="segment.day.copy_from"
+                                    @submit.prevent="copyOnto(segment.day.date)"
+                                >
+                                    <SubmitButton
+                                        :processing="copyForm.processing"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="h-7 text-foreground"
+                                        ><Copy />Copy entries from
+                                        {{
+                                            formatSource(
+                                                segment.day.copy_from,
+                                                segment.day.date,
+                                            )
+                                        }}</SubmitButton
+                                    >
+                                </form>
                                 <Button
                                     v-if="nextDay"
                                     type="button"
