@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { ArrowRight, Pencil, Plus } from '@lucide/vue';
+import { useForm } from '@inertiajs/vue3';
+import { ArrowRight, Copy, Pencil, Plus } from '@lucide/vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
+import WorkEntryCopyController from '@/actions/App/Http/Controllers/WorkEntryCopyController';
+import InputError from '@/components/InputError.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
@@ -285,6 +288,7 @@ function openAdd(date: string): void {
 
 async function showAdd(date: string): Promise<void> {
     activeDate.value = date;
+    copyForm.clearErrors();
     await nextTick();
     addRow?.focusDescription();
 }
@@ -357,6 +361,19 @@ async function entryAdded(assignmentId: number): Promise<void> {
     lastAssignmentId.value = assignmentId;
     await nextTick();
     addRow?.focusDescription();
+}
+
+/** Copying the Work Entries of the latest earlier day with any onto a day. */
+const copyForm = useForm({ date: '' });
+
+function copyOnto(date: string): void {
+    copyForm.date = date;
+    copyForm.submit(
+        WorkEntryCopyController.store(props.employee.id, {
+            query: props.period.query,
+        }),
+        { preserveScroll: true },
+    );
 }
 
 /**
@@ -596,6 +613,10 @@ function formatLongDay(date: string): string {
                                     )
                                 "
                             />
+                            <InputError
+                                class="mt-2"
+                                :message="copyForm.errors.date"
+                            />
                             <div
                                 class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground"
                             >
@@ -614,6 +635,19 @@ function formatLongDay(date: string): string {
                                     close</span
                                 >
                                 <span class="flex-1" />
+                                <Button
+                                    v-if="segment.day.copy_from"
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    class="h-7 text-foreground"
+                                    :disabled="copyForm.processing"
+                                    @click="copyOnto(segment.day.date)"
+                                    ><Copy />Copy entries from
+                                    {{
+                                        formatDay(segment.day.copy_from)
+                                    }}</Button
+                                >
                                 <Button
                                     v-if="nextDay"
                                     type="button"

@@ -29,7 +29,7 @@ it('opens on the viewer\'s own current week, Monday to Sunday', function () {
         ->where('period', ['mode' => 'week', 'from' => '2026-11-09', 'to' => '2026-11-15', 'query' => ['week' => '2026-11-09']])
         ->where('today', '2026-11-11')
         ->where('days', collect(['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15'])
-            ->map(fn (string $date): array => ['date' => $date, 'entries' => [], 'hours' => 0, 'time_off' => null, 'nothing_logged' => $date < '2026-11-11'])
+            ->map(fn (string $date): array => ['date' => $date, 'entries' => [], 'hours' => 0, 'time_off' => null, 'nothing_logged' => $date < '2026-11-11', 'copy_from' => null])
             ->all())
         ->where('total', 0));
 });
@@ -51,11 +51,11 @@ it('shows the week holding the given day, with totals for each day, each Assignm
         ->where('days.1', ['date' => '2026-11-03', 'hours' => 3.5, 'entries' => [
             ['id' => $review->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2, 'description' => 'Review', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
             ['id' => $api->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
-        ], 'time_off' => null, 'nothing_logged' => false])
+        ], 'time_off' => null, 'nothing_logged' => false, 'copy_from' => null])
         ->where('days.4', ['date' => '2026-11-06', 'hours' => 0.75, 'entries' => [
             ['id' => $invoices->id, 'assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75, 'description' => 'Invoices', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
-        ], 'time_off' => null, 'nothing_logged' => false])
-        ->where('days.6', ['date' => '2026-11-08', 'hours' => 0, 'entries' => [], 'time_off' => null, 'nothing_logged' => false])
+        ], 'time_off' => null, 'nothing_logged' => false, 'copy_from' => '2026-11-03'])
+        ->where('days.6', ['date' => '2026-11-08', 'hours' => 0, 'entries' => [], 'time_off' => null, 'nothing_logged' => false, 'copy_from' => '2026-11-06'])
         ->where('assignmentTotals', [
             ['assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 3.5],
             ['assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75],

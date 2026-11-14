@@ -87,6 +87,8 @@ export type WorkEntryDay = {
     time_off: 'paid' | 'unpaid' | null;
     /** A past weekday while employed, with no Work Entries and no Time Off. */
     nothing_logged: boolean;
+    /** The day copying Work Entries onto this one would copy from; null when there's none or copying isn't allowed. */
+    copy_from: string | null;
 };
 
 /**

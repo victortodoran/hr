@@ -76,6 +76,27 @@ it('adds another Work Entry to a day that has one with its + button', function (
         ->assertNoJavaScriptErrors();
 });
 
+it('copies the Work Entries of the latest earlier day onto a day from its add form', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-12', 'minutes' => 300, 'description' => 'Checkout API']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-12', 'minutes' => 60, 'description' => 'Team meeting']);
+
+    actingAs($cara);
+
+    visit(route('work-entries.index'))
+        ->click('[data-date="2026-11-09"] [data-test="add-row"]')
+        ->assertDontSee('Copy entries from')
+        ->click('[data-date="2026-11-13"] [data-test="add-row"]')
+        ->click('Copy entries from Thu 12')
+        ->assertSee('Copied 2 Work Entries from Thu 12.')
+        ->assertSeeIn('[data-date="2026-11-13"]', 'Checkout API')
+        ->assertSeeIn('[data-date="2026-11-13"]', 'Team meeting')
+        ->assertNoJavaScriptErrors();
+
+    expect(WorkEntry::query()->whereDate('date', '2026-11-13')->count())->toBe(2);
+});
+
 it('asks before leaving the week, or opening another day, with an unsaved Work Entry', function () {
     $cara = recorder();
     assignmentOf($cara);

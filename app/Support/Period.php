@@ -77,6 +77,19 @@ final readonly class Period
     }
 
     /**
+     * The period a URL's query asks for while it holds a day, or else the
+     * week holding the day.
+     *
+     * @param  array<array-key, mixed>  $query
+     */
+    public static function holding(array $query, DateTimeInterface $day): self
+    {
+        $period = self::fromQuery($query);
+
+        return $period !== null && $period->contains($day) ? $period : self::week($day);
+    }
+
+    /**
      * Whether a custom period from one date to another is short enough.
      */
     public static function fitsCustom(DateTimeInterface $from, DateTimeInterface $to): bool
