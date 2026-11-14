@@ -162,22 +162,19 @@ const shownDays = computed(() => {
 });
 
 /**
- * The listed days, one block per week with a header naming it when the
- * Period touches more than one week, or else one block with no header. A
- * week left with no day to list, because its only days are hidden
- * weekends, has no block.
+ * The listed days, one block per week under a header naming it. A week
+ * left with no day to list, because its only days are hidden weekends,
+ * has no block.
  */
 const blocks = computed(() =>
-    props.weeks.length > 1
-        ? props.weeks
-              .map((week) => ({
-                  week,
-                  days: shownDays.value.filter(
-                      (day) => day.date >= week.from && day.date <= week.to,
-                  ),
-              }))
-              .filter((block) => block.days.length > 0)
-        : [{ week: null, days: shownDays.value }],
+    props.weeks
+        .map((week) => ({
+            week,
+            days: shownDays.value.filter(
+                (day) => day.date >= week.from && day.date <= week.to,
+            ),
+        }))
+        .filter((block) => block.days.length > 0),
 );
 
 /**
@@ -307,10 +304,10 @@ function leaveWeek(): void {
         <div class="flex flex-col gap-6">
             <section
                 v-for="block in blocks"
-                :key="block.week?.from ?? 'all'"
+                :key="block.week.from"
                 class="space-y-2"
             >
-                <h2 v-if="block.week" class="text-sm font-medium">
+                <h2 class="text-sm font-medium">
                     {{ formatWeek(block.week) }}
                 </h2>
                 <ul class="divide-y overflow-hidden rounded-lg border">
