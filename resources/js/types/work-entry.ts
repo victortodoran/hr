@@ -97,16 +97,16 @@ export type ApprovalsWaiting = {
 };
 
 /**
- * The Approvals Work Entries tab's filters: the Employee shown, null only
- * when nothing waits at all, and a Project, null for any.
+ * The Approvals Work Entries tab's filters: the Employee and Project shown,
+ * null only when nothing waits at all.
  */
 export type ApprovalFilters = {
     employee: number | null;
     project: number | null;
 };
 
-/** An Employee with Pending Work Entries for the viewer, and how many. */
-export type EmployeeToApprove = {
+/** An Employee or Project with Pending Work Entries for the viewer, and how many. */
+export type ChoiceToApprove = {
     id: number;
     name: string;
     pending: number;

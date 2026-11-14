@@ -6,19 +6,19 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { ApprovalFilters, Choice, EmployeeToApprove } from '@/types';
+import type { ApprovalFilters, ChoiceToApprove } from '@/types';
 
 /**
- * Filters for the Approvals Work Entries tab: one Employee, always chosen,
- * each offered with how many Work Entries of theirs wait, and a Project they
- * have Pending Work Entries on, or any. Shows what the server resolved, and
- * emits the query string to reload the tab with whenever one changes;
- * choosing another Employee drops the Project.
+ * Filters for the Approvals Work Entries tab: one Employee and one Project
+ * they have Pending Work Entries on, both always chosen, each offered with
+ * how many Work Entries wait. Shows what the server resolved, and emits the
+ * query string to reload the tab with whenever one changes; choosing
+ * another Employee drops the Project, so their first one is shown.
  */
 const props = defineProps<{
     filters: ApprovalFilters;
-    employees: EmployeeToApprove[];
-    projects: Choice[];
+    employees: ChoiceToApprove[];
+    projects: ChoiceToApprove[];
 }>();
 
 const emit = defineEmits<{
@@ -32,7 +32,7 @@ function chooseEmployee(employee: unknown): void {
 function chooseProject(project: unknown): void {
     emit('change', {
         employee: String(props.filters.employee),
-        ...(project !== 'all' ? { project: String(project) } : {}),
+        project: String(project),
     });
 }
 </script>
@@ -56,19 +56,18 @@ function chooseProject(project: unknown): void {
             </SelectContent>
         </Select>
         <Select
-            :model-value="filters.project?.toString() ?? 'all'"
+            :model-value="String(filters.project)"
             @update:model-value="chooseProject"
         >
             <SelectTrigger class="w-48" aria-label="Project">
                 <SelectValue />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">Any Project</SelectItem>
                 <SelectItem
                     v-for="choice in projects"
                     :key="choice.id"
                     :value="String(choice.id)"
-                    >{{ choice.name }}</SelectItem
+                    >{{ choice.name }} ({{ choice.pending }})</SelectItem
                 >
             </SelectContent>
         </Select>

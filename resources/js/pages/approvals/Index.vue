@@ -11,9 +11,8 @@ import type {
     ApprovalFilters,
     ApprovalsTab,
     ApprovalsWaiting,
-    Choice,
     Paginated,
-    EmployeeToApprove,
+    ChoiceToApprove,
     TimeOffToApprove,
 } from '@/types';
 
@@ -36,8 +35,8 @@ defineProps<{
     total?: number;
     /** Every matching Work Entry's ID; only sent when asked for. */
     matchingIds?: number[];
-    employees?: EmployeeToApprove[];
-    projects?: Choice[];
+    employees?: ChoiceToApprove[];
+    projects?: ChoiceToApprove[];
     /** Direct Reports' Pending Time Off. */
     toApprove?: TimeOffToApprove[];
 }>();

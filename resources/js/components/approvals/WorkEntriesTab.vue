@@ -14,8 +14,7 @@ import { index } from '@/routes/approvals';
 import type {
     ApprovalEntry,
     ApprovalFilters,
-    Choice,
-    EmployeeToApprove,
+    ChoiceToApprove,
     Paginated,
     TableColumn,
 } from '@/types';
@@ -32,8 +31,8 @@ const props = defineProps<{
     total: number;
     /** Every matching Work Entry's ID; only sent when asked for. */
     matchingIds?: number[];
-    employees: EmployeeToApprove[];
-    projects: Choice[];
+    employees: ChoiceToApprove[];
+    projects: ChoiceToApprove[];
 }>();
 
 const columns: TableColumn[] = [
