@@ -18,6 +18,8 @@ import type { WorkEntryRecord } from '@/types';
 
 defineProps<{
     entry: WorkEntryRecord;
+    /** The URL query asking for the Period shown, so deleting returns to it. */
+    periodQuery: Record<string, string>;
 }>();
 
 const open = ref(false);
@@ -36,7 +38,11 @@ const open = ref(false);
         </DialogTrigger>
         <DialogContent>
             <Form
-                v-bind="WorkEntryController.destroy.form(entry.id)"
+                v-bind="
+                    WorkEntryController.destroy.form(entry.id, {
+                        query: periodQuery,
+                    })
+                "
                 :options="{ preserveScroll: true }"
                 class="space-y-6"
                 @success="open = false"

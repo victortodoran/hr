@@ -26,7 +26,7 @@ it('opens on the viewer\'s own current week, Monday to Sunday', function () {
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('work-entries/Index')
         ->where('employee', ['id' => $cara->id, 'name' => 'Cara'])
-        ->where('week', '2026-11-09')
+        ->where('period', ['mode' => 'week', 'from' => '2026-11-09', 'to' => '2026-11-15', 'query' => ['week' => '2026-11-09']])
         ->where('today', '2026-11-11')
         ->where('days', collect(['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15'])
             ->map(fn (string $date): array => ['date' => $date, 'entries' => [], 'hours' => 0, 'time_off' => null, 'nothing_logged' => $date < '2026-11-11'])
@@ -47,13 +47,13 @@ it('shows the week holding the given day, with totals for each day, each Assignm
     $response = actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-08']));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('week', '2026-11-02')
+        ->where('period', ['mode' => 'week', 'from' => '2026-11-02', 'to' => '2026-11-08', 'query' => ['week' => '2026-11-02']])
         ->where('days.1', ['date' => '2026-11-03', 'hours' => 3.5, 'entries' => [
-            ['id' => $review->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2, 'description' => 'Review', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
-            ['id' => $api->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
+            ['id' => $review->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2, 'description' => 'Review', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
+            ['id' => $api->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
         ], 'time_off' => null, 'nothing_logged' => false])
         ->where('days.4', ['date' => '2026-11-06', 'hours' => 0.75, 'entries' => [
-            ['id' => $invoices->id, 'assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75, 'description' => 'Invoices', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
+            ['id' => $invoices->id, 'assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75, 'description' => 'Invoices', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
         ], 'time_off' => null, 'nothing_logged' => false])
         ->where('days.6', ['date' => '2026-11-08', 'hours' => 0, 'entries' => [], 'time_off' => null, 'nothing_logged' => false])
         ->where('assignmentTotals', [
@@ -63,7 +63,93 @@ it('shows the week holding the given day, with totals for each day, each Assignm
         ->where('total', 4.25));
 });
 
-it('shows who approved and locked each Work Entry, and offers to change only Pending ones', function () {
+it('shows a month day by day, with totals for the month', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-10-01']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-10-01', 'minutes' => 60]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-10-31', 'minutes' => 30]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-02', 'minutes' => 480]);
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['month' => '2026-10']));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('period', ['mode' => 'month', 'from' => '2026-10-01', 'to' => '2026-10-31', 'query' => ['month' => '2026-10']])
+        ->has('days', 31)
+        ->where('days.0.date', '2026-10-01')
+        ->where('days.30.hours', 0.5)
+        ->where('assignmentTotals', [['assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5]])
+        ->where('assignments.0.id', $relaunch->id)
+        ->where('total', 1.5));
+});
+
+it('shows a custom period day by day, up to three months long', function (string $to, int $days) {
+    $cara = recorder();
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['from' => '2026-11-03', 'to' => $to]));
+
+    $response->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('period', ['mode' => 'custom', 'from' => '2026-11-03', 'to' => $to, 'query' => ['from' => '2026-11-03', 'to' => $to]])
+        ->has('days', $days)
+        ->where('days.0.date', '2026-11-03'));
+})->with([
+    'a fortnight' => ['2026-11-16', 14],
+    'a single day' => ['2026-11-03', 1],
+    'three months' => ['2027-02-02', 92],
+]);
+
+it('shows a custom period over a month over a week when asked for more than one', function () {
+    $cara = recorder();
+
+    actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-02', 'month' => '2026-10', 'from' => '2026-11-03', 'to' => '2026-11-04']))
+        ->assertInertia(fn (Assert $page) => $page->where('period.mode', 'custom'));
+    actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-02', 'month' => '2026-10']))
+        ->assertInertia(fn (Assert $page) => $page->where('period.mode', 'month'));
+});
+
+it('shows future weeks and months, offering to record hours on none of their days', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    TimeOff::factory()->for($cara)->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-21']);
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['month' => '2026-12']));
+
+    $response->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('period', ['mode' => 'month', 'from' => '2026-12-01', 'to' => '2026-12-31', 'query' => ['month' => '2026-12']])
+        ->where('days.20.time_off', 'paid')
+        ->where('days.20.nothing_logged', false)
+        ->where('assignments.0.id', $relaunch->id));
+});
+
+it('splits the Period into its ISO weeks, each with the dates and hours that fall within the Period', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-03', 'minutes' => 120]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-06', 'minutes' => 30]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-30', 'minutes' => 60]);
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['month' => '2026-11']));
+
+    $response->assertInertia(fn (Assert $page) => $page->where('weeks', [
+        ['number' => 44, 'from' => '2026-11-01', 'to' => '2026-11-01', 'hours' => 0],
+        ['number' => 45, 'from' => '2026-11-02', 'to' => '2026-11-08', 'hours' => 2.5],
+        ['number' => 46, 'from' => '2026-11-09', 'to' => '2026-11-15', 'hours' => 0],
+        ['number' => 47, 'from' => '2026-11-16', 'to' => '2026-11-22', 'hours' => 0],
+        ['number' => 48, 'from' => '2026-11-23', 'to' => '2026-11-29', 'hours' => 0],
+        ['number' => 49, 'from' => '2026-11-30', 'to' => '2026-11-30', 'hours' => 1],
+    ]));
+});
+
+it('numbers the weeks around the new year as ISO weeks', function () {
+    $cara = recorder();
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['from' => '2026-12-28', 'to' => '2027-01-04']));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('weeks.0', ['number' => 53, 'from' => '2026-12-28', 'to' => '2027-01-03', 'hours' => 0])
+        ->where('weeks.1', ['number' => 1, 'from' => '2027-01-04', 'to' => '2027-01-04', 'hours' => 0]));
+});
+
+it('shows each Work Entry\'s state, but not who approved or locked it, and offers to change only Pending ones', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
     $ben = Employee::factory()->create(['name' => 'Ben']);
@@ -75,9 +161,9 @@ it('shows who approved and locked each Work Entry, and offers to change only Pen
     $response = actingAs($cara)->get(route('work-entries.index'));
 
     $response->assertInertia(fn (Assert $page) => $page->where('days.1.entries', [
-        ['id' => $pending->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Pending', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
-        ['id' => $approved->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Approved', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => null, 'can_edit' => false, 'can_delete' => false],
-        ['id' => $locked->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Locked', 'state' => 'locked', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => ['by' => 'Fay', 'on' => '2026-11-11'], 'can_edit' => false, 'can_delete' => false],
+        ['id' => $pending->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Pending', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
+        ['id' => $approved->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Approved', 'state' => 'approved', 'can_edit' => false, 'can_delete' => false],
+        ['id' => $locked->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Locked', 'state' => 'locked', 'can_edit' => false, 'can_delete' => false],
     ]));
 });
 
@@ -246,6 +332,20 @@ it('refuses a malformed Employee or week', function (string $field, string $valu
 })->with([
     'Employee not a number' => ['employee', 'Cara', 'The employee field must be an integer.'],
     'week not a date' => ['week', 'next', 'The week field must match the format Y-m-d.'],
+]);
+
+it('refuses a malformed month or custom period', function (array $query, string $field, string $message) {
+    $cara = recorder();
+
+    $response = actingAs($cara)->get(route('work-entries.index', $query));
+
+    $response->assertInvalid([$field => $message]);
+})->with([
+    'month not a month' => [['month' => '2026-11-01'], 'month', 'The month field must match the format Y-m.'],
+    'From without To' => [['from' => '2026-11-03'], 'to', 'The to field is required when from is present.'],
+    'To without From' => [['to' => '2026-11-03'], 'from', 'The from field is required when to is present.'],
+    'To before From' => [['from' => '2026-11-03', 'to' => '2026-11-02'], 'to', 'The to field must be a date after or equal to from.'],
+    'longer than three months' => [['from' => '2026-11-03', 'to' => '2027-02-03'], 'to', 'A custom period can be at most 3 months long.'],
 ]);
 
 it('forbids seeing the week of an Employee outside the Scope', function () {

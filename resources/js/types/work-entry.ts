@@ -22,8 +22,6 @@ export type WorkEntryRecord = {
     hours: number;
     description: string;
     state: WorkEntryState;
-    approved: WorkEntrySignOff | null;
-    locked: WorkEntrySignOff | null;
     /** Whether the viewer may change it (and so delete it too). */
     can_edit: boolean;
     /** Whether the viewer may delete it. */
@@ -31,7 +29,30 @@ export type WorkEntryRecord = {
 };
 
 /**
- * One day of the week, with its Work Entries and their total hours.
+ * The days the Work Entries week page shows: a week from Monday to Sunday,
+ * a calendar month, or a custom period, from and to as YYYY-MM-DD.
+ */
+export type WorkEntryPeriod = {
+    mode: 'week' | 'month' | 'custom';
+    from: string;
+    to: string;
+    /** The URL query asking for the Period, kept when saving or deleting. */
+    query: Record<string, string>;
+};
+
+/**
+ * One ISO week of the Period: its number, the first and last of its days
+ * within the Period, and their hours.
+ */
+export type WorkEntryWeek = {
+    number: number;
+    from: string;
+    to: string;
+    hours: number;
+};
+
+/**
+ * One day of the Period, with its Work Entries and their total hours.
  */
 export type WorkEntryDay = {
     date: string;

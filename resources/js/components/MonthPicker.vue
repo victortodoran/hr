@@ -14,11 +14,13 @@ import { addMonths, formatMonth, today } from '@/lib/dates';
  * A month, such as "‹ November 2026 ›": the arrows step one month back or
  * forward, the label opens a month-and-year picker, and "This month"
  * returns to the current one. Months after the current one can't be
- * chosen. Emits the chosen month as YYYY-MM.
+ * chosen unless the future is allowed. Emits the chosen month as YYYY-MM.
  */
 const props = defineProps<{
     /** The month shown, as YYYY-MM. */
     month: string;
+    /** Whether months after the current one can be chosen. */
+    allowFuture?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -28,7 +30,11 @@ const emit = defineEmits<{
 const currentMonth = today().slice(0, 7);
 const currentYear = Number(currentMonth.slice(0, 4));
 
-const isCurrentMonth = computed(() => props.month >= currentMonth);
+const isCurrentMonth = computed(() => props.month === currentMonth);
+
+/** Whether a month can't be chosen because it is still to come. */
+const isTooLate = (month: string): boolean =>
+    !props.allowFuture && month > currentMonth;
 
 /** The year the picker shows, starting on the month's own. */
 const pickerYear = ref(Number(props.month.slice(0, 4)));
@@ -87,7 +93,7 @@ function openPicker(isOpen: boolean): void {
                         variant="ghost"
                         size="icon"
                         aria-label="Next year"
-                        :disabled="pickerYear >= currentYear"
+                        :disabled="!allowFuture && pickerYear >= currentYear"
                         @click="pickerYear++"
                     >
                         <ChevronRight />
@@ -97,7 +103,7 @@ function openPicker(isOpen: boolean): void {
                     <DropdownMenuItem
                         v-for="choice in monthsOfPickerYear"
                         :key="choice.month"
-                        :disabled="choice.month > currentMonth"
+                        :disabled="isTooLate(choice.month)"
                         :class="[
                             'justify-center',
                             choice.month === month &&
@@ -113,7 +119,7 @@ function openPicker(isOpen: boolean): void {
             variant="outline"
             size="icon"
             aria-label="Next month"
-            :disabled="isCurrentMonth"
+            :disabled="isTooLate(addMonths(month, 1))"
             @click="emit('change', addMonths(month, 1))"
         >
             <ChevronRight />

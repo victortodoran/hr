@@ -20,6 +20,29 @@ beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
 
+it('returns to the Period the Work Entry was saved or deleted from while it falls within it, or else to its week', function (string $action, array $period, array $back) {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    $workEntry = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
+
+    $requests = [
+        'record' => fn () => actingAs($cara)->post(route('employees.work-entries.store', [$cara, ...$period]), workEntryForm($relaunch, ['date' => '2026-11-04'])),
+        'correct' => fn () => actingAs($cara)->patch(route('work-entries.update', [$workEntry, ...$period]), workEntryForm($relaunch, ['date' => '2026-11-04'])),
+        'delete' => fn () => actingAs($cara)->delete(route('work-entries.destroy', [$workEntry, ...$period])),
+    ];
+
+    $response = $requests[$action]();
+
+    $response->assertRedirect(route('work-entries.index', ['employee' => $cara->id, ...$back]));
+})->with([
+    'recording in a month' => ['record', ['month' => '2026-11'], ['month' => '2026-11']],
+    'correcting in a custom period' => ['correct', ['from' => '2026-11-01', 'to' => '2026-11-20'], ['from' => '2026-11-01', 'to' => '2026-11-20']],
+    'deleting in a month' => ['delete', ['month' => '2026-11'], ['month' => '2026-11']],
+    'correcting out of the month' => ['correct', ['month' => '2026-10'], ['week' => '2026-11-02']],
+    'recording with a malformed period' => ['record', ['from' => 'soon', 'to' => '2026-11-20'], ['week' => '2026-11-02']],
+    'deleting in a custom period that is too long' => ['delete', ['from' => '2026-08-01', 'to' => '2026-11-30'], ['week' => '2026-11-09']],
+]);
+
 it('lets an Employee correct one of their Work Entries, moving it to another Assignment and week', function () {
     $cara = recorder();
     $workEntry = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10', 'minutes' => 180, 'description' => 'API work']);

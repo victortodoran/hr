@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
-import { ChevronLeft, ChevronRight } from '@lucide/vue';
+import { Head, router, setLayoutProps } from '@inertiajs/vue3';
+import { useLocalStorage } from '@vueuse/core';
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -13,24 +14,26 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
+import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
-import { formatDate } from '@/lib/dates';
 import { index } from '@/routes/work-entries';
 import type {
     Choice,
     WorkEntryAssignment,
     WorkEntryAssignmentTotal,
     WorkEntryDay,
-    WorkEntryRecord,
+    WorkEntryPeriod,
+    WorkEntryWeek,
 } from '@/types';
 
 const props = defineProps<{
     employee: Choice;
-    /** The Monday the week starts on. */
-    week: string;
+    period: WorkEntryPeriod;
     today: string;
     days: WorkEntryDay[];
+    weeks: WorkEntryWeek[];
     assignmentTotals: WorkEntryAssignmentTotal[];
     total: number;
     assignments: WorkEntryAssignment[];
@@ -57,16 +60,6 @@ setLayoutProps({
 });
 
 /**
- * The date a number of days away, as a YYYY-MM-DD date.
- */
-function addDays(date: string, days: number): string {
-    const moved = new Date(`${date}T00:00:00`);
-    moved.setDate(moved.getDate() + days);
-
-    return moved.toLocaleDateString('en-CA');
-}
-
-/**
  * Hours as people read them, such as "7.5 h".
  */
 function formatHours(hours: number): string {
@@ -85,35 +78,18 @@ function formatDay(date: string): string {
 }
 
 /**
- * This page for the week holding a day, naming the Employee only when the
- * week isn't the viewer's own.
+ * Shows another Period, naming the Employee only when the Work Entries
+ * aren't the viewer's own.
  */
-function weekOf(day: string) {
-    return index({
-        query: props.isOwn
-            ? { week: day }
-            : { employee: props.employee.id, week: day },
-    });
+function showPeriod(query: Record<string, string>): void {
+    router.visit(
+        index({
+            query: props.isOwn
+                ? query
+                : { employee: props.employee.id, ...query },
+        }),
+    );
 }
-
-/**
- * Who approved and locked a Work Entry, such as "Approved by Ben on
- * 10 Nov 2026 · Locked by Fay on 11 Nov 2026".
- */
-function signOffs(entry: WorkEntryRecord): string {
-    return [
-        entry.approved &&
-            `Approved by ${entry.approved.by} on ${formatDate(entry.approved.on)}`,
-        entry.locked &&
-            `Locked by ${entry.locked.by} on ${formatDate(entry.locked.on)}`,
-    ]
-        .filter(Boolean)
-        .join(' · ');
-}
-
-const isCurrentWeek = computed(
-    () => props.today >= props.week && props.today <= addDays(props.week, 6),
-);
 
 /** The Work Entries turned into fields to change them. */
 const editing = reactive(new Set<number>());
@@ -148,18 +124,73 @@ function stopEditing(entryId: number): void {
     unsaved.delete(`entry-${entryId}`);
 }
 
+/** Whether Saturdays and Sundays are shown, remembered in this browser. */
+const showWeekends = useLocalStorage('work-entries.show-weekends', true);
+
+/**
+ * The days listed: every day of the Period, or with weekends hidden, every
+ * day but a Saturday or Sunday with no Work Entries, so hours are never out
+ * of sight. Should that leave no day at all, every day is listed.
+ */
+const shownDays = computed(() => {
+    if (showWeekends.value) {
+        return props.days;
+    }
+
+    const shown = props.days.filter(
+        (day) => !isWeekend(day.date) || day.entries.length > 0,
+    );
+
+    return shown.length > 0 ? shown : props.days;
+});
+
+/**
+ * The listed days, one block per week under a header naming it. A week
+ * left with no day to list, because its only days are hidden weekends,
+ * has no block.
+ */
+const blocks = computed(() =>
+    props.weeks
+        .map((week) => ({
+            week,
+            days: shownDays.value.filter(
+                (day) => day.date >= week.from && day.date <= week.to,
+            ),
+        }))
+        .filter((block) => block.days.length > 0),
+);
+
+/**
+ * A week's header, such as "Week 45 · 2–8 Nov · 37.5 h", or "Week 44 ·
+ * 1 Nov · 0 h" for a week the Period holds one day of.
+ */
+function formatWeek(week: WorkEntryWeek): string {
+    const short = (date: string): string =>
+        new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+            day: 'numeric',
+            month: 'short',
+        });
+    const dates =
+        week.from === week.to
+            ? short(week.from)
+            : `${short(week.from)} – ${short(week.to)}`;
+
+    return `Week ${week.number} · ${dates} · ${formatHours(week.hours)}`;
+}
+
+function isWeekend(date: string): boolean {
+    const weekday = new Date(`${date}T00:00:00`).getDay();
+
+    return weekday === 0 || weekday === 6;
+}
+
 /**
  * Whether the cursor stops at a day after adding a Work Entry: a weekday up
  * to today without Time Off.
  */
 function takesNextEntry(day: WorkEntryDay): boolean {
-    const weekday = new Date(`${day.date}T00:00:00`).getDay();
-
     return (
-        weekday !== 0 &&
-        weekday !== 6 &&
-        day.time_off === null &&
-        day.date <= props.today
+        !isWeekend(day.date) && day.time_off === null && day.date <= props.today
     );
 }
 
@@ -227,39 +258,24 @@ function leaveWeek(): void {
     <div class="flex max-w-4xl flex-col gap-6 p-4">
         <Heading
             :title="title"
-            :description="`Hours ${employee.name} worked, one week at a time`"
+            :description="`Hours ${employee.name} worked`"
         />
 
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-2">
-                <Button variant="outline" size="icon" as-child>
-                    <Link
-                        :href="weekOf(addDays(week, -7))"
-                        aria-label="Previous week"
-                    >
-                        <ChevronLeft />
-                    </Link>
-                </Button>
-                <span class="text-sm font-medium">
-                    {{ formatDate(week) }} – {{ formatDate(addDays(week, 6)) }}
-                </span>
-                <Button variant="outline" size="icon" as-child>
-                    <Link
-                        :href="weekOf(addDays(week, 7))"
-                        aria-label="Next week"
-                    >
-                        <ChevronRight />
-                    </Link>
-                </Button>
-                <Button
-                    v-if="!isCurrentWeek"
-                    variant="ghost"
-                    size="sm"
-                    as-child
-                >
-                    <Link :href="weekOf(today)">This week</Link>
-                </Button>
-                <span class="ml-2 text-sm text-muted-foreground"
+            <PeriodNavigation
+                :period="period"
+                :today="today"
+                @change="showPeriod"
+            />
+            <div class="flex items-center gap-4">
+                <Label class="flex items-center gap-2 text-sm font-normal">
+                    <Checkbox
+                        :model-value="showWeekends"
+                        @update:model-value="showWeekends = $event === true"
+                    />
+                    Show weekends
+                </Label>
+                <span class="text-sm text-muted-foreground"
                     >Total
                     <span class="font-medium text-foreground tabular-nums">{{
                         formatHours(total)
@@ -268,112 +284,125 @@ function leaveWeek(): void {
             </div>
         </div>
 
-        <ul class="divide-y overflow-hidden rounded-lg border">
-            <li v-for="day in days" :key="day.date">
-                <div
-                    class="flex items-center justify-between gap-4 bg-muted/50 px-4 py-2"
-                >
-                    <p class="font-medium">
-                        {{ formatDay(day.date) }}
-                        <span class="ml-2 text-sm text-muted-foreground">{{
-                            formatHours(day.hours)
-                        }}</span>
-                        <span
-                            v-if="day.time_off"
-                            class="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
-                            >{{
-                                day.time_off === 'paid'
-                                    ? 'Paid Time Off'
-                                    : 'Unpaid Time Off'
-                            }}</span
+        <div class="flex flex-col gap-6">
+            <section
+                v-for="block in blocks"
+                :key="block.week.from"
+                class="space-y-2"
+            >
+                <h2 class="text-sm font-medium">
+                    {{ formatWeek(block.week) }}
+                </h2>
+                <ul class="divide-y overflow-hidden rounded-lg border">
+                    <li v-for="day in block.days" :key="day.date">
+                        <div
+                            class="flex items-center justify-between gap-4 bg-muted/50 px-4 py-2"
                         >
-                        <span
-                            v-else-if="day.nothing_logged"
-                            class="ml-2 text-xs text-muted-foreground italic"
-                            >Nothing logged</span
+                            <p class="font-medium">
+                                {{ formatDay(day.date) }}
+                                <span
+                                    class="ml-2 text-sm text-muted-foreground"
+                                    >{{ formatHours(day.hours) }}</span
+                                >
+                                <span
+                                    v-if="day.time_off"
+                                    class="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+                                    >{{
+                                        day.time_off === 'paid'
+                                            ? 'Paid Time Off'
+                                            : 'Unpaid Time Off'
+                                    }}</span
+                                >
+                                <span
+                                    v-else-if="day.nothing_logged"
+                                    class="ml-2 text-xs text-muted-foreground italic"
+                                    >Nothing logged</span
+                                >
+                            </p>
+                        </div>
+                        <div
+                            v-if="
+                                day.entries.length > 0 ||
+                                (canManage && day.date <= today)
+                            "
+                            class="space-y-2 border-t px-4 py-3"
                         >
-                    </p>
-                </div>
-                <div
-                    v-if="
-                        day.entries.length > 0 ||
-                        (canManage && day.date <= today)
-                    "
-                    class="space-y-2 border-t px-4 py-3"
-                >
-                    <ul v-if="day.entries.length > 0" class="space-y-1">
-                        <li
-                            v-for="entry in day.entries"
-                            :key="entry.id"
-                            class="text-sm"
-                        >
+                            <ul v-if="day.entries.length > 0" class="space-y-1">
+                                <li
+                                    v-for="entry in day.entries"
+                                    :key="entry.id"
+                                    class="text-sm"
+                                >
+                                    <WorkEntryRow
+                                        v-if="editing.has(entry.id)"
+                                        :employee="employee"
+                                        :period-query="period.query"
+                                        :assignments="assignments"
+                                        :date="day.date"
+                                        :today="today"
+                                        :entry="entry"
+                                        @saved="stopEditing(entry.id)"
+                                        @cancel="stopEditing(entry.id)"
+                                        @dirty="
+                                            markUnsaved(
+                                                `entry-${entry.id}`,
+                                                $event,
+                                            )
+                                        "
+                                    />
+                                    <div
+                                        v-else
+                                        class="flex items-center justify-between gap-4"
+                                    >
+                                        <p>
+                                            <span class="font-medium">{{
+                                                entry.project
+                                            }}</span>
+                                            <span class="text-muted-foreground">
+                                                · {{ entry.description }}</span
+                                            >
+                                        </p>
+                                        <div class="flex items-center gap-2">
+                                            <StatusBadge :state="entry.state" />
+                                            <span class="tabular-nums">{{
+                                                formatHours(entry.hours)
+                                            }}</span>
+                                            <Button
+                                                v-if="entry.can_edit"
+                                                variant="ghost"
+                                                size="sm"
+                                                @click="editing.add(entry.id)"
+                                                >Edit</Button
+                                            >
+                                            <DeleteWorkEntry
+                                                v-else-if="entry.can_delete"
+                                                :entry="entry"
+                                                :period-query="period.query"
+                                            />
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
                             <WorkEntryRow
-                                v-if="editing.has(entry.id)"
+                                v-if="canManage && day.date <= today"
+                                :ref="(row) => rememberNewRow(day.date, row)"
                                 :employee="employee"
+                                :period-query="period.query"
                                 :assignments="assignments"
                                 :date="day.date"
                                 :today="today"
-                                :entry="entry"
-                                @saved="stopEditing(entry.id)"
-                                @cancel="stopEditing(entry.id)"
-                                @dirty="
-                                    markUnsaved(`entry-${entry.id}`, $event)
-                                "
+                                :last-assignment-id="lastAssignmentId"
+                                @saved="entryAdded(day.date, $event)"
+                                @dirty="markUnsaved(`new-${day.date}`, $event)"
                             />
-                            <div
-                                v-else
-                                class="flex items-center justify-between gap-4"
-                            >
-                                <p>
-                                    <span class="font-medium">{{
-                                        entry.project
-                                    }}</span>
-                                    <span class="text-muted-foreground">
-                                        · {{ entry.description }}</span
-                                    >
-                                    <span
-                                        v-if="entry.approved"
-                                        class="block text-xs text-muted-foreground"
-                                        >{{ signOffs(entry) }}</span
-                                    >
-                                </p>
-                                <div class="flex items-center gap-2">
-                                    <StatusBadge :state="entry.state" />
-                                    <span class="tabular-nums">{{
-                                        formatHours(entry.hours)
-                                    }}</span>
-                                    <Button
-                                        v-if="entry.can_edit"
-                                        variant="ghost"
-                                        size="sm"
-                                        @click="editing.add(entry.id)"
-                                        >Edit</Button
-                                    >
-                                    <DeleteWorkEntry
-                                        v-else-if="entry.can_delete"
-                                        :entry="entry"
-                                    />
-                                </div>
-                            </div>
-                        </li>
-                    </ul>
-                    <WorkEntryRow
-                        v-if="canManage && day.date <= today"
-                        :ref="(row) => rememberNewRow(day.date, row)"
-                        :employee="employee"
-                        :assignments="assignments"
-                        :date="day.date"
-                        :today="today"
-                        :last-assignment-id="lastAssignmentId"
-                        @saved="entryAdded(day.date, $event)"
-                        @dirty="markUnsaved(`new-${day.date}`, $event)"
-                    />
-                </div>
-            </li>
-        </ul>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+        </div>
 
         <section v-if="assignmentTotals.length > 0" class="space-y-2">
-            <h2 class="text-sm font-medium">This week</h2>
+            <h2 class="text-sm font-medium">By Project</h2>
             <ul class="divide-y rounded-lg border text-sm">
                 <li
                     v-for="assignmentTotal in assignmentTotals"
