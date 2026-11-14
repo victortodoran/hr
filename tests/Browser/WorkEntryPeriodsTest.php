@@ -23,8 +23,9 @@ it('switches between a week, a month and a custom period, kept in the URL, and r
         ->assertSee('Nov 9, 2026')
         ->click('Month')
         ->assertQueryStringHas('month', '2026-11')
-        ->assertPresent('#work-entry-hours-2026-11-01')
-        ->assertPresent('#work-entry-hours-2026-11-13')
+        ->assertPresent('[data-date="2026-11-01"] [data-test="add-row"]')
+        ->assertPresent('[data-date="2026-11-13"] [data-test="add-row"]')
+        ->click('[data-date="2026-11-03"] [data-test="add-row"]')
         ->fill('#work-entry-hours-2026-11-03', '2')
         ->fill('#work-entry-description-2026-11-03', 'Reviewing the API')
         ->keys('#work-entry-description-2026-11-03', 'Enter')
@@ -65,16 +66,16 @@ it('hides empty weekend days when weekends are switched off, keeping ones with h
     actingAs($cara);
 
     visit(route('work-entries.index', ['week' => '2026-11-02']))
-        ->assertPresent('#work-entry-hours-2026-11-08')
+        ->assertPresent('[data-date="2026-11-08"]')
         ->click('Show weekends')
-        ->assertNotPresent('#work-entry-hours-2026-11-08')
+        ->assertNotPresent('[data-date="2026-11-08"]')
         ->assertSee('Saturday release')
-        ->assertPresent('#work-entry-hours-2026-11-06')
+        ->assertPresent('[data-date="2026-11-06"]')
         ->navigate(route('work-entries.index', ['month' => '2026-10']))
-        ->assertNotPresent('#work-entry-hours-2026-10-04')
-        ->assertPresent('#work-entry-hours-2026-10-05')
+        ->assertNotPresent('[data-date="2026-10-04"]')
+        ->assertPresent('[data-date="2026-10-05"]')
         ->click('Show weekends')
-        ->assertPresent('#work-entry-hours-2026-10-04')
+        ->assertPresent('[data-date="2026-10-04"]')
         ->assertNoJavaScriptErrors();
 });
 

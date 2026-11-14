@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Pencil } from '@lucide/vue';
+import { ArrowRight, Pencil, Plus } from '@lucide/vue';
 import { computed, nextTick, reactive, ref } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
+import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
 import { formatDays, timeOffKindLabel } from '@/lib/time-off';
 import type {
@@ -20,7 +21,8 @@ import type {
  * Entry under a row per ISO week. A run of days with the same kind of Time
  * Off and nothing logged folds into one row, and so does a run of future
  * days with nothing logged. On a phone each Work Entry stacks into two
- * lines.
+ * lines. The add form opens on one day at a time: from an empty day's
+ * quiet row, or the + beside a day that has Work Entries.
  */
 const props = defineProps<{
     employee: Choice;
@@ -218,20 +220,66 @@ const editing = reactive(new Set<number>());
 /** The Assignment of the Work Entry last added on this page. */
 const lastAssignmentId = ref<number | null>(null);
 
-/** Each day's empty row, by date, so the cursor can move between them. */
-const newRows = new Map<string, InstanceType<typeof WorkEntryRow>>();
+/** The day the add form is open on, if any; only one is open at a time. */
+const activeDate = ref<string | null>(null);
 
-function rememberNewRow(date: string, row: unknown): void {
-    if (row) {
-        newRows.set(date, row as InstanceType<typeof WorkEntryRow>);
-    } else {
-        newRows.delete(date);
-    }
+/** The day to open the add form on once giving up unsaved typing is confirmed. */
+const heldDate = ref<string | null>(null);
+
+/** Whether the open add form holds typing that isn't saved yet. */
+const addFormDirty = ref(false);
+
+let addRow: InstanceType<typeof WorkEntryRow> | null = null;
+
+function rememberAddRow(row: unknown): void {
+    addRow = row as InstanceType<typeof WorkEntryRow> | null;
 }
 
 /**
- * Whether the cursor stops at a day after adding a Work Entry: a weekday up
- * to today without Time Off.
+ * Opens the add form on a day, closing the one open on another day; when
+ * that one holds unsaved typing, asks first.
+ */
+function openAdd(date: string): void {
+    if (
+        activeDate.value !== null &&
+        activeDate.value !== date &&
+        addFormDirty.value
+    ) {
+        heldDate.value = date;
+
+        return;
+    }
+
+    void showAdd(date);
+}
+
+async function showAdd(date: string): Promise<void> {
+    activeDate.value = date;
+    await nextTick();
+    addRow?.focusDescription();
+}
+
+function closeAdd(): void {
+    activeDate.value = null;
+}
+
+function leaveForHeldDate(): void {
+    const date = heldDate.value;
+    heldDate.value = null;
+
+    if (date !== null) {
+        void showAdd(date);
+    }
+}
+
+function addFormChanged(date: string, isDirty: boolean): void {
+    addFormDirty.value = isDirty;
+    emit('dirty', `new-${date}`, isDirty);
+}
+
+/**
+ * Whether "Next day" stops at a day: a weekday up to today without Time
+ * Off.
  */
 function takesNextEntry(day: WorkEntryDay): boolean {
     return (
@@ -239,19 +287,31 @@ function takesNextEntry(day: WorkEntryDay): boolean {
     );
 }
 
-/**
- * After a Work Entry is added, moves the cursor to the next day that takes
- * one, or keeps it on the same day when none is left.
- */
-async function entryAdded(date: string, assignmentId: number): Promise<void> {
-    lastAssignmentId.value = assignmentId;
-
-    const next = props.days.find(
-        (day) => day.date > date && takesNextEntry(day),
+/** The next day of the Period "Next day" moves the add form to, if any. */
+function nextDay(date: string): string | null {
+    return (
+        props.days.find((day) => day.date > date && takesNextEntry(day))
+            ?.date ?? null
     );
+}
 
+/**
+ * After a Work Entry is added, keeps the add form on the same day, empty,
+ * with the cursor in What was done for the next one.
+ */
+async function entryAdded(assignmentId: number): Promise<void> {
+    lastAssignmentId.value = assignmentId;
     await nextTick();
-    newRows.get(next?.date ?? date)?.focusHours();
+    addRow?.focusDescription();
+}
+
+/**
+ * A day's full name, such as "Thursday 12 November".
+ */
+function formatLongDay(date: string): string {
+    const day = new Date(`${date}T00:00:00`);
+
+    return `${day.toLocaleDateString(undefined, { weekday: 'long' })} ${day.getDate()} ${day.toLocaleDateString(undefined, { month: 'long' })}`;
 }
 </script>
 
@@ -327,7 +387,11 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
                     >
                 </div>
 
-                <div v-else class="border-t" :data-date="segment.day.date">
+                <div
+                    v-else
+                    class="group/day border-t"
+                    :data-date="segment.day.date"
+                >
                     <p v-if="segment.day.time_off" class="px-4 pt-2">
                         <span
                             class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
@@ -364,8 +428,8 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
                         >
                             <span
                                 :class="[
-                                    'col-span-2 font-medium sm:col-span-1',
-                                    index > 0 && 'hidden sm:block',
+                                    'col-span-2 flex items-center font-medium sm:col-span-1',
+                                    index > 0 && 'hidden sm:flex',
                                 ]"
                                 ><template v-if="index === 0"
                                     >{{ formatDay(segment.day.date)
@@ -380,9 +444,19 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
                                         >{{
                                             formatHours(segment.day.hours)
                                         }}</span
-                                    ></template
-                                ></span
-                            >
+                                    ><Button
+                                        v-if="
+                                            takesEntries(segment.day) &&
+                                            activeDate !== segment.day.date
+                                        "
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        class="ml-0.5 size-7 text-muted-foreground opacity-0 group-hover/day:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                                        :aria-label="`Add another entry on ${formatLongDay(segment.day.date)}`"
+                                        @click="openAdd(segment.day.date)"
+                                        ><Plus /></Button></template
+                            ></span>
                             <span class="truncate" :title="entry.description">{{
                                 entry.description
                             }}</span>
@@ -423,7 +497,10 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
                     </template>
 
                     <div
-                        v-if="takesEntries(segment.day)"
+                        v-if="
+                            takesEntries(segment.day) &&
+                            activeDate === segment.day.date
+                        "
                         :class="columns"
                         class="items-start px-4 py-2"
                     >
@@ -442,29 +519,78 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
                                 ></template
                             ></span
                         >
-                        <div class="col-span-2 sm:col-span-5">
+                        <div
+                            class="col-span-2 rounded-md p-2 ring-2 ring-primary sm:col-span-5"
+                        >
                             <WorkEntryRow
-                                :ref="
-                                    (row) =>
-                                        rememberNewRow(segment.day.date, row)
-                                "
+                                :ref="rememberAddRow"
                                 :employee="employee"
                                 :period-query="period.query"
                                 :assignments="assignments"
                                 :date="segment.day.date"
                                 :today="today"
                                 :last-assignment-id="lastAssignmentId"
-                                @saved="entryAdded(segment.day.date, $event)"
+                                @saved="entryAdded"
+                                @cancel="closeAdd"
                                 @dirty="
-                                    emit(
-                                        'dirty',
-                                        `new-${segment.day.date}`,
-                                        $event,
-                                    )
+                                    addFormChanged(segment.day.date, $event)
                                 "
                             />
+                            <div
+                                class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground"
+                            >
+                                <span
+                                    ><kbd
+                                        class="rounded border border-b-2 bg-background px-1 font-sans"
+                                        >↵</kbd
+                                    >
+                                    add</span
+                                >
+                                <span
+                                    ><kbd
+                                        class="rounded border border-b-2 bg-background px-1 font-sans"
+                                        >Esc</kbd
+                                    >
+                                    close</span
+                                >
+                                <span class="flex-1" />
+                                <Button
+                                    v-if="nextDay(segment.day.date)"
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="h-7"
+                                    @click="openAdd(nextDay(segment.day.date)!)"
+                                    >Next day ·
+                                    {{ formatDay(nextDay(segment.day.date)!)
+                                    }}<ArrowRight
+                                /></Button>
+                            </div>
                         </div>
                     </div>
+                    <button
+                        v-else-if="
+                            takesEntries(segment.day) &&
+                            segment.day.entries.length === 0
+                        "
+                        type="button"
+                        :class="columns"
+                        class="min-h-11 w-full items-center px-4 py-1.5 text-left outline-none hover:bg-muted/40 focus-visible:bg-muted/40"
+                        data-test="add-row"
+                        @click="openAdd(segment.day.date)"
+                    >
+                        <span class="font-medium"
+                            >{{ formatDay(segment.day.date)
+                            }}<span
+                                v-if="segment.day.date === today"
+                                class="ml-1 text-xs font-normal text-muted-foreground"
+                                >today</span
+                            ></span
+                        >
+                        <span class="text-muted-foreground sm:col-span-5"
+                            >Add what you worked on…</span
+                        >
+                    </button>
                     <div
                         v-else-if="segment.day.entries.length === 0"
                         :class="columns"
@@ -485,5 +611,11 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
                 </div>
             </template>
         </section>
+
+        <UnsavedWorkEntryDialog
+            :open="heldDate !== null"
+            @stay="heldDate = null"
+            @leave="leaveForHeldDate"
+        />
     </div>
 </template>

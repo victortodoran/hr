@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
+import { X } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
 import InputError from '@/components/InputError.vue';
@@ -39,7 +40,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     /** The Work Entry was saved, on this Assignment. */
     saved: [assignmentId: number];
-    /** Changing the Work Entry was given up. */
+    /** Changing or adding the Work Entry was given up. */
     cancel: [];
     /** Whether the row holds typing that isn't saved yet. */
     dirty: [isDirty: boolean];
@@ -52,7 +53,7 @@ const form = useForm({
     description: props.entry?.description ?? '',
 });
 
-const hoursInput = ref<InstanceType<typeof Input> | null>(null);
+const descriptionInput = ref<InstanceType<typeof Input> | null>(null);
 
 /** Whether the Assignment was picked by hand, so it's no longer pre-picked. */
 const assignmentPickedByHand = ref(false);
@@ -142,14 +143,14 @@ function save(): void {
 }
 
 /**
- * Puts the cursor in the hours field, ready for the next Work Entry.
+ * Puts the cursor in What was done, ready for the next Work Entry.
  */
-function focusHours(): void {
-    const element = hoursInput.value?.$el as HTMLInputElement | undefined;
+function focusDescription(): void {
+    const element = descriptionInput.value?.$el as HTMLInputElement | undefined;
     element?.focus();
 }
 
-defineExpose({ focusHours });
+defineExpose({ focusDescription });
 </script>
 
 <template>
@@ -157,10 +158,11 @@ defineExpose({ focusHours });
         class="grid gap-2 sm:items-start"
         :class="
             entry
-                ? 'sm:grid-cols-[9rem_12rem_5rem_1fr_auto]'
-                : 'sm:grid-cols-[12rem_5rem_1fr_auto]'
+                ? 'sm:grid-cols-[9rem_minmax(0,1fr)_12rem_5rem_auto]'
+                : 'sm:grid-cols-[minmax(0,1fr)_12rem_5rem_auto]'
         "
         @submit.prevent="save"
+        @keydown.esc.prevent="emit('cancel')"
     >
         <div v-if="entry" class="grid min-w-0 gap-1">
             <label :for="fieldId('date')" class="sr-only">Date</label>
@@ -172,6 +174,19 @@ defineExpose({ focusHours });
                 required
             />
             <InputError :message="form.errors.date" />
+        </div>
+        <div class="grid min-w-0 gap-1">
+            <label :for="fieldId('description')" class="sr-only"
+                >What was done</label
+            >
+            <Input
+                :id="fieldId('description')"
+                ref="descriptionInput"
+                v-model="form.description"
+                placeholder="What was done"
+                required
+            />
+            <InputError :message="form.errors.description" />
         </div>
         <div class="grid min-w-0 gap-1">
             <label :for="fieldId('assignment')" class="sr-only"
@@ -218,7 +233,6 @@ defineExpose({ focusHours });
             <label :for="fieldId('hours')" class="sr-only">Hours</label>
             <Input
                 :id="fieldId('hours')"
-                ref="hoursInput"
                 v-model="form.hours"
                 type="number"
                 min="0.25"
@@ -229,24 +243,19 @@ defineExpose({ focusHours });
             />
             <InputError :message="form.errors.hours" />
         </div>
-        <div class="grid min-w-0 gap-1">
-            <label :for="fieldId('description')" class="sr-only"
-                >What was done</label
-            >
-            <Input
-                :id="fieldId('description')"
-                v-model="form.description"
-                placeholder="What was done"
-                required
-            />
-            <InputError :message="form.errors.description" />
-        </div>
         <div class="flex items-center gap-1">
-            <SubmitButton
-                :processing="form.processing"
-                :variant="entry ? 'default' : 'outline'"
-                >{{ entry ? 'Save' : 'Add' }}</SubmitButton
-            >
+            <SubmitButton :processing="form.processing">{{
+                entry ? 'Save' : 'Add'
+            }}</SubmitButton>
+            <Button
+                v-if="!entry"
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Close"
+                @click="emit('cancel')"
+                ><X
+            /></Button>
             <template v-if="entry">
                 <Button type="button" variant="ghost" @click="emit('cancel')"
                     >Cancel</Button

@@ -31,7 +31,7 @@ it('lists a month as one table under its total, folding Time Off and future days
         ->assertSee('Relaunch · Tech Lead')
         ->assertSeeIn('[data-date="2026-11-11"] [data-test="day-hours"]', '9.5 h')
         ->assertSeeIn('[data-date="2026-11-12"]', 'Paid Time Off')
-        ->assertPresent('#work-entry-hours-2026-11-12')
+        ->assertPresent('[data-date="2026-11-12"] [data-test="add-row"]')
         ->assertSeeIn('[data-test="time-off-run"]', 'Mon 23 – Fri 27')
         ->assertSeeIn('[data-test="time-off-run"]', '5 days')
         ->assertScript('document.querySelectorAll(\'[data-test="time-off-run"]\').length', 1)
