@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Enums\Permission;
 use App\Enums\Scope;
+use App\Http\Requests\WorkEntryPeriodRequest;
 use App\Http\Requests\WorkEntryRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;
+use App\Support\Period;
 use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -27,41 +28,36 @@ use Inertia\Response;
 class WorkEntryController extends Controller
 {
     /**
-     * One Employee's Work Entries for one week, Monday to Sunday, with totals
-     * for each day, each Assignment and the week. Opens on the viewer's own
-     * current week; another Employee's week is reached only by a link, such
-     * as from the Work Entries page. An Employee who doesn't exist is refused
-     * just like one outside the viewer's Scope, so the page never reveals who
-     * exists.
+     * One Employee's Work Entries for one Period, a week from Monday to
+     * Sunday, a month or a custom period, day by day, with totals for each
+     * day, each Assignment and the Period. Opens on the viewer's own current
+     * week; another Employee's is reached only by a link, such as from the
+     * Work Entries page. An Employee who doesn't exist is refused just like
+     * one outside the viewer's Scope, so the page never reveals who exists.
      */
-    public function index(#[CurrentUser] Employee $actor, Request $request): Response
+    public function index(#[CurrentUser] Employee $actor, WorkEntryPeriodRequest $request): Response
     {
-        $request->validate([
-            'employee' => ['nullable', 'integer'],
-            'week' => ['nullable', 'date_format:Y-m-d'],
-        ]);
         $employee = $request->filled('employee') ? Employee::query()->find($request->integer('employee')) : $actor;
         abort_if($employee === null, 403);
         Gate::authorize('viewAny', [WorkEntry::class, $employee]);
-        $monday = CarbonImmutable::parse($request->string('week')->value() ?: today())->startOfWeek(CarbonInterface::MONDAY);
-        $sunday = $monday->endOfWeek(CarbonInterface::SUNDAY);
+        $period = $request->period();
 
         $entries = $employee->workEntries()
-            ->whereBetween('work_entries.date', [$monday->toDateString(), $sunday->toDateString()])
+            ->whereBetween('work_entries.date', [$period->from->toDateString(), $period->to->toDateString()])
             ->with(['assignment.project:id,name', 'approver:id,name', 'locker:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
             ->orderBy('work_entries.date')
             ->orderBy('work_entries.id')
             ->get();
-        $timeOff = $employee->timeOff()->standing()->overlapping($monday, $sunday)->get();
+        $timeOff = $employee->timeOff()->standing()->overlapping($period->from, $period->to)->get();
 
         $canManage = $actor->can('create', [WorkEntry::class, $employee]);
         $canDelete = $actor->can(Permission::ManageWorkEntries->value, $employee);
 
         return Inertia::render('work-entries/Index', [
             'employee' => $employee->only('id', 'name'),
-            'week' => $monday->toDateString(),
+            'period' => $period->toArray(),
             'today' => today()->toDateString(),
-            'days' => $this->days($employee, $monday, $entries, $timeOff, $canManage, $canDelete),
+            'days' => $this->days($employee, $period, $entries, $timeOff, $canManage, $canDelete),
             'assignmentTotals' => $entries->groupBy('assignment_id')
                 ->map(fn (Collection $onAssignment): array => [
                     'assignment_id' => $onAssignment->firstOrFail()->assignment_id,
@@ -72,8 +68,8 @@ class WorkEntryController extends Controller
                 ->values(),
             'total' => $entries->sum('hours'),
             'assignments' => $employee->assignments()
-                ->whereDate('start_date', '<=', $sunday)
-                ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $monday))
+                ->whereDate('start_date', '<=', $period->to)
+                ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $period->from))
                 ->with('project:id,name')
                 ->get()
                 ->sortBy('project.name')
@@ -91,7 +87,7 @@ class WorkEntryController extends Controller
     }
 
     /**
-     * Monday to Sunday, each with its Work Entries and their total. Each
+     * Every day of the Period, each with its Work Entries and their total. Each
      * Work Entry carries its state, who approved and locked it, and whether
      * the viewer can change or delete it: both need a Pending Work Entry,
      * changing needs what recording does, and deleting needs only manage
@@ -102,13 +98,12 @@ class WorkEntryController extends Controller
      * here, with neither Work Entries nor such Time Off, is nothing logged.
      *
      * @param  Collection<int, WorkEntry>  $entries
-     * @param  Collection<int, TimeOff>  $timeOff  the Employee's Pending and Approved Time Off overlapping the week
+     * @param  Collection<int, TimeOff>  $timeOff  the Employee's Pending and Approved Time Off overlapping the Period
      * @return array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool}>
      */
-    private function days(Employee $employee, CarbonImmutable $monday, Collection $entries, Collection $timeOff, bool $canManage, bool $canDelete): array
+    private function days(Employee $employee, Period $period, Collection $entries, Collection $timeOff, bool $canManage, bool $canDelete): array
     {
-        return collect(range(0, 6))->map(function (int $offset) use ($employee, $monday, $entries, $timeOff, $canManage, $canDelete): array {
-            $day = $monday->addDays($offset);
+        return collect($period->days())->map(function (CarbonImmutable $day) use ($employee, $entries, $timeOff, $canManage, $canDelete): array {
             $date = $day->toDateString();
             $onDay = $entries->filter(fn (WorkEntry $entry): bool => $entry->date->toDateString() === $date);
             $away = $day->isWeekday()
@@ -147,7 +142,7 @@ class WorkEntryController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Work Entry added.')]);
 
-        return $this->toWeekOf($employee, $workEntry);
+        return $this->backTo($request, $employee, $workEntry);
     }
 
     /**
@@ -159,26 +154,33 @@ class WorkEntryController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Work Entry changed.')]);
 
-        return $this->toWeekOf($request->employee(), $workEntry);
+        return $this->backTo($request, $request->employee(), $workEntry);
     }
 
     /**
      * Delete a Work Entry recorded by mistake.
      */
-    public function destroy(WorkEntry $workEntry): RedirectResponse
+    public function destroy(Request $request, WorkEntry $workEntry): RedirectResponse
     {
         $workEntry->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Work Entry deleted.')]);
 
-        return $this->toWeekOf($workEntry->employee, $workEntry);
+        return $this->backTo($request, $workEntry->employee, $workEntry);
     }
 
     /**
-     * Back to the week the Work Entry falls in.
+     * Back to the Period the page sent in its query while the Work Entry
+     * falls within it, or else to the week it falls in.
      */
-    private function toWeekOf(Employee $employee, WorkEntry $workEntry): RedirectResponse
+    private function backTo(Request $request, Employee $employee, WorkEntry $workEntry): RedirectResponse
     {
-        return to_route('work-entries.index', ['employee' => $employee->id, 'week' => $workEntry->date->startOfWeek(CarbonInterface::MONDAY)->toDateString()]);
+        $period = Period::fromQuery($request->query());
+
+        if ($period === null || ! $period->contains($workEntry->date)) {
+            $period = Period::week($workEntry->date);
+        }
+
+        return to_route('work-entries.index', ['employee' => $employee->id, ...$period->query()]);
     }
 }

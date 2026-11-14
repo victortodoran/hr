@@ -26,7 +26,7 @@ it('opens on the viewer\'s own current week, Monday to Sunday', function () {
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('work-entries/Index')
         ->where('employee', ['id' => $cara->id, 'name' => 'Cara'])
-        ->where('week', '2026-11-09')
+        ->where('period', ['mode' => 'week', 'from' => '2026-11-09', 'to' => '2026-11-15'])
         ->where('today', '2026-11-11')
         ->where('days', collect(['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15'])
             ->map(fn (string $date): array => ['date' => $date, 'entries' => [], 'hours' => 0, 'time_off' => null, 'nothing_logged' => $date < '2026-11-11'])
@@ -47,7 +47,7 @@ it('shows the week holding the given day, with totals for each day, each Assignm
     $response = actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-08']));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('week', '2026-11-02')
+        ->where('period', ['mode' => 'week', 'from' => '2026-11-02', 'to' => '2026-11-08'])
         ->where('days.1', ['date' => '2026-11-03', 'hours' => 3.5, 'entries' => [
             ['id' => $review->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2, 'description' => 'Review', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
             ['id' => $api->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
@@ -61,6 +61,63 @@ it('shows the week holding the given day, with totals for each day, each Assignm
             ['assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 3.5],
         ])
         ->where('total', 4.25));
+});
+
+it('shows a month day by day, with totals for the month', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-10-01']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-10-01', 'minutes' => 60]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-10-31', 'minutes' => 30]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-02', 'minutes' => 480]);
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['month' => '2026-10']));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('period', ['mode' => 'month', 'from' => '2026-10-01', 'to' => '2026-10-31'])
+        ->has('days', 31)
+        ->where('days.0.date', '2026-10-01')
+        ->where('days.30.hours', 0.5)
+        ->where('assignmentTotals', [['assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5]])
+        ->where('assignments.0.id', $relaunch->id)
+        ->where('total', 1.5));
+});
+
+it('shows a custom period day by day, up to three months long', function (string $to, int $days) {
+    $cara = recorder();
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['from' => '2026-11-03', 'to' => $to]));
+
+    $response->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('period', ['mode' => 'custom', 'from' => '2026-11-03', 'to' => $to])
+        ->has('days', $days)
+        ->where('days.0.date', '2026-11-03'));
+})->with([
+    'a fortnight' => ['2026-11-16', 14],
+    'a single day' => ['2026-11-03', 1],
+    'three months' => ['2027-02-02', 92],
+]);
+
+it('shows a custom period over a month over a week when asked for more than one', function () {
+    $cara = recorder();
+
+    actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-02', 'month' => '2026-10', 'from' => '2026-11-03', 'to' => '2026-11-04']))
+        ->assertInertia(fn (Assert $page) => $page->where('period.mode', 'custom'));
+    actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-02', 'month' => '2026-10']))
+        ->assertInertia(fn (Assert $page) => $page->where('period.mode', 'month'));
+});
+
+it('shows future weeks and months, offering to record hours on none of their days', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    TimeOff::factory()->for($cara)->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-21']);
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['month' => '2026-12']));
+
+    $response->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('period', ['mode' => 'month', 'from' => '2026-12-01', 'to' => '2026-12-31'])
+        ->where('days.20.time_off', 'paid')
+        ->where('days.20.nothing_logged', false)
+        ->where('assignments.0.id', $relaunch->id));
 });
 
 it('shows who approved and locked each Work Entry, and offers to change only Pending ones', function () {
@@ -246,6 +303,20 @@ it('refuses a malformed Employee or week', function (string $field, string $valu
 })->with([
     'Employee not a number' => ['employee', 'Cara', 'The employee field must be an integer.'],
     'week not a date' => ['week', 'next', 'The week field must match the format Y-m-d.'],
+]);
+
+it('refuses a malformed month or custom period', function (array $query, string $field, string $message) {
+    $cara = recorder();
+
+    $response = actingAs($cara)->get(route('work-entries.index', $query));
+
+    $response->assertInvalid([$field => $message]);
+})->with([
+    'month not a month' => [['month' => '2026-11-01'], 'month', 'The month field must match the format Y-m.'],
+    'From without To' => [['from' => '2026-11-03'], 'to', 'The to field is required when from is present.'],
+    'To without From' => [['to' => '2026-11-03'], 'from', 'The from field is required when to is present.'],
+    'To before From' => [['from' => '2026-11-03', 'to' => '2026-11-02'], 'to', 'The to field must be a date after or equal to from.'],
+    'longer than three months' => [['from' => '2026-11-03', 'to' => '2027-02-03'], 'to', 'A custom period can be at most 3 months long.'],
 ]);
 
 it('forbids seeing the week of an Employee outside the Scope', function () {

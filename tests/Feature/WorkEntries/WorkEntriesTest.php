@@ -34,7 +34,7 @@ it('lets an Employee record hours on their own Assignment and see them Pending o
         ->assertInertia(fn (Assert $page) => $page
             ->component('work-entries/Index')
             ->where('employee', ['id' => $cara->id, 'name' => 'Cara'])
-            ->where('week', '2026-11-09')
+            ->where('period', ['mode' => 'week', 'from' => '2026-11-09', 'to' => '2026-11-15'])
             ->where('days.1.date', '2026-11-10')
             ->where('days.1.entries', [
                 ['id' => WorkEntry::query()->sole()->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2.75, 'description' => 'Reviewing the API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],

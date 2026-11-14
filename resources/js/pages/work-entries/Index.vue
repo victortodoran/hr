@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
-import { ChevronLeft, ChevronRight } from '@lucide/vue';
+import { Head, router, setLayoutProps } from '@inertiajs/vue3';
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -14,6 +13,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
+import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
 import { formatDate } from '@/lib/dates';
 import { index } from '@/routes/work-entries';
@@ -22,13 +22,13 @@ import type {
     WorkEntryAssignment,
     WorkEntryAssignmentTotal,
     WorkEntryDay,
+    WorkEntryPeriod,
     WorkEntryRecord,
 } from '@/types';
 
 const props = defineProps<{
     employee: Choice;
-    /** The Monday the week starts on. */
-    week: string;
+    period: WorkEntryPeriod;
     today: string;
     days: WorkEntryDay[];
     assignmentTotals: WorkEntryAssignmentTotal[];
@@ -57,16 +57,6 @@ setLayoutProps({
 });
 
 /**
- * The date a number of days away, as a YYYY-MM-DD date.
- */
-function addDays(date: string, days: number): string {
-    const moved = new Date(`${date}T00:00:00`);
-    moved.setDate(moved.getDate() + days);
-
-    return moved.toLocaleDateString('en-CA');
-}
-
-/**
  * Hours as people read them, such as "7.5 h".
  */
 function formatHours(hours: number): string {
@@ -84,16 +74,29 @@ function formatDay(date: string): string {
     });
 }
 
+/** The URL query asking for the Period shown, kept when saving or deleting. */
+const periodQuery = computed((): Record<string, string> => {
+    const { mode, from, to } = props.period;
+
+    if (mode === 'week') {
+        return { week: from };
+    }
+
+    return mode === 'month' ? { month: from.slice(0, 7) } : { from, to };
+});
+
 /**
- * This page for the week holding a day, naming the Employee only when the
- * week isn't the viewer's own.
+ * Shows another Period, naming the Employee only when the Work Entries
+ * aren't the viewer's own.
  */
-function weekOf(day: string) {
-    return index({
-        query: props.isOwn
-            ? { week: day }
-            : { employee: props.employee.id, week: day },
-    });
+function showPeriod(query: Record<string, string>): void {
+    router.visit(
+        index({
+            query: props.isOwn
+                ? query
+                : { employee: props.employee.id, ...query },
+        }),
+    );
 }
 
 /**
@@ -110,10 +113,6 @@ function signOffs(entry: WorkEntryRecord): string {
         .filter(Boolean)
         .join(' · ');
 }
-
-const isCurrentWeek = computed(
-    () => props.today >= props.week && props.today <= addDays(props.week, 6),
-);
 
 /** The Work Entries turned into fields to change them. */
 const editing = reactive(new Set<number>());
@@ -227,45 +226,21 @@ function leaveWeek(): void {
     <div class="flex max-w-4xl flex-col gap-6 p-4">
         <Heading
             :title="title"
-            :description="`Hours ${employee.name} worked, one week at a time`"
+            :description="`Hours ${employee.name} worked`"
         />
 
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-2">
-                <Button variant="outline" size="icon" as-child>
-                    <Link
-                        :href="weekOf(addDays(week, -7))"
-                        aria-label="Previous week"
-                    >
-                        <ChevronLeft />
-                    </Link>
-                </Button>
-                <span class="text-sm font-medium">
-                    {{ formatDate(week) }} – {{ formatDate(addDays(week, 6)) }}
-                </span>
-                <Button variant="outline" size="icon" as-child>
-                    <Link
-                        :href="weekOf(addDays(week, 7))"
-                        aria-label="Next week"
-                    >
-                        <ChevronRight />
-                    </Link>
-                </Button>
-                <Button
-                    v-if="!isCurrentWeek"
-                    variant="ghost"
-                    size="sm"
-                    as-child
-                >
-                    <Link :href="weekOf(today)">This week</Link>
-                </Button>
-                <span class="ml-2 text-sm text-muted-foreground"
-                    >Total
-                    <span class="font-medium text-foreground tabular-nums">{{
-                        formatHours(total)
-                    }}</span></span
-                >
-            </div>
+            <PeriodNavigation
+                :period="period"
+                :today="today"
+                @change="showPeriod"
+            />
+            <span class="text-sm text-muted-foreground"
+                >Total
+                <span class="font-medium text-foreground tabular-nums">{{
+                    formatHours(total)
+                }}</span></span
+            >
         </div>
 
         <ul class="divide-y overflow-hidden rounded-lg border">
@@ -310,6 +285,7 @@ function leaveWeek(): void {
                             <WorkEntryRow
                                 v-if="editing.has(entry.id)"
                                 :employee="employee"
+                                :period-query="periodQuery"
                                 :assignments="assignments"
                                 :date="day.date"
                                 :today="today"
@@ -352,6 +328,7 @@ function leaveWeek(): void {
                                     <DeleteWorkEntry
                                         v-else-if="entry.can_delete"
                                         :entry="entry"
+                                        :period-query="periodQuery"
                                     />
                                 </div>
                             </div>
@@ -361,6 +338,7 @@ function leaveWeek(): void {
                         v-if="canManage && day.date <= today"
                         :ref="(row) => rememberNewRow(day.date, row)"
                         :employee="employee"
+                        :period-query="periodQuery"
                         :assignments="assignments"
                         :date="day.date"
                         :today="today"
@@ -373,7 +351,7 @@ function leaveWeek(): void {
         </ul>
 
         <section v-if="assignmentTotals.length > 0" class="space-y-2">
-            <h2 class="text-sm font-medium">This week</h2>
+            <h2 class="text-sm font-medium">By Project</h2>
             <ul class="divide-y rounded-lg border text-sm">
                 <li
                     v-for="assignmentTotal in assignmentTotals"

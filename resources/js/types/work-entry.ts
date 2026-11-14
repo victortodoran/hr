@@ -31,7 +31,17 @@ export type WorkEntryRecord = {
 };
 
 /**
- * One day of the week, with its Work Entries and their total hours.
+ * The days the Work Entries week page shows: a week from Monday to Sunday,
+ * a calendar month, or a custom period, from and to as YYYY-MM-DD.
+ */
+export type WorkEntryPeriod = {
+    mode: 'week' | 'month' | 'custom';
+    from: string;
+    to: string;
+};
+
+/**
+ * One day of the Period, with its Work Entries and their total hours.
  */
 export type WorkEntryDay = {
     date: string;

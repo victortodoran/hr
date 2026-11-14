@@ -17,13 +17,15 @@ import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import type { Choice, WorkEntryAssignment, WorkEntryRecord } from '@/types';
 
 /**
- * A Work Entry typed straight into the week: an empty row under a day that
+ * A Work Entry typed straight into the Period: an empty row under a day that
  * adds one, or an existing Work Entry turned into fields to change it.
  */
 const props = defineProps<{
     /** The Employee whose hours these are. */
     employee: Choice;
-    /** The Employee's Assignments that run during the week. */
+    /** The URL query asking for the Period shown, so saving returns to it. */
+    periodQuery: Record<string, string>;
+    /** The Employee's Assignments that run during the Period. */
     assignments: WorkEntryAssignment[];
     /** The day the row sits under. */
     date: string;
@@ -116,8 +118,12 @@ function pickAssignment(assignmentId: unknown): void {
 
 function save(): void {
     const route = props.entry
-        ? WorkEntryController.update(props.entry.id)
-        : WorkEntryController.store(props.employee.id);
+        ? WorkEntryController.update(props.entry.id, {
+              query: props.periodQuery,
+          })
+        : WorkEntryController.store(props.employee.id, {
+              query: props.periodQuery,
+          });
 
     form.submit(route, {
         preserveScroll: true,
@@ -245,7 +251,7 @@ defineExpose({ focusHours });
                 <Button type="button" variant="ghost" @click="emit('cancel')"
                     >Cancel</Button
                 >
-                <DeleteWorkEntry :entry="entry" />
+                <DeleteWorkEntry :entry="entry" :period-query="periodQuery" />
             </template>
         </div>
     </form>
