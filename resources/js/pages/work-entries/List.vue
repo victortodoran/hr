@@ -44,6 +44,8 @@ const props = defineProps<{
     entries: Paginated<ListedWorkEntry>;
     /** Total hours of every Work Entry matching the filters. */
     total: number;
+    /** Total hours of the matching Declined Work Entries, which count nowhere. */
+    declinedTotal: number;
     /** Every matching Work Entry's ID; only sent when asked for. */
     matchingIds?: number[];
     /** Who has Work Entries that month, by name, with how many. */
@@ -295,15 +297,12 @@ function signOffs(entry: ListedWorkEntry): string {
                 class="flex justify-between gap-4 px-4 text-sm font-medium"
             >
                 <span
-                    >Total of all {{ entries.total }} matching<template
-                        v-if="
-                            filters.state === null ||
-                            filters.state === 'declined'
-                        "
-                    >
-                        <span class="font-normal text-muted-foreground"
-                            >, Declined hours not counted</span
-                        ></template
+                    >Total of all {{ entries.total }} matching<span
+                        v-if="declinedTotal > 0"
+                        class="font-normal text-status-declined-foreground"
+                        data-test="declined-total"
+                        >, {{ formatHours(declinedTotal) }} declined, not
+                        counted</span
                     ></span
                 >
                 <span class="tabular-nums">{{ formatHours(total) }}</span>

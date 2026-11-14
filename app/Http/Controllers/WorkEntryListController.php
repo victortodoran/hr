@@ -26,7 +26,7 @@ class WorkEntryListController extends Controller
     /**
      * The Work Entries matching the filters, in every state unless one is
      * chosen, oldest first, with the total hours of those that aren't
-     * Declined. The Employees to choose from are those the viewer may see
+     * Declined, and of those that are. The Employees to choose from are those the viewer may see
      * with Work Entries that month in the chosen state, by name with how
      * many; an Employee not among them, or
      * none, falls back to the first, while "all" keeps every Employee. The
@@ -95,6 +95,7 @@ class WorkEntryListController extends Controller
                     'can_lock' => $entry->state === WorkEntryState::Approved && $canLock,
                 ]),
             'total' => (int) (clone $matching)->counted()->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)
+            'declinedTotal' => (int) (clone $matching)->where('state', WorkEntryState::Declined)->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)
             'matchingIds' => Inertia::optional(fn (): array => (clone $matching)->orderBy('id')->pluck('id')->all()),
             'employees' => $employees,
             'projects' => $projects,

@@ -52,12 +52,13 @@ class WorkEntryController extends Controller
             ->orderBy('work_entries.date')
             ->orderBy('work_entries.id')
             ->get();
-        $counted = $entries->reject(fn (WorkEntry $entry): bool => $entry->isDeclined());
+        $declined = $entries->filter(fn (WorkEntry $entry): bool => $entry->isDeclined());
+        $counted = $entries->diff($declined);
         $timeOff = $employee->timeOff()->standing()->overlapping($period->from, $period->to)->get();
 
         $canManage = $actor->can('create', [WorkEntry::class, $employee]);
         $canDelete = $actor->can(Permission::ManageWorkEntries->value, $employee);
-        $copySources = $canManage ? $this->datesWithEntries($employee, $period, $entries) : collect();
+        $copySources = $canManage ? $this->datesWithEntries($employee, $period, $counted) : collect();
         $days = $this->days($employee, $period, $entries, $timeOff, $canManage, $canDelete, $copySources);
 
         $tab = $request->tab();
@@ -68,7 +69,7 @@ class WorkEntryController extends Controller
             'period' => $period->toArray(),
             'today' => today()->toDateString(),
             'total' => $counted->sum('hours'),
-            'declinedHours' => $entries->diff($counted)->sum('hours'),
+            'declinedHours' => $declined->sum('hours'),
             'assignmentTotals' => $this->assignmentTotals($counted),
             'assignments' => $canManage ? $this->assignments($employee, $period) : [],
             'canManage' => $canManage,
@@ -160,10 +161,10 @@ class WorkEntryController extends Controller
      * A weekday covered by Pending or Approved Time Off says whether that
      * Time Off is Paid or Unpaid. A past weekday while the Employee works
      * here, with neither Work Entries nor such Time Off, is nothing logged.
-     * A day up to today with no Work Entries and no such Time Off, when the
-     * viewer can record hours, names the day copying Work Entries onto it
-     * would copy from: the latest day in the week before with any that
-     * aren't Declined, or null.
+     * A day up to today with no Work Entries but Declined ones and no such
+     * Time Off, when the viewer can record hours, names the day copying Work
+     * Entries onto it would copy from: the latest day in the week before
+     * with any that aren't Declined, or null.
      *
      * @param  Collection<int, WorkEntry>  $entries
      * @param  Collection<int, TimeOff>  $timeOff  the Employee's Pending and Approved Time Off overlapping the Period
@@ -175,6 +176,7 @@ class WorkEntryController extends Controller
         return collect($period->days())->map(function (CarbonImmutable $day) use ($employee, $entries, $timeOff, $canManage, $canDelete, $copySources): array {
             $date = $day->toDateString();
             $onDay = $entries->filter(fn (WorkEntry $entry): bool => $entry->date->toDateString() === $date);
+            $countedOnDay = $onDay->reject(fn (WorkEntry $entry): bool => $entry->isDeclined());
             $away = $day->isWeekday()
                 ? $timeOff->first(fn (TimeOff $covering): bool => $day->between($covering->first_date, $covering->last_date))
                 : null;
@@ -194,10 +196,10 @@ class WorkEntryController extends Controller
                     'can_delete' => $canDelete && $entry->isOpen(),
                     'declined' => $entry->decline(),
                 ])->values()->all(),
-                'hours' => $onDay->reject(fn (WorkEntry $entry): bool => $entry->isDeclined())->sum('hours'),
+                'hours' => $countedOnDay->sum('hours'),
                 'time_off' => $away === null ? null : ($away->is_paid ? 'paid' : 'unpaid'),
                 'nothing_logged' => $day->isWeekday() && $day->isBefore(today()) && $employed && $onDay->isEmpty() && $away === null,
-                'copy_from' => $canManage && ! $day->isAfter(today()) && $away === null && $onDay->isEmpty()
+                'copy_from' => $canManage && ! $day->isAfter(today()) && $away === null && $countedOnDay->isEmpty()
                     ? $copySources->last(fn (string $source): bool => $source < $date && $source >= $day->subDays(WorkEntry::COPY_LOOKBACK_DAYS)->toDateString())
                     : null,
             ];
@@ -209,7 +211,7 @@ class WorkEntryController extends Controller
      * Declined on from a week before the Period to its end: those in the
      * week before are looked up, those within it come from its Work Entries.
      *
-     * @param  Collection<int, WorkEntry>  $entries  the Employee's Work Entries in the Period
+     * @param  Collection<int, WorkEntry>  $entries  the Employee's Work Entries in the Period that aren't Declined
      * @return SupportCollection<int, string>
      */
     private function datesWithEntries(Employee $employee, Period $period, Collection $entries): SupportCollection
@@ -221,7 +223,7 @@ class WorkEntryController extends Controller
             ->get(['work_entries.date']);
 
         return $before->toBase()
-            ->merge($entries->reject(fn (WorkEntry $entry): bool => $entry->isDeclined()))
+            ->merge($entries)
             ->map(fn (WorkEntry $entry): string => $entry->date->toDateString())
             ->unique()
             ->sort()
@@ -266,15 +268,24 @@ class WorkEntryController extends Controller
     /**
      * Correct a Work Entry: its Assignment, date, hours or description. A
      * Declined one goes back to Pending, without who declined it or why.
+     * The write only changes one still Pending or Declined, so an approval
+     * made since the policy check is never undone.
      */
     public function update(WorkEntryRequest $request, WorkEntry $workEntry): RedirectResponse
     {
-        $workEntry->fill($request->workEntry())->forceFill([
-            'state' => WorkEntryState::Pending,
-            'declined_by' => null,
-            'declined_at' => null,
-            'decline_reason' => null,
-        ])->save();
+        $changed = WorkEntry::query()
+            ->whereKey($workEntry->id)
+            ->whereIn('state', [WorkEntryState::Pending, WorkEntryState::Declined])
+            ->update([
+                ...$request->workEntry(),
+                'state' => WorkEntryState::Pending,
+                'declined_by' => null,
+                'declined_at' => null,
+                'decline_reason' => null,
+                'updated_at' => now(),
+            ]);
+        abort_if($changed === 0, 403); // @pest-mutate-ignore (only reached when the Work Entry is approved between the policy check and this write)
+        $workEntry->refresh();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Work Entry changed.')]);
 

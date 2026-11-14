@@ -79,12 +79,13 @@ class HomeController extends Controller
 
         $monday = CarbonImmutable::today()->startOfWeek(CarbonInterface::MONDAY);
         $entries = $employee->workEntries()
+            ->counted()
             ->whereBetween('work_entries.date', [$monday->toDateString(), $monday->endOfWeek(CarbonInterface::SUNDAY)->toDateString()])
             ->get();
 
         return [
             'week' => $monday->toDateString(),
-            'hours' => $entries->reject(fn (WorkEntry $workEntry): bool => $workEntry->isDeclined())->sum(fn (WorkEntry $workEntry): float|int => $workEntry->hours),
+            'hours' => $entries->sum(fn (WorkEntry $workEntry): float|int => $workEntry->hours),
             'pending' => $entries->where('state', WorkEntryState::Pending)->count(),
         ];
     }

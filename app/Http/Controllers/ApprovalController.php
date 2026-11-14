@@ -21,7 +21,9 @@ use Inertia\Response;
  * The Approvals page, an inbox of what waits for the viewer's decision as an
  * effective Manager, in two tabs. Work Entries: the Pending Work Entries of
  * the Employees whose effective Manager the viewer is, one Employee and one
- * Project at a time, and approving many of them at once. Nobody approves their own Work Entries.
+ * Project at a time, and approving many of them at once, or declining them
+ * with the WorkEntryDeclineController. Nobody approves or declines their own
+ * Work Entries.
  * Reopening and locking happen on the Work Entries page. Time Off: the
  * Pending Time Off the viewer decides, answered by the
  * TimeOffApprovalController and TimeOffDeclineController.

@@ -213,6 +213,20 @@ it('copies no Declined Work Entries, and doesn\'t copy from a day with only Decl
     expect(WorkEntry::query()->whereDate('date', '2026-11-12')->pluck('description')->all())->toBe(['Checkout API']);
 });
 
+it('copies onto a day whose only Work Entries are Declined', function () {
+    ['ben' => $ben, 'cara' => $cara] = benAndCara();
+    $relaunch = assignmentOf($cara);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-11', 'description' => 'Checkout API']);
+    WorkEntry::factory()->for($relaunch)->declined($ben)->create(['date' => '2026-11-12', 'description' => 'Interviews']);
+
+    actingAs($cara)->get(route('work-entries.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('days.3.copy_from', '2026-11-11'));
+    actingAs($cara)->post(route('employees.work-entry-copies.store', $cara), ['date' => '2026-11-12'])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Copied 1 Work Entry from Wed 11.']);
+
+    expect(WorkEntry::query()->whereDate('date', '2026-11-12')->pluck('description')->sort()->values()->all())->toBe(['Checkout API', 'Interviews']);
+});
+
 it('filters the Work Entries page by Declined, leaving Declined hours out of its total', function () {
     ['ben' => $ben, 'cara' => $cara] = benAndCara();
     $relaunch = assignmentOf($cara);
@@ -221,10 +235,11 @@ it('filters the Work Entries page by Declined, leaving Declined hours out of its
     $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
 
     actingAs($dan)->get(route('work-entry-list.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('total', 2));
+        ->assertInertia(fn (Assert $page) => $page->where('total', 2)->where('declinedTotal', 1));
     actingAs($dan)->get(route('work-entry-list.index', ['state' => 'declined']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('total', 0)
+            ->where('declinedTotal', 1)
             ->where('entries.data', fn (Collection $data): bool => $data->map(fn (array $row): array => [$row['id'], $row['declined']])->all() === [
                 [$declined->id, ['by' => 'Ben', 'reason' => 'Wrong Project']],
             ]));

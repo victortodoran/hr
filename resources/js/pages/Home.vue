@@ -14,11 +14,11 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { formatHours } from '@/lib/work-entries';
 import { landing } from '@/routes';
 import { index as approvals } from '@/routes/approvals';
 import { index as timeOff } from '@/routes/time-off';
 import { index as workEntries } from '@/routes/work-entries';
-import { formatHours } from '@/lib/work-entries';
 import type {
     ApprovalsWaiting,
     HoursThisWeek,
