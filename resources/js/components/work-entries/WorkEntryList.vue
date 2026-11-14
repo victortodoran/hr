@@ -337,7 +337,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
             <span>Project</span>
             <span>Status</span>
             <span class="text-right">Hours</span>
-            <span><span class="sr-only">Actions</span></span>
+            <span class="text-right">Actions</span>
         </div>
 
         <section
