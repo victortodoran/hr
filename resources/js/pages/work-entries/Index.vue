@@ -4,19 +4,11 @@ import { useLocalStorage } from '@vueuse/core';
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MonthPicker from '@/components/MonthPicker.vue';
+import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
 import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
 import WorkEntryCalendar from '@/components/work-entries/WorkEntryCalendar.vue';
 import WorkEntryList from '@/components/work-entries/WorkEntryList.vue';
@@ -223,26 +215,10 @@ function leaveWeek(): void {
             @dirty="markUnsaved"
         />
 
-        <Dialog
+        <UnsavedWorkEntryDialog
             :open="heldVisit !== null"
-            @update:open="(open) => !open && stayOnWeek()"
-        >
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Leave without saving?</DialogTitle>
-                    <DialogDescription>
-                        You have an unsaved Work Entry. Leave anyway?
-                    </DialogDescription>
-                </DialogHeader>
-                <DialogFooter class="gap-2">
-                    <Button variant="secondary" @click="stayOnWeek"
-                        >Stay</Button
-                    >
-                    <Button variant="destructive" @click="leaveWeek"
-                        >Leave</Button
-                    >
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            @stay="stayOnWeek"
+            @leave="leaveWeek"
+        />
     </PageContainer>
 </template>

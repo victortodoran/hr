@@ -13,7 +13,7 @@ beforeEach(function () {
     travelTo('2026-11-13 09:00');
 });
 
-it('adds Work Entries day after day by keyboard, skipping Time Off, and changes one in place', function () {
+it('adds Work Entries one day at a time, staying on the day, moving on with Next day past Time Off, and changes one in place', function () {
     $cara = recorder();
     $assignment = assignmentOf($cara);
     TimeOff::factory()->for($cara)->create(['first_date' => '2026-11-10', 'last_date' => '2026-11-10']);
@@ -21,44 +21,92 @@ it('adds Work Entries day after day by keyboard, skipping Time Off, and changes 
     actingAs($cara);
 
     visit(route('work-entries.index'))
-        ->fill('#work-entry-hours-2026-11-09', '7.5')
+        ->assertNotPresent('#work-entry-description-2026-11-09')
+        ->click('[data-date="2026-11-09"] [data-test="add-row"]')
+        ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-09')
         ->fill('#work-entry-description-2026-11-09', 'Reviewing the API')
-        ->keys('#work-entry-description-2026-11-09', 'Enter')
+        ->fill('#work-entry-hours-2026-11-09', '5')
+        ->keys('#work-entry-hours-2026-11-09', 'Enter')
         ->assertSee('Reviewing the API')
-        ->assertScript('document.activeElement.id', 'work-entry-hours-2026-11-11')
-        ->fill('#work-entry-hours-2026-11-11', '8')
+        ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-09')
+        ->assertValue('#work-entry-description-2026-11-09', '')
+        ->fill('#work-entry-description-2026-11-09', 'Pairing')
+        ->fill('#work-entry-hours-2026-11-09', '2.5')
+        ->keys('#work-entry-description-2026-11-09', 'Enter')
+        ->assertSee('Pairing')
+        ->click('Next day · Wed 11')
+        ->assertNotPresent('#work-entry-description-2026-11-09')
+        ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-11')
         ->fill('#work-entry-description-2026-11-11', 'Fixing the login')
+        ->fill('#work-entry-hours-2026-11-11', '8')
         ->keys('#work-entry-description-2026-11-11', 'Enter')
         ->assertSee('Fixing the login')
-        ->assertScript('document.activeElement.id', 'work-entry-hours-2026-11-12')
-        ->click('[data-date="2026-11-09"] [aria-label="Edit Work Entry"]')
-        ->fill('#work-entry-hours-'.WorkEntry::query()->where('description', 'Reviewing the API')->sole()->id, '6')
+        ->keys('#work-entry-description-2026-11-11', 'Escape')
+        ->assertNotPresent('#work-entry-description-2026-11-11')
+        ->click('[data-date="2026-11-11"] [aria-label="Edit Work Entry"]')
+        ->keys('#work-entry-hours-'.WorkEntry::query()->where('description', 'Fixing the login')->sole()->id, 'Escape')
+        ->assertDontSee('Save')
+        ->click('[data-date="2026-11-11"] [aria-label="Edit Work Entry"]')
+        ->fill('#work-entry-hours-'.WorkEntry::query()->where('description', 'Fixing the login')->sole()->id, '6')
+        ->keys('#work-entry-hours-'.WorkEntry::query()->where('description', 'Fixing the login')->sole()->id, 'Escape')
+        ->assertSee('You have an unsaved Work Entry. Leave anyway?')
+        ->click('Stay')
         ->click('Save')
         ->assertDontSee('Save')
         ->assertSee('6 h')
         ->assertNoJavaScriptErrors();
 
-    expect(WorkEntry::query()->orderBy('date')->get(['assignment_id', 'date', 'minutes', 'description'])->toArray())->toBe([
-        ['assignment_id' => $assignment->id, 'date' => '2026-11-09T00:00:00.000000Z', 'minutes' => 360, 'description' => 'Reviewing the API'],
-        ['assignment_id' => $assignment->id, 'date' => '2026-11-11T00:00:00.000000Z', 'minutes' => 480, 'description' => 'Fixing the login'],
+    expect(WorkEntry::query()->orderBy('id')->get(['assignment_id', 'date', 'minutes', 'description'])->toArray())->toBe([
+        ['assignment_id' => $assignment->id, 'date' => '2026-11-09T00:00:00.000000Z', 'minutes' => 300, 'description' => 'Reviewing the API'],
+        ['assignment_id' => $assignment->id, 'date' => '2026-11-09T00:00:00.000000Z', 'minutes' => 150, 'description' => 'Pairing'],
+        ['assignment_id' => $assignment->id, 'date' => '2026-11-11T00:00:00.000000Z', 'minutes' => 360, 'description' => 'Fixing the login'],
     ]);
 });
 
-it('asks before leaving the week with an unsaved Work Entry', function () {
+it('adds another Work Entry to a day that has one with its + button', function () {
+    $cara = recorder();
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10', 'description' => 'Reviewing the API']);
+
+    actingAs($cara);
+
+    visit(route('work-entries.index'))
+        ->assertNotPresent('[data-date="2026-11-10"] [data-test="add-row"]')
+        ->click('[aria-label="Add another entry on Tuesday 10 November"]')
+        ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-10')
+        ->assertNoJavaScriptErrors();
+});
+
+it('asks before leaving the week, or opening another day, with an unsaved Work Entry', function () {
     $cara = recorder();
     assignmentOf($cara);
 
     actingAs($cara);
 
     visit(route('work-entries.index'))
+        ->click('[data-date="2026-11-12"] [data-test="add-row"]')
         ->fill('#work-entry-description-2026-11-12', 'Half typed')
-        ->click('[aria-label="Previous week"]')
+        ->click('[data-date="2026-11-11"] [data-test="add-row"]')
         ->assertSee('You have an unsaved Work Entry. Leave anyway?')
         ->click('Stay')
         ->assertValue('#work-entry-description-2026-11-12', 'Half typed')
         ->click('[aria-label="Previous week"]')
+        ->assertSee('You have an unsaved Work Entry. Leave anyway?')
+        ->click('Stay')
+        ->assertValue('#work-entry-description-2026-11-12', 'Half typed')
+        ->keys('#work-entry-description-2026-11-12', 'Escape')
+        ->assertSee('You have an unsaved Work Entry. Leave anyway?')
+        ->click('Stay')
+        ->assertValue('#work-entry-description-2026-11-12', 'Half typed')
+        ->click('[data-date="2026-11-11"] [data-test="add-row"]')
         ->click('Leave')
-        ->assertSee('Nov 2, 2026')
+        ->assertNotPresent('#work-entry-description-2026-11-12')
+        ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-11')
+        ->click('Month')
+        ->assertQueryStringHas('month', '2026-11')
+        ->assertNotPresent('#work-entry-description-2026-11-11')
+        ->click('[aria-label="Previous month"]')
+        ->assertQueryStringHas('month', '2026-10')
+        ->assertDontSee('Leave without saving?')
         ->assertNoJavaScriptErrors();
 });
 
