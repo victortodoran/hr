@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue';
+import { statusColours, statusLabels } from '@/lib/status';
 import { cn } from '@/lib/utils';
 import type { StatusBadgeState } from '@/types';
 
@@ -13,24 +14,6 @@ const props = defineProps<{
     /** Classes merged over the badge's own, such as a width. */
     class?: HTMLAttributes['class'];
 }>();
-
-const labels: Record<StatusBadgeState, string> = {
-    pending: 'Pending',
-    approved: 'Approved',
-    declined: 'Declined',
-    locked: 'Locked',
-    cancelled: 'Cancelled',
-    upcoming: 'Upcoming',
-};
-
-const colours: Record<StatusBadgeState, string> = {
-    pending: 'bg-status-pending text-status-pending-foreground',
-    approved: 'bg-status-approved text-status-approved-foreground',
-    declined: 'bg-status-declined text-status-declined-foreground',
-    locked: 'bg-status-closed text-status-closed-foreground',
-    cancelled: 'bg-status-closed text-status-closed-foreground',
-    upcoming: 'bg-status-upcoming text-status-upcoming-foreground',
-};
 </script>
 
 <template>
@@ -39,10 +22,10 @@ const colours: Record<StatusBadgeState, string> = {
         :class="
             cn(
                 'inline-flex w-fit shrink-0 items-center justify-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap',
-                colours[state],
+                statusColours[state],
                 props.class,
             )
         "
-        ><slot>{{ labels[state] }}</slot></span
+        ><slot>{{ statusLabels[state] }}</slot></span
     >
 </template>

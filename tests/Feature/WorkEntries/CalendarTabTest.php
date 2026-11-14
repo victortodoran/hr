@@ -42,14 +42,14 @@ it('shows a month as ISO weeks, Monday to Sunday, each day with its hours and it
         ->where('calendar.1.number', 45)
         ->where('calendar.1.hours', 7.5)
         ->where('calendar.1.days.1', ['date' => '2026-11-03', 'hours' => 7.5, 'entries' => [
-            ['id' => $review->id, 'description' => 'Review', 'hours' => 3, 'state' => 'pending'],
-            ['id' => $specs->id, 'description' => 'Specs', 'hours' => 1.5, 'state' => 'approved'],
-            ['id' => $release->id, 'description' => 'Release', 'hours' => 0.5, 'state' => 'locked'],
-            ['id' => $meeting->id, 'description' => 'Team meeting', 'hours' => 2.5, 'state' => 'pending'],
+            ['id' => $review->id, 'project' => 'Relaunch', 'description' => 'Review', 'hours' => 3, 'state' => 'pending'],
+            ['id' => $specs->id, 'project' => 'Relaunch', 'description' => 'Specs', 'hours' => 1.5, 'state' => 'approved'],
+            ['id' => $release->id, 'project' => 'Relaunch', 'description' => 'Release', 'hours' => 0.5, 'state' => 'locked'],
+            ['id' => $meeting->id, 'project' => 'Acme', 'description' => 'Team meeting', 'hours' => 2.5, 'state' => 'pending'],
         ], 'time_off' => null, 'nothing_logged' => false])
         ->where('calendar.1.days.0.nothing_logged', true)
         ->where('calendar.5.number', 49)
-        ->where('calendar.5.days', [['date' => '2026-11-30', 'hours' => 1, 'entries' => [['id' => $late->id, 'description' => 'Late fix', 'hours' => 1, 'state' => 'pending']], 'time_off' => null, 'nothing_logged' => false], null, null, null, null, null, null])
+        ->where('calendar.5.days', [['date' => '2026-11-30', 'hours' => 1, 'entries' => [['id' => $late->id, 'project' => 'Relaunch', 'description' => 'Late fix', 'hours' => 1, 'state' => 'pending']], 'time_off' => null, 'nothing_logged' => false], null, null, null, null, null, null])
         ->missing('days')
         ->missing('weeks')
         ->missing('assignments'));

@@ -63,6 +63,7 @@ export type WorkEntryCalendarDay = {
     hours: number;
     entries: {
         id: number;
+        project: string;
         description: string;
         hours: number;
         state: WorkEntryState;

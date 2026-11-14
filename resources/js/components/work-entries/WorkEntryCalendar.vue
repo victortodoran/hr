@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import StatusBadge from '@/components/StatusBadge.vue';
+import StatusDot from '@/components/StatusDot.vue';
+import { statusLabels } from '@/lib/status';
 import { timeOffKindLabel } from '@/lib/time-off';
 import type {
     WorkEntryCalendarDay,
@@ -47,11 +48,19 @@ function shownDays(
 /** The Work Entry states, in the order the dots and legend show them. */
 const states = ['pending', 'approved', 'locked'] as const;
 
-const legendLabels = {
-    pending: 'Pending',
-    approved: 'Approved',
-    locked: 'Locked',
-} as const;
+/**
+ * The Work Entries a day leaves out after its first three, as a tooltip:
+ * one per line, such as "Relaunch · Team meeting · 1 h".
+ */
+function moreTitle(day: WorkEntryCalendarDay): string {
+    return day.entries
+        .slice(shownEntries)
+        .map(
+            (entry) =>
+                `${entry.project} · ${entry.description} · ${formatHours(entry.hours)}`,
+        )
+        .join('\n');
+}
 
 /** How many Work Entry lines a day shows before "+2 more". */
 const shownEntries = 3;
@@ -135,15 +144,12 @@ const columns = computed(() =>
                             v-if="day.entries.length > 0 || day.time_off"
                             class="mt-1 flex flex-wrap gap-1 sm:hidden"
                         >
-                            <StatusBadge
+                            <StatusDot
                                 v-for="state in statesOf(day)"
                                 :key="state"
                                 :state="state"
-                                class="size-2.5 p-0 ring-1 ring-current"
-                                ><span class="sr-only">{{
-                                    state
-                                }}</span></StatusBadge
-                            >
+                                class="size-2.5"
+                            />
                             <span
                                 v-if="day.time_off"
                                 class="size-2.5 rounded-full bg-muted ring-1 ring-muted-foreground"
@@ -166,16 +172,10 @@ const columns = computed(() =>
                                 class="flex items-center gap-1.5 text-xs"
                                 :data-state="entry.state"
                             >
-                                <StatusBadge
-                                    :state="entry.state"
-                                    class="size-2 p-0 ring-1 ring-current"
-                                    ><span class="sr-only">{{
-                                        entry.state
-                                    }}</span></StatusBadge
-                                >
+                                <StatusDot :state="entry.state" />
                                 <span
                                     class="min-w-0 flex-1 truncate"
-                                    :title="entry.description"
+                                    :title="`${entry.project} · ${entry.description}`"
                                     >{{ entry.description }}</span
                                 >
                                 <span
@@ -186,6 +186,7 @@ const columns = computed(() =>
                             <li
                                 v-if="day.entries.length > shownEntries"
                                 class="text-xs text-muted-foreground"
+                                :title="moreTitle(day)"
                             >
                                 +{{ day.entries.length - shownEntries }} more
                             </li>
@@ -215,13 +216,15 @@ const columns = computed(() =>
                 :key="state"
                 class="flex items-center gap-1.5"
             >
-                <StatusBadge
-                    :state="state"
-                    class="size-2 p-0 ring-1 ring-current"
+                <StatusDot :state="state" labelled />
+                <span>{{ statusLabels[state] }}</span>
+            </li>
+            <li class="flex items-center gap-1.5">
+                <span
+                    class="inline-block size-2 rounded-full bg-muted ring-1 ring-muted-foreground"
                     aria-hidden="true"
-                    ><span
-                /></StatusBadge>
-                <span>{{ legendLabels[state] }}</span>
+                />
+                <span>Time Off</span>
             </li>
         </ul>
     </div>

@@ -153,6 +153,7 @@ class WorkEntryController extends Controller
                         'hours' => $day['hours'],
                         'entries' => array_map(fn (array $entry): array => [
                             'id' => $entry['id'],
+                            'project' => $entry['project'],
                             'description' => $entry['description'],
                             'hours' => $entry['hours'],
                             'state' => $entry['state'],

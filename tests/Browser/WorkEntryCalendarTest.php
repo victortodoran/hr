@@ -15,8 +15,8 @@ beforeEach(function () {
 it('shows a month as a calendar, a line per Work Entry with a dot for its state, kept in the URL, sharing its month with the List and hiding weekends with it', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-10-01']);
-    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-10-07', 'minutes' => 300]);
-    WorkEntry::factory()->for(assignmentOf($cara, 'Acme', ['start_date' => '2026-10-01']))->approved()->create(['date' => '2026-10-07', 'minutes' => 150]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-10-07', 'minutes' => 300, 'description' => 'Fixing the login']);
+    WorkEntry::factory()->for(assignmentOf($cara, 'Acme', ['start_date' => '2026-10-01']))->approved()->create(['date' => '2026-10-07', 'minutes' => 150, 'description' => 'Team meeting']);
 
     actingAs($cara);
 
@@ -26,8 +26,8 @@ it('shows a month as a calendar, a line per Work Entry with a dot for its state,
         ->assertQueryStringHas('month', '2026-10')
         ->assertSee('W41')
         ->assertSee('7.5 h')
-        ->assertSee('Relaunch')
-        ->assertSee('Acme')
+        ->assertSeeIn('[data-date="2026-10-07"]', 'Fixing the login')
+        ->assertSeeIn('[data-date="2026-10-07"]', 'Team meeting')
         ->assertPresent('[data-date="2026-10-07"] [data-state="pending"]')
         ->assertSeeIn('[aria-label="Legend"]', 'Pending')
         ->assertPresent('[data-date="2026-10-07"] [data-state="approved"]')
