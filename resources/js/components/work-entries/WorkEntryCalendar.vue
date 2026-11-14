@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
-import type { WorkEntryCalendarDay, WorkEntryCalendarWeek } from '@/types';
+import type {
+    WorkEntryCalendarDay,
+    WorkEntryCalendarWeek,
+    WorkEntryState,
+} from '@/types';
 
 /**
  * A read-only month of Work Entries, one row per ISO week, Monday to
  * Sunday, or Monday to Friday with weekends hidden. Each row starts with
  * its week number and hours; each day shows its hours, one line per
  * Project and state as a status badge, and its Time Off or
- * nothing logged. Days of other months are left blank.
+ * nothing logged. On a phone each day shows only its hours and a dot per
+ * state and for Time Off. Days of other months are left blank.
  */
 const props = defineProps<{
     weeks: WorkEntryCalendarWeek[];
@@ -35,6 +40,17 @@ function shownDays(
     week: WorkEntryCalendarWeek,
 ): (WorkEntryCalendarDay | null)[] {
     return props.showWeekends ? week.days : week.days.slice(0, 5);
+}
+
+/** The states a day has hours in, Pending first, for its dots on a phone. */
+function statesOf(day: WorkEntryCalendarDay): WorkEntryState[] {
+    return (['pending', 'approved', 'locked'] as const).filter((state) =>
+        day.projects.some((onProject) => onProject.state === state),
+    );
+}
+
+function timeOffLabel(day: WorkEntryCalendarDay): string {
+    return day.time_off === 'paid' ? 'Paid Time Off' : 'Unpaid Time Off';
 }
 
 const columns = computed(() =>
@@ -81,7 +97,9 @@ const columns = computed(() =>
                 :data-date="day?.date"
             >
                 <template v-if="day">
-                    <div class="flex items-baseline justify-between gap-1">
+                    <div
+                        class="flex flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-1"
+                    >
                         <span
                             :class="[
                                 'font-medium',
@@ -92,11 +110,36 @@ const columns = computed(() =>
                         >
                         <span
                             v-if="day.hours > 0"
-                            class="text-xs font-medium tabular-nums"
+                            class="text-xs font-medium whitespace-nowrap tabular-nums"
                             >{{ formatHours(day.hours) }}</span
                         >
                     </div>
-                    <ul v-if="day.projects.length > 0" class="mt-1 space-y-0.5">
+                    <div
+                        v-if="day.projects.length > 0 || day.time_off"
+                        class="mt-1 flex flex-wrap gap-1 sm:hidden"
+                    >
+                        <StatusBadge
+                            v-for="state in statesOf(day)"
+                            :key="state"
+                            :state="state"
+                            class="size-2.5 p-0 ring-1 ring-current"
+                            ><span class="sr-only">{{
+                                state
+                            }}</span></StatusBadge
+                        >
+                        <span
+                            v-if="day.time_off"
+                            class="size-2.5 rounded-full bg-muted ring-1 ring-muted-foreground"
+                            :title="timeOffLabel(day)"
+                            ><span class="sr-only">{{
+                                timeOffLabel(day)
+                            }}</span></span
+                        >
+                    </div>
+                    <ul
+                        v-if="day.projects.length > 0"
+                        class="mt-1 hidden space-y-0.5 sm:block"
+                    >
                         <li
                             v-for="onProject in day.projects"
                             :key="`${onProject.project}-${onProject.state}`"
@@ -116,17 +159,13 @@ const columns = computed(() =>
                     </ul>
                     <p
                         v-if="day.time_off"
-                        class="mt-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+                        class="mt-1 hidden rounded-full bg-muted px-2 py-0.5 text-xs font-medium sm:block"
                     >
-                        {{
-                            day.time_off === 'paid'
-                                ? 'Paid Time Off'
-                                : 'Unpaid Time Off'
-                        }}
+                        {{ timeOffLabel(day) }}
                     </p>
                     <p
                         v-else-if="day.nothing_logged"
-                        class="mt-1 text-xs text-muted-foreground italic"
+                        class="mt-1 hidden text-xs text-muted-foreground italic sm:block"
                     >
                         Nothing logged
                     </p>

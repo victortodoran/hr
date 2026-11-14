@@ -43,3 +43,19 @@ it('shows a month as a calendar, its hours coloured by state, kept in the URL, s
         ->assertQueryStringHas('month', '2026-12')
         ->assertNoJavaScriptErrors();
 });
+
+it('fits a phone, showing each day\'s hours and a dot per state instead of its Project lines', function () {
+    $cara = recorder();
+    WorkEntry::factory()->for(assignmentOf($cara, 'A Project With A Long Name'))->approved()->create(['date' => '2026-11-03', 'minutes' => 450]);
+
+    actingAs($cara);
+
+    visit(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']))
+        ->resize(360, 800)
+        ->assertSee('7.5 h')
+        ->assertDontSee('A Project With A Long Name')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->resize(1280, 800)
+        ->assertSee('A Project With A Long Name')
+        ->assertNoJavaScriptErrors();
+});
