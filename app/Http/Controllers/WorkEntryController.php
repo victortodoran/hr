@@ -12,6 +12,7 @@ use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use App\Support\Period;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -52,12 +53,14 @@ class WorkEntryController extends Controller
 
         $canManage = $actor->can('create', [WorkEntry::class, $employee]);
         $canDelete = $actor->can(Permission::ManageWorkEntries->value, $employee);
+        $days = $this->days($employee, $period, $entries, $timeOff, $canManage, $canDelete);
 
         return Inertia::render('work-entries/Index', [
             'employee' => $employee->only('id', 'name'),
             'period' => $period->toArray(),
             'today' => today()->toDateString(),
-            'days' => $this->days($employee, $period, $entries, $timeOff, $canManage, $canDelete),
+            'days' => $days,
+            'weeks' => $this->weeks($days),
             'assignmentTotals' => $entries->groupBy('assignment_id')
                 ->map(fn (Collection $onAssignment): array => [
                     'assignment_id' => $onAssignment->firstOrFail()->assignment_id,
@@ -131,6 +134,29 @@ class WorkEntryController extends Controller
                 'nothing_logged' => $day->isWeekday() && $day->isBefore(today()) && $employed && $onDay->isEmpty() && $away === null,
             ];
         })->all();
+    }
+
+    /**
+     * The Period's days split into ISO weeks, Monday to Sunday, each with
+     * its number and the first and last of its days that fall within the
+     * Period, and their hours.
+     *
+     * @param  array<int, array{date: string, hours: float|int}>  $days
+     * @return list<array{number: int, from: string, to: string, hours: float|int}>
+     */
+    private function weeks(array $days): array
+    {
+        $weeks = [];
+
+        foreach ($days as $day) {
+            $date = CarbonImmutable::parse($day['date']);
+            $monday = $date->startOfWeek(CarbonInterface::MONDAY)->toDateString();
+            $weeks[$monday] ??= ['number' => $date->isoWeek, 'from' => $day['date'], 'to' => $day['date'], 'hours' => 0];
+            $weeks[$monday]['to'] = $day['date'];
+            $weeks[$monday]['hours'] += $day['hours'];
+        }
+
+        return array_values($weeks);
     }
 
     /**

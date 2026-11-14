@@ -43,6 +43,17 @@ export type WorkEntryPeriod = {
 };
 
 /**
+ * One ISO week of the Period: its number, the first and last of its days
+ * within the Period, and their hours.
+ */
+export type WorkEntryWeek = {
+    number: number;
+    from: string;
+    to: string;
+    hours: number;
+};
+
+/**
  * One day of the Period, with its Work Entries and their total hours.
  */
 export type WorkEntryDay = {

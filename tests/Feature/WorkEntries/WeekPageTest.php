@@ -120,6 +120,35 @@ it('shows future weeks and months, offering to record hours on none of their day
         ->where('assignments.0.id', $relaunch->id));
 });
 
+it('splits the Period into its ISO weeks, each with the dates and hours that fall within the Period', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-03', 'minutes' => 120]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-06', 'minutes' => 30]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-30', 'minutes' => 60]);
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['month' => '2026-11']));
+
+    $response->assertInertia(fn (Assert $page) => $page->where('weeks', [
+        ['number' => 44, 'from' => '2026-11-01', 'to' => '2026-11-01', 'hours' => 0],
+        ['number' => 45, 'from' => '2026-11-02', 'to' => '2026-11-08', 'hours' => 2.5],
+        ['number' => 46, 'from' => '2026-11-09', 'to' => '2026-11-15', 'hours' => 0],
+        ['number' => 47, 'from' => '2026-11-16', 'to' => '2026-11-22', 'hours' => 0],
+        ['number' => 48, 'from' => '2026-11-23', 'to' => '2026-11-29', 'hours' => 0],
+        ['number' => 49, 'from' => '2026-11-30', 'to' => '2026-11-30', 'hours' => 1],
+    ]));
+});
+
+it('numbers the weeks around the new year as ISO weeks', function () {
+    $cara = recorder();
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['from' => '2026-12-28', 'to' => '2027-01-04']));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('weeks.0', ['number' => 53, 'from' => '2026-12-28', 'to' => '2027-01-03', 'hours' => 0])
+        ->where('weeks.1', ['number' => 1, 'from' => '2027-01-04', 'to' => '2027-01-04', 'hours' => 0]));
+});
+
 it('shows who approved and locked each Work Entry, and offers to change only Pending ones', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
