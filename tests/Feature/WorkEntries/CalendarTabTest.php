@@ -19,16 +19,15 @@ beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
 
-it('shows a month as ISO weeks, Monday to Sunday, each day with its hours by Project and state, leaving out days of other months', function () {
+it('shows a month as ISO weeks, Monday to Sunday, each day with its hours and its Work Entries, leaving out days of other months', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
     $acme = assignmentOf($cara, 'Acme');
-    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-03', 'minutes' => 180]);
-    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-03', 'minutes' => 60]);
-    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-03', 'minutes' => 30]);
-    WorkEntry::factory()->for($relaunch)->approved()->locked()->create(['date' => '2026-11-03', 'minutes' => 30]);
-    WorkEntry::factory()->for($acme)->create(['date' => '2026-11-03', 'minutes' => 150]);
-    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-30', 'minutes' => 60]);
+    $review = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-03', 'minutes' => 180, 'description' => 'Review']);
+    $specs = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-03', 'minutes' => 90, 'description' => 'Specs']);
+    $release = WorkEntry::factory()->for($relaunch)->approved()->locked()->create(['date' => '2026-11-03', 'minutes' => 30, 'description' => 'Release']);
+    $meeting = WorkEntry::factory()->for($acme)->create(['date' => '2026-11-03', 'minutes' => 150, 'description' => 'Team meeting']);
+    $late = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-30', 'minutes' => 60, 'description' => 'Late fix']);
 
     $response = actingAs($cara)->get(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']));
 
@@ -39,18 +38,18 @@ it('shows a month as ISO weeks, Monday to Sunday, each day with its hours by Pro
         ->has('calendar', 6)
         ->where('calendar.0.number', 44)
         ->where('calendar.0.hours', 0)
-        ->where('calendar.0.days', [null, null, null, null, null, null, ['date' => '2026-11-01', 'hours' => 0, 'projects' => [], 'time_off' => null, 'nothing_logged' => false]])
+        ->where('calendar.0.days', [null, null, null, null, null, null, ['date' => '2026-11-01', 'hours' => 0, 'entries' => [], 'time_off' => null, 'nothing_logged' => false]])
         ->where('calendar.1.number', 45)
         ->where('calendar.1.hours', 7.5)
-        ->where('calendar.1.days.1', ['date' => '2026-11-03', 'hours' => 7.5, 'projects' => [
-            ['project' => 'Acme', 'state' => 'pending', 'hours' => 2.5],
-            ['project' => 'Relaunch', 'state' => 'pending', 'hours' => 3],
-            ['project' => 'Relaunch', 'state' => 'approved', 'hours' => 1.5],
-            ['project' => 'Relaunch', 'state' => 'locked', 'hours' => 0.5],
+        ->where('calendar.1.days.1', ['date' => '2026-11-03', 'hours' => 7.5, 'entries' => [
+            ['id' => $review->id, 'description' => 'Review', 'hours' => 3, 'state' => 'pending'],
+            ['id' => $specs->id, 'description' => 'Specs', 'hours' => 1.5, 'state' => 'approved'],
+            ['id' => $release->id, 'description' => 'Release', 'hours' => 0.5, 'state' => 'locked'],
+            ['id' => $meeting->id, 'description' => 'Team meeting', 'hours' => 2.5, 'state' => 'pending'],
         ], 'time_off' => null, 'nothing_logged' => false])
         ->where('calendar.1.days.0.nothing_logged', true)
         ->where('calendar.5.number', 49)
-        ->where('calendar.5.days', [['date' => '2026-11-30', 'hours' => 1, 'projects' => [['project' => 'Relaunch', 'state' => 'pending', 'hours' => 1]], 'time_off' => null, 'nothing_logged' => false], null, null, null, null, null, null])
+        ->where('calendar.5.days', [['date' => '2026-11-30', 'hours' => 1, 'entries' => [['id' => $late->id, 'description' => 'Late fix', 'hours' => 1, 'state' => 'pending']], 'time_off' => null, 'nothing_logged' => false], null, null, null, null, null, null])
         ->missing('days')
         ->missing('weeks')
         ->missing('assignments'));

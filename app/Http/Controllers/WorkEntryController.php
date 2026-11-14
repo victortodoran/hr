@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\WorkEntriesTab;
-use App\Enums\WorkEntryState;
 use App\Http\Requests\WorkEntryPeriodRequest;
 use App\Http\Requests\WorkEntryRequest;
 use App\Models\Assignment;
@@ -129,9 +128,9 @@ class WorkEntryController extends Controller
     /**
      * The Calendar tab: the month's ISO weeks, each with its number, its
      * hours, and its seven days from Monday to Sunday, null for a day of
-     * another month. Each day has its hours on each Project in each state,
-     * by Project name then Pending, Approved and Locked, with its Time Off
-     * and nothing logged as the List has them.
+     * another month. Each day has its hours and its Work Entries in the
+     * order they were recorded, with its Time Off and nothing logged as the
+     * List has them.
      *
      * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool, copy_from: string|null}>  $days
      * @return list<array{number: int, hours: float|int, days: list<array<string, mixed>|null>}>
@@ -139,30 +138,25 @@ class WorkEntryController extends Controller
     private function calendar(array $days): array
     {
         $byDate = collect($days)->keyBy('date');
-        $states = array_flip(array_column(WorkEntryState::cases(), 'value'));
 
-        return array_map(function (array $week) use ($byDate, $states): array {
+        return array_map(function (array $week) use ($byDate): array {
             $monday = CarbonImmutable::parse($week['from'])->startOfWeek(CarbonInterface::MONDAY);
 
             return [
                 'number' => $week['number'],
                 'hours' => $week['hours'],
-                'days' => array_map(function (int $offset) use ($monday, $byDate, $states): ?array {
+                'days' => array_map(function (int $offset) use ($monday, $byDate): ?array {
                     $day = $byDate->get($monday->addDays($offset)->toDateString());
 
                     return $day === null ? null : [
                         'date' => $day['date'],
                         'hours' => $day['hours'],
-                        'projects' => collect($day['entries'])
-                            ->groupBy(fn (array $entry): string => $entry['project'].'|'.$entry['state'])
-                            ->map(fn (SupportCollection $alike): array => [
-                                'project' => $alike->firstOrFail()['project'],
-                                'state' => $alike->firstOrFail()['state'],
-                                'hours' => $alike->sum('hours'),
-                            ])
-                            ->sortBy([['project', 'asc'], fn (array $one, array $other): int => $states[$one['state']] <=> $states[$other['state']]])
-                            ->values()
-                            ->all(),
+                        'entries' => array_map(fn (array $entry): array => [
+                            'id' => $entry['id'],
+                            'description' => $entry['description'],
+                            'hours' => $entry['hours'],
+                            'state' => $entry['state'],
+                        ], $day['entries']),
                         'time_off' => $day['time_off'],
                         'nothing_logged' => $day['nothing_logged'],
                     ];
