@@ -18,7 +18,6 @@ import { Label } from '@/components/ui/label';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
-import { formatDate } from '@/lib/dates';
 import { index } from '@/routes/work-entries';
 import type {
     Choice,
@@ -26,7 +25,6 @@ import type {
     WorkEntryAssignmentTotal,
     WorkEntryDay,
     WorkEntryPeriod,
-    WorkEntryRecord,
     WorkEntryWeek,
 } from '@/types';
 
@@ -91,21 +89,6 @@ function showPeriod(query: Record<string, string>): void {
                 : { employee: props.employee.id, ...query },
         }),
     );
-}
-
-/**
- * Who approved and locked a Work Entry, such as "Approved by Ben on
- * 10 Nov 2026 · Locked by Fay on 11 Nov 2026".
- */
-function signOffs(entry: WorkEntryRecord): string {
-    return [
-        entry.approved &&
-            `Approved by ${entry.approved.by} on ${formatDate(entry.approved.on)}`,
-        entry.locked &&
-            `Locked by ${entry.locked.by} on ${formatDate(entry.locked.on)}`,
-    ]
-        .filter(Boolean)
-        .join(' · ');
 }
 
 /** The Work Entries turned into fields to change them. */
@@ -377,11 +360,6 @@ function leaveWeek(): void {
                                             }}</span>
                                             <span class="text-muted-foreground">
                                                 · {{ entry.description }}</span
-                                            >
-                                            <span
-                                                v-if="entry.approved"
-                                                class="block text-xs text-muted-foreground"
-                                                >{{ signOffs(entry) }}</span
                                             >
                                         </p>
                                         <div class="flex items-center gap-2">

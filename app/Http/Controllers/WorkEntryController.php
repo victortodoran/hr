@@ -45,7 +45,7 @@ class WorkEntryController extends Controller
 
         $entries = $employee->workEntries()
             ->whereBetween('work_entries.date', [$period->from->toDateString(), $period->to->toDateString()])
-            ->with(['assignment.project:id,name', 'approver:id,name', 'locker:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+            ->with('assignment.project:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
             ->orderBy('work_entries.date')
             ->orderBy('work_entries.id')
             ->get();
@@ -91,7 +91,7 @@ class WorkEntryController extends Controller
 
     /**
      * Every day of the Period, each with its Work Entries and their total. Each
-     * Work Entry carries its state, who approved and locked it, and whether
+     * Work Entry carries its state, and whether
      * the viewer can change or delete it: both need a Pending Work Entry,
      * changing needs what recording does, and deleting needs only manage
      * work entries for the Employee, the top Employee included.
@@ -124,8 +124,6 @@ class WorkEntryController extends Controller
                     'hours' => $entry->hours,
                     'description' => $entry->description,
                     'state' => $entry->state->value,
-                    'approved' => $entry->approval(),
-                    'locked' => $entry->lock(),
                     'can_edit' => $canManage && $entry->isPending(),
                     'can_delete' => $canDelete && $entry->isPending(),
                 ])->values()->all(),

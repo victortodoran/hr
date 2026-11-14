@@ -22,8 +22,6 @@ export type WorkEntryRecord = {
     hours: number;
     description: string;
     state: WorkEntryState;
-    approved: WorkEntrySignOff | null;
-    locked: WorkEntrySignOff | null;
     /** Whether the viewer may change it (and so delete it too). */
     can_edit: boolean;
     /** Whether the viewer may delete it. */
