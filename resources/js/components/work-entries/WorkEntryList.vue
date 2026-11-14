@@ -416,11 +416,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                     >
                 </div>
 
-                <div
-                    v-else
-                    class="group/day border-t"
-                    :data-date="segment.day.date"
-                >
+                <div v-else class="border-t" :data-date="segment.day.date">
                     <p v-if="segment.day.time_off" class="px-4 pt-2">
                         <span
                             class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
@@ -514,7 +510,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
-                                    class="text-muted-foreground opacity-0 group-hover/day:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                                    class="text-muted-foreground"
                                     :aria-label="`Add another entry on ${formatLongDay(segment.day.date)}`"
                                     @click="openAdd(segment.day.date)"
                                     ><Plus
