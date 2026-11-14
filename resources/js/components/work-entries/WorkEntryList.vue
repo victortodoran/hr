@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, Pencil, Plus } from '@lucide/vue';
+import { ArrowRight, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
@@ -92,6 +92,14 @@ function formatWeekDates(week: WorkEntryWeek): string {
 
 function takesEntries(day: WorkEntryDay): boolean {
     return takesEntriesOn(day, props.canManage, props.today);
+}
+
+/**
+ * Whether a Work Entry row ends with the + adding another entry to its day:
+ * the day's first row, while the day's add form isn't open.
+ */
+function offersAdd(day: WorkEntryDay, index: number): boolean {
+    return index === 0 && takesEntries(day) && activeDate.value !== day.date;
 }
 
 /**
@@ -484,11 +492,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                 class="order-3 flex justify-end sm:order-none"
                             >
                                 <Button
-                                    v-if="
-                                        index === 0 &&
-                                        takesEntries(segment.day) &&
-                                        activeDate !== segment.day.date
-                                    "
+                                    v-if="offersAdd(segment.day, index)"
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
@@ -507,11 +511,31 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                     @click="editing.add(entry.id)"
                                     ><Pencil
                                 /></Button>
+                                <Button
+                                    v-else
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    class="text-muted-foreground"
+                                    aria-label="Edit Work Entry"
+                                    disabled
+                                    ><Pencil
+                                /></Button>
                                 <DeleteWorkEntry
                                     v-if="entry.can_delete"
                                     :entry="entry"
                                     :period-query="period.query"
                                 />
+                                <Button
+                                    v-else
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    class="text-muted-foreground"
+                                    aria-label="Delete Work Entry"
+                                    disabled
+                                    ><Trash2
+                                /></Button>
                             </span>
                             <span
                                 v-if="entry.declined"
