@@ -1,34 +1,192 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import {
+    formatHours,
+    takesEntries as takesEntriesOn,
+} from '@/lib/work-entries';
+import { useMediaQuery } from '@vueuse/core';
+import { computed, ref, watch } from 'vue';
 import StatusDot from '@/components/StatusDot.vue';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
+import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
+import WorkEntryDayPanel from '@/components/work-entries/WorkEntryDayPanel.vue';
+import { formatLongDay, isWeekend } from '@/lib/dates';
 import { statusLabels } from '@/lib/status';
 import { timeOffKindLabel } from '@/lib/time-off';
 import type {
-    WorkEntryCalendarDay,
+    Choice,
+    WorkEntryAssignment,
     WorkEntryCalendarWeek,
+    WorkEntryDay,
+    WorkEntryPeriod,
     WorkEntryState,
 } from '@/types';
 
 /**
- * A read-only month of Work Entries, one row per ISO week, Monday to
+ * A month of Work Entries, one row per ISO week, Monday to
  * Sunday, or Monday to Friday with weekends hidden. Each row starts with
  * its week number and hours; each day shows its hours, a line per Work
  * Entry (a dot in its state's colour, what was done and its hours, at most
  * three and then how many more), and its Time Off or nothing logged. On a
  * phone each day shows only its hours and a dot per state and for Time
  * Off. Days of other months are left blank; a legend names the dots.
+ * Clicking a day opens it up (WorkEntryDayPanel): in a popover pointing at
+ * it, or on a phone in a sheet from the bottom. Closing it, or opening
+ * another day, asks first while its add form holds unsaved typing.
  */
 const props = defineProps<{
     weeks: WorkEntryCalendarWeek[];
     today: string;
     showWeekends: boolean;
+    employee: Choice;
+    period: WorkEntryPeriod;
+    assignments: WorkEntryAssignment[];
+    canManage: boolean;
 }>();
 
+const emit = defineEmits<{
+    /** Whether an add form holds typing that isn't saved yet, by row key. */
+    dirty: [rowKey: string, isDirty: boolean];
+}>();
+
+/** Whether the screen is wide enough for a popover rather than a sheet. */
+const isWide = useMediaQuery('(min-width: 640px)');
+
+/** The Period as changes made on the Calendar send it, so they come back to the Calendar. */
+const calendarPeriod = computed((): WorkEntryPeriod => ({
+    ...props.period,
+    query: { ...props.period.query, tab: 'calendar' },
+}));
+
+/** The day opened up, if any. */
+const openDate = ref<string | null>(null);
+
+/** The Assignment of the Work Entry last added on this page. */
+const lastAssignmentId = ref<number | null>(null);
+
+const monthDays = computed(() =>
+    props.weeks.flatMap((week) =>
+        week.days.filter((day): day is WorkEntryDay => day !== null),
+    ),
+);
+
+const openDay = computed(
+    () => monthDays.value.find((day) => day.date === openDate.value) ?? null,
+);
+
+/** Another month closes the day opened up. */
+watch(
+    () => JSON.stringify(props.period.query),
+    () => {
+        openDate.value = null;
+    },
+);
+
+/** The day whose add form holds typing that isn't saved yet, if any. */
+const dirtyDate = ref<string | null>(null);
+
+/** The day to open, or null to close, once the unsaved typing is given up. */
+const awaitingLeave = ref<{ date: string | null } | null>(null);
+
+function markDirty(date: string, isDirty: boolean): void {
+    if (isDirty) {
+        dirtyDate.value = date;
+    } else if (dirtyDate.value === date) {
+        dirtyDate.value = null;
+    }
+
+    emit('dirty', `calendar-${date}`, isDirty);
+}
+
 /**
- * Hours as people read them, such as "7.5 h".
+ * Opens a day, or with null closes the one open, asking first while the
+ * open day's add form holds unsaved typing.
  */
-function formatHours(hours: number): string {
-    return `${hours.toLocaleString(undefined, { maximumFractionDigits: 2 })} h`;
+function show(date: string | null): void {
+    if (date === openDate.value) {
+        return;
+    }
+
+    if (dirtyDate.value !== null) {
+        awaitingLeave.value = { date };
+
+        return;
+    }
+
+    openDate.value = date;
+}
+
+function setOpen(date: string, isOpen: boolean): void {
+    if (isOpen) {
+        show(date);
+    } else if (openDate.value === date) {
+        show(null);
+    }
+}
+
+/**
+ * Keeps the open day open when it is clicked away from, or Esc is pressed,
+ * while its add form holds unsaved typing, and asks instead. A day clicked
+ * on asks to open that day; leaving the question already asked as it is
+ * keeps the dialog taking focus from closing it.
+ */
+function holdUnsaved(event: Event): void {
+    if (dirtyDate.value === null) {
+        return;
+    }
+
+    event.preventDefault();
+    awaitingLeave.value ??= { date: null };
+}
+
+/** Gives up the unsaved typing and goes on to the day asked for, or closes. */
+function leave(): void {
+    const date = awaitingLeave.value?.date ?? null;
+
+    awaitingLeave.value = null;
+    dirtyDate.value = null;
+    openDate.value = date;
+}
+
+/**
+ * Keeps focus where the next day's add form puts it when the day closing
+ * gives way to another, rather than sending it back to the closed day.
+ */
+function keepFocusOnNextDay(event: Event): void {
+    if (openDate.value !== null) {
+        event.preventDefault();
+    }
+}
+
+function takesEntries(day: WorkEntryDay): boolean {
+    return takesEntriesOn(day, props.canManage, props.today);
+}
+
+/** Whether a day shows the "+ Add" hint: an empty weekday hours can be added to. */
+function invitesEntries(day: WorkEntryDay): boolean {
+    return (
+        takesEntries(day) &&
+        !isWeekend(day.date) &&
+        day.time_off === null &&
+        day.entries.length === 0
+    );
+}
+
+/** The next weekday of the month after a day that shows the "+ Add" hint. */
+function nextEmptyDay(date: string): string | null {
+    return (
+        monthDays.value.find((day) => day.date > date && invitesEntries(day))
+            ?.date ?? null
+    );
 }
 
 const weekdays = computed(() =>
@@ -39,9 +197,7 @@ const weekdays = computed(() =>
 );
 
 /** A row's days, without Saturday and Sunday when weekends are hidden. */
-function shownDays(
-    week: WorkEntryCalendarWeek,
-): (WorkEntryCalendarDay | null)[] {
+function shownDays(week: WorkEntryCalendarWeek): (WorkEntryDay | null)[] {
     return props.showWeekends ? week.days : week.days.slice(0, 5);
 }
 
@@ -49,30 +205,31 @@ function shownDays(
 const states = ['pending', 'approved', 'locked'] as const;
 
 /**
- * The Work Entries a day leaves out after its first three, as a tooltip:
- * one per line, such as "Relaunch · Team meeting · 1 h".
+ * A day's Work Entries and Time Off as its tooltip, one per line, such as
+ * "Relaunch · Team meeting · 1 h", so even those after the first three
+ * show on hover.
  */
-function moreTitle(day: WorkEntryCalendarDay): string {
-    return day.entries
-        .slice(shownEntries)
-        .map(
+function dayTitle(day: WorkEntryDay): string {
+    return [
+        ...day.entries.map(
             (entry) =>
                 `${entry.project} · ${entry.description} · ${formatHours(entry.hours)}`,
-        )
-        .join('\n');
+        ),
+        ...(day.time_off ? [timeOffLabel(day)] : []),
+    ].join('\n');
 }
 
 /** How many Work Entry lines a day shows before "+2 more". */
 const shownEntries = 3;
 
 /** The states a day has hours in, Pending first, for its dots on a phone. */
-function statesOf(day: WorkEntryCalendarDay): WorkEntryState[] {
+function statesOf(day: WorkEntryDay): WorkEntryState[] {
     return states.filter((state) =>
         day.entries.some((entry) => entry.state === state),
     );
 }
 
-function timeOffLabel(day: WorkEntryCalendarDay): string {
+function timeOffLabel(day: WorkEntryDay): string {
     return day.time_off ? timeOffKindLabel(day.time_off) : '';
 }
 
@@ -115,94 +272,147 @@ const columns = computed(() =>
                     v-for="(day, index) in shownDays(week)"
                     :key="day?.date ?? `blank-${index}`"
                     :class="[
-                        'min-h-24 border-l px-2 py-2',
+                        'relative min-h-24 border-l',
                         day === null && 'bg-muted/30',
                         index >= 5 && day !== null && 'bg-muted/20',
+                        day !== null &&
+                            openDate === day.date &&
+                            'ring-2 ring-primary ring-inset',
                     ]"
                     :data-date="day?.date"
                 >
                     <template v-if="day">
-                        <div
-                            class="flex flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-1"
+                        <Popover
+                            v-if="isWide"
+                            :open="openDate === day.date"
+                            @update:open="setOpen(day.date, $event)"
                         >
-                            <span
-                                :class="[
-                                    'font-medium',
-                                    day.date === today &&
-                                        'rounded-full bg-foreground px-1.5 text-background',
-                                    day.date > today && 'text-muted-foreground',
-                                ]"
-                                >{{ Number(day.date.slice(8)) }}</span
+                            <PopoverTrigger as-child>
+                                <button
+                                    type="button"
+                                    class="absolute inset-0 cursor-pointer outline-none hover:bg-muted/40 focus-visible:bg-muted/40"
+                                    :aria-label="`${takesEntries(day) ? 'Add or view entries' : 'View'}, ${formatLongDay(day.date)}`"
+                                    :title="dayTitle(day)"
+                                />
+                            </PopoverTrigger>
+                            <PopoverContent
+                                :align="index >= 4 ? 'end' : 'start'"
+                                class="w-[23rem]"
+                                @interact-outside="holdUnsaved"
+                                @escape-key-down="holdUnsaved"
+                                @close-auto-focus="keepFocusOnNextDay"
                             >
-                            <span
-                                v-if="day.hours > 0"
-                                class="text-xs font-medium whitespace-nowrap tabular-nums"
-                                >{{ formatHours(day.hours) }}</span
-                            >
-                        </div>
+                                <WorkEntryDayPanel
+                                    :day="day"
+                                    :employee="employee"
+                                    :period="calendarPeriod"
+                                    :today="today"
+                                    :assignments="assignments"
+                                    :takes-entries="takesEntries(day)"
+                                    :next-empty-day="nextEmptyDay(day.date)"
+                                    :last-assignment-id="lastAssignmentId"
+                                    @added="lastAssignmentId = $event"
+                                    @open="show"
+                                    @close="show(null)"
+                                    @dirty="markDirty"
+                                />
+                            </PopoverContent>
+                        </Popover>
+                        <button
+                            v-else
+                            type="button"
+                            class="absolute inset-0 cursor-pointer outline-none focus-visible:bg-muted/40"
+                            :aria-label="`${takesEntries(day) ? 'Add or view entries' : 'View'}, ${formatLongDay(day.date)}`"
+                            @click="show(day.date)"
+                        />
                         <div
-                            v-if="day.entries.length > 0 || day.time_off"
-                            class="mt-1 flex flex-wrap gap-1 sm:hidden"
+                            class="pointer-events-none relative flex h-full flex-col px-2 py-2"
                         >
-                            <StatusDot
-                                v-for="state in statesOf(day)"
-                                :key="state"
-                                :state="state"
-                                class="size-2.5"
-                            />
-                            <span
+                            <div
+                                class="flex flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-1"
+                            >
+                                <span
+                                    :class="[
+                                        'font-medium',
+                                        day.date === today &&
+                                            'rounded-full bg-foreground px-1.5 text-background',
+                                        day.date > today &&
+                                            'text-muted-foreground',
+                                    ]"
+                                    >{{ Number(day.date.slice(8)) }}</span
+                                >
+                                <span
+                                    v-if="day.hours > 0"
+                                    class="text-xs font-medium whitespace-nowrap tabular-nums"
+                                    >{{ formatHours(day.hours) }}</span
+                                >
+                            </div>
+                            <div
+                                v-if="day.entries.length > 0 || day.time_off"
+                                class="mt-1 flex flex-wrap gap-1 sm:hidden"
+                            >
+                                <StatusDot
+                                    v-for="state in statesOf(day)"
+                                    :key="state"
+                                    :state="state"
+                                    class="size-2.5"
+                                />
+                                <span
+                                    v-if="day.time_off"
+                                    class="size-2.5 rounded-full bg-muted ring-1 ring-muted-foreground"
+                                    ><span class="sr-only">{{
+                                        timeOffLabel(day)
+                                    }}</span></span
+                                >
+                            </div>
+                            <ul
+                                v-if="day.entries.length > 0"
+                                class="mt-1 hidden space-y-0.5 sm:block"
+                            >
+                                <li
+                                    v-for="entry in day.entries.slice(
+                                        0,
+                                        shownEntries,
+                                    )"
+                                    :key="entry.id"
+                                    class="flex items-center gap-1.5 text-xs"
+                                    :data-state="entry.state"
+                                >
+                                    <StatusDot :state="entry.state" />
+                                    <span class="min-w-0 flex-1 truncate">{{
+                                        entry.description
+                                    }}</span>
+                                    <span
+                                        class="shrink-0 text-muted-foreground tabular-nums"
+                                        >{{ formatHours(entry.hours) }}</span
+                                    >
+                                </li>
+                                <li
+                                    v-if="day.entries.length > shownEntries"
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    +{{ day.entries.length - shownEntries }}
+                                    more
+                                </li>
+                            </ul>
+                            <p
                                 v-if="day.time_off"
-                                class="size-2.5 rounded-full bg-muted ring-1 ring-muted-foreground"
-                                :title="timeOffLabel(day)"
-                                ><span class="sr-only">{{
-                                    timeOffLabel(day)
-                                }}</span></span
+                                class="mt-1 hidden rounded-full bg-muted px-2 py-0.5 text-xs font-medium sm:block"
+                            >
+                                {{ timeOffLabel(day) }}
+                            </p>
+                            <p
+                                v-else-if="day.nothing_logged"
+                                class="mt-1 hidden text-xs text-muted-foreground italic sm:block"
+                            >
+                                Nothing logged
+                            </p>
+                            <span
+                                v-if="invitesEntries(day)"
+                                class="mt-auto hidden h-6 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground sm:flex"
+                                >+ Add</span
                             >
                         </div>
-                        <ul
-                            v-if="day.entries.length > 0"
-                            class="mt-1 hidden space-y-0.5 sm:block"
-                        >
-                            <li
-                                v-for="entry in day.entries.slice(
-                                    0,
-                                    shownEntries,
-                                )"
-                                :key="entry.id"
-                                class="flex items-center gap-1.5 text-xs"
-                                :data-state="entry.state"
-                            >
-                                <StatusDot :state="entry.state" />
-                                <span
-                                    class="min-w-0 flex-1 truncate"
-                                    :title="`${entry.project} · ${entry.description}`"
-                                    >{{ entry.description }}</span
-                                >
-                                <span
-                                    class="shrink-0 text-muted-foreground tabular-nums"
-                                    >{{ formatHours(entry.hours) }}</span
-                                >
-                            </li>
-                            <li
-                                v-if="day.entries.length > shownEntries"
-                                class="text-xs text-muted-foreground"
-                                :title="moreTitle(day)"
-                            >
-                                +{{ day.entries.length - shownEntries }} more
-                            </li>
-                        </ul>
-                        <p
-                            v-if="day.time_off"
-                            class="mt-1 hidden rounded-full bg-muted px-2 py-0.5 text-xs font-medium sm:block"
-                        >
-                            {{ timeOffLabel(day) }}
-                        </p>
-                        <p
-                            v-else-if="day.nothing_logged"
-                            class="mt-1 hidden text-xs text-muted-foreground italic sm:block"
-                        >
-                            Nothing logged
-                        </p>
                     </template>
                 </div>
             </div>
@@ -226,6 +436,54 @@ const columns = computed(() =>
                 />
                 <span>Time Off</span>
             </li>
+            <li>
+                {{
+                    canManage
+                        ? 'Click a day to add or see its entries'
+                        : 'Click a day to see its entries'
+                }}
+            </li>
         </ul>
+
+        <Sheet
+            :open="!isWide && openDay !== null"
+            @update:open="(isOpen) => !isOpen && show(null)"
+        >
+            <SheetContent
+                side="bottom"
+                class="max-h-[85vh] overflow-y-auto p-4"
+                @interact-outside="holdUnsaved"
+                @escape-key-down="holdUnsaved"
+            >
+                <SheetHeader class="sr-only">
+                    <SheetTitle>{{
+                        openDay ? formatLongDay(openDay.date) : ''
+                    }}</SheetTitle>
+                </SheetHeader>
+                <WorkEntryDayPanel
+                    v-if="openDay"
+                    :key="openDay.date"
+                    :day="openDay"
+                    :employee="employee"
+                    :period="calendarPeriod"
+                    :today="today"
+                    :assignments="assignments"
+                    :takes-entries="takesEntries(openDay)"
+                    :next-empty-day="nextEmptyDay(openDay.date)"
+                    :last-assignment-id="lastAssignmentId"
+                    @added="lastAssignmentId = $event"
+                    @open="show"
+                    @close="show(null)"
+                    @dirty="markDirty"
+                />
+            </SheetContent>
+        </Sheet>
+
+        <UnsavedWorkEntryDialog
+            :open="awaitingLeave !== null"
+            @stay="awaitingLeave = null"
+            @leave="leave"
+            @close-auto-focus="keepFocusOnNextDay"
+        />
     </div>
 </template>

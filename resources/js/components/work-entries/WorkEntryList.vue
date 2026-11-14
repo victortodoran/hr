@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { ArrowRight, Copy, Pencil, Plus } from '@lucide/vue';
+import {
+    formatHours,
+    takesEntries as takesEntriesOn,
+} from '@/lib/work-entries';
+import { ArrowRight, Pencil, Plus } from '@lucide/vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
-import WorkEntryCopyController from '@/actions/App/Http/Controllers/WorkEntryCopyController';
-import InputError from '@/components/InputError.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
-import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
+import CopyWorkEntriesButton from '@/components/work-entries/CopyWorkEntriesButton.vue';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
+import { formatLongDay, formatWeekdayAndDay, isWeekend } from '@/lib/dates';
 import { formatDays, timeOffKindLabel } from '@/lib/time-off';
 import type {
     Choice,
@@ -62,22 +64,6 @@ type Segment =
 const columns =
     'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem_4.5rem]';
 
-/**
- * Hours as people read them, such as "7.5 h".
- */
-function formatHours(hours: number): string {
-    return `${hours.toLocaleString(undefined, { maximumFractionDigits: 2 })} h`;
-}
-
-/**
- * A day's short name and number, such as "Thu 12".
- */
-function formatDay(date: string): string {
-    const day = new Date(`${date}T00:00:00`);
-
-    return `${day.toLocaleDateString(undefined, { weekday: 'short' })} ${day.getDate()}`;
-}
-
 function formatShort(date: string): string {
     return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
         day: 'numeric',
@@ -90,8 +76,8 @@ function formatShort(date: string): string {
  */
 function formatRun(from: string, to: string): string {
     return from === to
-        ? formatDay(from)
-        : `${formatDay(from)} – ${formatDay(to)}`;
+        ? formatWeekdayAndDay(from)
+        : `${formatWeekdayAndDay(from)} – ${formatWeekdayAndDay(to)}`;
 }
 
 /**
@@ -102,12 +88,6 @@ function formatWeekDates(week: WorkEntryWeek): string {
     return week.from === week.to
         ? formatShort(week.from)
         : `${formatShort(week.from)} – ${formatShort(week.to)}`;
-}
-
-function isWeekend(date: string): boolean {
-    const weekday = new Date(`${date}T00:00:00`).getDay();
-
-    return weekday === 0 || weekday === 6;
 }
 
 /** Each Assignment's job title, by Assignment id. */
@@ -129,7 +109,7 @@ function projectOf(entry: WorkEntryRecord): string {
 }
 
 function takesEntries(day: WorkEntryDay): boolean {
-    return props.canManage && day.date <= props.today;
+    return takesEntriesOn(day, props.canManage, props.today);
 }
 
 /**
@@ -289,7 +269,6 @@ function openAdd(date: string): void {
 
 async function showAdd(date: string): Promise<void> {
     activeDate.value = date;
-    copyForm.clearErrors();
     await nextTick();
     addRow?.focusDescription();
 }
@@ -362,44 +341,6 @@ async function entryAdded(assignmentId: number): Promise<void> {
     lastAssignmentId.value = assignmentId;
     await nextTick();
     addRow?.focusDescription();
-}
-
-/** Copying the Work Entries of the latest earlier day with any onto a day. */
-const copyForm = useForm({ date: '' });
-
-function copyOnto(date: string): void {
-    copyForm.date = date;
-    copyForm.submit(
-        WorkEntryCopyController.store(props.employee.id, {
-            query: props.period.query,
-        }),
-        { preserveScroll: true },
-    );
-}
-
-/**
- * The day Work Entries are copied from, such as "Thu 12", naming its month
- * when it falls in another one than the day copied onto: "Fri 30 Oct".
- */
-function formatSource(source: string, date: string): string {
-    if (source.slice(0, 7) === date.slice(0, 7)) {
-        return formatDay(source);
-    }
-
-    const month = new Date(`${source}T00:00:00`).toLocaleDateString(undefined, {
-        month: 'short',
-    });
-
-    return `${formatDay(source)} ${month}`;
-}
-
-/**
- * A day's full name, such as "Thursday 12 November".
- */
-function formatLongDay(date: string): string {
-    const day = new Date(`${date}T00:00:00`);
-
-    return `${day.toLocaleDateString(undefined, { weekday: 'long' })} ${day.getDate()} ${day.toLocaleDateString(undefined, { month: 'long' })}`;
 }
 </script>
 
@@ -519,7 +460,7 @@ function formatLongDay(date: string): string {
                                     index > 0 && 'hidden sm:flex',
                                 ]"
                                 ><template v-if="index === 0"
-                                    >{{ formatDay(segment.day.date)
+                                    >{{ formatWeekdayAndDay(segment.day.date)
                                     }}<span
                                         v-if="segment.day.date === today"
                                         class="ml-1 text-xs font-normal text-muted-foreground"
@@ -598,7 +539,7 @@ function formatLongDay(date: string): string {
                                     'hidden sm:block',
                             ]"
                             ><template v-if="segment.day.entries.length === 0"
-                                >{{ formatDay(segment.day.date)
+                                >{{ formatWeekdayAndDay(segment.day.date)
                                 }}<span
                                     v-if="segment.day.date === today"
                                     class="ml-1 text-xs font-normal text-muted-foreground"
@@ -630,10 +571,6 @@ function formatLongDay(date: string): string {
                                     )
                                 "
                             />
-                            <InputError
-                                class="mt-2"
-                                :message="copyForm.errors.date"
-                            />
                             <div
                                 class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground"
                             >
@@ -652,24 +589,13 @@ function formatLongDay(date: string): string {
                                     close</span
                                 >
                                 <span class="flex-1" />
-                                <form
+                                <CopyWorkEntriesButton
                                     v-if="segment.day.copy_from"
-                                    @submit.prevent="copyOnto(segment.day.date)"
-                                >
-                                    <SubmitButton
-                                        :processing="copyForm.processing"
-                                        variant="ghost"
-                                        size="sm"
-                                        class="h-7 text-foreground"
-                                        ><Copy />Copy entries from
-                                        {{
-                                            formatSource(
-                                                segment.day.copy_from,
-                                                segment.day.date,
-                                            )
-                                        }}</SubmitButton
-                                    >
-                                </form>
+                                    :employee="employee"
+                                    :period-query="period.query"
+                                    :date="segment.day.date"
+                                    :copy-from="segment.day.copy_from"
+                                />
                                 <Button
                                     v-if="nextDay"
                                     type="button"
@@ -677,7 +603,7 @@ function formatLongDay(date: string): string {
                                     size="sm"
                                     class="h-7"
                                     @click="openAdd(nextDay)"
-                                    >Next day · {{ formatDay(nextDay)
+                                    >Next day · {{ formatWeekdayAndDay(nextDay)
                                     }}<ArrowRight
                                 /></Button>
                             </div>
@@ -695,7 +621,7 @@ function formatLongDay(date: string): string {
                         @click="openAdd(segment.day.date)"
                     >
                         <span class="font-medium"
-                            >{{ formatDay(segment.day.date)
+                            >{{ formatWeekdayAndDay(segment.day.date)
                             }}<span
                                 v-if="segment.day.date === today"
                                 class="ml-1 text-xs font-normal text-muted-foreground"
@@ -712,7 +638,7 @@ function formatLongDay(date: string): string {
                         class="min-h-11 items-center px-4 py-1.5"
                     >
                         <span class="font-medium text-muted-foreground">{{
-                            formatDay(segment.day.date)
+                            formatWeekdayAndDay(segment.day.date)
                         }}</span>
                         <span
                             v-if="segment.day.nothing_logged"

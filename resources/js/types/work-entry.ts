@@ -55,31 +55,13 @@ export type WorkEntryWeek = {
 export type WorkEntriesTab = 'list' | 'calendar';
 
 /**
- * One day on the Calendar: its hours, its Work Entries in the order they
- * were recorded, and its Time Off or nothing logged, as the List has them.
- */
-export type WorkEntryCalendarDay = {
-    date: string;
-    hours: number;
-    entries: {
-        id: number;
-        project: string;
-        description: string;
-        hours: number;
-        state: WorkEntryState;
-    }[];
-    time_off: 'paid' | 'unpaid' | null;
-    nothing_logged: boolean;
-};
-
-/**
  * One ISO week on the Calendar: its number, its hours, and its seven days
  * from Monday to Sunday, null for a day of another month.
  */
 export type WorkEntryCalendarWeek = {
     number: number;
     hours: number;
-    days: (WorkEntryCalendarDay | null)[];
+    days: (WorkEntryDay | null)[];
 };
 
 /**

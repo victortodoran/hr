@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatHours } from '@/lib/work-entries';
 import { computed } from 'vue';
 import { formatMonth } from '@/lib/dates';
 import type { WorkEntryAssignmentTotal, WorkEntryPeriod } from '@/types';
@@ -14,13 +15,6 @@ const props = defineProps<{
     /** The ISO week number, for a Period in Week mode. */
     weekNumber?: number;
 }>();
-
-/**
- * Hours as people read them, such as "7.5 h".
- */
-function formatHours(hours: number): string {
-    return `${hours.toLocaleString(undefined, { maximumFractionDigits: 2 })} h`;
-}
 
 function formatShort(date: string): string {
     return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {

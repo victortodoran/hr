@@ -35,6 +35,8 @@ const props = defineProps<{
     entry?: WorkEntryRecord;
     /** The Assignment last added on this page, picked when it runs on the day. */
     lastAssignmentId?: number | null;
+    /** Lays a new row out for a narrow panel: What was done above the rest, with no close button. */
+    compact?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -159,9 +161,11 @@ defineExpose({ focusDescription });
     <form
         class="grid gap-2 sm:items-start"
         :class="
-            entry
-                ? 'sm:grid-cols-[9rem_minmax(0,1fr)_12rem_5rem_auto]'
-                : 'sm:grid-cols-[minmax(0,1fr)_12rem_5rem_auto]'
+            compact
+                ? 'grid-cols-[minmax(0,1fr)_5rem_auto] items-start'
+                : entry
+                  ? 'sm:grid-cols-[9rem_minmax(0,1fr)_12rem_5rem_auto]'
+                  : 'sm:grid-cols-[minmax(0,1fr)_12rem_5rem_auto]'
         "
         @submit.prevent="save"
         @keydown.esc.prevent="emit('dismiss')"
@@ -177,7 +181,7 @@ defineExpose({ focusDescription });
             />
             <InputError :message="form.errors.date" />
         </div>
-        <div class="grid min-w-0 gap-1">
+        <div class="grid min-w-0 gap-1" :class="compact && 'col-span-3'">
             <label :for="fieldId('description')" class="sr-only"
                 >What was done</label
             >
@@ -250,7 +254,7 @@ defineExpose({ focusDescription });
                 entry ? 'Save' : 'Add'
             }}</SubmitButton>
             <Button
-                v-if="!entry"
+                v-if="!entry && !compact"
                 type="button"
                 variant="ghost"
                 size="icon"

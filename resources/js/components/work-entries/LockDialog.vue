@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatHours } from '@/lib/work-entries';
 import { router, useHttp } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import LockController from '@/actions/App/Http/Controllers/LockController';
@@ -33,13 +34,6 @@ const open = ref(false);
 const summary = ref<LockSummary | null>(null);
 const failed = ref(false);
 const http = useHttp();
-
-/**
- * Hours as people read them, such as "7.5 h".
- */
-function formatHours(hours: number): string {
-    return `${hours.toLocaleString(undefined, { maximumFractionDigits: 2 })} h`;
-}
 
 async function loadSummary(isOpen: boolean): Promise<void> {
     if (!isOpen) {
