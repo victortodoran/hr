@@ -28,7 +28,7 @@ it('lists a month as one table under its total, folding Time Off and future days
         ->assertSeeIn('[data-test="work-entry-summary"]', '14.5 h')
         ->assertSeeIn('[data-test="work-entry-summary"]', 'in November 2026')
         ->assertSeeIn('[data-test="work-entry-summary"]', 'Acme 7.5 h')
-        ->assertSee('Relaunch · Tech Lead')
+        ->assertDontSee('Tech Lead')
         ->assertSeeIn('[data-date="2026-11-11"] [data-test="day-hours"]', '9.5 h')
         ->assertSeeIn('[data-date="2026-11-12"]', 'Paid Time Off')
         ->assertPresent('[data-date="2026-11-12"] [data-test="add-row"]')

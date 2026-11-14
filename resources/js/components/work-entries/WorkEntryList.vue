@@ -90,24 +90,6 @@ function formatWeekDates(week: WorkEntryWeek): string {
         : `${formatShort(week.from)} – ${formatShort(week.to)}`;
 }
 
-/** Each Assignment's job title, by Assignment id. */
-const jobTitles = computed(
-    () =>
-        new Map(
-            props.assignments.map((assignment) => [
-                assignment.id,
-                assignment.job_title,
-            ]),
-        ),
-);
-
-/** The Assignment's Project and job title, such as "Relaunch · Tech Lead". */
-function projectOf(entry: WorkEntryRecord): string {
-    const jobTitle = jobTitles.value.get(entry.assignment_id);
-
-    return jobTitle ? `${entry.project} · ${jobTitle}` : entry.project;
-}
-
 function takesEntries(day: WorkEntryDay): boolean {
     return takesEntriesOn(day, props.canManage, props.today);
 }
@@ -484,7 +466,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                 class="order-2 flex min-w-0 items-center gap-2 sm:contents"
                             >
                                 <span class="truncate text-muted-foreground">{{
-                                    projectOf(entry)
+                                    entry.project
                                 }}</span>
                                 <span
                                     ><StatusBadge :state="entry.state"
