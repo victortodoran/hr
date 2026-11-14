@@ -5,6 +5,7 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
+import { formatDays, timeOffKindLabel } from '@/lib/time-off';
 import type {
     Choice,
     WorkEntryAssignment,
@@ -103,11 +104,20 @@ function isWeekend(date: string): boolean {
     return weekday === 0 || weekday === 6;
 }
 
+/** Each Assignment's job title, by Assignment id. */
+const jobTitles = computed(
+    () =>
+        new Map(
+            props.assignments.map((assignment) => [
+                assignment.id,
+                assignment.job_title,
+            ]),
+        ),
+);
+
 /** The Assignment's Project and job title, such as "Relaunch · Tech Lead". */
 function projectOf(entry: WorkEntryRecord): string {
-    const jobTitle = props.assignments.find(
-        (assignment) => assignment.id === entry.assignment_id,
-    )?.job_title;
+    const jobTitle = jobTitles.value.get(entry.assignment_id);
 
     return jobTitle ? `${entry.project} · ${jobTitle}` : entry.project;
 }
@@ -136,7 +146,8 @@ const shownDays = computed(() => {
 /**
  * Folds a week's days into rows: consecutive days with the same kind of
  * Time Off and no Work Entries become one, counting only weekdays, and so
- * do consecutive future days with no Work Entries.
+ * do consecutive future days with no Work Entries. A day of Time Off the
+ * viewer can still add hours to keeps its own row.
  */
 function segmentsOf(days: WorkEntryDay[]): Segment[] {
     const segments: Segment[] = [];
@@ -146,7 +157,7 @@ function segmentsOf(days: WorkEntryDay[]): Segment[] {
 
         if (day.entries.length > 0) {
             segments.push({ type: 'day', day });
-        } else if (day.time_off !== null) {
+        } else if (day.time_off !== null && !takesEntries(day)) {
             if (last?.type === 'time-off' && last.kind === day.time_off) {
                 last.to = day.date;
                 last.weekdays += 1;
@@ -159,7 +170,7 @@ function segmentsOf(days: WorkEntryDay[]): Segment[] {
                     weekdays: 1,
                 });
             }
-        } else if (day.date > props.today) {
+        } else if (day.time_off === null && day.date > props.today) {
             if (last?.type === 'upcoming') {
                 last.to = day.date;
             } else {
@@ -262,9 +273,10 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
             v-for="block in blocks"
             :key="block.week.from"
             :aria-label="`Week ${block.week.number}`"
+            class="first-of-type:[&>h3]:border-t-0 sm:first-of-type:[&>h3]:border-t"
         >
             <h3
-                class="flex items-center justify-between gap-4 border-t bg-muted/30 px-4 py-2 font-medium first:border-t-0 sm:first:border-t"
+                class="flex items-center justify-between gap-4 border-t bg-muted/30 px-4 py-2 font-medium"
             >
                 <span
                     >Week {{ block.week.number }}
@@ -294,15 +306,10 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
                         class="col-span-2 flex items-center gap-2 sm:col-span-5"
                         ><span
                             class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
-                            >{{
-                                segment.kind === 'paid'
-                                    ? 'Paid Time Off'
-                                    : 'Unpaid Time Off'
-                            }}</span
-                        ><span class="text-muted-foreground"
-                            >{{ segment.weekdays }}
-                            {{ segment.weekdays === 1 ? 'day' : 'days' }}</span
-                        ></span
+                            >{{ timeOffKindLabel(segment.kind) }}</span
+                        ><span class="text-muted-foreground">{{
+                            formatDays(segment.weekdays)
+                        }}</span></span
                     >
                 </div>
 
@@ -321,6 +328,12 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
                 </div>
 
                 <div v-else class="border-t" :data-date="segment.day.date">
+                    <p v-if="segment.day.time_off" class="px-4 pt-2">
+                        <span
+                            class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+                            >{{ timeOffKindLabel(segment.day.time_off) }}</span
+                        >
+                    </p>
                     <template
                         v-for="(entry, index) in segment.day.entries"
                         :key="entry.id"
@@ -360,6 +373,13 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
                                         v-if="segment.day.date === today"
                                         class="ml-1 text-xs font-normal text-muted-foreground"
                                         >today</span
+                                    ><span
+                                        v-if="segment.day.entries.length > 1"
+                                        class="ml-1 text-xs font-normal text-muted-foreground tabular-nums"
+                                        data-test="day-hours"
+                                        >{{
+                                            formatHours(segment.day.hours)
+                                        }}</span
                                     ></template
                                 ></span
                             >
@@ -401,23 +421,6 @@ async function entryAdded(date: string, assignmentId: number): Promise<void> {
                             </span>
                         </div>
                     </template>
-
-                    <p
-                        v-if="
-                            segment.day.time_off &&
-                            segment.day.entries.length > 0
-                        "
-                        class="px-4 pb-2"
-                    >
-                        <span
-                            class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
-                            >{{
-                                segment.day.time_off === 'paid'
-                                    ? 'Paid Time Off'
-                                    : 'Unpaid Time Off'
-                            }}</span
-                        >
-                    </p>
 
                     <div
                         v-if="takesEntries(segment.day)"

@@ -11,6 +11,8 @@ const props = defineProps<{
     period: WorkEntryPeriod;
     total: number;
     assignmentTotals: WorkEntryAssignmentTotal[];
+    /** The ISO week number, for a Period in Week mode. */
+    weekNumber?: number;
 }>();
 
 /**
@@ -39,22 +41,11 @@ const covers = computed((): string => {
     }
 
     if (mode === 'week') {
-        return `in Week ${isoWeek(from)}`;
+        return `in Week ${props.weekNumber}`;
     }
 
     return `from ${formatShort(from)} to ${formatShort(to)}`;
 });
-
-/**
- * The ISO week number of a date.
- */
-function isoWeek(date: string): number {
-    const day = new Date(`${date}T00:00:00Z`);
-    day.setUTCDate(day.getUTCDate() + 4 - (day.getUTCDay() || 7));
-    const yearStart = Date.UTC(day.getUTCFullYear(), 0, 1);
-
-    return Math.ceil(((day.getTime() - yearStart) / 86400000 + 1) / 7);
-}
 </script>
 
 <template>

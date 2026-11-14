@@ -200,6 +200,7 @@ function leaveWeek(): void {
             :period="period"
             :total="total"
             :assignment-totals="assignmentTotals"
+            :week-number="weeks?.[0]?.number"
         />
 
         <WorkEntryCalendar
