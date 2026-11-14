@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { formatHours } from '@/lib/work-entries';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
 import { computed, ref } from 'vue';
@@ -15,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import LockDialog from '@/components/work-entries/LockDialog.vue';
 import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
 import { formatDate, formatMonth } from '@/lib/dates';
+import { formatHours } from '@/lib/work-entries';
 import { index as week } from '@/routes/work-entries';
 import { index } from '@/routes/work-entry-list';
 import type {
@@ -249,11 +249,19 @@ function signOffs(entry: ListedWorkEntry): string {
                     >
                 </template>
                 <template #cell-description="{ row }">
-                    {{ row.description }}
+                    <span :class="row.declined && 'line-through'">{{
+                        row.description
+                    }}</span>
                     <span
                         v-if="row.approved"
                         class="block text-xs text-muted-foreground"
                         >{{ signOffs(row) }}</span
+                    >
+                    <span
+                        v-if="row.declined"
+                        class="block text-xs text-status-declined-foreground"
+                        >Declined by {{ row.declined.by }}:
+                        {{ row.declined.reason }}</span
                     >
                 </template>
                 <template #cell-hours="{ row }">
@@ -261,9 +269,13 @@ function signOffs(entry: ListedWorkEntry): string {
                         class="inline-flex items-center gap-2 whitespace-nowrap"
                     >
                         <StatusBadge :state="row.state" />
-                        <span class="tabular-nums">{{
-                            formatHours(row.hours)
-                        }}</span>
+                        <span
+                            :class="[
+                                'tabular-nums',
+                                row.declined && 'line-through',
+                            ]"
+                            >{{ formatHours(row.hours) }}</span
+                        >
                     </span>
                 </template>
                 <template #empty>
@@ -282,7 +294,18 @@ function signOffs(entry: ListedWorkEntry): string {
                 v-if="entries.total > 0"
                 class="flex justify-between gap-4 px-4 text-sm font-medium"
             >
-                <span>Total of all {{ entries.total }} matching</span>
+                <span
+                    >Total of all {{ entries.total }} matching<template
+                        v-if="
+                            filters.state === null ||
+                            filters.state === 'declined'
+                        "
+                    >
+                        <span class="font-normal text-muted-foreground"
+                            >, Declined hours not counted</span
+                        ></template
+                    ></span
+                >
                 <span class="tabular-nums">{{ formatHours(total) }}</span>
             </p>
 

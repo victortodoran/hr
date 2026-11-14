@@ -97,7 +97,7 @@ A record of how many hours an Employee worked on one Assignment on one date, wit
 _Avoid_: Booking, time entry, timesheet, timesheet item, time log, worked hours
 
 **Pending**:
-The state of a Work Entry that has not been approved yet, or whose approval was withdrawn. A Pending Work Entry can still be changed or deleted.
+The state of a Work Entry that has not been approved or Declined yet, or whose approval was withdrawn. A Pending Work Entry can still be changed or deleted.
 _Avoid_: Draft, open, submitted, unapproved
 
 **Approved**:
@@ -131,7 +131,7 @@ How many days of Paid Time Off an Employee gets each calendar year, as in "Cara 
 _Avoid_: Allowance, entitlement, balance, holiday days, PTO days
 
 **Declined**:
-The state of Time Off the Employee's Manager has refused, always with a reason the Employee can see. It uses no Paid Days and is kept on record; the Employee can request other dates instead.
+The state of Time Off or a Work Entry the Employee's Manager has refused (while that Manager has left, the next Manager up who hasn't), always with a reason the Employee can see. No Role can grant declining, and no Employee can decline their own. Declined Time Off uses no Paid Days and is kept on record; the Employee can request other dates instead. Only a Pending Work Entry can be declined, several at once with one reason; its hours count nowhere, and the Employee can change it, which sends it back to Pending without the reason, or delete it.
 _Avoid_: Rejected, denied, refused
 
 **Cancelled**:

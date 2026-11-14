@@ -19,7 +19,7 @@ use Illuminate\Support\Carbon;
  * How long an Employee worked on one of their Assignments on one date, and
  * what they did. It always falls within the Assignment's dates and never
  * on a day still to come. It starts Pending, can be Approved, and can then
- * be Locked for good.
+ * be Locked for good; a Pending one can instead be Declined, with a reason.
  *
  * @property int $id
  * @property int $assignment_id
@@ -31,6 +31,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $approved_at
  * @property int|null $locked_by
  * @property Carbon|null $locked_at
+ * @property int|null $declined_by
+ * @property Carbon|null $declined_at
+ * @property string|null $decline_reason
  * @property-read float|int $hours The minutes as hours, such as 7.5
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -38,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @property-read Employee $employee
  * @property-read Employee|null $approver
  * @property-read Employee|null $locker
+ * @property-read Employee|null $decliner
  */
 #[Fillable(['assignment_id', 'date', 'minutes', 'description'])] // @pest-mutate-ignore (class attributes never show as covered)
 class WorkEntry extends Model
@@ -88,6 +92,7 @@ class WorkEntry extends Model
             'state' => WorkEntryState::class,
             'approved_at' => 'datetime',
             'locked_at' => 'datetime',
+            'declined_at' => 'datetime',
         ];
     }
 
@@ -111,11 +116,43 @@ class WorkEntry extends Model
 
     /**
      * Whether the Work Entry is Pending, the only state in which it can be
-     * changed or deleted.
+     * approved or declined.
      */
     public function isPending(): bool
     {
         return $this->state === WorkEntryState::Pending;
+    }
+
+    /**
+     * Whether the Work Entry is Declined, so its hours count nowhere.
+     */
+    public function isDeclined(): bool
+    {
+        return $this->state === WorkEntryState::Declined;
+    }
+
+    /**
+     * Whether the Work Entry can still be changed or deleted: while Pending,
+     * or once Declined, when changing it sends it back to Pending.
+     */
+    public function isOpen(): bool
+    {
+        return in_array($this->state, [WorkEntryState::Pending, WorkEntryState::Declined], true);
+    }
+
+    /**
+     * Who declined the Work Entry and why, or null unless it is Declined.
+     * Needs the decliner loaded.
+     *
+     * @return array{by: string, reason: string}|null
+     */
+    public function decline(): ?array
+    {
+        if ($this->decliner === null || $this->decline_reason === null) { // @pest-mutate-ignore (the work_entries_decline constraint keeps who and why both set or both empty)
+            return null;
+        }
+
+        return ['by' => $this->decliner->name, 'reason' => $this->decline_reason];
     }
 
     /**
@@ -171,6 +208,28 @@ class WorkEntry extends Model
     public function locker(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'locked_by');
+    }
+
+    /**
+     * The Employee who declined the Work Entry, while it is Declined.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function decliner(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'declined_by');
+    }
+
+    /**
+     * Limit the query to the Work Entries whose hours count: all but the
+     * Declined ones.
+     *
+     * @param  Builder<WorkEntry>  $query
+     */
+    #[QueryScope]
+    protected function counted(Builder $query): void
+    {
+        $query->where($query->qualifyColumn('state'), '!=', WorkEntryState::Declined);
     }
 
     /**

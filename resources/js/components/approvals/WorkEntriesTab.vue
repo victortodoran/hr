@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { formatHours } from '@/lib/work-entries';
 import { router } from '@inertiajs/vue3';
 import { CheckCheck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ApprovalController from '@/actions/App/Http/Controllers/ApprovalController';
 import ApprovalFilterBar from '@/components/approvals/ApprovalFilterBar.vue';
+import DeclineWorkEntriesDialog from '@/components/approvals/DeclineWorkEntriesDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatDate } from '@/lib/dates';
+import { formatHours } from '@/lib/work-entries';
 import { index } from '@/routes/approvals';
 import type {
     ApprovalEntry,
@@ -23,7 +24,7 @@ import type {
 /**
  * The Work Entries tab of the Approvals page: the Pending Work Entries
  * waiting for the viewer's approval, one Employee at a time, and approving
- * the selected ones. With nothing waiting there is no Employee to choose.
+ * or declining the selected ones. With nothing waiting there is no Employee to choose.
  */
 const props = defineProps<{
     filters: ApprovalFilters;
@@ -130,9 +131,15 @@ function approve(): void {
                     >Clear</Button
                 >
             </div>
-            <Button :disabled="selected.length === 0" @click="approve"
-                >Approve</Button
-            >
+            <div class="flex gap-2">
+                <DeclineWorkEntriesDialog
+                    :ids="selected"
+                    @declined="selected = []"
+                />
+                <Button :disabled="selected.length === 0" @click="approve"
+                    >Approve</Button
+                >
+            </div>
         </div>
 
         <DataTable :columns="columns" :rows="entries.data">

@@ -92,7 +92,7 @@ class CopyWorkEntriesRequest extends FormRequest
 
     /**
      * The latest day in the week before the date with any of the Employee's
-     * Work Entries; null when there is none.
+     * Work Entries that aren't Declined; null when there is none.
      */
     public function sourceDate(): ?CarbonImmutable
     {
@@ -101,6 +101,7 @@ class CopyWorkEntriesRequest extends FormRequest
         }
 
         $latest = $this->employee()->workEntries()
+            ->counted()
             ->whereDate('work_entries.date', '>=', $this->day()->subDays(WorkEntry::COPY_LOOKBACK_DAYS))
             ->whereDate('work_entries.date', '<', $this->day())
             ->max('work_entries.date');
@@ -122,8 +123,8 @@ class CopyWorkEntriesRequest extends FormRequest
     }
 
     /**
-     * The source day's Work Entries whose Assignment runs on the date, in
-     * the order they were recorded.
+     * The source day's Work Entries that aren't Declined and whose
+     * Assignment runs on the date, in the order they were recorded.
      *
      * @return Collection<int, WorkEntry>
      */
@@ -138,6 +139,7 @@ class CopyWorkEntriesRequest extends FormRequest
         return $this->toCopy = $source === null
             ? new Collection
             : $this->employee()->workEntries()
+                ->counted()
                 ->whereDate('work_entries.date', $source)
                 ->whereHas('assignment', fn (Builder $running) => $running->runningOn($this->day()))
                 ->orderBy('work_entries.id')

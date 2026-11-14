@@ -143,6 +143,7 @@ class DemoSeeder extends Seeder
         $this->assign($dan, $mobileApp, 'Developer', 100, $today->addMonths(2), null, []);
 
         $this->recordWeeks($caraOnRelaunch, 5, ['Reviewing pull requests', 'Checkout API', 'Sprint planning', 'Fixing payment bugs'], $ben, $finn);
+        $this->decline($caraOnRelaunch, today()->startOfWeek(CarbonInterface::MONDAY)->subWeek(), $ben, 'Sprint planning goes on Internal, not Relaunch');
         $this->recordWeeks($liaOnRelaunch, 6, ['Product listing page', 'Unit tests for the cart', 'Pairing with Cara'], $ben, $finn);
         $this->recordWeeks($ivanOnWebsite, 4, ['Homepage mock-ups', 'Design review with Hana', 'Icon set'], $hana, $finn);
 
@@ -279,6 +280,20 @@ class DemoSeeder extends Seeder
                 }
             }
         }
+    }
+
+    /**
+     * Decline the Pending Work Entry on the Assignment on the date, as the
+     * decliner, with the reason.
+     */
+    private function decline(Assignment $assignment, CarbonInterface $date, Employee $decliner, string $reason): void
+    {
+        $assignment->workEntries()->whereDate('date', $date)->sole()->forceFill([
+            'state' => WorkEntryState::Declined,
+            'declined_by' => $decliner->id,
+            'declined_at' => $date->addDay()->setTime(9, 0),
+            'decline_reason' => $reason,
+        ])->save();
     }
 
     /**

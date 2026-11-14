@@ -64,9 +64,10 @@ class HomeController extends Controller
     }
 
     /**
-     * The Employee's hours this week, Monday to Sunday, and how many of its
-     * Work Entries are Pending; null for the top Employee, who records no
-     * Work Entries, and for anyone who can't see their Work Entries.
+     * The Employee's hours this week, Monday to Sunday, leaving out Declined
+     * Work Entries, and how many of its Work Entries are Pending; null for
+     * the top Employee, who records no Work Entries, and for anyone who
+     * can't see their Work Entries.
      *
      * @return array{week: string, hours: float|int, pending: int}|null
      */
@@ -83,7 +84,7 @@ class HomeController extends Controller
 
         return [
             'week' => $monday->toDateString(),
-            'hours' => $entries->sum(fn (WorkEntry $workEntry): float|int => $workEntry->hours),
+            'hours' => $entries->reject(fn (WorkEntry $workEntry): bool => $workEntry->isDeclined())->sum(fn (WorkEntry $workEntry): float|int => $workEntry->hours),
             'pending' => $entries->where('state', WorkEntryState::Pending)->count(),
         ];
     }

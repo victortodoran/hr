@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { formatHours } from '@/lib/work-entries';
 import { ArrowRight } from '@lucide/vue';
 import { nextTick, onMounted, ref } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -9,6 +8,7 @@ import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
 import { formatLongDay, formatWeekdayAndDay } from '@/lib/dates';
 import { timeOffKindLabel } from '@/lib/time-off';
+import { formatHours } from '@/lib/work-entries';
 import type {
     Choice,
     WorkEntryAssignment,
@@ -70,22 +70,35 @@ async function entryAdded(assignmentId: number): Promise<void> {
             <li
                 v-for="entry in day.entries"
                 :key="entry.id"
-                class="flex items-center gap-2 px-3 py-1.5"
+                class="flex flex-wrap items-center gap-x-2 px-3 py-1.5"
             >
                 <span
-                    class="min-w-0 flex-1 truncate"
+                    :class="[
+                        'min-w-0 flex-1 truncate',
+                        entry.declined && 'text-muted-foreground line-through',
+                    ]"
                     :title="`${entry.project} · ${entry.description}`"
                     >{{ entry.description }}</span
                 >
                 <StatusBadge :state="entry.state" />
-                <span class="w-12 text-right font-medium tabular-nums">{{
-                    formatHours(entry.hours)
-                }}</span>
+                <span
+                    :class="[
+                        'w-12 text-right font-medium tabular-nums',
+                        entry.declined && 'text-muted-foreground line-through',
+                    ]"
+                    >{{ formatHours(entry.hours) }}</span
+                >
                 <DeleteWorkEntry
                     v-if="entry.can_delete"
                     :entry="entry"
                     :period-query="period.query"
                 />
+                <span
+                    v-if="entry.declined"
+                    class="basis-full text-xs text-status-declined-foreground"
+                    >Declined by {{ entry.declined.by }}:
+                    {{ entry.declined.reason }}</span
+                >
             </li>
         </ul>
 

@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import {
-    formatHours,
-    takesEntries as takesEntriesOn,
-} from '@/lib/work-entries';
 import { ArrowRight, Pencil, Plus } from '@lucide/vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -13,6 +9,10 @@ import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDi
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
 import { formatLongDay, formatWeekdayAndDay, isWeekend } from '@/lib/dates';
 import { formatDays, timeOffKindLabel } from '@/lib/time-off';
+import {
+    formatHours,
+    takesEntries as takesEntriesOn,
+} from '@/lib/work-entries';
 import type {
     Choice,
     WorkEntryAssignment,
@@ -485,9 +485,15 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                         @click="openAdd(segment.day.date)"
                                         ><Plus /></Button></template
                             ></span>
-                            <span class="truncate" :title="entry.description">{{
-                                entry.description
-                            }}</span>
+                            <span
+                                :class="[
+                                    'truncate',
+                                    entry.declined &&
+                                        'text-muted-foreground line-through',
+                                ]"
+                                :title="entry.description"
+                                >{{ entry.description }}</span
+                            >
                             <span
                                 class="order-2 flex min-w-0 items-center gap-2 sm:contents"
                             >
@@ -499,7 +505,11 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                 /></span>
                             </span>
                             <span
-                                class="order-1 text-right font-medium tabular-nums sm:order-none"
+                                :class="[
+                                    'order-1 text-right font-medium tabular-nums sm:order-none',
+                                    entry.declined &&
+                                        'text-muted-foreground line-through',
+                                ]"
                                 >{{ formatHours(entry.hours) }}</span
                             >
                             <span
@@ -521,6 +531,13 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                     :period-query="period.query"
                                 />
                             </span>
+                            <span
+                                v-if="entry.declined"
+                                class="order-4 col-span-2 text-xs text-status-declined-foreground sm:order-none sm:col-span-4 sm:col-start-2"
+                                data-test="decline-reason"
+                                >Declined by {{ entry.declined.by }}:
+                                {{ entry.declined.reason }}</span
+                            >
                         </div>
                     </template>
 

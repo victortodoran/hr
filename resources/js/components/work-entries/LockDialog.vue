@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { formatHours } from '@/lib/work-entries';
 import { router, useHttp } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import LockController from '@/actions/App/Http/Controllers/LockController';
@@ -14,6 +13,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { formatHours } from '@/lib/work-entries';
 import type { LockSummary, WorkEntryListFilters } from '@/types';
 
 const props = defineProps<{

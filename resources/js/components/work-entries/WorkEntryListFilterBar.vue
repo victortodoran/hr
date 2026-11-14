@@ -38,6 +38,7 @@ const states: { value: WorkEntryState; label: string }[] = [
     { value: 'pending', label: 'Pending' },
     { value: 'approved', label: 'Approved' },
     { value: 'locked', label: 'Locked' },
+    { value: 'declined', label: 'Declined' },
 ];
 
 function query(

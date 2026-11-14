@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\WorkEntriesTab;
+use App\Enums\WorkEntryState;
 use App\Http\Requests\WorkEntryPeriodRequest;
 use App\Http\Requests\WorkEntryRequest;
 use App\Models\Assignment;
@@ -47,10 +48,11 @@ class WorkEntryController extends Controller
 
         $entries = $employee->workEntries()
             ->whereBetween('work_entries.date', [$period->from->toDateString(), $period->to->toDateString()])
-            ->with('assignment.project:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+            ->with(['assignment.project:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
             ->orderBy('work_entries.date')
             ->orderBy('work_entries.id')
             ->get();
+        $counted = $entries->reject(fn (WorkEntry $entry): bool => $entry->isDeclined());
         $timeOff = $employee->timeOff()->standing()->overlapping($period->from, $period->to)->get();
 
         $canManage = $actor->can('create', [WorkEntry::class, $employee]);
@@ -65,8 +67,9 @@ class WorkEntryController extends Controller
             'employee' => $employee->only('id', 'name'),
             'period' => $period->toArray(),
             'today' => today()->toDateString(),
-            'total' => $entries->sum('hours'),
-            'assignmentTotals' => $this->assignmentTotals($entries),
+            'total' => $counted->sum('hours'),
+            'declinedHours' => $entries->diff($counted)->sum('hours'),
+            'assignmentTotals' => $this->assignmentTotals($counted),
             'assignments' => $canManage ? $this->assignments($employee, $period) : [],
             'canManage' => $canManage,
             'isOwn' => $employee->is($actor),
@@ -147,18 +150,20 @@ class WorkEntryController extends Controller
     }
 
     /**
-     * Every day of the Period, each with its Work Entries and their total. Each
-     * Work Entry carries its state, and whether
-     * the viewer can change or delete it: both need a Pending Work Entry,
-     * changing needs what recording does, and deleting needs only manage
-     * work entries for the Employee, the top Employee included.
+     * Every day of the Period, each with its Work Entries and the hours of
+     * those that count, all but the Declined. Each Work Entry carries its
+     * state, who declined it and why, and whether the viewer can change or
+     * delete it: both need a Pending or Declined Work Entry, changing needs
+     * what recording does, and deleting needs only manage work entries for
+     * the Employee, the top Employee included.
      *
      * A weekday covered by Pending or Approved Time Off says whether that
      * Time Off is Paid or Unpaid. A past weekday while the Employee works
      * here, with neither Work Entries nor such Time Off, is nothing logged.
      * A day up to today with no Work Entries and no such Time Off, when the
      * viewer can record hours, names the day copying Work Entries onto it
-     * would copy from: the latest day in the week before with any, or null.
+     * would copy from: the latest day in the week before with any that
+     * aren't Declined, or null.
      *
      * @param  Collection<int, WorkEntry>  $entries
      * @param  Collection<int, TimeOff>  $timeOff  the Employee's Pending and Approved Time Off overlapping the Period
@@ -185,10 +190,11 @@ class WorkEntryController extends Controller
                     'hours' => $entry->hours,
                     'description' => $entry->description,
                     'state' => $entry->state->value,
-                    'can_edit' => $canManage && $entry->isPending(),
-                    'can_delete' => $canDelete && $entry->isPending(),
+                    'can_edit' => $canManage && $entry->isOpen(),
+                    'can_delete' => $canDelete && $entry->isOpen(),
+                    'declined' => $entry->decline(),
                 ])->values()->all(),
-                'hours' => $onDay->sum('hours'),
+                'hours' => $onDay->reject(fn (WorkEntry $entry): bool => $entry->isDeclined())->sum('hours'),
                 'time_off' => $away === null ? null : ($away->is_paid ? 'paid' : 'unpaid'),
                 'nothing_logged' => $day->isWeekday() && $day->isBefore(today()) && $employed && $onDay->isEmpty() && $away === null,
                 'copy_from' => $canManage && ! $day->isAfter(today()) && $away === null && $onDay->isEmpty()
@@ -199,9 +205,9 @@ class WorkEntryController extends Controller
     }
 
     /**
-     * The dates, in order, the Employee has Work Entries on from a week
-     * before the Period to its end: those in the week before are looked up,
-     * those within it come from its Work Entries.
+     * The dates, in order, the Employee has Work Entries that aren't
+     * Declined on from a week before the Period to its end: those in the
+     * week before are looked up, those within it come from its Work Entries.
      *
      * @param  Collection<int, WorkEntry>  $entries  the Employee's Work Entries in the Period
      * @return SupportCollection<int, string>
@@ -209,12 +215,13 @@ class WorkEntryController extends Controller
     private function datesWithEntries(Employee $employee, Period $period, Collection $entries): SupportCollection
     {
         $before = $employee->workEntries()
+            ->counted()
             ->whereDate('work_entries.date', '>=', $period->from->subDays(WorkEntry::COPY_LOOKBACK_DAYS))
             ->whereDate('work_entries.date', '<', $period->from)
             ->get(['work_entries.date']);
 
         return $before->toBase()
-            ->merge($entries)
+            ->merge($entries->reject(fn (WorkEntry $entry): bool => $entry->isDeclined()))
             ->map(fn (WorkEntry $entry): string => $entry->date->toDateString())
             ->unique()
             ->sort()
@@ -257,11 +264,17 @@ class WorkEntryController extends Controller
     }
 
     /**
-     * Correct a Work Entry: its Assignment, date, hours or description.
+     * Correct a Work Entry: its Assignment, date, hours or description. A
+     * Declined one goes back to Pending, without who declined it or why.
      */
     public function update(WorkEntryRequest $request, WorkEntry $workEntry): RedirectResponse
     {
-        $workEntry->update($request->workEntry());
+        $workEntry->fill($request->workEntry())->forceFill([
+            'state' => WorkEntryState::Pending,
+            'declined_by' => null,
+            'declined_at' => null,
+            'decline_reason' => null,
+        ])->save();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Work Entry changed.')]);
 

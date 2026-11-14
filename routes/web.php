@@ -27,6 +27,7 @@ use App\Http\Controllers\TimeOffPreviewController;
 use App\Http\Controllers\TopEmployeeController;
 use App\Http\Controllers\WorkEntryController;
 use App\Http\Controllers\WorkEntryCopyController;
+use App\Http\Controllers\WorkEntryDeclineController;
 use App\Http\Controllers\WorkEntryListController;
 use App\Models\Assignment;
 use App\Models\Employee;
@@ -77,6 +78,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('can:viewApprovals,'.WorkEntry::class)->group(function () {
         Route::get('approvals', [ApprovalController::class, 'index'])->name('approvals.index');
         Route::post('approvals', [ApprovalController::class, 'store'])->name('approvals.store');
+        Route::post('approvals/declines', [WorkEntryDeclineController::class, 'store'])->name('approvals.declines.store');
     });
     Route::get('work-entries/all', [WorkEntryListController::class, 'index'])->middleware('can:viewList,'.WorkEntry::class)->name('work-entry-list.index');
     Route::post('reopenings', [ReopeningController::class, 'store'])->middleware('can:reopen,'.WorkEntry::class)->name('reopenings.store');

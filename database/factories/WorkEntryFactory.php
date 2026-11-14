@@ -55,4 +55,17 @@ class WorkEntryFactory extends Factory
             'locked_at' => now(),
         ]);
     }
+
+    /**
+     * Declined by someone else an hour ago, with a reason.
+     */
+    public function declined(?Employee $decliner = null, string $reason = 'Not on this Project'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'state' => WorkEntryState::Declined,
+            'declined_by' => $decliner ?? Employee::factory(),
+            'declined_at' => now()->subHour(),
+            'decline_reason' => $reason,
+        ]);
+    }
 }

@@ -49,11 +49,11 @@ it('shows the week holding the given day, with totals for each day, each Assignm
     $response->assertInertia(fn (Assert $page) => $page
         ->where('period', ['mode' => 'week', 'from' => '2026-11-02', 'to' => '2026-11-08', 'query' => ['week' => '2026-11-02']])
         ->where('days.1', ['date' => '2026-11-03', 'hours' => 3.5, 'entries' => [
-            ['id' => $review->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2, 'description' => 'Review', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
-            ['id' => $api->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
+            ['id' => $review->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2, 'description' => 'Review', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true, 'declined' => null],
+            ['id' => $api->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true, 'declined' => null],
         ], 'time_off' => null, 'nothing_logged' => false, 'copy_from' => null])
         ->where('days.4', ['date' => '2026-11-06', 'hours' => 0.75, 'entries' => [
-            ['id' => $invoices->id, 'assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75, 'description' => 'Invoices', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
+            ['id' => $invoices->id, 'assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75, 'description' => 'Invoices', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true, 'declined' => null],
         ], 'time_off' => null, 'nothing_logged' => false, 'copy_from' => null])
         ->where('days.6', ['date' => '2026-11-08', 'hours' => 0, 'entries' => [], 'time_off' => null, 'nothing_logged' => false, 'copy_from' => '2026-11-06'])
         ->where('assignmentTotals', [
@@ -161,9 +161,9 @@ it('shows each Work Entry\'s state, but not who approved or locked it, and offer
     $response = actingAs($cara)->get(route('work-entries.index'));
 
     $response->assertInertia(fn (Assert $page) => $page->where('days.1.entries', [
-        ['id' => $pending->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Pending', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true],
-        ['id' => $approved->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Approved', 'state' => 'approved', 'can_edit' => false, 'can_delete' => false],
-        ['id' => $locked->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Locked', 'state' => 'locked', 'can_edit' => false, 'can_delete' => false],
+        ['id' => $pending->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Pending', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true, 'declined' => null],
+        ['id' => $approved->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Approved', 'state' => 'approved', 'can_edit' => false, 'can_delete' => false, 'declined' => null],
+        ['id' => $locked->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Locked', 'state' => 'locked', 'can_edit' => false, 'can_delete' => false, 'declined' => null],
     ]));
 });
 
