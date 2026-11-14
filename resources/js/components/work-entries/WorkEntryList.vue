@@ -62,7 +62,7 @@ type Segment =
     | { type: 'upcoming'; from: string; to: string };
 
 const columns =
-    'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem_4.5rem]';
+    'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem_6.5rem]';
 
 function formatShort(date: string): string {
     return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
@@ -472,19 +472,9 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                         >{{
                                             formatHours(segment.day.hours)
                                         }}</span
-                                    ><Button
-                                        v-if="
-                                            takesEntries(segment.day) &&
-                                            activeDate !== segment.day.date
-                                        "
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        class="ml-0.5 size-7 text-muted-foreground opacity-0 group-hover/day:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
-                                        :aria-label="`Add another entry on ${formatLongDay(segment.day.date)}`"
-                                        @click="openAdd(segment.day.date)"
-                                        ><Plus /></Button></template
-                            ></span>
+                                    ></template
+                                ></span
+                            >
                             <span
                                 :class="[
                                     'truncate',
@@ -515,6 +505,20 @@ async function entryAdded(assignmentId: number): Promise<void> {
                             <span
                                 class="order-3 flex justify-end sm:order-none"
                             >
+                                <Button
+                                    v-if="
+                                        index === 0 &&
+                                        takesEntries(segment.day) &&
+                                        activeDate !== segment.day.date
+                                    "
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    class="text-muted-foreground opacity-0 group-hover/day:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                                    :aria-label="`Add another entry on ${formatLongDay(segment.day.date)}`"
+                                    @click="openAdd(segment.day.date)"
+                                    ><Plus
+                                /></Button>
                                 <Button
                                     v-if="entry.can_edit"
                                     type="button"
