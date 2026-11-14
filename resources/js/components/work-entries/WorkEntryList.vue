@@ -62,7 +62,7 @@ type Segment =
     | { type: 'upcoming'; from: string; to: string };
 
 const columns =
-    'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem_4.5rem]';
+    'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem_6.5rem]';
 
 function formatShort(date: string): string {
     return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
@@ -90,26 +90,17 @@ function formatWeekDates(week: WorkEntryWeek): string {
         : `${formatShort(week.from)} – ${formatShort(week.to)}`;
 }
 
-/** Each Assignment's job title, by Assignment id. */
-const jobTitles = computed(
-    () =>
-        new Map(
-            props.assignments.map((assignment) => [
-                assignment.id,
-                assignment.job_title,
-            ]),
-        ),
-);
-
-/** The Assignment's Project and job title, such as "Relaunch · Tech Lead". */
-function projectOf(entry: WorkEntryRecord): string {
-    const jobTitle = jobTitles.value.get(entry.assignment_id);
-
-    return jobTitle ? `${entry.project} · ${jobTitle}` : entry.project;
-}
-
 function takesEntries(day: WorkEntryDay): boolean {
     return takesEntriesOn(day, props.canManage, props.today);
+}
+
+/**
+ * Whether a Work Entry row ends with the + adding another entry to its day:
+ * the day's first row, while the day's add form isn't open. Where edit or
+ * delete is missing, an empty space keeps the + in its place.
+ */
+function offersAdd(day: WorkEntryDay, index: number): boolean {
+    return index === 0 && takesEntries(day) && activeDate.value !== day.date;
 }
 
 /**
@@ -355,7 +346,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
             <span>Project</span>
             <span>Status</span>
             <span class="text-right">Hours</span>
-            <span><span class="sr-only">Actions</span></span>
+            <span class="text-right">Actions</span>
         </div>
 
         <section
@@ -416,11 +407,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                     >
                 </div>
 
-                <div
-                    v-else
-                    class="group/day border-t"
-                    :data-date="segment.day.date"
-                >
+                <div v-else class="border-t" :data-date="segment.day.date">
                     <p v-if="segment.day.time_off" class="px-4 pt-2">
                         <span
                             class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
@@ -472,19 +459,9 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                         >{{
                                             formatHours(segment.day.hours)
                                         }}</span
-                                    ><Button
-                                        v-if="
-                                            takesEntries(segment.day) &&
-                                            activeDate !== segment.day.date
-                                        "
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        class="ml-0.5 size-7 text-muted-foreground opacity-0 group-hover/day:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
-                                        :aria-label="`Add another entry on ${formatLongDay(segment.day.date)}`"
-                                        @click="openAdd(segment.day.date)"
-                                        ><Plus /></Button></template
-                            ></span>
+                                    ></template
+                                ></span
+                            >
                             <span
                                 :class="[
                                     'truncate',
@@ -498,7 +475,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                 class="order-2 flex min-w-0 items-center gap-2 sm:contents"
                             >
                                 <span class="truncate text-muted-foreground">{{
-                                    projectOf(entry)
+                                    entry.project
                                 }}</span>
                                 <span
                                     ><StatusBadge :state="entry.state"
@@ -516,6 +493,16 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                 class="order-3 flex justify-end sm:order-none"
                             >
                                 <Button
+                                    v-if="offersAdd(segment.day, index)"
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    class="text-muted-foreground"
+                                    :aria-label="`Add another entry on ${formatLongDay(segment.day.date)}`"
+                                    @click="openAdd(segment.day.date)"
+                                    ><Plus
+                                /></Button>
+                                <Button
                                     v-if="entry.can_edit"
                                     type="button"
                                     variant="ghost"
@@ -525,10 +512,20 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                     @click="editing.add(entry.id)"
                                     ><Pencil
                                 /></Button>
+                                <span
+                                    v-else-if="offersAdd(segment.day, index)"
+                                    class="size-8"
+                                    aria-hidden="true"
+                                />
                                 <DeleteWorkEntry
                                     v-if="entry.can_delete"
                                     :entry="entry"
                                     :period-query="period.query"
+                                />
+                                <span
+                                    v-else-if="offersAdd(segment.day, index)"
+                                    class="size-8"
+                                    aria-hidden="true"
                                 />
                             </span>
                             <span

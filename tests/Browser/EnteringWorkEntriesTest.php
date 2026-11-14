@@ -63,13 +63,22 @@ it('adds Work Entries one day at a time, staying on the day, moving on with Next
     ]);
 });
 
-it('adds another Work Entry to a day that has one with its + button', function () {
+it('adds another Work Entry to a day that has one with its + button, which keeps its place on a day it can\'t edit', function () {
     $cara = recorder();
-    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10', 'description' => 'Reviewing the API']);
+    $relaunch = assignmentOf($cara);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'description' => 'Reviewing the API']);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-11', 'description' => 'Approved']);
+    $plusLeft = fn (string $day): string => "Math.round(document.querySelector('[aria-label=\"Add another entry on {$day}\"]').getBoundingClientRect().left)";
 
     actingAs($cara);
 
-    visit(route('work-entries.index'))
+    $page = visit(route('work-entries.index'));
+
+    expect($page->script($plusLeft('Tuesday 10 November')))->toBe($page->script($plusLeft('Wednesday 11 November')));
+
+    $page
+        ->assertNotPresent('[data-date="2026-11-11"] [aria-label="Edit Work Entry"]')
+        ->assertNotPresent('[data-date="2026-11-11"] [aria-label="Delete Work Entry"]')
         ->assertNotPresent('[data-date="2026-11-10"] [data-test="add-row"]')
         ->click('[aria-label="Add another entry on Tuesday 10 November"]')
         ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-10')
