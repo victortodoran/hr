@@ -15,28 +15,40 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import MonthPicker from '@/components/MonthPicker.vue';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
+import WorkEntryCalendar from '@/components/work-entries/WorkEntryCalendar.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
 import { index } from '@/routes/work-entries';
 import type {
     Choice,
     WorkEntryAssignment,
     WorkEntryAssignmentTotal,
+    WorkEntryCalendarWeek,
     WorkEntryDay,
+    WorkEntriesTab,
     WorkEntryPeriod,
     WorkEntryWeek,
 } from '@/types';
 
+/**
+ * Only the open tab's props are sent: the days, weeks, Assignment totals
+ * and Assignments on the List tab, `calendar` on the Calendar tab, which
+ * always shows a month.
+ */
 const props = defineProps<{
+    tab: WorkEntriesTab;
     employee: Choice;
     period: WorkEntryPeriod;
     today: string;
-    days: WorkEntryDay[];
-    weeks: WorkEntryWeek[];
-    assignmentTotals: WorkEntryAssignmentTotal[];
+    days?: WorkEntryDay[];
+    weeks?: WorkEntryWeek[];
+    assignmentTotals?: WorkEntryAssignmentTotal[];
     total: number;
-    assignments: WorkEntryAssignment[];
+    assignments?: WorkEntryAssignment[];
+    calendar?: WorkEntryCalendarWeek[];
     canManage: boolean;
     /** Whether the week is the viewer's own. */
     isOwn: boolean;
@@ -91,6 +103,18 @@ function showPeriod(query: Record<string, string>): void {
     );
 }
 
+/**
+ * Opens a tab on the same Period: the Calendar on the month holding its
+ * first day, the List on the Calendar's month.
+ */
+function openTab(tab: string | number): void {
+    showPeriod(
+        tab === 'calendar'
+            ? { tab: 'calendar', month: props.period.from.slice(0, 7) }
+            : props.period.query,
+    );
+}
+
 /** The Work Entries turned into fields to change them. */
 const editing = reactive(new Set<number>());
 
@@ -133,15 +157,17 @@ const showWeekends = useLocalStorage('work-entries.show-weekends', true);
  * of sight. Should that leave no day at all, every day is listed.
  */
 const shownDays = computed(() => {
+    const days = props.days ?? [];
+
     if (showWeekends.value) {
-        return props.days;
+        return days;
     }
 
-    const shown = props.days.filter(
+    const shown = days.filter(
         (day) => !isWeekend(day.date) || day.entries.length > 0,
     );
 
-    return shown.length > 0 ? shown : props.days;
+    return shown.length > 0 ? shown : days;
 });
 
 /**
@@ -150,7 +176,7 @@ const shownDays = computed(() => {
  * has no block.
  */
 const blocks = computed(() =>
-    props.weeks
+    (props.weeks ?? [])
         .map((week) => ({
             week,
             days: shownDays.value.filter(
@@ -201,7 +227,7 @@ function takesNextEntry(day: WorkEntryDay): boolean {
 async function entryAdded(date: string, assignmentId: number): Promise<void> {
     lastAssignmentId.value = assignmentId;
 
-    const next = props.days.find(
+    const next = (props.days ?? []).find(
         (day) => day.date > date && takesNextEntry(day),
     );
 
@@ -261,11 +287,25 @@ function leaveWeek(): void {
             :description="`Hours ${employee.name} worked`"
         />
 
+        <Tabs :model-value="tab" @update:model-value="openTab">
+            <TabsList class="self-start">
+                <TabsTrigger value="list">List</TabsTrigger>
+                <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            </TabsList>
+        </Tabs>
+
         <div class="flex flex-wrap items-center justify-between gap-3">
             <PeriodNavigation
+                v-if="tab === 'list'"
                 :period="period"
                 :today="today"
                 @change="showPeriod"
+            />
+            <MonthPicker
+                v-else
+                :month="period.from.slice(0, 7)"
+                allow-future
+                @change="(month) => showPeriod({ tab: 'calendar', month })"
             />
             <div class="flex items-center gap-4">
                 <Label class="flex items-center gap-2 text-sm font-normal">
@@ -284,7 +324,14 @@ function leaveWeek(): void {
             </div>
         </div>
 
-        <div class="flex flex-col gap-6">
+        <WorkEntryCalendar
+            v-if="tab === 'calendar' && calendar"
+            :weeks="calendar"
+            :today="today"
+            :show-weekends="showWeekends"
+        />
+
+        <div v-if="tab === 'list'" class="flex flex-col gap-6">
             <section
                 v-for="block in blocks"
                 :key="block.week.from"
@@ -337,7 +384,7 @@ function leaveWeek(): void {
                                         v-if="editing.has(entry.id)"
                                         :employee="employee"
                                         :period-query="period.query"
-                                        :assignments="assignments"
+                                        :assignments="assignments!"
                                         :date="day.date"
                                         :today="today"
                                         :entry="entry"
@@ -388,7 +435,7 @@ function leaveWeek(): void {
                                 :ref="(row) => rememberNewRow(day.date, row)"
                                 :employee="employee"
                                 :period-query="period.query"
-                                :assignments="assignments"
+                                :assignments="assignments!"
                                 :date="day.date"
                                 :today="today"
                                 :last-assignment-id="lastAssignmentId"
@@ -401,7 +448,10 @@ function leaveWeek(): void {
             </section>
         </div>
 
-        <section v-if="assignmentTotals.length > 0" class="space-y-2">
+        <section
+            v-if="assignmentTotals && assignmentTotals.length > 0"
+            class="space-y-2"
+        >
             <h2 class="text-sm font-medium">By Project</h2>
             <ul class="divide-y rounded-lg border text-sm">
                 <li
