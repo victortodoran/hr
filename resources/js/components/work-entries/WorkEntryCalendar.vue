@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import { timeOffKindLabel } from '@/lib/time-off';
 import type {
     WorkEntryCalendarDay,
     WorkEntryCalendarWeek,
@@ -50,7 +51,7 @@ function statesOf(day: WorkEntryCalendarDay): WorkEntryState[] {
 }
 
 function timeOffLabel(day: WorkEntryCalendarDay): string {
-    return day.time_off === 'paid' ? 'Paid Time Off' : 'Unpaid Time Off';
+    return day.time_off ? timeOffKindLabel(day.time_off) : '';
 }
 
 const columns = computed(() =>

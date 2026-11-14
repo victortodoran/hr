@@ -90,7 +90,7 @@ export type WorkEntryDay = {
 };
 
 /**
- * The total hours on one Assignment in the week.
+ * The total hours on one Assignment in the Period.
  */
 export type WorkEntryAssignmentTotal = {
     assignment_id: number;

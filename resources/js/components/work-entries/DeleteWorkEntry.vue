@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
+import { Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -31,10 +32,11 @@ const open = ref(false);
             <Button
                 type="button"
                 variant="ghost"
-                size="sm"
-                class="text-destructive"
-                >Delete</Button
-            >
+                size="icon-sm"
+                class="text-muted-foreground hover:text-destructive"
+                aria-label="Delete Work Entry"
+                ><Trash2
+            /></Button>
         </DialogTrigger>
         <DialogContent>
             <Form

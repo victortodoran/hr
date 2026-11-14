@@ -31,7 +31,7 @@ it('adds Work Entries day after day by keyboard, skipping Time Off, and changes 
         ->keys('#work-entry-description-2026-11-11', 'Enter')
         ->assertSee('Fixing the login')
         ->assertScript('document.activeElement.id', 'work-entry-hours-2026-11-12')
-        ->click('Edit')
+        ->click('[data-date="2026-11-09"] [aria-label="Edit Work Entry"]')
         ->fill('#work-entry-hours-'.WorkEntry::query()->where('description', 'Reviewing the API')->sole()->id, '6')
         ->click('Save')
         ->assertDontSee('Save')
@@ -69,9 +69,9 @@ it('forgets unsaved changes to a Work Entry deleted while open', function () {
     actingAs($cara);
 
     visit(route('work-entries.index'))
-        ->click('Edit')
+        ->click('[aria-label="Edit Work Entry"]')
         ->fill('#work-entry-hours-'.$entry->id, '6')
-        ->click('Delete')
+        ->click('[aria-label="Delete Work Entry"]')
         ->click('internal:role=dialog[name="Delete this Work Entry?"s] >> internal:role=button[name="Delete"s]')
         ->assertDontSee('Reviewing the API')
         ->click('[aria-label="Previous week"]')
