@@ -94,17 +94,23 @@ it('refuses to copy onto a day still to come or a day of Time Off', function (st
     'Time Off' => ['2026-11-12', 'Cara has Time Off on 12 Nov 2026, so nothing is copied onto it.'],
 ]);
 
-it('copies nothing when the copies would take the day past 24 hours', function () {
+it('copies only onto a day with no Work Entries yet, so copying twice copies nothing more', function () {
     $cara = recorder();
-    $relaunch = assignmentOf($cara);
-    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-12', 'minutes' => 600]);
-    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-12', 'minutes' => 300]);
-    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-13', 'minutes' => 600]);
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-12']);
 
+    actingAs($cara)->post(route('employees.work-entry-copies.store', $cara), ['date' => '2026-11-13'])->assertSessionHasNoErrors();
     actingAs($cara)->post(route('employees.work-entry-copies.store', $cara), ['date' => '2026-11-13'])
-        ->assertSessionHasErrors(['date' => 'Copying 15 hours would take Cara past 24 hours on 13 Nov 2026, where 10 are already recorded.']);
+        ->assertSessionHasErrors(['date' => 'Cara already has Work Entries on 13 Nov 2026; copying only fills a day with none.']);
 
-    assertDatabaseCount('work_entries', 3);
+    assertDatabaseCount('work_entries', 2);
+});
+
+it('names the month of a source day in another month', function () {
+    $cara = recorder();
+    WorkEntry::factory()->for(assignmentOf($cara, 'Relaunch', ['start_date' => '2026-10-01']))->create(['date' => '2026-10-30']);
+
+    actingAs($cara)->post(route('employees.work-entry-copies.store', $cara), ['date' => '2026-11-02'])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Copied 1 Work Entry from Fri 30 Oct.']);
 });
 
 it('requires a valid date', function (mixed $date) {
@@ -127,7 +133,7 @@ it('lets only those who may record hours for the Employee copy them', function (
     assertDatabaseCount('work_entries', 2);
 });
 
-it('tells each day it can be added to which earlier day its Work Entries would be copied from', function () {
+it('tells each empty day it can be added to which earlier day its Work Entries would be copied from', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-10-01']);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-06']);
@@ -137,7 +143,7 @@ it('tells each day it can be added to which earlier day its Work Entries would b
     actingAs($cara)->get(route('work-entries.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('days.0.copy_from', '2026-11-06')
-            ->where('days.1.copy_from', '2026-11-06')
+            ->where('days.1.copy_from', null)
             ->where('days.2.copy_from', '2026-11-10')
             ->where('days.3.copy_from', null)
             ->where('days.4.copy_from', '2026-11-10')

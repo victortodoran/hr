@@ -34,7 +34,7 @@ class WorkEntryCopyController extends Controller
         ])));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => trans_choice('{1} Copied :count Work Entry from :source.|[2,*] Copied :count Work Entries from :source.', $toCopy->count(), [
-            'source' => $request->sourceDate()?->format('D j'),
+            'source' => $request->sourceLabel(),
         ])]);
 
         return to_route('work-entries.index', ['employee' => $employee->id, ...Period::holding($request->query(), $date)->query()]);

@@ -2,12 +2,12 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\WorkEntry;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -16,13 +16,18 @@ use LogicException;
 /**
  * The day to copy an Employee's Work Entries onto, from the latest of the
  * days before it, at most a week back, that has any. Only Work Entries
- * whose Assignment runs on the day are copied; nothing is copied onto a
- * day still to come, a day of Time Off, or past 24 hours on the day.
+ * whose Assignment runs on the day are copied, and only onto a day with
+ * no Work Entries yet, up to today and without Time Off. A day holds at
+ * most 24 hours, so copying one onto an empty day never goes past them.
  */
 class CopyWorkEntriesRequest extends FormRequest
 {
     /** @var Collection<int, WorkEntry>|null */
     private ?Collection $toCopy = null;
+
+    private ?CarbonImmutable $sourceDate = null;
+
+    private bool $sourceDateFound = false;
 
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
@@ -56,6 +61,12 @@ class CopyWorkEntriesRequest extends FormRequest
                 return;
             }
 
+            if ($this->employee()->workEntries()->whereDate('work_entries.date', $date)->exists()) {
+                $validator->errors()->add('date', __(':name already has Work Entries on :date; copying only fills a day with none.', $replace));
+
+                return;
+            }
+
             $source = $this->sourceDate();
 
             if ($source === null) {
@@ -65,21 +76,9 @@ class CopyWorkEntriesRequest extends FormRequest
             }
 
             if ($this->toCopy()->isEmpty()) {
-                $validator->errors()->add('date', __('None of :name\'s Work Entries on :source are on an Assignment that runs on :date.', [...$replace, 'source' => $source->format('D j')]));
-
-                return;
+                $validator->errors()->add('date', __('None of :name\'s Work Entries on :source are on an Assignment that runs on :date.', [...$replace, 'source' => $this->sourceLabel()]));
             }
 
-            $recorded = (int) $this->employee()->workEntries()->whereDate('work_entries.date', $date)->sum('minutes');
-            $copying = (int) $this->toCopy()->sum('minutes');
-
-            if ($recorded + $copying > WorkEntry::MINUTES_IN_A_DAY) {
-                $validator->errors()->add('date', __('Copying :copying hours would take :name past 24 hours on :date, where :recorded are already recorded.', [
-                    ...$replace,
-                    'copying' => WorkEntry::formatHours($copying),
-                    'recorded' => WorkEntry::formatHours($recorded),
-                ]));
-            }
         }];
     }
 
@@ -97,12 +96,29 @@ class CopyWorkEntriesRequest extends FormRequest
      */
     public function sourceDate(): ?CarbonImmutable
     {
+        if ($this->sourceDateFound) {
+            return $this->sourceDate;
+        }
+
         $latest = $this->employee()->workEntries()
             ->whereDate('work_entries.date', '>=', $this->day()->subDays(WorkEntry::COPY_LOOKBACK_DAYS))
             ->whereDate('work_entries.date', '<', $this->day())
             ->max('work_entries.date');
 
-        return is_string($latest) ? CarbonImmutable::parse($latest)->startOfDay() : null;
+        $this->sourceDateFound = true;
+
+        return $this->sourceDate = is_string($latest) ? CarbonImmutable::parse($latest)->startOfDay() : null;
+    }
+
+    /**
+     * The source day as people read it: "Thu 12", or "Fri 31 Oct" when it
+     * falls in another month than the day copied onto.
+     */
+    public function sourceLabel(): string
+    {
+        $source = $this->sourceDate();
+
+        return $source === null ? '' : $source->format($source->isSameMonth($this->day()) ? 'D j' : 'D j M');
     }
 
     /**
@@ -113,23 +129,19 @@ class CopyWorkEntriesRequest extends FormRequest
      */
     public function toCopy(): Collection
     {
+        if ($this->toCopy !== null) {
+            return $this->toCopy;
+        }
+
         $source = $this->sourceDate();
 
-        return $this->toCopy ??= $source === null
+        return $this->toCopy = $source === null
             ? new Collection
             : $this->employee()->workEntries()
                 ->whereDate('work_entries.date', $source)
-                ->with('assignment')
+                ->whereHas('assignment', fn (Builder $running) => $running->runningOn($this->day()))
                 ->orderBy('work_entries.id')
-                ->get()
-                ->filter(fn (WorkEntry $entry): bool => $this->runsOn($entry->assignment, $this->day()))
-                ->values();
-    }
-
-    private function runsOn(Assignment $assignment, CarbonImmutable $date): bool
-    {
-        return ! $date->isBefore($assignment->start_date)
-            && ($assignment->end_date === null || ! $date->isAfter($assignment->end_date));
+                ->get();
     }
 
     /**

@@ -5,6 +5,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue';
 import WorkEntryCopyController from '@/actions/App/Http/Controllers/WorkEntryCopyController';
 import InputError from '@/components/InputError.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
@@ -377,6 +378,22 @@ function copyOnto(date: string): void {
 }
 
 /**
+ * The day Work Entries are copied from, such as "Thu 12", naming its month
+ * when it falls in another one than the day copied onto: "Fri 30 Oct".
+ */
+function formatSource(source: string, date: string): string {
+    if (source.slice(0, 7) === date.slice(0, 7)) {
+        return formatDay(source);
+    }
+
+    const month = new Date(`${source}T00:00:00`).toLocaleDateString(undefined, {
+        month: 'short',
+    });
+
+    return `${formatDay(source)} ${month}`;
+}
+
+/**
  * A day's full name, such as "Thursday 12 November".
  */
 function formatLongDay(date: string): string {
@@ -635,19 +652,24 @@ function formatLongDay(date: string): string {
                                     close</span
                                 >
                                 <span class="flex-1" />
-                                <Button
+                                <form
                                     v-if="segment.day.copy_from"
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    class="h-7 text-foreground"
-                                    :disabled="copyForm.processing"
-                                    @click="copyOnto(segment.day.date)"
-                                    ><Copy />Copy entries from
-                                    {{
-                                        formatDay(segment.day.copy_from)
-                                    }}</Button
+                                    @submit.prevent="copyOnto(segment.day.date)"
                                 >
+                                    <SubmitButton
+                                        :processing="copyForm.processing"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="h-7 text-foreground"
+                                        ><Copy />Copy entries from
+                                        {{
+                                            formatSource(
+                                                segment.day.copy_from,
+                                                segment.day.date,
+                                            )
+                                        }}</SubmitButton
+                                    >
+                                </form>
                                 <Button
                                     v-if="nextDay"
                                     type="button"

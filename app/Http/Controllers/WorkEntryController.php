@@ -56,7 +56,7 @@ class WorkEntryController extends Controller
 
         $canManage = $actor->can('create', [WorkEntry::class, $employee]);
         $canDelete = $actor->can(Permission::ManageWorkEntries->value, $employee);
-        $copySources = $canManage ? $this->datesWithEntries($employee, $period->from->subDays(WorkEntry::COPY_LOOKBACK_DAYS), $period->to->subDay()) : collect();
+        $copySources = $canManage ? $this->datesWithEntries($employee, $period, $entries) : collect();
         $days = $this->days($employee, $period, $entries, $timeOff, $canManage, $canDelete, $copySources);
 
         $tab = $request->tab();
@@ -181,9 +181,9 @@ class WorkEntryController extends Controller
      * A weekday covered by Pending or Approved Time Off says whether that
      * Time Off is Paid or Unpaid. A past weekday while the Employee works
      * here, with neither Work Entries nor such Time Off, is nothing logged.
-     * A day up to today without such Time Off, when the viewer can record
-     * hours, names the day copying Work Entries onto it would copy from:
-     * the latest day in the week before with any, or null.
+     * A day up to today with no Work Entries and no such Time Off, when the
+     * viewer can record hours, names the day copying Work Entries onto it
+     * would copy from: the latest day in the week before with any, or null.
      *
      * @param  Collection<int, WorkEntry>  $entries
      * @param  Collection<int, TimeOff>  $timeOff  the Employee's Pending and Approved Time Off overlapping the Period
@@ -216,7 +216,7 @@ class WorkEntryController extends Controller
                 'hours' => $onDay->sum('hours'),
                 'time_off' => $away === null ? null : ($away->is_paid ? 'paid' : 'unpaid'),
                 'nothing_logged' => $day->isWeekday() && $day->isBefore(today()) && $employed && $onDay->isEmpty() && $away === null,
-                'copy_from' => $canManage && ! $day->isAfter(today()) && $away === null
+                'copy_from' => $canManage && ! $day->isAfter(today()) && $away === null && $onDay->isEmpty()
                     ? $copySources->last(fn (string $source): bool => $source < $date && $source >= $day->subDays(WorkEntry::COPY_LOOKBACK_DAYS)->toDateString())
                     : null,
             ];
@@ -224,22 +224,26 @@ class WorkEntryController extends Controller
     }
 
     /**
-     * The dates, in order, from one day to another, on which the Employee
-     * has Work Entries.
+     * The dates, in order, the Employee has Work Entries on from a week
+     * before the Period to its end: those in the week before are looked up,
+     * those within it come from its Work Entries.
      *
+     * @param  Collection<int, WorkEntry>  $entries  the Employee's Work Entries in the Period
      * @return SupportCollection<int, string>
      */
-    private function datesWithEntries(Employee $employee, CarbonImmutable $from, CarbonImmutable $to): SupportCollection
+    private function datesWithEntries(Employee $employee, Period $period, Collection $entries): SupportCollection
     {
-        return $employee->workEntries()
-            ->whereDate('work_entries.date', '>=', $from)
-            ->whereDate('work_entries.date', '<=', $to)
-            ->get(['work_entries.date'])
+        $before = $employee->workEntries()
+            ->whereDate('work_entries.date', '>=', $period->from->subDays(WorkEntry::COPY_LOOKBACK_DAYS))
+            ->whereDate('work_entries.date', '<', $period->from)
+            ->get(['work_entries.date']);
+
+        return $before->toBase()
+            ->merge($entries)
             ->map(fn (WorkEntry $entry): string => $entry->date->toDateString())
             ->unique()
             ->sort()
-            ->values()
-            ->toBase();
+            ->values();
     }
 
     /**
