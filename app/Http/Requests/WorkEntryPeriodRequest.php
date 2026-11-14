@@ -23,6 +23,7 @@ class WorkEntryPeriodRequest extends FormRequest
     {
         return [
             'employee' => ['nullable', 'integer'],
+            'tab' => ['nullable', 'string'],
             'week' => ['nullable', 'date_format:Y-m-d'],
             'month' => ['nullable', 'date_format:Y-m'],
             'from' => ['nullable', 'required_with:to', 'date_format:Y-m-d'],
@@ -62,12 +63,17 @@ class WorkEntryPeriodRequest extends FormRequest
 
     /**
      * The Period asked for, the current week when none is. On the Calendar
-     * it is the month holding the first day of the Period asked for.
+     * it is the month holding the first day of the Period asked for, the
+     * current month when none is.
      */
     public function period(): Period
     {
-        $period = Period::fromQuery($this->query()) ?? Period::week(today());
+        $period = Period::fromQuery($this->query());
 
-        return $this->tab() === WorkEntriesTab::Calendar ? Period::month($period->from->format('Y-m')) : $period;
+        if ($this->tab() === WorkEntriesTab::Calendar) {
+            return Period::month(($period === null ? today() : $period->from)->format('Y-m'));
+        }
+
+        return $period ?? Period::week(today());
     }
 }

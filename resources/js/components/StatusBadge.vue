@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { HTMLAttributes } from 'vue';
 import { cn } from '@/lib/utils';
 import type { StatusBadgeState } from '@/types';
 
@@ -7,8 +8,10 @@ import type { StatusBadgeState } from '@/types';
  * red, Locked and Cancelled grey, Upcoming blue. The label defaults to the state's name; pass
  * slot content to word it differently.
  */
-defineProps<{
+const props = defineProps<{
     state: StatusBadgeState;
+    /** Classes merged over the badge's own, such as a width. */
+    class?: HTMLAttributes['class'];
 }>();
 
 const labels: Record<StatusBadgeState, string> = {
@@ -37,6 +40,7 @@ const colours: Record<StatusBadgeState, string> = {
             cn(
                 'inline-flex w-fit shrink-0 items-center justify-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap',
                 colours[state],
+                props.class,
             )
         "
         ><slot>{{ labels[state] }}</slot></span

@@ -19,12 +19,14 @@ beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
 
-it('shows a month as ISO weeks, Monday to Sunday, each day with its hours by Project, leaving out days of other months', function () {
+it('shows a month as ISO weeks, Monday to Sunday, each day with its hours by Project and state, leaving out days of other months', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
     $acme = assignmentOf($cara, 'Acme');
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-03', 'minutes' => 180]);
-    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-03', 'minutes' => 120]);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-03', 'minutes' => 60]);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-03', 'minutes' => 30]);
+    WorkEntry::factory()->for($relaunch)->approved()->locked()->create(['date' => '2026-11-03', 'minutes' => 30]);
     WorkEntry::factory()->for($acme)->create(['date' => '2026-11-03', 'minutes' => 150]);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-30', 'minutes' => 60]);
 
@@ -41,12 +43,14 @@ it('shows a month as ISO weeks, Monday to Sunday, each day with its hours by Pro
         ->where('calendar.1.number', 45)
         ->where('calendar.1.hours', 7.5)
         ->where('calendar.1.days.1', ['date' => '2026-11-03', 'hours' => 7.5, 'projects' => [
-            ['project' => 'Acme', 'hours' => 2.5],
-            ['project' => 'Relaunch', 'hours' => 5],
+            ['project' => 'Acme', 'state' => 'pending', 'hours' => 2.5],
+            ['project' => 'Relaunch', 'state' => 'pending', 'hours' => 3],
+            ['project' => 'Relaunch', 'state' => 'approved', 'hours' => 1.5],
+            ['project' => 'Relaunch', 'state' => 'locked', 'hours' => 0.5],
         ], 'time_off' => null, 'nothing_logged' => false])
         ->where('calendar.1.days.0.nothing_logged', true)
         ->where('calendar.5.number', 49)
-        ->where('calendar.5.days', [['date' => '2026-11-30', 'hours' => 1, 'projects' => [['project' => 'Relaunch', 'hours' => 1]], 'time_off' => null, 'nothing_logged' => false], null, null, null, null, null, null])
+        ->where('calendar.5.days', [['date' => '2026-11-30', 'hours' => 1, 'projects' => [['project' => 'Relaunch', 'state' => 'pending', 'hours' => 1]], 'time_off' => null, 'nothing_logged' => false], null, null, null, null, null, null])
         ->missing('days')
         ->missing('weeks')
         ->missing('assignments')
@@ -75,9 +79,16 @@ it('opens the calendar on the month holding the first day of the period asked fo
     'a custom period' => [['from' => '2026-10-15', 'to' => '2026-12-01']],
 ]);
 
-it('opens the calendar on the current month when no period is asked for', function () {
+it('opens the calendar on the current month when no period is asked for, even when this week began last month', function () {
+    travelTo('2026-12-03 09:00');
+
     actingAs(recorder())->get(route('work-entries.index', ['tab' => 'calendar']))
-        ->assertInertia(fn (Assert $page) => $page->where('period.query', ['month' => '2026-11']));
+        ->assertInertia(fn (Assert $page) => $page->where('period.query', ['month' => '2026-12']));
+});
+
+it('refuses a tab that is not a single value', function () {
+    actingAs(recorder())->get(route('work-entries.index', ['tab' => ['calendar']]))
+        ->assertInvalid(['tab' => 'The tab field must be a string.']);
 });
 
 it('opens the list for a tab it doesn\'t know, or none, loading only its own days', function (string $tab) {
