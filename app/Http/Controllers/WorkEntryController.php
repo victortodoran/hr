@@ -67,7 +67,7 @@ class WorkEntryController extends Controller
             'today' => today()->toDateString(),
             'total' => $entries->sum('hours'),
             'assignmentTotals' => $this->assignmentTotals($entries),
-            'assignments' => $this->assignments($employee, $period),
+            'assignments' => $canManage ? $this->assignments($employee, $period) : [],
             'canManage' => $canManage,
             'isOwn' => $employee->is($actor),
             ...match ($tab) {
@@ -79,7 +79,8 @@ class WorkEntryController extends Controller
 
     /**
      * The Employee's Assignments that run during the Period, by Project
-     * name, for adding and changing Work Entries.
+     * name, for adding and changing Work Entries; only sent to a viewer who
+     * can record the Employee's hours.
      *
      * @return SupportCollection<int, array{id: int, project: string, job_title: string|null, start_date: string, end_date: string|null}>
      */

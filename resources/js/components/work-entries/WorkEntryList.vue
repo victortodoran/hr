@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import {
+    formatHours,
+    takesEntries as takesEntriesOn,
+} from '@/lib/work-entries';
 import { ArrowRight, Pencil, Plus } from '@lucide/vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -7,7 +11,7 @@ import CopyWorkEntriesButton from '@/components/work-entries/CopyWorkEntriesButt
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
-import { formatLongDay, formatWeekdayAndDay } from '@/lib/dates';
+import { formatLongDay, formatWeekdayAndDay, isWeekend } from '@/lib/dates';
 import { formatDays, timeOffKindLabel } from '@/lib/time-off';
 import type {
     Choice,
@@ -60,13 +64,6 @@ type Segment =
 const columns =
     'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem_4.5rem]';
 
-/**
- * Hours as people read them, such as "7.5 h".
- */
-function formatHours(hours: number): string {
-    return `${hours.toLocaleString(undefined, { maximumFractionDigits: 2 })} h`;
-}
-
 function formatShort(date: string): string {
     return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
         day: 'numeric',
@@ -93,12 +90,6 @@ function formatWeekDates(week: WorkEntryWeek): string {
         : `${formatShort(week.from)} – ${formatShort(week.to)}`;
 }
 
-function isWeekend(date: string): boolean {
-    const weekday = new Date(`${date}T00:00:00`).getDay();
-
-    return weekday === 0 || weekday === 6;
-}
-
 /** Each Assignment's job title, by Assignment id. */
 const jobTitles = computed(
     () =>
@@ -118,7 +109,7 @@ function projectOf(entry: WorkEntryRecord): string {
 }
 
 function takesEntries(day: WorkEntryDay): boolean {
-    return props.canManage && day.date <= props.today;
+    return takesEntriesOn(day, props.canManage, props.today);
 }
 
 /**

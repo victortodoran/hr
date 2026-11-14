@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import {
+    formatHours,
+    takesEntries as takesEntriesOn,
+} from '@/lib/work-entries';
 import { useMediaQuery } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
 import StatusDot from '@/components/StatusDot.vue';
@@ -13,8 +17,9 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
 import WorkEntryDayPanel from '@/components/work-entries/WorkEntryDayPanel.vue';
-import { formatLongDay } from '@/lib/dates';
+import { formatLongDay, isWeekend } from '@/lib/dates';
 import { statusLabels } from '@/lib/status';
 import { timeOffKindLabel } from '@/lib/time-off';
 import type {
@@ -35,7 +40,8 @@ import type {
  * phone each day shows only its hours and a dot per state and for Time
  * Off. Days of other months are left blank; a legend names the dots.
  * Clicking a day opens it up (WorkEntryDayPanel): in a popover pointing at
- * it, or on a phone in a sheet from the bottom.
+ * it, or on a phone in a sheet from the bottom. Closing it, or opening
+ * another day, asks first while its add form holds unsaved typing.
  */
 const props = defineProps<{
     weeks: WorkEntryCalendarWeek[];
@@ -85,23 +91,84 @@ watch(
     },
 );
 
+/** The day whose add form holds typing that isn't saved yet, if any. */
+const dirtyDate = ref<string | null>(null);
+
+/** The day to open, or null to close, once the unsaved typing is given up. */
+const awaitingLeave = ref<{ date: string | null } | null>(null);
+
+function markDirty(date: string, isDirty: boolean): void {
+    if (isDirty) {
+        dirtyDate.value = date;
+    } else if (dirtyDate.value === date) {
+        dirtyDate.value = null;
+    }
+
+    emit('dirty', `calendar-${date}`, isDirty);
+}
+
+/**
+ * Opens a day, or with null closes the one open, asking first while the
+ * open day's add form holds unsaved typing.
+ */
+function show(date: string | null): void {
+    if (date === openDate.value) {
+        return;
+    }
+
+    if (dirtyDate.value !== null) {
+        awaitingLeave.value = { date };
+
+        return;
+    }
+
+    openDate.value = date;
+}
+
 function setOpen(date: string, isOpen: boolean): void {
     if (isOpen) {
-        openDate.value = date;
+        show(date);
     } else if (openDate.value === date) {
-        openDate.value = null;
+        show(null);
     }
 }
 
-/** Whether the viewer can add hours to a day: one up to today. */
-function takesEntries(day: WorkEntryDay): boolean {
-    return props.canManage && day.date <= props.today;
+/**
+ * Keeps the open day open when it is clicked away from, or Esc is pressed,
+ * while its add form holds unsaved typing, and asks instead. A day clicked
+ * on asks to open that day; leaving the question already asked as it is
+ * keeps the dialog taking focus from closing it.
+ */
+function holdUnsaved(event: Event): void {
+    if (dirtyDate.value === null) {
+        return;
+    }
+
+    event.preventDefault();
+    awaitingLeave.value ??= { date: null };
 }
 
-function isWeekend(date: string): boolean {
-    const weekday = new Date(`${date}T00:00:00`).getDay();
+/** Gives up the unsaved typing and goes on to the day asked for, or closes. */
+function leave(): void {
+    const date = awaitingLeave.value?.date ?? null;
 
-    return weekday === 0 || weekday === 6;
+    awaitingLeave.value = null;
+    dirtyDate.value = null;
+    openDate.value = date;
+}
+
+/**
+ * Keeps focus where the next day's add form puts it when the day closing
+ * gives way to another, rather than sending it back to the closed day.
+ */
+function keepFocusOnNextDay(event: Event): void {
+    if (openDate.value !== null) {
+        event.preventDefault();
+    }
+}
+
+function takesEntries(day: WorkEntryDay): boolean {
+    return takesEntriesOn(day, props.canManage, props.today);
 }
 
 /** Whether a day shows the "+ Add" hint: an empty weekday hours can be added to. */
@@ -122,13 +189,6 @@ function nextEmptyDay(date: string): string | null {
     );
 }
 
-/**
- * Hours as people read them, such as "7.5 h".
- */
-function formatHours(hours: number): string {
-    return `${hours.toLocaleString(undefined, { maximumFractionDigits: 2 })} h`;
-}
-
 const weekdays = computed(() =>
     ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].slice(
         0,
@@ -145,17 +205,18 @@ function shownDays(week: WorkEntryCalendarWeek): (WorkEntryDay | null)[] {
 const states = ['pending', 'approved', 'locked'] as const;
 
 /**
- * The Work Entries a day leaves out after its first three, as a tooltip:
- * one per line, such as "Relaunch · Team meeting · 1 h".
+ * A day's Work Entries and Time Off as its tooltip, one per line, such as
+ * "Relaunch · Team meeting · 1 h", so even those after the first three
+ * show on hover.
  */
-function moreTitle(day: WorkEntryDay): string {
-    return day.entries
-        .slice(shownEntries)
-        .map(
+function dayTitle(day: WorkEntryDay): string {
+    return [
+        ...day.entries.map(
             (entry) =>
                 `${entry.project} · ${entry.description} · ${formatHours(entry.hours)}`,
-        )
-        .join('\n');
+        ),
+        ...(day.time_off ? [timeOffLabel(day)] : []),
+    ].join('\n');
 }
 
 /** How many Work Entry lines a day shows before "+2 more". */
@@ -231,11 +292,15 @@ const columns = computed(() =>
                                     type="button"
                                     class="absolute inset-0 cursor-pointer outline-none hover:bg-muted/40 focus-visible:bg-muted/40"
                                     :aria-label="`${takesEntries(day) ? 'Add or view entries' : 'View'}, ${formatLongDay(day.date)}`"
+                                    :title="dayTitle(day)"
                                 />
                             </PopoverTrigger>
                             <PopoverContent
                                 :align="index >= 4 ? 'end' : 'start'"
                                 class="w-[23rem]"
+                                @interact-outside="holdUnsaved"
+                                @escape-key-down="holdUnsaved"
+                                @close-auto-focus="keepFocusOnNextDay"
                             >
                                 <WorkEntryDayPanel
                                     :day="day"
@@ -247,15 +312,9 @@ const columns = computed(() =>
                                     :next-empty-day="nextEmptyDay(day.date)"
                                     :last-assignment-id="lastAssignmentId"
                                     @added="lastAssignmentId = $event"
-                                    @open="openDate = $event"
-                                    @close="openDate = null"
-                                    @dirty="
-                                        emit(
-                                            'dirty',
-                                            `calendar-${day.date}`,
-                                            $event,
-                                        )
-                                    "
+                                    @open="show"
+                                    @close="show(null)"
+                                    @dirty="markDirty"
                                 />
                             </PopoverContent>
                         </Popover>
@@ -264,7 +323,7 @@ const columns = computed(() =>
                             type="button"
                             class="absolute inset-0 cursor-pointer outline-none focus-visible:bg-muted/40"
                             :aria-label="`${takesEntries(day) ? 'Add or view entries' : 'View'}, ${formatLongDay(day.date)}`"
-                            @click="openDate = day.date"
+                            @click="show(day.date)"
                         />
                         <div
                             class="pointer-events-none relative flex h-full flex-col px-2 py-2"
@@ -301,7 +360,6 @@ const columns = computed(() =>
                                 <span
                                     v-if="day.time_off"
                                     class="size-2.5 rounded-full bg-muted ring-1 ring-muted-foreground"
-                                    :title="timeOffLabel(day)"
                                     ><span class="sr-only">{{
                                         timeOffLabel(day)
                                     }}</span></span
@@ -321,11 +379,9 @@ const columns = computed(() =>
                                     :data-state="entry.state"
                                 >
                                     <StatusDot :state="entry.state" />
-                                    <span
-                                        class="min-w-0 flex-1 truncate"
-                                        :title="`${entry.project} · ${entry.description}`"
-                                        >{{ entry.description }}</span
-                                    >
+                                    <span class="min-w-0 flex-1 truncate">{{
+                                        entry.description
+                                    }}</span>
                                     <span
                                         class="shrink-0 text-muted-foreground tabular-nums"
                                         >{{ formatHours(entry.hours) }}</span
@@ -334,7 +390,6 @@ const columns = computed(() =>
                                 <li
                                     v-if="day.entries.length > shownEntries"
                                     class="text-xs text-muted-foreground"
-                                    :title="moreTitle(day)"
                                 >
                                     +{{ day.entries.length - shownEntries }}
                                     more
@@ -392,11 +447,13 @@ const columns = computed(() =>
 
         <Sheet
             :open="!isWide && openDay !== null"
-            @update:open="(isOpen) => !isOpen && (openDate = null)"
+            @update:open="(isOpen) => !isOpen && show(null)"
         >
             <SheetContent
                 side="bottom"
                 class="max-h-[85vh] overflow-y-auto p-4"
+                @interact-outside="holdUnsaved"
+                @escape-key-down="holdUnsaved"
             >
                 <SheetHeader class="sr-only">
                     <SheetTitle>{{
@@ -405,6 +462,7 @@ const columns = computed(() =>
                 </SheetHeader>
                 <WorkEntryDayPanel
                     v-if="openDay"
+                    :key="openDay.date"
                     :day="openDay"
                     :employee="employee"
                     :period="calendarPeriod"
@@ -414,11 +472,18 @@ const columns = computed(() =>
                     :next-empty-day="nextEmptyDay(openDay.date)"
                     :last-assignment-id="lastAssignmentId"
                     @added="lastAssignmentId = $event"
-                    @open="openDate = $event"
-                    @close="openDate = null"
-                    @dirty="emit('dirty', `calendar-${openDay.date}`, $event)"
+                    @open="show"
+                    @close="show(null)"
+                    @dirty="markDirty"
                 />
             </SheetContent>
         </Sheet>
+
+        <UnsavedWorkEntryDialog
+            :open="awaitingLeave !== null"
+            @stay="awaitingLeave = null"
+            @leave="leave"
+            @close-auto-focus="keepFocusOnNextDay"
+        />
     </div>
 </template>

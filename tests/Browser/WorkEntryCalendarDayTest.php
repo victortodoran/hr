@@ -34,6 +34,7 @@ it('adds, copies and deletes Work Entries from a Calendar day, and moves on to t
         ->assertSeeIn('[data-panel-date="2026-11-11"]', 'Checkout API')
         ->click('Next empty day · Thu 12')
         ->assertPresent('[data-panel-date="2026-11-12"]')
+        ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-12')
         ->fill('#work-entry-description-2026-11-12', 'Sprint planning')
         ->fill('#work-entry-hours-2026-11-12', '2')
         ->keys('#work-entry-hours-2026-11-12', 'Enter')
@@ -95,5 +96,40 @@ it('opens a day as a sheet from the bottom on a phone', function () {
         ->fill('#work-entry-hours-2026-11-12', '1')
         ->keys('#work-entry-hours-2026-11-12', 'Enter')
         ->assertSeeIn('[data-panel-date="2026-11-12"]', 'From my phone')
+        ->click('Next empty day · Fri 13')
+        ->assertPresent('[data-slot="sheet-content"] [data-panel-date="2026-11-13"]')
+        ->fill('#work-entry-description-2026-11-13', 'Next day from my phone')
+        ->fill('#work-entry-hours-2026-11-13', '1')
+        ->keys('#work-entry-hours-2026-11-13', 'Enter')
+        ->assertSeeIn('[data-panel-date="2026-11-13"]', 'Next day from my phone')
+        ->assertNoJavaScriptErrors();
+
+    expect(WorkEntry::query()->where('description', 'Next day from my phone')->sole()->date->toDateString())->toBe('2026-11-13');
+});
+
+it('asks before closing a day, or opening another, with unsaved typing in its add form', function () {
+    $cara = recorder();
+    assignmentOf($cara);
+
+    actingAs($cara);
+
+    visit(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']))
+        ->click('[aria-label="Add or view entries, Thursday 12 November"]')
+        ->fill('#work-entry-description-2026-11-12', 'Half typed')
+        ->keys('#work-entry-description-2026-11-12', 'Escape')
+        ->assertSee('You have an unsaved Work Entry. Leave anyway?')
+        ->click('Stay')
+        ->assertValue('#work-entry-description-2026-11-12', 'Half typed')
+        ->click('Next empty day · Fri 13')
+        ->assertSee('You have an unsaved Work Entry. Leave anyway?')
+        ->click('Stay')
+        ->assertValue('#work-entry-description-2026-11-12', 'Half typed')
+        ->click('Next empty day · Fri 13')
+        ->click('Leave')
+        ->assertNotPresent('[data-panel-date="2026-11-12"]')
+        ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-13')
+        ->click('[aria-label="Previous month"]')
+        ->assertQueryStringHas('month', '2026-10')
+        ->assertDontSee('Leave without saving?')
         ->assertNoJavaScriptErrors();
 });

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatHours } from '@/lib/work-entries';
 import { Head, Link } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -45,13 +46,6 @@ defineProps<{
     /** What waits for the Employee to decide; null when nothing does. */
     waitingForYou: ApprovalsWaiting | null;
 }>();
-
-/**
- * Hours as people read them, such as "7.5 h".
- */
-function formatHours(hours: number): string {
-    return `${hours.toLocaleString(undefined, { maximumFractionDigits: 2 })} h`;
-}
 </script>
 
 <template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatHours } from '@/lib/work-entries';
 import { ArrowRight } from '@lucide/vue';
 import { nextTick, onMounted, ref } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -39,18 +40,11 @@ const emit = defineEmits<{
     added: [assignmentId: number];
     /** Open another day instead. */
     open: [date: string];
-    /** Whether the add form holds typing that isn't saved yet. */
-    dirty: [isDirty: boolean];
+    /** Whether the add form on this day holds typing that isn't saved yet. */
+    dirty: [date: string, isDirty: boolean];
     /** Esc was pressed in the add form. */
     close: [];
 }>();
-
-/**
- * Hours as people read them, such as "7.5 h".
- */
-function formatHours(hours: number): string {
-    return `${hours.toLocaleString(undefined, { maximumFractionDigits: 2 })} h`;
-}
 
 const addRow = ref<InstanceType<typeof WorkEntryRow> | null>(null);
 
@@ -124,7 +118,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
             :today="today"
             :last-assignment-id="lastAssignmentId"
             @saved="entryAdded"
-            @dirty="emit('dirty', $event)"
+            @dirty="emit('dirty', day.date, $event)"
             @dismiss="emit('close')"
         />
 

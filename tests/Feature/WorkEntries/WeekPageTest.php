@@ -280,17 +280,19 @@ it('offers the Employee\'s Assignments that run during the week', function () {
     ]));
 });
 
-it('lets someone see the week of an Employee their Scope covers, as not their own', function (array $grants, bool $canManage) {
+it('lets someone see the week of an Employee their Scope covers, as not their own, with Assignments to add to only when they may', function (array $grants, bool $canManage) {
     $top = Employee::factory()->top()->create(['name' => 'Ada']);
     $ben = employeeWith($grants, ['name' => 'Ben', 'manager_id' => $top->id]);
     $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
+    assignmentOf($cara);
 
     $response = actingAs($ben)->get(route('work-entries.index', ['employee' => $cara->id]));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('employee', ['id' => $cara->id, 'name' => 'Cara'])
         ->where('canManage', $canManage)
-        ->where('isOwn', false));
+        ->where('isOwn', false)
+        ->has('assignments', $canManage ? 1 : 0));
 })->with([
     'view reports' => [[Permission::ViewWorkEntries->value => Scope::Reports], false],
     'manage reports' => [[Permission::ManageWorkEntries->value => Scope::Reports], true],

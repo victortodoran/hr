@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatHours } from '@/lib/work-entries';
 import { router } from '@inertiajs/vue3';
 import { CheckCheck } from '@lucide/vue';
 import { computed, ref } from 'vue';
@@ -94,13 +95,6 @@ function approve(): void {
             },
         },
     );
-}
-
-/**
- * Hours as people read them, such as "7.5 h".
- */
-function formatHours(hours: number): string {
-    return `${hours.toLocaleString(undefined, { maximumFractionDigits: 2 })} h`;
 }
 </script>
 
