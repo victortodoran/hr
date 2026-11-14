@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { statusColours } from '@/lib/status';
 import type { WorkEntryCalendarDay, WorkEntryCalendarWeek } from '@/types';
 
 /**
  * A read-only month of Work Entries, one row per ISO week, Monday to
  * Sunday, or Monday to Friday with weekends hidden. Each row starts with
  * its week number and hours; each day shows its hours, one line per
- * Project, and its Time Off or nothing logged. Days of other months are
- * left blank.
+ * Project and state in that state's status colour, and its Time Off or
+ * nothing logged. Days of other months are left blank.
  */
 const props = defineProps<{
     weeks: WorkEntryCalendarWeek[];
@@ -98,8 +99,12 @@ const columns = computed(() =>
                     <ul v-if="day.projects.length > 0" class="mt-1 space-y-0.5">
                         <li
                             v-for="onProject in day.projects"
-                            :key="onProject.project"
-                            class="flex justify-between gap-1 text-xs text-muted-foreground"
+                            :key="`${onProject.project}-${onProject.state}`"
+                            :class="[
+                                'flex justify-between gap-1 rounded px-1.5 py-0.5 text-xs',
+                                statusColours[onProject.state],
+                            ]"
+                            :data-state="onProject.state"
                         >
                             <span class="min-w-0 truncate">{{
                                 onProject.project
