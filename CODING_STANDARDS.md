@@ -16,6 +16,6 @@ One line per rule; list each place a diff breaks one.
 - Tabbed pages resolve `?tab=` through an enum and fall back to the default tab when it's unknown or not allowed (see `ApprovalsTab` and `EmployeePageTab`).
 - Submit buttons show a spinner while saving (`SubmitButton`).
 - Every delete asks for confirmation (the dialog pattern in `DeleteClient`).
-- Lists use the shared table (`DataTable`) and mark their minor columns, so a row fits on a phone without scrolling sideways; no hand-written `<table>`s or bordered `ul` lists.
+- Lists use the shared table (`DataTable`) and mark their minor columns, so a row fits on a phone without scrolling sideways; no hand-written `<table>`s or bordered `ul` lists. The one exception is the Work Entries List (`WorkEntryList`), whose week rows, folded runs of days and inline forms `DataTable` doesn't support; it still stacks on a phone instead of scrolling.
 - Every list has an empty state (`EmptyState`): an icon, a sentence saying what belongs there, and its action only when the page's permission flag allows it.
 - Tabs (`@/components/ui/tabs`) are kept in the URL, and only the open tab's data loads.

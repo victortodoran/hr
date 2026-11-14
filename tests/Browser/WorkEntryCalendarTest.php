@@ -53,9 +53,9 @@ it('fits a phone, showing each day\'s hours and a dot per state instead of its P
     visit(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']))
         ->resize(360, 800)
         ->assertSee('7.5 h')
-        ->assertDontSee('A Project With A Long Name')
+        ->assertScript('document.querySelector(\'[data-date="2026-11-03"]\').innerText.includes("A Project With A Long Name")', false)
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->resize(1280, 800)
-        ->assertSee('A Project With A Long Name')
+        ->assertSeeIn('[data-date="2026-11-03"]', 'A Project With A Long Name')
         ->assertNoJavaScriptErrors();
 });

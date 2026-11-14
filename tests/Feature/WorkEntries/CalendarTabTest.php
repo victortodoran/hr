@@ -53,8 +53,23 @@ it('shows a month as ISO weeks, Monday to Sunday, each day with its hours by Pro
         ->where('calendar.5.days', [['date' => '2026-11-30', 'hours' => 1, 'projects' => [['project' => 'Relaunch', 'state' => 'pending', 'hours' => 1]], 'time_off' => null, 'nothing_logged' => false], null, null, null, null, null, null])
         ->missing('days')
         ->missing('weeks')
-        ->missing('assignments')
-        ->missing('assignmentTotals'));
+        ->missing('assignments'));
+});
+
+it('totals the month on each Project, most hours first', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    $acme = assignmentOf($cara, 'Acme');
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-03', 'minutes' => 60]);
+    WorkEntry::factory()->for($acme)->create(['date' => '2026-11-04', 'minutes' => 150]);
+
+    $response = actingAs($cara)->get(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']));
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('assignmentTotals', [
+            ['assignment_id' => $acme->id, 'project' => 'Acme', 'hours' => 2.5],
+            ['assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1],
+        ]));
 });
 
 it('marks Time Off on the calendar, in future months too', function () {

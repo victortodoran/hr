@@ -66,6 +66,7 @@ class WorkEntryController extends Controller
             'period' => $period->toArray(),
             'today' => today()->toDateString(),
             'total' => $entries->sum('hours'),
+            'assignmentTotals' => $this->assignmentTotals($entries),
             'canManage' => $canManage,
             'isOwn' => $employee->is($actor),
             ...match ($tab) {
@@ -76,8 +77,8 @@ class WorkEntryController extends Controller
     }
 
     /**
-     * The List tab: the Period's days, its ISO weeks, the hours on each
-     * Assignment, and the Employee's Assignments that run during it.
+     * The List tab: the Period's days, its ISO weeks, and the Employee's
+     * Assignments that run during it.
      *
      * @param  Collection<int, WorkEntry>  $entries
      * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool}>  $days
@@ -88,14 +89,6 @@ class WorkEntryController extends Controller
         return [
             'days' => $days,
             'weeks' => $this->weeks($days),
-            'assignmentTotals' => $entries->groupBy('assignment_id')
-                ->map(fn (Collection $onAssignment): array => [
-                    'assignment_id' => $onAssignment->firstOrFail()->assignment_id,
-                    'project' => $onAssignment->firstOrFail()->assignment->project->name,
-                    'hours' => $onAssignment->sum('hours'),
-                ])
-                ->sortBy('project')
-                ->values(),
             'assignments' => $employee->assignments()
                 ->whereDate('start_date', '<=', $period->to)
                 ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $period->from))
@@ -111,6 +104,25 @@ class WorkEntryController extends Controller
                 ])
                 ->values(),
         ];
+    }
+
+    /**
+     * The hours on each Assignment in the Period, most hours first, then by
+     * Project name.
+     *
+     * @param  Collection<int, WorkEntry>  $entries
+     * @return SupportCollection<int, array{assignment_id: int, project: string, hours: float|int}>
+     */
+    private function assignmentTotals(Collection $entries): SupportCollection
+    {
+        return $entries->groupBy('assignment_id')
+            ->map(fn (Collection $onAssignment): array => [
+                'assignment_id' => $onAssignment->firstOrFail()->assignment_id,
+                'project' => $onAssignment->firstOrFail()->assignment->project->name,
+                'hours' => $onAssignment->sum(fn (WorkEntry $entry): float|int => $entry->hours),
+            ])
+            ->sortBy([['hours', 'desc'], ['project', 'asc']])
+            ->values();
     }
 
     /**

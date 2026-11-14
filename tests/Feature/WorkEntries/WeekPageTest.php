@@ -57,8 +57,8 @@ it('shows the week holding the given day, with totals for each day, each Assignm
         ], 'time_off' => null, 'nothing_logged' => false])
         ->where('days.6', ['date' => '2026-11-08', 'hours' => 0, 'entries' => [], 'time_off' => null, 'nothing_logged' => false])
         ->where('assignmentTotals', [
-            ['assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75],
             ['assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 3.5],
+            ['assignment_id' => $billing->id, 'project' => 'Billing', 'hours' => 0.75],
         ])
         ->where('total', 4.25));
 });
