@@ -130,13 +130,13 @@ final readonly class Period
     }
 
     /**
-     * The period as the page gets it.
+     * The period as the page gets it, with the URL query asking for it.
      *
-     * @return array{mode: string, from: string, to: string}
+     * @return array{mode: string, from: string, to: string, query: array<string, string>}
      */
     public function toArray(): array
     {
-        return ['mode' => $this->mode->value, 'from' => $this->from->toDateString(), 'to' => $this->to->toDateString()];
+        return ['mode' => $this->mode->value, 'from' => $this->from->toDateString(), 'to' => $this->to->toDateString(), 'query' => $this->query()];
     }
 
     private static function date(string $date): CarbonImmutable

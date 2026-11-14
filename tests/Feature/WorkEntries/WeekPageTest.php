@@ -26,7 +26,7 @@ it('opens on the viewer\'s own current week, Monday to Sunday', function () {
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('work-entries/Index')
         ->where('employee', ['id' => $cara->id, 'name' => 'Cara'])
-        ->where('period', ['mode' => 'week', 'from' => '2026-11-09', 'to' => '2026-11-15'])
+        ->where('period', ['mode' => 'week', 'from' => '2026-11-09', 'to' => '2026-11-15', 'query' => ['week' => '2026-11-09']])
         ->where('today', '2026-11-11')
         ->where('days', collect(['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15'])
             ->map(fn (string $date): array => ['date' => $date, 'entries' => [], 'hours' => 0, 'time_off' => null, 'nothing_logged' => $date < '2026-11-11'])
@@ -47,7 +47,7 @@ it('shows the week holding the given day, with totals for each day, each Assignm
     $response = actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-08']));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('period', ['mode' => 'week', 'from' => '2026-11-02', 'to' => '2026-11-08'])
+        ->where('period', ['mode' => 'week', 'from' => '2026-11-02', 'to' => '2026-11-08', 'query' => ['week' => '2026-11-02']])
         ->where('days.1', ['date' => '2026-11-03', 'hours' => 3.5, 'entries' => [
             ['id' => $review->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 2, 'description' => 'Review', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
             ['id' => $api->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'state' => 'pending', 'approved' => null, 'locked' => null, 'can_edit' => true, 'can_delete' => true],
@@ -73,7 +73,7 @@ it('shows a month day by day, with totals for the month', function () {
     $response = actingAs($cara)->get(route('work-entries.index', ['month' => '2026-10']));
 
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('period', ['mode' => 'month', 'from' => '2026-10-01', 'to' => '2026-10-31'])
+        ->where('period', ['mode' => 'month', 'from' => '2026-10-01', 'to' => '2026-10-31', 'query' => ['month' => '2026-10']])
         ->has('days', 31)
         ->where('days.0.date', '2026-10-01')
         ->where('days.30.hours', 0.5)
@@ -88,7 +88,7 @@ it('shows a custom period day by day, up to three months long', function (string
     $response = actingAs($cara)->get(route('work-entries.index', ['from' => '2026-11-03', 'to' => $to]));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('period', ['mode' => 'custom', 'from' => '2026-11-03', 'to' => $to])
+        ->where('period', ['mode' => 'custom', 'from' => '2026-11-03', 'to' => $to, 'query' => ['from' => '2026-11-03', 'to' => $to]])
         ->has('days', $days)
         ->where('days.0.date', '2026-11-03'));
 })->with([
@@ -114,7 +114,7 @@ it('shows future weeks and months, offering to record hours on none of their day
     $response = actingAs($cara)->get(route('work-entries.index', ['month' => '2026-12']));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('period', ['mode' => 'month', 'from' => '2026-12-01', 'to' => '2026-12-31'])
+        ->where('period', ['mode' => 'month', 'from' => '2026-12-01', 'to' => '2026-12-31', 'query' => ['month' => '2026-12']])
         ->where('days.20.time_off', 'paid')
         ->where('days.20.nothing_logged', false)
         ->where('assignments.0.id', $relaunch->id));

@@ -74,17 +74,6 @@ function formatDay(date: string): string {
     });
 }
 
-/** The URL query asking for the Period shown, kept when saving or deleting. */
-const periodQuery = computed((): Record<string, string> => {
-    const { mode, from, to } = props.period;
-
-    if (mode === 'week') {
-        return { week: from };
-    }
-
-    return mode === 'month' ? { month: from.slice(0, 7) } : { from, to };
-});
-
 /**
  * Shows another Period, naming the Employee only when the Work Entries
  * aren't the viewer's own.
@@ -285,7 +274,7 @@ function leaveWeek(): void {
                             <WorkEntryRow
                                 v-if="editing.has(entry.id)"
                                 :employee="employee"
-                                :period-query="periodQuery"
+                                :period-query="period.query"
                                 :assignments="assignments"
                                 :date="day.date"
                                 :today="today"
@@ -328,7 +317,7 @@ function leaveWeek(): void {
                                     <DeleteWorkEntry
                                         v-else-if="entry.can_delete"
                                         :entry="entry"
-                                        :period-query="periodQuery"
+                                        :period-query="period.query"
                                     />
                                 </div>
                             </div>
@@ -338,7 +327,7 @@ function leaveWeek(): void {
                         v-if="canManage && day.date <= today"
                         :ref="(row) => rememberNewRow(day.date, row)"
                         :employee="employee"
-                        :period-query="periodQuery"
+                        :period-query="period.query"
                         :assignments="assignments"
                         :date="day.date"
                         :today="today"
