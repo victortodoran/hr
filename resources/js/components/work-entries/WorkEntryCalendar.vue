@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { statusColours } from '@/lib/status';
+import StatusBadge from '@/components/StatusBadge.vue';
 import type { WorkEntryCalendarDay, WorkEntryCalendarWeek } from '@/types';
 
 /**
  * A read-only month of Work Entries, one row per ISO week, Monday to
  * Sunday, or Monday to Friday with weekends hidden. Each row starts with
  * its week number and hours; each day shows its hours, one line per
- * Project and state in that state's status colour, and its Time Off or
+ * Project and state as a status badge, and its Time Off or
  * nothing logged. Days of other months are left blank.
  */
 const props = defineProps<{
@@ -100,18 +100,17 @@ const columns = computed(() =>
                         <li
                             v-for="onProject in day.projects"
                             :key="`${onProject.project}-${onProject.state}`"
-                            :class="[
-                                'flex justify-between gap-1 rounded px-1.5 py-0.5 text-xs',
-                                statusColours[onProject.state],
-                            ]"
-                            :data-state="onProject.state"
                         >
-                            <span class="min-w-0 truncate">{{
-                                onProject.project
-                            }}</span>
-                            <span
-                                class="shrink-0 whitespace-nowrap tabular-nums"
-                                >{{ formatHours(onProject.hours) }}</span
+                            <StatusBadge
+                                :state="onProject.state"
+                                class="flex w-full justify-between gap-1 rounded px-1.5 font-normal"
+                                :data-state="onProject.state"
+                                ><span class="min-w-0 truncate">{{
+                                    onProject.project
+                                }}</span
+                                ><span class="shrink-0 tabular-nums">{{
+                                    formatHours(onProject.hours)
+                                }}</span></StatusBadge
                             >
                         </li>
                     </ul>

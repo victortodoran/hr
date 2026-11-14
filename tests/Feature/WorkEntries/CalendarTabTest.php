@@ -79,9 +79,16 @@ it('opens the calendar on the month holding the first day of the period asked fo
     'a custom period' => [['from' => '2026-10-15', 'to' => '2026-12-01']],
 ]);
 
-it('opens the calendar on the current month when no period is asked for', function () {
+it('opens the calendar on the current month when no period is asked for, even when this week began last month', function () {
+    travelTo('2026-12-03 09:00');
+
     actingAs(recorder())->get(route('work-entries.index', ['tab' => 'calendar']))
-        ->assertInertia(fn (Assert $page) => $page->where('period.query', ['month' => '2026-11']));
+        ->assertInertia(fn (Assert $page) => $page->where('period.query', ['month' => '2026-12']));
+});
+
+it('refuses a tab that is not a single value', function () {
+    actingAs(recorder())->get(route('work-entries.index', ['tab' => ['calendar']]))
+        ->assertInvalid(['tab' => 'The tab field must be a string.']);
 });
 
 it('opens the list for a tab it doesn\'t know, or none, loading only its own days', function (string $tab) {

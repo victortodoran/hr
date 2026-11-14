@@ -104,14 +104,19 @@ function showPeriod(query: Record<string, string>): void {
 }
 
 /**
- * Opens a tab on the same Period: the Calendar on the month holding its
- * first day, the List on the Calendar's month.
+ * Opens a tab on the same Period: the Calendar on the month holding today
+ * when the Period does, or else its first day; the List on the Calendar's
+ * month.
  */
 function openTab(tab: string | number): void {
+    const { from, to, query } = props.period;
+    const anchor =
+        from <= props.today && props.today <= to ? props.today : from;
+
     showPeriod(
         tab === 'calendar'
-            ? { tab: 'calendar', month: props.period.from.slice(0, 7) }
-            : props.period.query,
+            ? { tab: 'calendar', month: anchor.slice(0, 7) }
+            : query,
     );
 }
 
