@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowRight, Pencil, Plus } from '@lucide/vue';
-import { computed, nextTick, reactive, ref } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
@@ -223,16 +223,50 @@ const lastAssignmentId = ref<number | null>(null);
 /** The day the add form is open on, if any; only one is open at a time. */
 const activeDate = ref<string | null>(null);
 
-/** The day to open the add form on once giving up unsaved typing is confirmed. */
-const heldDate = ref<string | null>(null);
+/** What to do once giving up unsaved typing is confirmed. */
+const heldAction = ref<(() => void) | null>(null);
 
-/** Whether the open add form holds typing that isn't saved yet. */
-const addFormDirty = ref(false);
+/** The rows holding typing that isn't saved yet, by row key. */
+const dirtyRows = reactive(new Set<string>());
 
 let addRow: InstanceType<typeof WorkEntryRow> | null = null;
+let addRowDate: string | null = null;
 
-function rememberAddRow(row: unknown): void {
-    addRow = row as InstanceType<typeof WorkEntryRow> | null;
+/**
+ * Keeps hold of the open add form. When it moves to another day, the old
+ * day's row may let go after the new one is held, so only the day held
+ * lets go.
+ */
+function rememberAddRow(date: string, row: unknown): void {
+    if (row) {
+        addRow = row as InstanceType<typeof WorkEntryRow>;
+        addRowDate = date;
+    } else if (addRowDate === date) {
+        addRow = null;
+        addRowDate = null;
+    }
+}
+
+function rowChanged(rowKey: string, isDirty: boolean): void {
+    if (isDirty) {
+        dirtyRows.add(rowKey);
+    } else {
+        dirtyRows.delete(rowKey);
+    }
+
+    emit('dirty', rowKey, isDirty);
+}
+
+/**
+ * Does something that gives up a row's typing, asking first when it holds
+ * any that isn't saved.
+ */
+function unlessUnsaved(rowKey: string, action: () => void): void {
+    if (dirtyRows.has(rowKey)) {
+        heldAction.value = action;
+    } else {
+        action();
+    }
 }
 
 /**
@@ -240,17 +274,13 @@ function rememberAddRow(row: unknown): void {
  * that one holds unsaved typing, asks first.
  */
 function openAdd(date: string): void {
-    if (
-        activeDate.value !== null &&
-        activeDate.value !== date &&
-        addFormDirty.value
-    ) {
-        heldDate.value = date;
+    if (activeDate.value === null || activeDate.value === date) {
+        void showAdd(date);
 
         return;
     }
 
-    void showAdd(date);
+    unlessUnsaved(`new-${activeDate.value}`, () => void showAdd(date));
 }
 
 async function showAdd(date: string): Promise<void> {
@@ -263,19 +293,41 @@ function closeAdd(): void {
     activeDate.value = null;
 }
 
-function leaveForHeldDate(): void {
-    const date = heldDate.value;
-    heldDate.value = null;
+/** Esc in the add form closes it, asking first when it holds unsaved typing. */
+function dismissAdd(date: string): void {
+    unlessUnsaved(`new-${date}`, closeAdd);
+}
 
-    if (date !== null) {
-        void showAdd(date);
+/** Esc while changing a Work Entry gives up, asking first when it was changed. */
+function dismissEdit(entryId: number): void {
+    unlessUnsaved(`entry-${entryId}`, () => editing.delete(entryId));
+}
+
+/**
+ * Once the dialog asking about unsaved typing closes, puts the cursor back
+ * in the open add form rather than on whatever opened the dialog.
+ */
+function refocusAddForm(event: Event): void {
+    if (addRow !== null) {
+        event.preventDefault();
+        addRow.focusDescription();
     }
 }
 
-function addFormChanged(date: string, isDirty: boolean): void {
-    addFormDirty.value = isDirty;
-    emit('dirty', `new-${date}`, isDirty);
+function leaveUnsaved(): void {
+    const action = heldAction.value;
+    heldAction.value = null;
+    action?.();
 }
+
+/** A form open in one Period isn't carried into another. */
+watch(
+    () => JSON.stringify(props.period.query),
+    () => {
+        activeDate.value = null;
+        editing.clear();
+    },
+);
 
 /**
  * Whether "Next day" stops at a day: a weekday up to today without Time
@@ -287,13 +339,15 @@ function takesNextEntry(day: WorkEntryDay): boolean {
     );
 }
 
-/** The next day of the Period "Next day" moves the add form to, if any. */
-function nextDay(date: string): string | null {
-    return (
-        props.days.find((day) => day.date > date && takesNextEntry(day))
-            ?.date ?? null
-    );
-}
+/** The day of the Period "Next day" moves the add form to, if any. */
+const nextDay = computed(() => {
+    const date = activeDate.value;
+
+    return date === null
+        ? null
+        : (props.days.find((day) => day.date > date && takesNextEntry(day))
+              ?.date ?? null);
+});
 
 /**
  * After a Work Entry is added, keeps the add form on the same day, empty,
@@ -415,9 +469,8 @@ function formatLongDay(date: string): string {
                                 :entry="entry"
                                 @saved="editing.delete(entry.id)"
                                 @cancel="editing.delete(entry.id)"
-                                @dirty="
-                                    emit('dirty', `entry-${entry.id}`, $event)
-                                "
+                                @dismiss="dismissEdit(entry.id)"
+                                @dirty="rowChanged(`entry-${entry.id}`, $event)"
                             />
                         </div>
                         <div
@@ -523,7 +576,10 @@ function formatLongDay(date: string): string {
                             class="col-span-2 rounded-md p-2 ring-2 ring-primary sm:col-span-5"
                         >
                             <WorkEntryRow
-                                :ref="rememberAddRow"
+                                :ref="
+                                    (row) =>
+                                        rememberAddRow(segment.day.date, row)
+                                "
                                 :employee="employee"
                                 :period-query="period.query"
                                 :assignments="assignments"
@@ -532,8 +588,12 @@ function formatLongDay(date: string): string {
                                 :last-assignment-id="lastAssignmentId"
                                 @saved="entryAdded"
                                 @cancel="closeAdd"
+                                @dismiss="dismissAdd(segment.day.date)"
                                 @dirty="
-                                    addFormChanged(segment.day.date, $event)
+                                    rowChanged(
+                                        `new-${segment.day.date}`,
+                                        $event,
+                                    )
                                 "
                             />
                             <div
@@ -555,14 +615,13 @@ function formatLongDay(date: string): string {
                                 >
                                 <span class="flex-1" />
                                 <Button
-                                    v-if="nextDay(segment.day.date)"
+                                    v-if="nextDay"
                                     type="button"
                                     variant="outline"
                                     size="sm"
                                     class="h-7"
-                                    @click="openAdd(nextDay(segment.day.date)!)"
-                                    >Next day ·
-                                    {{ formatDay(nextDay(segment.day.date)!)
+                                    @click="openAdd(nextDay)"
+                                    >Next day · {{ formatDay(nextDay)
                                     }}<ArrowRight
                                 /></Button>
                             </div>
@@ -613,9 +672,10 @@ function formatLongDay(date: string): string {
         </section>
 
         <UnsavedWorkEntryDialog
-            :open="heldDate !== null"
-            @stay="heldDate = null"
-            @leave="leaveForHeldDate"
+            :open="heldAction !== null"
+            @stay="heldAction = null"
+            @leave="leaveUnsaved"
+            @close-auto-focus="refocusAddForm"
         />
     </div>
 </template>

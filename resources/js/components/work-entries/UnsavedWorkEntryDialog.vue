@@ -21,12 +21,14 @@ const emit = defineEmits<{
     stay: [];
     /** Give it up and go on. */
     leave: [];
+    /** The dialog closed and is about to put focus back where it came from; preventing it keeps focus where the page puts it. */
+    closeAutoFocus: [event: Event];
 }>();
 </script>
 
 <template>
     <Dialog :open="open" @update:open="(isOpen) => !isOpen && emit('stay')">
-        <DialogContent>
+        <DialogContent @close-auto-focus="emit('closeAutoFocus', $event)">
             <DialogHeader>
                 <DialogTitle>Leave without saving?</DialogTitle>
                 <DialogDescription>

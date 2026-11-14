@@ -42,6 +42,8 @@ const emit = defineEmits<{
     saved: [assignmentId: number];
     /** Changing or adding the Work Entry was given up. */
     cancel: [];
+    /** Esc was pressed, asking to give it up. */
+    dismiss: [];
     /** Whether the row holds typing that isn't saved yet. */
     dirty: [isDirty: boolean];
 }>();
@@ -162,7 +164,7 @@ defineExpose({ focusDescription });
                 : 'sm:grid-cols-[minmax(0,1fr)_12rem_5rem_auto]'
         "
         @submit.prevent="save"
-        @keydown.esc.prevent="emit('cancel')"
+        @keydown.esc.prevent="emit('dismiss')"
     >
         <div v-if="entry" class="grid min-w-0 gap-1">
             <label :for="fieldId('date')" class="sr-only">Date</label>
