@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Head, router, setLayoutProps } from '@inertiajs/vue3';
+import { useLocalStorage } from '@vueuse/core';
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -12,6 +14,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
 import WorkEntryRow from '@/components/work-entries/WorkEntryRow.vue';
@@ -136,18 +139,39 @@ function stopEditing(entryId: number): void {
     unsaved.delete(`entry-${entryId}`);
 }
 
+/** Whether Saturdays and Sundays are shown, remembered in this browser. */
+const showWeekends = useLocalStorage('work-entries.show-weekends', true);
+
+/**
+ * The days listed: every day of the Period, or with weekends hidden, every
+ * day but a Saturday or Sunday with no Work Entries, so hours are never out
+ * of sight. Should that leave no day at all, every day is listed.
+ */
+const shownDays = computed(() => {
+    if (showWeekends.value) {
+        return props.days;
+    }
+
+    const shown = props.days.filter(
+        (day) => !isWeekend(day.date) || day.entries.length > 0,
+    );
+
+    return shown.length > 0 ? shown : props.days;
+});
+
+function isWeekend(date: string): boolean {
+    const weekday = new Date(`${date}T00:00:00`).getDay();
+
+    return weekday === 0 || weekday === 6;
+}
+
 /**
  * Whether the cursor stops at a day after adding a Work Entry: a weekday up
  * to today without Time Off.
  */
 function takesNextEntry(day: WorkEntryDay): boolean {
-    const weekday = new Date(`${day.date}T00:00:00`).getDay();
-
     return (
-        weekday !== 0 &&
-        weekday !== 6 &&
-        day.time_off === null &&
-        day.date <= props.today
+        !isWeekend(day.date) && day.time_off === null && day.date <= props.today
     );
 }
 
@@ -224,16 +248,25 @@ function leaveWeek(): void {
                 :today="today"
                 @change="showPeriod"
             />
-            <span class="text-sm text-muted-foreground"
-                >Total
-                <span class="font-medium text-foreground tabular-nums">{{
-                    formatHours(total)
-                }}</span></span
-            >
+            <div class="flex items-center gap-4">
+                <Label class="flex items-center gap-2 text-sm font-normal">
+                    <Checkbox
+                        :model-value="showWeekends"
+                        @update:model-value="showWeekends = $event === true"
+                    />
+                    Show weekends
+                </Label>
+                <span class="text-sm text-muted-foreground"
+                    >Total
+                    <span class="font-medium text-foreground tabular-nums">{{
+                        formatHours(total)
+                    }}</span></span
+                >
+            </div>
         </div>
 
         <ul class="divide-y overflow-hidden rounded-lg border">
-            <li v-for="day in days" :key="day.date">
+            <li v-for="day in shownDays" :key="day.date">
                 <div
                     class="flex items-center justify-between gap-4 bg-muted/50 px-4 py-2"
                 >

@@ -57,3 +57,23 @@ it('says why a custom period longer than three months is refused', function () {
         ->assertSee('A custom period can be at most 3 months long.')
         ->assertNoJavaScriptErrors();
 });
+
+it('hides empty weekend days when weekends are switched off, keeping ones with hours, and remembers it', function () {
+    $cara = recorder();
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-07', 'description' => 'Saturday release']);
+
+    actingAs($cara);
+
+    visit(route('work-entries.index', ['week' => '2026-11-02']))
+        ->assertPresent('#work-entry-hours-2026-11-08')
+        ->click('Show weekends')
+        ->assertNotPresent('#work-entry-hours-2026-11-08')
+        ->assertSee('Saturday release')
+        ->assertPresent('#work-entry-hours-2026-11-06')
+        ->navigate(route('work-entries.index', ['month' => '2026-10']))
+        ->assertNotPresent('#work-entry-hours-2026-10-04')
+        ->assertPresent('#work-entry-hours-2026-10-05')
+        ->click('Show weekends')
+        ->assertPresent('#work-entry-hours-2026-10-04')
+        ->assertNoJavaScriptErrors();
+});
