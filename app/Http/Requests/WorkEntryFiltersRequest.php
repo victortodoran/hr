@@ -2,12 +2,16 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\PeriodMode;
+use App\Support\Period;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 /**
- * Filters for a month of Work Entries: the month, as YYYY-MM, and an
- * Employee and a Project, each optional.
+ * Filters for a Period of Work Entries: the Period, a week, a month or a
+ * custom period of at most three months, and an Employee and a Project,
+ * each optional.
  */
 class WorkEntryFiltersRequest extends FormRequest
 {
@@ -17,26 +21,40 @@ class WorkEntryFiltersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'month' => ['nullable', 'date_format:Y-m'],
+            ...WorkEntryPeriodRequest::periodRules(),
             'employee' => ['nullable', 'integer'],
             'project' => ['nullable', 'integer'],
         ];
     }
 
     /**
-     * The filters, null where none is set. The month is the current one when
-     * none is asked for, or one after it, as Work Entries are never in the
-     * future.
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [fn (Validator $validator) => WorkEntryPeriodRequest::checkCustomLength($this, $validator)];
+    }
+
+    /**
+     * The filters, null where none is set. The Period is the current month
+     * when none is asked for. As Work Entries are never in the future, one
+     * starting after today gives way to the current week, for a week, or
+     * else the current month, and a custom one ends today at the latest.
      *
-     * @return array{month: string, employee: int|null, project: int|null}
+     * @return array{period: Period, employee: int|null, project: int|null}
      */
     public function filters(): array
     {
-        $current = now()->format('Y-m');
-        $month = $this->filled('month') ? $this->string('month')->value() : $current;
+        $period = Period::fromQuery($this->query()) ?? Period::month(today()->format('Y-m'));
+
+        if ($period->from->isAfter(today())) {
+            $period = $period->mode === PeriodMode::Week ? Period::week(today()) : Period::month(today()->format('Y-m'));
+        } elseif ($period->mode === PeriodMode::Custom && $period->to->isAfter(today())) {
+            $period = Period::custom($period->from, today());
+        }
 
         return [
-            'month' => min($month, $current),
+            'period' => $period,
             'employee' => $this->filled('employee') ? $this->integer('employee') : null,
             'project' => $this->filled('project') ? $this->integer('project') : null,
         ];

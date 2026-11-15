@@ -11,9 +11,10 @@ import { formatDate } from '@/lib/dates';
 import type { WorkEntryPeriod } from '@/types';
 
 /**
- * Chooses the Period the Work Entries week page shows. Week steps a week
- * at a time with "This week", Month uses the month picker, future months
- * included, and Custom takes a From and a To date, with no arrows.
+ * Chooses the Period a Work Entries page shows. Week steps a week at a time
+ * with "This week", Month uses the month picker, and Custom takes a From and
+ * a To date, with no arrows. Later weeks, months and dates can be chosen
+ * unless `noFuture` is set, when Custom also starts no later than today.
  * Switching mode stays near what is shown: the new Period holds today when
  * the old one does, or else its first day, and Custom starts on the
  * Period shown. Emits the URL query asking for the chosen Period.
@@ -21,6 +22,8 @@ import type { WorkEntryPeriod } from '@/types';
 const props = defineProps<{
     period: WorkEntryPeriod;
     today: string;
+    /** Stops at today: no later week or month, and no date after today. */
+    noFuture?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -50,7 +53,13 @@ function chooseMode(mode: WorkEntryPeriod['mode']): void {
         {
             week: { week: anchor.value },
             month: { month: anchor.value.slice(0, 7) },
-            custom: { from: props.period.from, to: props.period.to },
+            custom: {
+                from: props.period.from,
+                to:
+                    props.noFuture && props.period.to > props.today
+                        ? props.today
+                        : props.period.to,
+            },
         }[mode],
     );
 }
@@ -118,6 +127,7 @@ const errors = computed(() => usePage().props.errors);
                 variant="outline"
                 size="icon"
                 aria-label="Next week"
+                :disabled="noFuture && period.to >= today"
                 @click="emit('change', { week: addDays(period.from, 7) })"
             >
                 <ChevronRight />
@@ -134,7 +144,7 @@ const errors = computed(() => usePage().props.errors);
         <MonthPicker
             v-else-if="period.mode === 'month'"
             :month="period.from.slice(0, 7)"
-            allow-future
+            :allow-future="!noFuture"
             @change="(month) => emit('change', { month })"
         />
 
@@ -149,6 +159,7 @@ const errors = computed(() => usePage().props.errors);
                     id="period-from"
                     v-model="from"
                     type="date"
+                    :max="noFuture ? today : undefined"
                     class="w-40"
                     required
                 />
@@ -160,6 +171,7 @@ const errors = computed(() => usePage().props.errors);
                     id="period-to"
                     v-model="to"
                     type="date"
+                    :max="noFuture ? today : undefined"
                     class="w-40"
                     required
                 />

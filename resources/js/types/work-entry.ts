@@ -162,12 +162,12 @@ export type ChoiceToApprove = {
 };
 
 /**
- * The Work Entries page's filters, as the server resolved them: the month
- * as YYYY-MM; the Employee shown, "all" for any Employee, null only when
- * nobody has Work Entries that month; a Project and a state, null for any.
+ * The Work Entries page's filters, as the server resolved them: the
+ * Period; the Employee shown, "all" for any Employee, null only when nobody
+ * has Work Entries in the Period; a Project and a state, null for any.
  */
 export type WorkEntryListFilters = {
-    month: string;
+    period: WorkEntryPeriod;
     employee: number | 'all' | null;
     project: number | null;
     state: WorkEntryState | null;

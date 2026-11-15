@@ -21,7 +21,7 @@ const props = defineProps<{
     ids: number[];
     /**
      * The filters they were selected under, for the Pending warning: the
-     * same month, Employee and Project.
+     * same Period, Employee and Project.
      */
     filters: WorkEntryListFilters;
 }>();
@@ -48,7 +48,7 @@ async function loadSummary(isOpen: boolean): Promise<void> {
             LockController.create({
                 query: {
                     ids: props.ids,
-                    month: props.filters.month,
+                    ...props.filters.period.query,
                     ...(typeof props.filters.employee === 'number'
                         ? { employee: props.filters.employee }
                         : {}),

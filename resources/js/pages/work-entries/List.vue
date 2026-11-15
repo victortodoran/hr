@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import LockDialog from '@/components/work-entries/LockDialog.vue';
 import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
 import WorkEntrySummary from '@/components/work-entries/WorkEntrySummary.vue';
-import { formatDate, formatMonth, formatWeekdayAndDay } from '@/lib/dates';
+import { formatDate, formatWeekdayAndDay } from '@/lib/dates';
 import { formatHours } from '@/lib/work-entries';
 import { index as week } from '@/routes/work-entries';
 import { index } from '@/routes/work-entry-list';
@@ -33,12 +33,13 @@ defineOptions({
 });
 
 /**
- * Work Entries of the Employees the viewer may see, a month and an Employee
+ * Work Entries of the Employees the viewer may see, a Period and an Employee
  * at a time, or every Employee at once, with reopening and locking the
  * selected ones. Approving happens on Approvals.
  */
 const props = defineProps<{
     filters: WorkEntryListFilters;
+    today: string;
     canReopen: boolean;
     canLock: boolean;
     entries: Paginated<ListedWorkEntry>;
@@ -48,9 +49,9 @@ const props = defineProps<{
     declinedTotal: number;
     /** Every matching Work Entry's ID; only sent when asked for. */
     matchingIds?: number[];
-    /** Who has Work Entries that month, by name, with how many. */
+    /** Who has Work Entries in the Period, by name, with how many. */
     employees: EmployeeWithWorkEntries[];
-    /** The Projects the Employee shown, or anyone, has Work Entries on that month. */
+    /** The Projects the Employee shown, or anyone, has Work Entries on in the Period. */
     projects: Choice[];
 }>();
 
@@ -182,6 +183,7 @@ function signOffs(entry: ListedWorkEntry): string {
 
         <WorkEntryListFilterBar
             :filters="filters"
+            :today="today"
             :employees="employees"
             :projects="projects"
             @change="reloadList"
@@ -351,7 +353,7 @@ function signOffs(entry: ListedWorkEntry): string {
                     :message="
                         employees.length > 0
                             ? 'No Work Entries match these filters.'
-                            : `No Work Entries in ${formatMonth(filters.month)}.`
+                            : 'No Work Entries in this period.'
                     "
                 />
             </div>

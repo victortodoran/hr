@@ -7,14 +7,17 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Carbon\Exceptions\InvalidFormatException;
 use DateTimeInterface;
+use Illuminate\Contracts\Support\Arrayable;
 
 /**
  * The days the Work Entries week page shows, from one date to another: a
  * week from Monday to Sunday, a calendar month, or a custom period. It is
  * kept in the page's URL as week=YYYY-MM-DD (any day of the week),
  * month=YYYY-MM, or from=YYYY-MM-DD&to=YYYY-MM-DD.
+ *
+ * @implements Arrayable<string, mixed>
  */
-final readonly class Period
+final readonly class Period implements Arrayable
 {
     /**
      * A custom period is at most this many months long.

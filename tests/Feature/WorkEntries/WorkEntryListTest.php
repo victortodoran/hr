@@ -39,7 +39,7 @@ it('opens on the current month and the first Employee by name with Work Entries 
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('work-entries/List', false)
-        ->where('filters', ['month' => '2026-11', 'employee' => $cara->id, 'project' => null, 'state' => null])
+        ->where('filters', ['period' => ['mode' => 'month', 'from' => '2026-11-01', 'to' => '2026-11-30', 'query' => ['month' => '2026-11']], 'employee' => $cara->id, 'project' => null, 'state' => null])
         ->where('canReopen', false)
         ->where('canLock', false)
         ->where('entries.data', fn (Collection $data): bool => $data->map(fn (array $row): array => [$row['id'], $row['state'], $row['can_reopen'], $row['can_lock']])->all() === [
@@ -51,7 +51,7 @@ it('opens on the current month and the first Employee by name with Work Entries 
         ->where('projects', [['id' => $carasBilling->project_id, 'name' => 'Billing'], ['id' => $carasRelaunch->project_id, 'name' => 'Relaunch']]));
 });
 
-it('shows an earlier month, the current one in place of a later one, and refuses one it can\'t read', function () {
+it('shows an earlier month, the current month or week in place of a later one, and refuses one it can\'t read', function () {
     $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
     $relaunch = assignmentOf(Employee::factory()->create(), 'Relaunch', ['start_date' => '2026-10-01']);
     $october = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-10-31']);
@@ -59,14 +59,50 @@ it('shows an earlier month, the current one in place of a later one, and refuses
 
     actingAs($dan)->get(route('work-entry-list.index', ['month' => '2026-10']))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('filters.month', '2026-10')
+            ->where('filters.period.query', ['month' => '2026-10'])
             ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$october->id]));
     actingAs($dan)->get(route('work-entry-list.index', ['month' => '2026-12']))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('filters.month', '2026-11')
+            ->where('filters.period.query', ['month' => '2026-11'])
             ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$november->id]));
+    actingAs($dan)->get(route('work-entry-list.index', ['week' => '2026-11-16']))
+        ->assertInertia(fn (Assert $page) => $page->where('filters.period.query', ['week' => '2026-11-09']));
     actingAs($dan)->get(route('work-entry-list.index', ['month' => 'November']))
         ->assertInvalid(['month' => 'The month field must match the format Y-m.']);
+});
+
+it('shows a week, or a custom period, in place of the month', function () {
+    $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
+    $cara = Employee::factory()->create(['name' => 'Cara']);
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-09-01']);
+    $sunday = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-01', 'minutes' => 60]);
+    $monday = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-02', 'minutes' => 120]);
+    $wednesday = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-04', 'minutes' => 180]);
+    $september = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-09-30']);
+    WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['name' => 'Bea']), 'Intranet', ['start_date' => '2026-09-01']))->create(['date' => '2026-11-09']);
+
+    actingAs($dan)->get(route('work-entry-list.index', ['week' => '2026-11-04']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.period', ['mode' => 'week', 'from' => '2026-11-02', 'to' => '2026-11-08', 'query' => ['week' => '2026-11-02']])
+            ->where('today', '2026-11-11')
+            ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$monday->id, $wednesday->id])
+            ->where('total', 5)
+            ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'count' => 2]]));
+    actingAs($dan)->get(route('work-entry-list.index', ['from' => '2026-09-30', 'to' => '2026-11-01']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.period.mode', 'custom')
+            ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$september->id, $sunday->id]));
+});
+
+it('refuses a custom period that ends before it starts or is longer than three months, and ends one running past today on today', function () {
+    $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
+
+    actingAs($dan)->get(route('work-entry-list.index', ['from' => '2026-11-05', 'to' => '2026-11-01']))
+        ->assertInvalid(['to' => 'The to field must be a date after or equal to from.']);
+    actingAs($dan)->get(route('work-entry-list.index', ['from' => '2026-07-01', 'to' => '2026-10-01']))
+        ->assertInvalid(['to' => 'A custom period can be at most 3 months long.']);
+    actingAs($dan)->get(route('work-entry-list.index', ['from' => '2026-11-01', 'to' => '2026-12-31']))
+        ->assertInertia(fn (Assert $page) => $page->where('filters.period.query', ['from' => '2026-11-01', 'to' => '2026-11-11']));
 });
 
 it('lists only a Manager\'s Reports for someone who may view their Reports\' Work Entries', function () {
@@ -106,7 +142,7 @@ it('lists everyone\'s Work Entries on a Project in a month for any Employee, off
 
     actingAs($dan)->get(route('work-entry-list.index', ['month' => '2026-10', 'employee' => 'all', 'project' => $carasRelaunch->project_id]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('filters', ['month' => '2026-10', 'employee' => 'all', 'project' => $carasRelaunch->project_id, 'state' => null])
+            ->where('filters', ['period' => ['mode' => 'month', 'from' => '2026-10-01', 'to' => '2026-10-31', 'query' => ['month' => '2026-10']], 'employee' => 'all', 'project' => $carasRelaunch->project_id, 'state' => null])
             ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$caras->id, $devs->id])
             ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'count' => 1], ['id' => $dev->id, 'name' => 'Dev', 'count' => 2]])
             ->where('projects', [['id' => $devsBilling->project_id, 'name' => 'Billing'], ['id' => $carasRelaunch->project_id, 'name' => 'Relaunch']]));
@@ -122,7 +158,7 @@ it('falls back to any Project when the Employee shown has no Work Entries on the
 
     actingAs($dan)->get(route('work-entry-list.index', ['employee' => $cara->id, 'project' => $billing->project_id]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('filters', ['month' => '2026-11', 'employee' => $cara->id, 'project' => null, 'state' => null])
+            ->where('filters', ['period' => ['mode' => 'month', 'from' => '2026-11-01', 'to' => '2026-11-30', 'query' => ['month' => '2026-11']], 'employee' => $cara->id, 'project' => null, 'state' => null])
             ->where('projects', [['id' => $relaunch->project_id, 'name' => 'Relaunch']])
             ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$caras->id]));
 });
@@ -151,7 +187,7 @@ it('offers nobody to choose in a month without Work Entries, keeping any Employe
 
     actingAs($dan)->get(route('work-entry-list.index', ['month' => '2026-09']))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('filters', ['month' => '2026-09', 'employee' => null, 'project' => null, 'state' => null])
+            ->where('filters', ['period' => ['mode' => 'month', 'from' => '2026-09-01', 'to' => '2026-09-30', 'query' => ['month' => '2026-09']], 'employee' => null, 'project' => null, 'state' => null])
             ->where('employees', [])
             ->where('projects', [])
             ->where('entries.data', []));
