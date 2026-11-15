@@ -6,18 +6,20 @@ import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Heading from '@/components/Heading.vue';
+import EmployeePageSection from '@/components/employees/EmployeePageSection.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import PaidDaysForm from '@/components/time-off/PaidDaysForm.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
 import ReportingChain from '@/components/employees/ReportingChain.vue';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ValueOr from '@/components/ValueOr.vue';
 import { formatDate, formatPeriod } from '@/lib/dates';
+import { useInitials } from '@/composables/useInitials';
 import { formatPay } from '@/lib/pay';
 import { edit, show } from '@/routes/employees';
 import type {
@@ -25,6 +27,7 @@ import type {
     Choice,
     EmployeePageRecord,
     EmployeePageTab,
+    EmployeeStanding,
     EmployeeTimeOff,
     OpenProject,
     PayEntryRecord,
@@ -56,6 +59,8 @@ const props = withDefaults(
         /** The company currency; only sent to those who may manage Pay. */
         currency?: string;
         canEdit: boolean;
+        /** Null when the viewer may not see the Employee's record. */
+        standing: EmployeeStanding | null;
         /** The same number for every year; null unless the viewer may set it. */
         paidDays?: number | null;
         /** Null unless the viewer may see the Employee's Time Off. */
@@ -63,6 +68,8 @@ const props = withDefaults(
     }>(),
     { reportsNeedingAManager: () => [], projects: () => [] },
 );
+
+const { getInitials } = useInitials();
 
 const tabLabels = computed<Record<EmployeePageTab, string>>(() => ({
     overview: 'Overview',
@@ -108,26 +115,38 @@ setLayoutProps({
     <Head :title="employee.name" />
 
     <PageContainer width="wide">
-        <div class="flex items-start justify-between gap-4">
-            <Heading
-                :title="employee.name"
-                :description="employee.job_title ?? 'Employee'"
-            />
-            <div class="flex items-center gap-2">
-                <template v-if="record">
-                    <EmploymentStatusBadge :status="record.status" />
-                    <Badge v-if="record.is_top" variant="secondary"
-                        >Top Employee</Badge
-                    >
-                </template>
-                <Button v-if="canEdit" variant="outline" as-child>
-                    <Link :href="edit(employee.id)">Edit</Link>
-                </Button>
+        <header class="flex flex-wrap items-center gap-4">
+            <Avatar class="size-14 rounded-full" aria-hidden="true">
+                <AvatarFallback class="rounded-full text-lg font-medium">{{
+                    getInitials(employee.name)
+                }}</AvatarFallback>
+            </Avatar>
+            <div class="flex min-w-0 flex-1 flex-col gap-1">
+                <h1 class="text-2xl font-semibold tracking-tight">
+                    {{ employee.name }}
+                </h1>
+                <div
+                    class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground"
+                >
+                    <span>{{ employee.job_title ?? 'Employee' }}</span>
+                    <template v-if="standing">
+                        <EmploymentStatusBadge :status="standing.status" />
+                        <Badge v-if="standing.is_top" variant="secondary"
+                            >Top Employee</Badge
+                        >
+                    </template>
+                </div>
             </div>
-        </div>
+            <Button v-if="canEdit" variant="outline" as-child>
+                <Link :href="edit(employee.id)">Edit</Link>
+            </Button>
+        </header>
 
         <Tabs :model-value="tab" @update:model-value="openTab">
-            <TabsList v-if="tabs.length > 1" class="self-start">
+            <TabsList
+                v-if="tabs.length > 1"
+                class="max-w-full justify-start self-start overflow-x-auto"
+            >
                 <TabsTrigger
                     v-for="offered in tabs"
                     :key="offered"
@@ -135,9 +154,8 @@ setLayoutProps({
                     >{{ tabLabels[offered] }}</TabsTrigger
                 >
             </TabsList>
-            <TabsContent value="overview" class="mt-4 flex flex-col gap-8">
-                <section v-if="record" class="flex flex-col gap-4">
-                    <h2 class="text-lg font-semibold">Record</h2>
+            <TabsContent value="overview" class="mt-6 flex flex-col gap-10">
+                <EmployeePageSection v-if="record" title="Record">
                     <dl
                         class="grid gap-x-8 gap-y-3 rounded-lg border p-4 text-sm sm:grid-cols-2"
                     >
@@ -203,26 +221,24 @@ setLayoutProps({
                             </li>
                         </ul>
                     </div>
-                </section>
+                </EmployeePageSection>
 
-                <section
+                <EmployeePageSection
                     v-if="reportingChain"
-                    class="flex max-w-xl flex-col gap-4"
+                    title="Reporting Chain"
+                    class="max-w-xl"
                 >
-                    <h2 class="text-lg font-semibold">Reporting Chain</h2>
                     <ReportingChain :chain="reportingChain" />
-                </section>
+                </EmployeePageSection>
             </TabsContent>
-            <TabsContent value="assignments" class="mt-4">
-                <section v-if="assignments" class="flex flex-col gap-4">
-                    <div class="flex items-start justify-between gap-4">
-                        <h2 class="text-lg font-semibold">Assignments</h2>
+            <TabsContent value="assignments" class="mt-6 flex flex-col gap-10">
+                <EmployeePageSection v-if="assignments" title="Assignments">
+                    <template v-if="canManage" #action>
                         <AssignmentForm
-                            v-if="canManage"
                             :employee="employee"
                             :projects="projects"
                         />
-                    </div>
+                    </template>
 
                     <DataTable :columns="assignmentColumns" :rows="assignments">
                         <template #cell-project="{ row }">
@@ -283,31 +299,24 @@ setLayoutProps({
                             </EmptyState>
                         </template>
                     </DataTable>
-                </section>
+                </EmployeePageSection>
             </TabsContent>
-            <TabsContent value="time-off" class="mt-4 flex flex-col gap-8">
-                <section
+            <TabsContent value="time-off" class="mt-6 flex flex-col gap-10">
+                <EmployeePageSection
                     v-if="paidDays !== null && paidDays !== undefined"
-                    class="flex flex-col gap-4"
+                    title="Paid Days"
+                    description="Days of Paid Time Off every year gets. Changing them changes past years too."
                 >
-                    <div>
-                        <h2 class="text-lg font-semibold">Paid Days</h2>
-                        <p class="text-sm text-muted-foreground">
-                            Days of Paid Time Off every year gets. Changing them
-                            changes past years too.
-                        </p>
-                    </div>
                     <div class="rounded-lg border p-4">
                         <PaidDaysForm
                             :employee="employee"
                             :paid-days="paidDays"
                         />
                     </div>
-                </section>
+                </EmployeePageSection>
 
-                <section v-if="timeOff" class="flex flex-col gap-4">
+                <EmployeePageSection v-if="timeOff" title="Time Off">
                     <div>
-                        <h2 class="text-lg font-semibold">Time Off</h2>
                         <p class="text-sm">
                             <span
                                 class="font-semibold tabular-nums"
@@ -340,7 +349,7 @@ setLayoutProps({
                             />
                         </template>
                     </DataTable>
-                </section>
+                </EmployeePageSection>
             </TabsContent>
         </Tabs>
     </PageContainer>

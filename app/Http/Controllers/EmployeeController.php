@@ -105,8 +105,10 @@ class EmployeeController extends Controller
      * Manager when they have left, and their Reporting Chain unless they have
      * left. Assignments & Pay: their Assignments, with Pay for viewers allowed
      * to see it. Time Off: their Paid Days to set, and their Time Off with
-     * this year's Paid Days left. Only the open tab's data is loaded; an
-     * unknown or forbidden tab opens Overview.
+     * this year's Paid Days left. Only the open tab's data is loaded, apart
+     * from the Employee's employment status, which the header shows on
+     * every tab to viewers who may see their record; an unknown or
+     * forbidden tab opens Overview.
      */
     public function show(#[CurrentUser] Employee $actor, Employee $employee, Request $request): Response
     {
@@ -140,6 +142,9 @@ class EmployeeController extends Controller
             'canManagePay' => $canManagePay,
             ...($canManagePay && $currency !== null ? ['currency' => $currency->code] : []),
             'canEdit' => $actor->can('update', $employee),
+            'standing' => $actor->can(Permission::ViewEmployeeRecords->value, $employee)
+                ? ['status' => $employee->employmentStatus()->value, 'is_top' => $employee->is_top]
+                : null,
             ...match ($tab) {
                 EmployeePageTab::Overview => $this->overviewTab($actor, $employee),
                 EmployeePageTab::Assignments => [
@@ -224,7 +229,7 @@ class EmployeeController extends Controller
      * The Employee's record as their page shows it, with the Manager they
      * effectively report to.
      *
-     * @return array{email: string, status: string, start_date: string, leaving_date: string|null, department: string|null, manager: array{id: int, name: string}|null, is_top: bool}
+     * @return array{email: string, start_date: string, leaving_date: string|null, department: string|null, manager: array{id: int, name: string}|null}
      */
     private function record(Employee $employee): array
     {
@@ -232,12 +237,10 @@ class EmployeeController extends Controller
 
         return [
             'email' => $effective->email,
-            'status' => $effective->employmentStatus()->value,
             'start_date' => $effective->start_date->toDateString(),
             'leaving_date' => $effective->leaving_date?->toDateString(),
             'department' => $effective->department?->name, // @pest-mutate-ignore (every Employee has a Department; the nullsafe only satisfies the relation's nullable type)
             'manager' => $effective->effectiveManager?->only('id', 'name'),
-            'is_top' => $effective->is_top,
         ];
     }
 

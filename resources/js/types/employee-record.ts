@@ -29,11 +29,18 @@ export type EmployeeRecord = {
  */
 export type EmployeePageRecord = {
     email: string;
-    status: EmploymentStatus;
     start_date: string;
     leaving_date: string | null;
     department: string | null;
     manager: Choice | null;
+};
+
+/**
+ * Where an Employee stands, shown in their page's header on every tab:
+ * their employment status and whether they are the top Employee.
+ */
+export type EmployeeStanding = {
+    status: EmploymentStatus;
     is_top: boolean;
 };
 

@@ -35,12 +35,10 @@ it('shows an Employee their own record, with no Assignments or Pay when they may
             ->where('employee', ['id' => $ana->id, 'name' => 'Ana Pop', 'job_title' => 'Accountant'])
             ->where('record', [
                 'email' => 'ana@acme.test',
-                'status' => 'current',
                 'start_date' => '2025-01-06',
                 'leaving_date' => null,
                 'department' => 'Finance',
                 'manager' => ['id' => $ben->id, 'name' => 'Ben Ford'],
-                'is_top' => false,
             ])
             ->where('tabs', ['overview'])
             ->where('canEdit', false),
@@ -138,10 +136,25 @@ it('lists, on a Former Employee\'s page, the Employees who still report to them 
 
     actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]))->get(route('employees.show', $ben))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('record.status', 'former')
             ->where('record.manager.id', $dana->id)
             ->where('reportsNeedingAManager', [['id' => $cara->id, 'name' => 'Cara Lane']]),
         );
+});
+
+it('gives an Employee\'s employment status on every tab to those who may see their record, and to nobody else', function () {
+    $ana = Employee::factory()->top()->create();
+    $ben = Employee::factory()->former()->create(['manager_id' => $ana->id]);
+    $recordViewer = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ViewAssignments->value => Scope::Everyone, Permission::ViewTimeOff->value => Scope::Everyone]);
+    $assignmentViewer = employeeWith([Permission::ViewAssignments->value => Scope::Everyone]);
+
+    foreach (['overview', 'assignments', 'time-off'] as $tab) {
+        actingAs($recordViewer)->get(route('employees.show', ['employee' => $ben, 'tab' => $tab]))
+            ->assertInertia(fn (Assert $page) => $page->where('tab', $tab)->where('standing', ['status' => 'former', 'is_top' => false]));
+    }
+    actingAs($recordViewer)->get(route('employees.show', $ana))
+        ->assertInertia(fn (Assert $page) => $page->where('standing', ['status' => 'current', 'is_top' => true]));
+    actingAs($assignmentViewer)->get(route('employees.show', ['employee' => $ben, 'tab' => 'assignments']))
+        ->assertInertia(fn (Assert $page) => $page->where('standing', null));
 });
 
 it('links to an Employee\'s page from their Reporting Chain only when the viewer may open it', function (array $grants, string $expected) {
