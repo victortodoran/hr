@@ -37,9 +37,9 @@ class WorkEntryFiltersRequest extends FormRequest
 
     /**
      * The filters, null where none is set. The Period is the current month
-     * when none is asked for. One starting after today gives way to the
-     * current week, for a week, or else the current month, as Work Entries
-     * are never in the future.
+     * when none is asked for. As Work Entries are never in the future, one
+     * starting after today gives way to the current week, for a week, or
+     * else the current month, and a custom one ends today at the latest.
      *
      * @return array{period: Period, employee: int|null, project: int|null}
      */
@@ -49,6 +49,8 @@ class WorkEntryFiltersRequest extends FormRequest
 
         if ($period->from->isAfter(today())) {
             $period = $period->mode === PeriodMode::Week ? Period::week(today()) : Period::month(today()->format('Y-m'));
+        } elseif ($period->mode === PeriodMode::Custom && $period->to->isAfter(today())) {
+            $period = Period::custom($period->from, today());
         }
 
         return [

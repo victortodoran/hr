@@ -72,7 +72,7 @@ class WorkEntryListController extends Controller
         $reopenable = Employee::query()->reopenableBy($actor)->pluck('id');
 
         return Inertia::render('work-entries/List', [
-            'filters' => [...$filters, 'period' => $filters['period']->toArray()],
+            'filters' => $filters,
             'today' => today()->toDateString(),
             'canReopen' => $actor->holds(Permission::ReopenWorkEntries),
             'canLock' => $canLock,

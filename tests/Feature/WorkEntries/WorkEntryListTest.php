@@ -94,13 +94,15 @@ it('shows a week, or a custom period, in place of the month', function () {
             ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$september->id, $sunday->id]));
 });
 
-it('refuses a custom period that ends before it starts or is longer than three months', function () {
+it('refuses a custom period that ends before it starts or is longer than three months, and ends one running past today on today', function () {
     $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
 
     actingAs($dan)->get(route('work-entry-list.index', ['from' => '2026-11-05', 'to' => '2026-11-01']))
         ->assertInvalid(['to' => 'The to field must be a date after or equal to from.']);
     actingAs($dan)->get(route('work-entry-list.index', ['from' => '2026-07-01', 'to' => '2026-10-01']))
         ->assertInvalid(['to' => 'A custom period can be at most 3 months long.']);
+    actingAs($dan)->get(route('work-entry-list.index', ['from' => '2026-11-01', 'to' => '2026-12-31']))
+        ->assertInertia(fn (Assert $page) => $page->where('filters.period.query', ['from' => '2026-11-01', 'to' => '2026-11-11']));
 });
 
 it('lists only a Manager\'s Reports for someone who may view their Reports\' Work Entries', function () {
