@@ -167,7 +167,7 @@ export type ChoiceToApprove = {
  * nobody has Work Entries that month; a Project and a state, null for any.
  */
 export type WorkEntryListFilters = {
-    month: string;
+    period: WorkEntryPeriod;
     employee: number | 'all' | null;
     project: number | null;
     state: WorkEntryState | null;

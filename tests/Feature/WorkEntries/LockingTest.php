@@ -103,6 +103,10 @@ it('sums up the selected Approved Work Entries by Project and Employee, warning 
     ]);
     actingAs($finn)->getJson(route('locks.create', ['ids' => [$selected[0]->id], 'month' => '2026-11', 'employee' => $dev->id]))
         ->assertJsonPath('pending', ['count' => 2, 'hours' => 11.25]);
+    actingAs($finn)->getJson(route('locks.create', ['ids' => [$selected[0]->id], 'week' => '2026-11-06', 'employee' => $dev->id]))
+        ->assertJsonPath('pending', ['count' => 2, 'hours' => 11.25]);
+    actingAs($finn)->getJson(route('locks.create', ['ids' => [$selected[0]->id], 'from' => '2026-10-30', 'to' => '2026-11-05', 'employee' => $dev->id]))
+        ->assertJsonPath('pending', ['count' => 1, 'hours' => 10]);
 });
 
 it('locks the selected Work Entries that are still Approved, the locker\'s own included, recording who locked them and when', function () {

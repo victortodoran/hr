@@ -21,6 +21,8 @@ import type { WorkEntryPeriod } from '@/types';
 const props = defineProps<{
     period: WorkEntryPeriod;
     today: string;
+    /** Stops at today: no later week or month, and no date after today. */
+    noFuture?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -118,6 +120,7 @@ const errors = computed(() => usePage().props.errors);
                 variant="outline"
                 size="icon"
                 aria-label="Next week"
+                :disabled="noFuture && period.to >= today"
                 @click="emit('change', { week: addDays(period.from, 7) })"
             >
                 <ChevronRight />
@@ -134,7 +137,7 @@ const errors = computed(() => usePage().props.errors);
         <MonthPicker
             v-else-if="period.mode === 'month'"
             :month="period.from.slice(0, 7)"
-            allow-future
+            :allow-future="!noFuture"
             @change="(month) => emit('change', { month })"
         />
 
@@ -149,6 +152,7 @@ const errors = computed(() => usePage().props.errors);
                     id="period-from"
                     v-model="from"
                     type="date"
+                    :max="noFuture ? today : undefined"
                     class="w-40"
                     required
                 />
@@ -160,6 +164,7 @@ const errors = computed(() => usePage().props.errors);
                     id="period-to"
                     v-model="to"
                     type="date"
+                    :max="noFuture ? today : undefined"
                     class="w-40"
                     required
                 />

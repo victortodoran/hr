@@ -47,7 +47,7 @@ it('lists everyone a reopen Scope covers, offering to reopen their Approved Work
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('work-entries/List')
-        ->where('filters', ['month' => '2026-11', 'employee' => 'all', 'project' => null, 'state' => 'approved'])
+        ->where('filters', ['period' => ['mode' => 'month', 'from' => '2026-11-01', 'to' => '2026-11-30', 'query' => ['month' => '2026-11']], 'employee' => 'all', 'project' => null, 'state' => 'approved'])
         ->where('canReopen', true)
         ->where('canLock', false)
         ->where('entries.data', [

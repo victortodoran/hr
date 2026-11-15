@@ -78,6 +78,42 @@ it('steps back a month, picks a month from the picker, and returns to this month
         ->assertNoJavaScriptErrors();
 });
 
+it('switches to a week, steps back one, and shows a custom period, keeping any Employee', function () {
+    $finn = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Finn']);
+    $relaunch = assignmentOf(Employee::factory()->create(['name' => 'Cara']), 'Relaunch', ['start_date' => '2026-09-01']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-11', 'description' => 'Writing specs']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-04', 'description' => 'Reviewing the API']);
+    WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['name' => 'Bea']), 'Intranet', ['start_date' => '2026-09-01']))->create(['date' => '2026-10-20', 'description' => 'Planning the intranet']);
+
+    actingAs($finn);
+
+    visit(route('work-entry-list.index', ['employee' => 'all']))
+        ->assertSee('Writing specs')
+        ->assertSee('Reviewing the API')
+        ->click('internal:role=button[name="Week"s]')
+        ->assertQueryStringHas('week', '2026-11-13')
+        ->assertQueryStringHas('employee', 'all')
+        ->assertSee('Writing specs')
+        ->assertDontSee('Reviewing the API')
+        ->assertButtonDisabled('[aria-label="Next week"]')
+        ->click('[aria-label="Previous week"]')
+        ->assertSee('Reviewing the API')
+        ->assertDontSee('Writing specs')
+        ->click('internal:role=button[name="Custom"s]')
+        ->fill('#period-from', '2026-10-15')
+        ->fill('#period-to', '2026-11-05')
+        ->click('Show')
+        ->assertQueryStringHas('from', '2026-10-15')
+        ->assertSee('Planning the intranet')
+        ->assertSee('Reviewing the API')
+        ->assertDontSee('Writing specs')
+        ->click('internal:role=button[name="Month"s]')
+        ->assertQueryStringHas('month', '2026-10')
+        ->assertSee('Planning the intranet')
+        ->assertDontSee('Reviewing the API')
+        ->assertNoJavaScriptErrors();
+});
+
 it("opens an Employee's week from the list under their name, while the viewer's own week has no Employee picker", function () {
     $finn = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Finn']);
     $cara = Employee::factory()->create(['name' => 'Cara']);

@@ -8,6 +8,7 @@ use App\Http\Requests\WorkEntryListRequest;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\WorkEntry;
+use App\Support\Period;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
@@ -15,7 +16,7 @@ use Inertia\Response;
 
 /**
  * The Work Entries page: Work Entries of the Employees the viewer may see,
- * one month and one Employee at a time, or every Employee at once, with
+ * one Period and one Employee at a time, or every Employee at once, with
  * reopening and locking many of them at once. Who is listed comes from the
  * viewer's view, manage and reopen Scopes, or everyone for someone who can
  * lock. Reopening is done by the ReopeningController and locking by the
@@ -27,22 +28,22 @@ class WorkEntryListController extends Controller
      * The Work Entries matching the filters, in every state unless one is
      * chosen, oldest first, with the total hours of those that aren't
      * Declined, and of those that are. The Employees to choose from are those the viewer may see
-     * with Work Entries that month in the chosen state, by name with how
+     * with Work Entries in the Period in the chosen state, by name with how
      * many; an Employee not among them, or
      * none, falls back to the first, while "all" keeps every Employee. The
      * Projects to choose from are those the chosen Employee, or anyone, has
-     * Work Entries on that month; one not among them falls back to any
-     * Project. With no Work Entries that month, there is nobody to choose.
+     * Work Entries on during the Period; one not among them falls back to any
+     * Project. With no Work Entries in the Period, there is nobody to choose.
      */
     public function index(#[CurrentUser] Employee $actor, WorkEntryListRequest $request): Response
     {
         $canLock = $actor->can('lock', WorkEntry::class);
         $requested = $request->filters();
         $visible = fn (): Builder => Employee::query()->withWorkEntriesVisibleTo($actor);
-        $inMonth = fn (Builder $entries): Builder => self::inMonth($entries, $requested['month'], $requested['state']);
+        $inPeriod = fn (Builder $entries): Builder => self::inPeriod($entries, $requested['period'], $requested['state']);
         $employees = $visible()
-            ->whereHas('workEntries', $inMonth)
-            ->withCount(['workEntries as entries_count' => $inMonth])
+            ->whereHas('workEntries', $inPeriod)
+            ->withCount(['workEntries as entries_count' => $inPeriod])
             ->orderBy('name')
             ->orderBy('id') // @pest-mutate-ignore (only orders Employees who share a name)
             ->get(['id', 'name'])
@@ -52,7 +53,7 @@ class WorkEntryListController extends Controller
             ? 'all'
             : collect($employees)->firstWhere('id', $requested['employee'])['id'] ?? $employees[0]['id'] ?? null;
         $projects = $employees === [] ? [] : Project::query()
-            ->whereHas('workEntries', fn (Builder $entries): Builder => $inMonth($entries)
+            ->whereHas('workEntries', fn (Builder $entries): Builder => $inPeriod($entries)
                 ->ofEmployees($employee === 'all' ? $visible() : Employee::query()->whereKey($employee)))
             ->orderBy('name')
             ->orderBy('id') // @pest-mutate-ignore (only orders Projects that share a name)
@@ -60,7 +61,7 @@ class WorkEntryListController extends Controller
             ->map(fn (Project $project): array => $project->only('id', 'name'))
             ->all();
         $filters = [
-            'month' => $requested['month'],
+            'period' => $requested['period'],
             'employee' => $employee,
             'project' => collect($projects)->firstWhere('id', $requested['project'])['id'] ?? null,
             'state' => $requested['state'],
@@ -71,7 +72,8 @@ class WorkEntryListController extends Controller
         $reopenable = Employee::query()->reopenableBy($actor)->pluck('id');
 
         return Inertia::render('work-entries/List', [
-            'filters' => $filters,
+            'filters' => [...$filters, 'period' => $filters['period']->toArray()],
+            'today' => today()->toDateString(),
             'canReopen' => $actor->holds(Permission::ReopenWorkEntries),
             'canLock' => $canLock,
             'entries' => (clone $matching)
@@ -103,14 +105,14 @@ class WorkEntryListController extends Controller
     }
 
     /**
-     * Narrows Work Entries to those in the month, as YYYY-MM, and in the
-     * state, or any state when none is given.
+     * Narrows Work Entries to those in the Period, and in the state, or any
+     * state when none is given.
      *
      * @param  Builder<WorkEntry>  $entries
      * @return Builder<WorkEntry>
      */
-    private static function inMonth(Builder $entries, string $month, ?string $state): Builder
+    private static function inPeriod(Builder $entries, Period $period, ?string $state): Builder
     {
-        return $entries->filteredBy(['month' => $month, 'state' => $state]);
+        return $entries->filteredBy(['period' => $period, 'state' => $state]);
     }
 }
