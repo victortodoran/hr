@@ -326,7 +326,7 @@ const nextDay = computed(() => {
 
 /**
  * After a Work Entry is added, keeps the add form on the same day, empty,
- * with the cursor in What was done for the next one.
+ * with the cursor in Description for the next one.
  */
 async function entryAdded(assignmentId: number): Promise<void> {
     lastAssignmentId.value = assignmentId;
@@ -342,7 +342,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
             class="hidden bg-muted/50 px-4 py-2 font-medium text-muted-foreground sm:grid"
         >
             <span>Day</span>
-            <span>What was done</span>
+            <span>Description</span>
             <span>Project</span>
             <span>Status</span>
             <span class="text-right">Hours</span>
