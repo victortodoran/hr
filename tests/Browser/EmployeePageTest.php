@@ -17,7 +17,7 @@ beforeEach(function () {
     travelTo('2026-11-13 09:00');
 });
 
-it('opens every tab of an Employee\'s page, keeping the header, and shows each Assignment\'s Pay on a phone', function () {
+it('opens every tab of an Employee\'s page, keeping the header, leading Time Off with the Paid Days left, and shows each Assignment\'s Pay on a phone', function () {
     CompanySettings::factory()->create();
     $ana = Employee::factory()->top()->create(['name' => 'Ana Popescu']);
     $cara = Employee::factory()->create(['name' => 'Cara Lane', 'manager_id' => $ana->id]);
@@ -43,6 +43,7 @@ it('opens every tab of an Employee\'s page, keeping the header, and shows each A
         ->assertSee('Ended')
         ->click('internal:role=tab[name="Time Off"s]')
         ->assertSee('Current Employee')
+        ->assertSeeIn('[data-test="paid-days-left"]', 'Paid Days left in 2026')
         ->assertNoJavaScriptErrors();
 
     visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))

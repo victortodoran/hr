@@ -3,7 +3,6 @@ import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
 import { CalendarDays, FolderKanban, TriangleAlert } from '@lucide/vue';
 import { computed } from 'vue';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
-import DataTable from '@/components/DataTable.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import EmployeePageSection from '@/components/employees/EmployeePageSection.vue';
@@ -32,7 +31,6 @@ import type {
     OpenProject,
     PayEntryRecord,
     ReportingChainView,
-    TableColumn,
 } from '@/types';
 
 /**
@@ -114,11 +112,6 @@ const assignmentGrid = computed(() => {
 function hasEnded(assignment: AssignmentRecord): boolean {
     return assignment.end_date !== null && assignment.end_date < today();
 }
-
-const timeOffColumns: TableColumn[] = [
-    { key: 'time_off', label: 'Time Off' },
-    { key: 'state', label: 'State', align: 'end' },
-];
 
 /**
  * The entry in effect today, or null when none has taken effect yet.
@@ -465,11 +458,32 @@ setLayoutProps({
             </TabsContent>
             <TabsContent value="time-off" class="mt-6 flex flex-col gap-10">
                 <EmployeePageSection
-                    v-if="paidDays !== null && paidDays !== undefined"
+                    v-if="
+                        timeOff || (paidDays !== null && paidDays !== undefined)
+                    "
                     title="Paid Days"
-                    description="Days of Paid Time Off every year gets. Changing them changes past years too."
                 >
-                    <div class="rounded-lg border p-4">
+                    <p v-if="timeOff" data-test="paid-days-left">
+                        <span
+                            class="text-2xl font-semibold tabular-nums"
+                            :class="
+                                timeOff.paid_days_left < 0 && 'text-destructive'
+                            "
+                            >{{ timeOff.paid_days_left }}</span
+                        >
+                        <span class="ml-1.5 text-sm text-muted-foreground"
+                            >of {{ timeOff.paid_days }} Paid Days left in
+                            {{ timeOff.year }}</span
+                        >
+                    </p>
+                    <div
+                        v-if="paidDays !== null && paidDays !== undefined"
+                        class="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-end sm:justify-between"
+                    >
+                        <p class="max-w-sm text-sm text-muted-foreground">
+                            Days of Paid Time Off {{ employee.name }} gets each
+                            year. Changing this also changes past years.
+                        </p>
                         <PaidDaysForm
                             :employee="employee"
                             :paid-days="paidDays"
@@ -478,39 +492,27 @@ setLayoutProps({
                 </EmployeePageSection>
 
                 <EmployeePageSection v-if="timeOff" title="Time Off">
-                    <div>
-                        <p class="text-sm">
-                            <span
-                                class="font-semibold tabular-nums"
-                                :class="{
-                                    'text-destructive':
-                                        timeOff.paid_days_left < 0,
-                                }"
-                                >{{ timeOff.paid_days_left }}</span
+                    <div class="overflow-hidden rounded-lg border text-sm">
+                        <ul v-if="timeOff.requests.length > 0" class="divide-y">
+                            <li
+                                v-for="request in timeOff.requests"
+                                :key="request.id"
+                                class="flex items-start justify-between gap-4 px-4 py-3"
+                                data-test="time-off"
                             >
-                            <span class="text-muted-foreground">
-                                of {{ timeOff.paid_days }} Paid Days left in
-                                {{ timeOff.year }}</span
-                            >
-                        </p>
+                                <TimeOffSummary :time-off="request" />
+                                <StatusBadge
+                                    :state="request.state"
+                                    class="mt-0.5"
+                                />
+                            </li>
+                        </ul>
+                        <EmptyState
+                            v-else
+                            :icon="CalendarDays"
+                            :message="`${employee.name}'s Time Off requests appear here. They haven't requested any yet.`"
+                        />
                     </div>
-                    <DataTable
-                        :columns="timeOffColumns"
-                        :rows="timeOff.requests"
-                    >
-                        <template #cell-time_off="{ row }">
-                            <TimeOffSummary :time-off="row" />
-                        </template>
-                        <template #cell-state="{ row }">
-                            <StatusBadge :state="row.state" />
-                        </template>
-                        <template #empty>
-                            <EmptyState
-                                :icon="CalendarDays"
-                                :message="`${employee.name}'s Time Off requests appear here. They haven't requested any yet.`"
-                            />
-                        </template>
-                    </DataTable>
                 </EmployeePageSection>
             </TabsContent>
         </Tabs>
