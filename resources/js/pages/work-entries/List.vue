@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import LockDialog from '@/components/work-entries/LockDialog.vue';
 import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
+import WorkEntrySummary from '@/components/work-entries/WorkEntrySummary.vue';
 import { formatDate, formatMonth, formatWeekdayAndDay } from '@/lib/dates';
 import { formatHours } from '@/lib/work-entries';
 import { index as week } from '@/routes/work-entries';
@@ -58,19 +59,13 @@ const canSelect = computed(() => props.canReopen || props.canLock);
 /**
  * The list's grid, as on My Work Entries: on a phone each Work Entry stacks
  * into lines; from `sm` up, a checkbox when the viewer can select, then Day,
- * Employee, Description, Project, Status and Hours.
+ * Employee, Description, Project, Status and Hours. Both strings are written
+ * out in full so Tailwind finds them; keep their shared tracks alike.
  */
 const columns = computed(() =>
     canSelect.value
         ? 'grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[1rem_4.5rem_minmax(0,10rem)_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem]'
         : 'grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[4.5rem_minmax(0,10rem)_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem]',
-);
-
-/** Where a note under a Work Entry starts and ends: under Description, through Hours. */
-const noteColumns = computed(() =>
-    canSelect.value
-        ? 'sm:col-span-4 sm:col-start-4'
-        : 'sm:col-span-4 sm:col-start-3',
 );
 
 /** The IDs of the selected Work Entries, kept across pages. */
@@ -87,6 +82,14 @@ function reloadList(query: Record<string, string>): void {
 
 const selectableOnPage = computed(() =>
     props.entries.data.filter((entry) => entry.can_reopen || entry.can_lock),
+);
+
+/**
+ * Whether the header shows on a phone, where it only holds "Select this page"
+ * so it is left out when nothing on the page can be selected.
+ */
+const headerOnPhone = computed(
+    () => canSelect.value && selectableOnPage.value.length > 0,
 );
 
 const isPageSelected = computed(
@@ -184,30 +187,12 @@ function signOffs(entry: ListedWorkEntry): string {
             @change="reloadList"
         />
 
-        <div
-            class="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm"
-            data-test="work-entry-summary"
-        >
-            <p>
-                <span class="text-2xl font-semibold tabular-nums">{{
-                    formatHours(total)
-                }}</span>
-                <span class="ml-1.5 text-muted-foreground"
-                    >in {{ formatMonth(filters.month) }}</span
-                >
-            </p>
-            <p class="text-muted-foreground">
-                {{ entries.total }}
-                {{ entries.total === 1 ? 'Work Entry' : 'Work Entries' }}
-            </p>
-            <p
-                v-if="declinedTotal > 0"
-                class="text-status-declined-foreground"
-                data-test="declined-hours"
-            >
-                {{ formatHours(declinedTotal) }} declined, not counted
-            </p>
-        </div>
+        <WorkEntrySummary
+            v-if="entries.total > 0"
+            :total="total"
+            :declined-hours="declinedTotal"
+            :caption="`in ${entries.total} matching ${entries.total === 1 ? 'Work Entry' : 'Work Entries'}`"
+        />
 
         <div class="flex flex-col gap-3">
             <div
@@ -254,22 +239,30 @@ function signOffs(entry: ListedWorkEntry): string {
 
             <div class="overflow-hidden rounded-lg border text-sm">
                 <div
-                    :class="[columns, canSelect ? 'grid' : 'hidden sm:grid']"
+                    :class="[
+                        columns,
+                        headerOnPhone ? 'grid' : 'hidden sm:grid',
+                    ]"
                     class="items-center bg-muted/50 px-4 py-2 font-medium text-muted-foreground"
                 >
-                    <Label
+                    <span
                         v-if="canSelect"
-                        class="col-span-2 flex items-center gap-2 font-normal sm:col-span-1"
-                        :class="selectableOnPage.length === 0 && 'invisible'"
+                        class="col-span-2 flex items-center sm:col-span-1"
                     >
-                        <Checkbox
-                            :model-value="isPageSelected"
-                            :disabled="selectableOnPage.length === 0"
-                            aria-label="Select this page"
-                            @update:model-value="togglePage($event === true)"
-                        />
-                        <span class="sm:hidden">Select this page</span>
-                    </Label>
+                        <Label
+                            v-if="selectableOnPage.length > 0"
+                            class="inline-flex items-center gap-2 font-normal"
+                        >
+                            <Checkbox
+                                :model-value="isPageSelected"
+                                aria-label="Select this page"
+                                @update:model-value="
+                                    togglePage($event === true)
+                                "
+                            />
+                            <span class="sm:hidden">Select this page</span>
+                        </Label>
+                    </span>
                     <span class="hidden sm:block">Day</span>
                     <span class="hidden sm:block">Employee</span>
                     <span class="hidden sm:block">Description</span>
@@ -279,9 +272,12 @@ function signOffs(entry: ListedWorkEntry): string {
                 </div>
 
                 <div
-                    v-for="entry in entries.data"
+                    v-for="(entry, index) in entries.data"
                     :key="entry.id"
-                    :class="columns"
+                    :class="[
+                        columns,
+                        index === 0 && !headerOnPhone && 'max-sm:border-t-0',
+                    ]"
                     class="grid min-h-11 items-center gap-y-0.5 border-t px-4 py-1.5 hover:bg-muted/40"
                     data-test="work-entry"
                 >
@@ -336,14 +332,12 @@ function signOffs(entry: ListedWorkEntry): string {
                     >
                     <span
                         v-if="entry.approved"
-                        :class="noteColumns"
-                        class="order-3 col-span-2 text-xs text-muted-foreground sm:order-none"
+                        class="order-3 col-span-2 text-xs text-muted-foreground sm:order-none sm:col-span-4 sm:-col-end-1"
                         >{{ signOffs(entry) }}</span
                     >
                     <span
                         v-if="entry.declined"
-                        :class="noteColumns"
-                        class="order-3 col-span-2 text-xs text-status-declined-foreground sm:order-none"
+                        class="order-3 col-span-2 text-xs text-status-declined-foreground sm:order-none sm:col-span-4 sm:-col-end-1"
                         data-test="decline-reason"
                         >Declined by {{ entry.declined.by }}:
                         {{ entry.declined.reason }}</span
@@ -352,7 +346,7 @@ function signOffs(entry: ListedWorkEntry): string {
 
                 <EmptyState
                     v-if="entries.data.length === 0"
-                    class="border-t"
+                    class="border-t max-sm:border-t-0"
                     :icon="Clock"
                     :message="
                         employees.length > 0

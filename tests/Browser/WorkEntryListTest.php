@@ -110,8 +110,7 @@ it('shows the total above the list, with Status in its own column, and keeps eve
 
     visit(route('work-entry-list.index'))
         ->assertSeeIn('[data-test="work-entry-summary"]', '4.5 h')
-        ->assertSeeIn('[data-test="work-entry-summary"]', 'in November 2026')
-        ->assertSeeIn('[data-test="work-entry-summary"]', '3 Work Entries')
+        ->assertSeeIn('[data-test="work-entry-summary"]', 'in 3 matching Work Entries')
         ->assertSeeIn('[data-test="declined-hours"]', '1 h declined, not counted')
         ->assertSeeIn('[data-test="work-entry"]', 'Tue 10')
         ->assertSeeIn('[data-test="decline-reason"]', 'Declined by')
