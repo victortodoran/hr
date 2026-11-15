@@ -119,6 +119,7 @@ class EmployeeController extends Controller
         $canSetPaidDays = $actor->can('setPaidDays', $employee);
         $canViewTimeOff = $actor->can('viewTimeOffAndPaidDays', $employee);
         $currency = $canViewPay ? CompanySettings::payCurrency() : null;
+        $canViewRecord = $actor->can(Permission::ViewEmployeeRecords->value, $employee);
 
         $tabs = array_values(array_filter([
             EmployeePageTab::Overview,
@@ -142,11 +143,11 @@ class EmployeeController extends Controller
             'canManagePay' => $canManagePay,
             ...($canManagePay && $currency !== null ? ['currency' => $currency->code] : []),
             'canEdit' => $actor->can('update', $employee),
-            'standing' => $actor->can(Permission::ViewEmployeeRecords->value, $employee)
+            'standing' => $canViewRecord
                 ? ['status' => $employee->employmentStatus()->value, 'is_top' => $employee->is_top]
                 : null,
             ...match ($tab) {
-                EmployeePageTab::Overview => $this->overviewTab($actor, $employee),
+                EmployeePageTab::Overview => $this->overviewTab($actor, $employee, $canViewRecord),
                 EmployeePageTab::Assignments => [
                     'assignments' => $this->assignments($employee, $currency),
                     'projects' => $canManage ? $this->openProjects() : [],
@@ -200,10 +201,8 @@ class EmployeeController extends Controller
      *
      * @return array{record: array<string, mixed>|null, reportsNeedingAManager: array<int, array{id: int, name: string}>, reportingChain: array<string, mixed>|null}
      */
-    private function overviewTab(Employee $actor, Employee $employee): array
+    private function overviewTab(Employee $actor, Employee $employee, bool $canViewRecord): array
     {
-        $canViewRecord = $actor->can(Permission::ViewEmployeeRecords->value, $employee);
-
         return [
             'record' => $canViewRecord ? $this->record($employee) : null,
             'reportsNeedingAManager' => $canViewRecord ? $this->reportsNeedingAManager($employee) : [],
@@ -271,7 +270,7 @@ class EmployeeController extends Controller
      * when a currency is given, which only happens for viewers allowed to see
      * the Employee's Pay.
      *
-     * @return array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>
+     * @return array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, has_ended: bool, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>
      */
     private function assignments(Employee $employee, ?Currency $currency): array
     {
@@ -293,6 +292,7 @@ class EmployeeController extends Controller
                 'start_date' => $assignment->start_date->toDateString(),
                 'end_date' => $assignment->end_date?->toDateString(),
                 'capacity' => $assignment->capacity,
+                'has_ended' => $assignment->end_date !== null && $assignment->end_date->isBefore(today()),
                 ...($currency === null ? [] : ['pay' => $this->payHistory($assignment, $currency)]),
             ])
             ->all();

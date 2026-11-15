@@ -79,7 +79,13 @@ function submit(): void {
 <template>
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
-            <Button v-if="assignment" variant="ghost" size="sm">Edit</Button>
+            <Button
+                v-if="assignment"
+                variant="ghost"
+                size="sm"
+                :aria-label="`Edit the Assignment to ${assignment.project.name}`"
+                >Edit</Button
+            >
             <Button v-else>Assign to a Project</Button>
         </DialogTrigger>
         <DialogContent>

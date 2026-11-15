@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ValueOr from '@/components/ValueOr.vue';
-import { formatDate, formatPeriod, today } from '@/lib/dates';
+import { formatDate, formatPeriod } from '@/lib/dates';
 import { useInitials } from '@/composables/useInitials';
 import { formatPay } from '@/lib/pay';
 import { edit, show } from '@/routes/employees';
@@ -97,21 +97,24 @@ const hasActions = computed(() => props.canManage || props.canViewPay);
  * is written out in full so Tailwind finds it.
  */
 const assignmentGrid = computed(() => {
-    if (props.canViewPay && hasActions.value) {
+    if (props.canViewPay) {
         return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_minmax(0,1.1fr)_7.5rem]';
     }
 
-    if (hasActions.value) {
+    if (props.canManage) {
         return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_7.5rem]';
     }
 
     return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem]';
 });
 
-/** Whether an Assignment ended before today. */
-function hasEnded(assignment: AssignmentRecord): boolean {
-    return assignment.end_date !== null && assignment.end_date < today();
-}
+/** Each Assignment with the Pay in effect today, found once per render. */
+const assignmentRows = computed(() =>
+    (props.assignments ?? []).map((assignment) => ({
+        assignment,
+        pay: payInEffect(assignment),
+    })),
+);
 
 /**
  * The entry in effect today, or null when none has taken effect yet.
@@ -334,11 +337,11 @@ setLayoutProps({
                             class="divide-y md:border-t"
                         >
                             <li
-                                v-for="assignment in assignments"
+                                v-for="{ assignment, pay } in assignmentRows"
                                 :key="assignment.id"
                                 :class="[
                                     assignmentGrid,
-                                    hasEnded(assignment) &&
+                                    assignment.has_ended &&
                                         'text-muted-foreground',
                                 ]"
                                 class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 px-4 py-3 md:items-center"
@@ -350,13 +353,13 @@ setLayoutProps({
                                     <p
                                         class="flex flex-wrap items-center gap-2 font-medium"
                                         :class="
-                                            !hasEnded(assignment) &&
+                                            !assignment.has_ended &&
                                             'text-foreground'
                                         "
                                     >
                                         {{ assignment.project.name }}
                                         <Badge
-                                            v-if="hasEnded(assignment)"
+                                            v-if="assignment.has_ended"
                                             variant="secondary"
                                             >Ended</Badge
                                         >
@@ -385,10 +388,7 @@ setLayoutProps({
                                             assignment.start_date,
                                             assignment.end_date,
                                         )
-                                    }}<span
-                                        class="md:hidden"
-                                        aria-hidden="true"
-                                    >
+                                    }}<span class="md:hidden">
                                         · {{ assignment.capacity }}%
                                         capacity</span
                                     >
@@ -407,15 +407,13 @@ setLayoutProps({
                                         class="text-muted-foreground md:sr-only"
                                         >Pay: </span
                                     ><span
-                                        v-if="payInEffect(assignment)"
+                                        v-if="pay"
                                         class="font-medium"
                                         :class="
-                                            !hasEnded(assignment) &&
+                                            !assignment.has_ended &&
                                             'text-foreground'
                                         "
-                                        >{{
-                                            formatPay(payInEffect(assignment)!)
-                                        }}</span
+                                        >{{ formatPay(pay) }}</span
                                     ><span v-else class="text-muted-foreground"
                                         >None in effect</span
                                     >
@@ -477,7 +475,7 @@ setLayoutProps({
                         >
                     </p>
                     <div
-                        v-if="paidDays !== null && paidDays !== undefined"
+                        v-if="typeof paidDays === 'number'"
                         class="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-end sm:justify-between"
                     >
                         <p class="max-w-sm text-sm text-muted-foreground">

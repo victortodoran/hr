@@ -13,6 +13,8 @@ export type AssignmentRecord = {
     end_date: string | null;
     /** A whole percentage of the Employee's time, from 0 to 100. */
     capacity: number;
+    /** Whether the Assignment ended before today. */
+    has_ended: boolean;
     /** The Pay history, newest first; only sent to viewers who may see it. */
     pay?: PayEntryRecord[];
 };
