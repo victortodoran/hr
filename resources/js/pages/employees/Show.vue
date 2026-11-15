@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
-import { CalendarDays, FolderKanban } from '@lucide/vue';
+import { CalendarDays, FolderKanban, TriangleAlert } from '@lucide/vue';
 import { computed } from 'vue';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -70,6 +70,16 @@ const props = withDefaults(
 );
 
 const { getInitials } = useInitials();
+
+/** The Record's fields, in groups: how to reach them, where they sit, and when they work. */
+const recordGroups = ['Contact', 'Organisation', 'Employment'] as const;
+
+/** A label beside its value from `sm` up, above it on a phone. */
+const rowClass = 'grid gap-0.5 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4';
+
+/** A link inside text: underlined, so it reads as one without hovering. */
+const linkClass =
+    'rounded-sm underline decoration-current/40 underline-offset-4 hover:decoration-current focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
 const tabLabels = computed<Record<EmployeePageTab, string>>(() => ({
     overview: 'Overview',
@@ -155,81 +165,140 @@ setLayoutProps({
                 >
             </TabsList>
             <TabsContent value="overview" class="mt-6 flex flex-col gap-10">
-                <EmployeePageSection v-if="record" title="Record">
-                    <dl
-                        class="grid gap-x-8 gap-y-3 rounded-lg border p-4 text-sm sm:grid-cols-2"
-                    >
-                        <div>
-                            <dt class="text-muted-foreground">Email</dt>
-                            <dd>{{ record.email }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-muted-foreground">Department</dt>
-                            <dd><ValueOr :value="record.department" /></dd>
-                        </div>
-                        <div>
-                            <dt class="text-muted-foreground">Manager</dt>
-                            <dd>
-                                <Link
-                                    v-if="record.manager"
-                                    :href="show(record.manager.id)"
-                                    class="underline-offset-4 hover:underline"
-                                    >{{ record.manager.name }}</Link
-                                >
-                                <span v-else class="text-muted-foreground"
-                                    >None (top Employee)</span
-                                >
-                            </dd>
-                        </div>
-                        <div>
-                            <dt class="text-muted-foreground">Start Date</dt>
-                            <dd>{{ formatDate(record.start_date) }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-muted-foreground">Leaving Date</dt>
-                            <dd>
-                                <ValueOr
-                                    :value="
-                                        record.leaving_date
-                                            ? formatDate(record.leaving_date)
-                                            : null
-                                    "
-                                    fallback="Not set"
-                                />
-                            </dd>
-                        </div>
-                    </dl>
-
-                    <div
-                        v-if="reportsNeedingAManager.length > 0"
-                        class="grid gap-2 rounded-lg border border-amber-300 p-4 text-sm"
-                    >
+                <div
+                    v-if="record && reportsNeedingAManager.length > 0"
+                    class="flex gap-3 rounded-lg bg-status-pending p-4 text-sm text-status-pending-foreground"
+                >
+                    <TriangleAlert
+                        class="mt-0.5 size-4 shrink-0"
+                        aria-hidden="true"
+                    />
+                    <div class="grid gap-1">
                         <p class="font-medium">
                             {{ employee.name }} has left, but these Employees
                             still report to them and need a new Manager:
                         </p>
-                        <ul class="list-inside list-disc">
+                        <ul class="flex flex-wrap gap-x-4 gap-y-1">
                             <li
                                 v-for="report in reportsNeedingAManager"
                                 :key="report.id"
                             >
                                 <Link
                                     :href="show(report.id)"
-                                    class="underline"
+                                    :class="linkClass"
                                     >{{ report.name }}</Link
                                 >
                             </li>
                         </ul>
                     </div>
-                </EmployeePageSection>
+                </div>
 
-                <EmployeePageSection
-                    v-if="reportingChain"
-                    title="Reporting Chain"
-                    class="max-w-xl"
+                <div
+                    class="grid items-start gap-10 lg:gap-12"
+                    :class="record && reportingChain && 'lg:grid-cols-2'"
                 >
-                    <ReportingChain :chain="reportingChain" />
-                </EmployeePageSection>
+                    <EmployeePageSection v-if="record" title="Record">
+                        <div class="divide-y rounded-lg border text-sm">
+                            <div
+                                v-for="group in recordGroups"
+                                :key="group"
+                                class="grid gap-3 p-4"
+                            >
+                                <h3
+                                    class="text-xs font-medium text-muted-foreground"
+                                >
+                                    {{ group }}
+                                </h3>
+                                <dl class="grid gap-3">
+                                    <template v-if="group === 'Contact'">
+                                        <div :class="rowClass">
+                                            <dt class="text-muted-foreground">
+                                                Email
+                                            </dt>
+                                            <dd class="break-all">
+                                                {{ record.email }}
+                                            </dd>
+                                        </div>
+                                    </template>
+                                    <template
+                                        v-else-if="group === 'Organisation'"
+                                    >
+                                        <div :class="rowClass">
+                                            <dt class="text-muted-foreground">
+                                                Department
+                                            </dt>
+                                            <dd>
+                                                <ValueOr
+                                                    :value="record.department"
+                                                />
+                                            </dd>
+                                        </div>
+                                        <div :class="rowClass">
+                                            <dt class="text-muted-foreground">
+                                                Manager
+                                            </dt>
+                                            <dd>
+                                                <Link
+                                                    v-if="record.manager"
+                                                    :href="
+                                                        show(record.manager.id)
+                                                    "
+                                                    :class="linkClass"
+                                                    >{{
+                                                        record.manager.name
+                                                    }}</Link
+                                                >
+                                                <span
+                                                    v-else
+                                                    class="text-muted-foreground"
+                                                    >None (top Employee)</span
+                                                >
+                                            </dd>
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <div :class="rowClass">
+                                            <dt class="text-muted-foreground">
+                                                Start Date
+                                            </dt>
+                                            <dd>
+                                                {{
+                                                    formatDate(
+                                                        record.start_date,
+                                                    )
+                                                }}
+                                            </dd>
+                                        </div>
+                                        <div :class="rowClass">
+                                            <dt class="text-muted-foreground">
+                                                Leaving Date
+                                            </dt>
+                                            <dd>
+                                                <ValueOr
+                                                    :value="
+                                                        record.leaving_date
+                                                            ? formatDate(
+                                                                  record.leaving_date,
+                                                              )
+                                                            : null
+                                                    "
+                                                    fallback="Not set"
+                                                />
+                                            </dd>
+                                        </div>
+                                    </template>
+                                </dl>
+                            </div>
+                        </div>
+                    </EmployeePageSection>
+
+                    <EmployeePageSection
+                        v-if="reportingChain"
+                        title="Reporting Chain"
+                    >
+                        <ReportingChain :chain="reportingChain" />
+                    </EmployeePageSection>
+                </div>
             </TabsContent>
             <TabsContent value="assignments" class="mt-6 flex flex-col gap-10">
                 <EmployeePageSection v-if="assignments" title="Assignments">
