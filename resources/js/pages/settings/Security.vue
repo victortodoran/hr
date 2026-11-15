@@ -27,7 +27,7 @@ defineOptions({
 <template>
     <Head title="Security settings" />
 
-    <h1 class="sr-only">Security settings</h1>
+    <h2 class="sr-only">Security settings</h2>
 
     <div class="space-y-6">
         <Heading

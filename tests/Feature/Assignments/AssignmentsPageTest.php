@@ -18,7 +18,8 @@ use function Pest\Laravel\travelTo;
 
 covers(AssignmentController::class, EmployeeController::class, AssignmentPolicy::class, DirectoryController::class);
 
-it('shows an Employee their own Assignments, the Internal Assignment among them, earliest first, with nothing to manage', function () {
+it('shows an Employee their own Assignments, the Internal Assignment among them, earliest first, saying which have ended, with nothing to manage', function () {
+    travelTo('2026-03-01');
     $ana = employeeWith([Permission::ViewAssignments->value => Scope::Own], ['name' => 'Ana Pop', 'start_date' => '2025-01-06']);
     $globex = Client::factory()->create(['name' => 'Globex']);
     $relaunch = Project::factory()->forClient($globex)->create(['name' => 'Relaunch', 'start_date' => '2025-01-06']);
@@ -32,9 +33,9 @@ it('shows an Employee their own Assignments, the Internal Assignment among them,
             ->component('employees/Show')
             ->where('employee', ['id' => $ana->id, 'name' => 'Ana Pop', 'job_title' => 'Developer'])
             ->where('assignments', [
-                ['id' => $internal->id, 'project' => ['id' => $internal->project_id, 'name' => $internal->project->name, 'client' => null, 'is_internal' => true], 'job_title' => 'Developer', 'start_date' => '2025-01-06', 'end_date' => null, 'capacity' => 0],
-                ['id' => $earlier->id, 'project' => ['id' => $audit->id, 'name' => 'Audit', 'client' => null, 'is_internal' => false], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 100],
-                ['id' => $later->id, 'project' => ['id' => $relaunch->id, 'name' => 'Relaunch', 'client' => 'Globex', 'is_internal' => false], 'job_title' => 'Tech Lead', 'start_date' => '2026-03-01', 'end_date' => null, 'capacity' => 40],
+                ['id' => $internal->id, 'project' => ['id' => $internal->project_id, 'name' => $internal->project->name, 'client' => null, 'is_internal' => true], 'job_title' => 'Developer', 'start_date' => '2025-01-06', 'end_date' => null, 'capacity' => 0, 'has_ended' => false],
+                ['id' => $earlier->id, 'project' => ['id' => $audit->id, 'name' => 'Audit', 'client' => null, 'is_internal' => false], 'job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 100, 'has_ended' => true],
+                ['id' => $later->id, 'project' => ['id' => $relaunch->id, 'name' => 'Relaunch', 'client' => 'Globex', 'is_internal' => false], 'job_title' => 'Tech Lead', 'start_date' => '2026-03-01', 'end_date' => null, 'capacity' => 40, 'has_ended' => false],
             ])
             ->where('canManage', false)
             ->where('projects', []),

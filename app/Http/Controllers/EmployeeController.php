@@ -105,8 +105,10 @@ class EmployeeController extends Controller
      * Manager when they have left, and their Reporting Chain unless they have
      * left. Assignments & Pay: their Assignments, with Pay for viewers allowed
      * to see it. Time Off: their Paid Days to set, and their Time Off with
-     * this year's Paid Days left. Only the open tab's data is loaded; an
-     * unknown or forbidden tab opens Overview.
+     * this year's Paid Days left. Only the open tab's data is loaded, apart
+     * from the Employee's employment status, which the header shows on
+     * every tab to viewers who may see their record; an unknown or
+     * forbidden tab opens Overview.
      */
     public function show(#[CurrentUser] Employee $actor, Employee $employee, Request $request): Response
     {
@@ -117,6 +119,7 @@ class EmployeeController extends Controller
         $canSetPaidDays = $actor->can('setPaidDays', $employee);
         $canViewTimeOff = $actor->can('viewTimeOffAndPaidDays', $employee);
         $currency = $canViewPay ? CompanySettings::payCurrency() : null;
+        $canViewRecord = $actor->can(Permission::ViewEmployeeRecords->value, $employee);
 
         $tabs = array_values(array_filter([
             EmployeePageTab::Overview,
@@ -140,8 +143,11 @@ class EmployeeController extends Controller
             'canManagePay' => $canManagePay,
             ...($canManagePay && $currency !== null ? ['currency' => $currency->code] : []),
             'canEdit' => $actor->can('update', $employee),
+            'standing' => $canViewRecord
+                ? ['status' => $employee->employmentStatus()->value, 'is_top' => $employee->is_top]
+                : null,
             ...match ($tab) {
-                EmployeePageTab::Overview => $this->overviewTab($actor, $employee),
+                EmployeePageTab::Overview => $this->overviewTab($actor, $employee, $canViewRecord),
                 EmployeePageTab::Assignments => [
                     'assignments' => $this->assignments($employee, $currency),
                     'projects' => $canManage ? $this->openProjects() : [],
@@ -195,10 +201,8 @@ class EmployeeController extends Controller
      *
      * @return array{record: array<string, mixed>|null, reportsNeedingAManager: array<int, array{id: int, name: string}>, reportingChain: array<string, mixed>|null}
      */
-    private function overviewTab(Employee $actor, Employee $employee): array
+    private function overviewTab(Employee $actor, Employee $employee, bool $canViewRecord): array
     {
-        $canViewRecord = $actor->can(Permission::ViewEmployeeRecords->value, $employee);
-
         return [
             'record' => $canViewRecord ? $this->record($employee) : null,
             'reportsNeedingAManager' => $canViewRecord ? $this->reportsNeedingAManager($employee) : [],
@@ -224,7 +228,7 @@ class EmployeeController extends Controller
      * The Employee's record as their page shows it, with the Manager they
      * effectively report to.
      *
-     * @return array{email: string, status: string, start_date: string, leaving_date: string|null, department: string|null, manager: array{id: int, name: string}|null, is_top: bool}
+     * @return array{email: string, start_date: string, leaving_date: string|null, department: string|null, manager: array{id: int, name: string}|null}
      */
     private function record(Employee $employee): array
     {
@@ -232,12 +236,10 @@ class EmployeeController extends Controller
 
         return [
             'email' => $effective->email,
-            'status' => $effective->employmentStatus()->value,
             'start_date' => $effective->start_date->toDateString(),
             'leaving_date' => $effective->leaving_date?->toDateString(),
             'department' => $effective->department?->name, // @pest-mutate-ignore (every Employee has a Department; the nullsafe only satisfies the relation's nullable type)
             'manager' => $effective->effectiveManager?->only('id', 'name'),
-            'is_top' => $effective->is_top,
         ];
     }
 
@@ -268,7 +270,7 @@ class EmployeeController extends Controller
      * when a currency is given, which only happens for viewers allowed to see
      * the Employee's Pay.
      *
-     * @return array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>
+     * @return array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, has_ended: bool, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>
      */
     private function assignments(Employee $employee, ?Currency $currency): array
     {
@@ -290,6 +292,7 @@ class EmployeeController extends Controller
                 'start_date' => $assignment->start_date->toDateString(),
                 'end_date' => $assignment->end_date?->toDateString(),
                 'capacity' => $assignment->capacity,
+                'has_ended' => $assignment->end_date !== null && $assignment->end_date->isBefore(today()),
                 ...($currency === null ? [] : ['pay' => $this->payHistory($assignment, $currency)]),
             ])
             ->all();
