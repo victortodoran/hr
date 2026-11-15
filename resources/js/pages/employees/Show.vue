@@ -202,10 +202,7 @@ setLayoutProps({
                     </div>
                 </div>
 
-                <div
-                    class="grid items-start gap-10 lg:gap-12"
-                    :class="record && reportingChain && 'lg:grid-cols-2'"
-                >
+                <div class="flex flex-col gap-10">
                     <EmployeePageSection v-if="record" title="Record">
                         <div class="divide-y rounded-lg border text-sm">
                             <div
@@ -304,6 +301,7 @@ setLayoutProps({
                     <EmployeePageSection
                         v-if="reportingChain"
                         title="Reporting Chain"
+                        class="max-w-xl"
                     >
                         <ReportingChain :chain="reportingChain" />
                     </EmployeePageSection>
