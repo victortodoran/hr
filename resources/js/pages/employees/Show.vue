@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ValueOr from '@/components/ValueOr.vue';
-import { formatDate, formatPeriod } from '@/lib/dates';
+import { formatDate, formatPeriod, today } from '@/lib/dates';
 import { useInitials } from '@/composables/useInitials';
 import { formatPay } from '@/lib/pay';
 import { edit, show } from '@/routes/employees';
@@ -91,16 +91,29 @@ function openTab(tab: string | number): void {
     router.get(show.url(props.employee.id, { query: { tab: String(tab) } }));
 }
 
-const assignmentColumns = computed<TableColumn[]>(() => [
-    { key: 'project', label: 'Project' },
-    { key: 'job_title', label: 'Job Title', minor: true },
-    { key: 'dates', label: 'Dates', minor: true },
-    { key: 'capacity', label: 'Capacity', align: 'end', minor: true },
-    ...(props.canViewPay ? [{ key: 'pay', label: 'Pay', minor: true }] : []),
-    ...(props.canManage || props.canViewPay
-        ? [{ key: 'actions', label: 'Actions', align: 'end' as const }]
-        : []),
-]);
+const hasActions = computed(() => props.canManage || props.canViewPay);
+
+/**
+ * The Assignments' columns from `md` up: Project, Job Title, Dates,
+ * Capacity, then Pay and the buttons when the viewer gets them. Each string
+ * is written out in full so Tailwind finds it.
+ */
+const assignmentGrid = computed(() => {
+    if (props.canViewPay && hasActions.value) {
+        return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_minmax(0,1.1fr)_7.5rem]';
+    }
+
+    if (hasActions.value) {
+        return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_7.5rem]';
+    }
+
+    return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem]';
+});
+
+/** Whether an Assignment ended before today. */
+function hasEnded(assignment: AssignmentRecord): boolean {
+    return assignment.end_date !== null && assignment.end_date < today();
+}
 
 const timeOffColumns: TableColumn[] = [
     { key: 'time_off', label: 'Time Off' },
@@ -309,65 +322,145 @@ setLayoutProps({
                         />
                     </template>
 
-                    <DataTable :columns="assignmentColumns" :rows="assignments">
-                        <template #cell-project="{ row }">
-                            <p class="font-medium">{{ row.project.name }}</p>
-                            <p class="text-muted-foreground">
-                                {{
-                                    row.project.is_internal
-                                        ? 'Internal'
-                                        : (row.project.client ?? 'No Client')
-                                }}
-                            </p>
-                        </template>
-                        <template #cell-job_title="{ row }">
-                            <ValueOr :value="row.job_title" />
-                        </template>
-                        <template #cell-dates="{ row }">
-                            {{ formatPeriod(row.start_date, row.end_date) }}
-                        </template>
-                        <template #cell-capacity="{ row }">
-                            {{ row.capacity }}%
-                        </template>
-                        <template #cell-pay="{ row }">
-                            {{
-                                payInEffect(row)
-                                    ? formatPay(payInEffect(row)!)
-                                    : 'None in effect'
-                            }}
-                        </template>
-                        <template #head-actions>
-                            <span class="sr-only">Actions</span>
-                        </template>
-                        <template #cell-actions="{ row }">
-                            <div class="flex justify-end gap-2">
-                                <PayDialog
-                                    v-if="row.pay"
-                                    :assignment="{ ...row, pay: row.pay }"
-                                    :currency="currency"
-                                />
-                                <AssignmentForm
-                                    v-if="canManage"
-                                    :employee="employee"
-                                    :projects="projects"
-                                    :assignment="row"
-                                />
-                            </div>
-                        </template>
-                        <template #empty>
-                            <EmptyState
-                                :icon="FolderKanban"
-                                :message="`The Projects ${employee.name} is assigned to appear here. There are no Assignments yet.`"
+                    <div class="overflow-hidden rounded-lg border text-sm">
+                        <div
+                            v-if="assignments.length > 0"
+                            :class="assignmentGrid"
+                            class="hidden gap-x-4 bg-muted/50 px-4 py-2 font-medium text-muted-foreground md:grid"
+                            aria-hidden="true"
+                        >
+                            <span>Project</span>
+                            <span>Job Title</span>
+                            <span>Dates</span>
+                            <span class="text-right">Capacity</span>
+                            <span v-if="canViewPay">Pay</span>
+                            <span v-if="hasActions" />
+                        </div>
+                        <ul
+                            v-if="assignments.length > 0"
+                            class="divide-y md:border-t"
+                        >
+                            <li
+                                v-for="assignment in assignments"
+                                :key="assignment.id"
+                                :class="[
+                                    assignmentGrid,
+                                    hasEnded(assignment) &&
+                                        'text-muted-foreground',
+                                ]"
+                                class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 px-4 py-3 md:items-center"
+                                data-test="assignment"
                             >
-                                <template v-if="canManage" #action>
+                                <div
+                                    class="col-start-1 row-start-1 min-w-0 md:col-start-auto md:row-start-auto"
+                                >
+                                    <p
+                                        class="flex flex-wrap items-center gap-2 font-medium"
+                                        :class="
+                                            !hasEnded(assignment) &&
+                                            'text-foreground'
+                                        "
+                                    >
+                                        {{ assignment.project.name }}
+                                        <Badge
+                                            v-if="hasEnded(assignment)"
+                                            variant="secondary"
+                                            >Ended</Badge
+                                        >
+                                    </p>
+                                    <p class="text-muted-foreground">
+                                        {{
+                                            assignment.project.is_internal
+                                                ? 'Internal'
+                                                : (assignment.project.client ??
+                                                  'No Client')
+                                        }}
+                                    </p>
+                                </div>
+                                <p
+                                    class="order-1 col-span-2 text-muted-foreground md:order-none md:col-span-1"
+                                >
+                                    <span class="sr-only">Job Title: </span
+                                    ><ValueOr :value="assignment.job_title" />
+                                </p>
+                                <p
+                                    class="order-1 col-span-2 text-muted-foreground md:order-none md:col-span-1"
+                                >
+                                    <span class="sr-only">Dates: </span
+                                    >{{
+                                        formatPeriod(
+                                            assignment.start_date,
+                                            assignment.end_date,
+                                        )
+                                    }}<span
+                                        class="md:hidden"
+                                        aria-hidden="true"
+                                    >
+                                        · {{ assignment.capacity }}%
+                                        capacity</span
+                                    >
+                                </p>
+                                <p
+                                    class="hidden text-right text-muted-foreground tabular-nums md:block"
+                                >
+                                    <span class="sr-only">Capacity: </span
+                                    >{{ assignment.capacity }}%
+                                </p>
+                                <p
+                                    v-if="canViewPay"
+                                    class="order-2 col-span-2 md:order-none md:col-span-1"
+                                >
+                                    <span
+                                        class="text-muted-foreground md:sr-only"
+                                        >Pay: </span
+                                    ><span
+                                        v-if="payInEffect(assignment)"
+                                        class="font-medium"
+                                        :class="
+                                            !hasEnded(assignment) &&
+                                            'text-foreground'
+                                        "
+                                        >{{
+                                            formatPay(payInEffect(assignment)!)
+                                        }}</span
+                                    ><span v-else class="text-muted-foreground"
+                                        >None in effect</span
+                                    >
+                                </p>
+                                <div
+                                    v-if="hasActions"
+                                    class="col-start-2 row-start-1 flex justify-end gap-1 md:col-start-auto md:row-start-auto"
+                                >
+                                    <PayDialog
+                                        v-if="assignment.pay"
+                                        :assignment="{
+                                            ...assignment,
+                                            pay: assignment.pay,
+                                        }"
+                                        :currency="currency"
+                                    />
                                     <AssignmentForm
+                                        v-if="canManage"
                                         :employee="employee"
                                         :projects="projects"
+                                        :assignment="assignment"
                                     />
-                                </template>
-                            </EmptyState>
-                        </template>
-                    </DataTable>
+                                </div>
+                            </li>
+                        </ul>
+                        <EmptyState
+                            v-else
+                            :icon="FolderKanban"
+                            :message="`The Projects ${employee.name} is assigned to appear here. There are no Assignments yet.`"
+                        >
+                            <template v-if="canManage" #action>
+                                <AssignmentForm
+                                    :employee="employee"
+                                    :projects="projects"
+                                />
+                            </template>
+                        </EmptyState>
+                    </div>
                 </EmployeePageSection>
             </TabsContent>
             <TabsContent value="time-off" class="mt-6 flex flex-col gap-10">

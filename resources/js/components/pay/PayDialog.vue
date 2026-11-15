@@ -69,7 +69,7 @@ function add(): void {
 <template>
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
-            <Button variant="outline" size="sm">Pay</Button>
+            <Button variant="ghost" size="sm">Pay</Button>
         </DialogTrigger>
         <DialogContent>
             <DialogHeader>

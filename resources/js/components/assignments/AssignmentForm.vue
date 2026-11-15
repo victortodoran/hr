@@ -79,7 +79,7 @@ function submit(): void {
 <template>
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
-            <Button v-if="assignment" variant="outline" size="sm">Edit</Button>
+            <Button v-if="assignment" variant="ghost" size="sm">Edit</Button>
             <Button v-else>Assign to a Project</Button>
         </DialogTrigger>
         <DialogContent>
