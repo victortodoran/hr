@@ -9,14 +9,20 @@ import type { WorkEntryAssignmentTotal, WorkEntryPeriod } from '@/types';
  * hours on each Project beside it, most hours first, and the hours of any
  * Declined Work Entries, which count nowhere.
  */
-const props = defineProps<{
-    period: WorkEntryPeriod;
-    total: number;
-    declinedHours: number;
-    assignmentTotals: WorkEntryAssignmentTotal[];
-    /** The ISO week number, for a Period in Week mode. */
-    weekNumber?: number;
-}>();
+const props = withDefaults(
+    defineProps<{
+        total: number;
+        declinedHours: number;
+        /** The Period the total covers, worded by `covers`. */
+        period?: WorkEntryPeriod;
+        /** What the total covers, in place of the Period's wording, such as "in 3 matching Work Entries". */
+        caption?: string;
+        assignmentTotals?: WorkEntryAssignmentTotal[];
+        /** The ISO week number, for a Period in Week mode. */
+        weekNumber?: number;
+    }>(),
+    { period: undefined, caption: undefined, assignmentTotals: () => [] },
+);
 
 function formatShort(date: string): string {
     return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
@@ -30,6 +36,10 @@ function formatShort(date: string): string {
  * "from 1 Oct to 14 Nov".
  */
 const covers = computed((): string => {
+    if (props.caption !== undefined || props.period === undefined) {
+        return props.caption ?? '';
+    }
+
     const { mode, from, to } = props.period;
 
     if (mode === 'month') {

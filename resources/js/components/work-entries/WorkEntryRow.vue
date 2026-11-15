@@ -35,7 +35,7 @@ const props = defineProps<{
     entry?: WorkEntryRecord;
     /** The Assignment last added on this page, picked when it runs on the day. */
     lastAssignmentId?: number | null;
-    /** Lays a new row out for a narrow panel: What was done above the rest, with no close button. */
+    /** Lays a new row out for a narrow panel: Description above the rest, with no close button. */
     compact?: boolean;
 }>();
 
@@ -147,7 +147,7 @@ function save(): void {
 }
 
 /**
- * Puts the cursor in What was done, ready for the next Work Entry.
+ * Puts the cursor in Description, ready for the next Work Entry.
  */
 function focusDescription(): void {
     const element = descriptionInput.value?.$el as HTMLInputElement | undefined;
@@ -183,13 +183,13 @@ defineExpose({ focusDescription });
         </div>
         <div class="grid min-w-0 gap-1" :class="compact && 'col-span-3'">
             <label :for="fieldId('description')" class="sr-only"
-                >What was done</label
+                >Description</label
             >
             <Input
                 :id="fieldId('description')"
                 ref="descriptionInput"
                 v-model="form.description"
-                placeholder="What was done"
+                placeholder="Description"
                 required
             />
             <InputError :message="form.errors.description" />

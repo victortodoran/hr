@@ -97,3 +97,26 @@ it("opens an Employee's week from the list under their name, while the viewer's 
         ->assertNotPresent('[aria-label="Employee"]')
         ->assertNoJavaScriptErrors();
 });
+
+it('shows the total above the list, with Status in its own column, and keeps every column on a phone', function () {
+    $finn = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone, Permission::LockWorkEntries->value => null], ['name' => 'Finn']);
+    $cara = Employee::factory()->create(['name' => 'Cara']);
+    $relaunch = assignmentOf($cara, 'Relaunch');
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10', 'minutes' => 180, 'description' => 'Reviewing the API']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-11', 'minutes' => 90, 'description' => 'Writing specs']);
+    WorkEntry::factory()->for($relaunch)->declined(reason: 'Wrong Project')->create(['date' => '2026-11-12', 'minutes' => 60, 'description' => 'Fixing the login']);
+
+    actingAs($finn);
+
+    visit(route('work-entry-list.index'))
+        ->assertSeeIn('[data-test="work-entry-summary"]', '4.5 h')
+        ->assertSeeIn('[data-test="work-entry-summary"]', 'in 3 matching Work Entries')
+        ->assertSeeIn('[data-test="declined-hours"]', '1 h declined, not counted')
+        ->assertSeeIn('[data-test="work-entry"]', 'Tue 10')
+        ->assertSeeIn('[data-test="decline-reason"]', 'Declined by')
+        ->resize(360, 800)
+        ->assertSee('Reviewing the API')
+        ->assertSee('Relaunch')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->assertNoJavaScriptErrors();
+});
