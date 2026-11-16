@@ -41,14 +41,11 @@ const jobTitleLabel = isInternal
 const fieldId = (field: string): string =>
     `assignment-${field}-${props.assignment?.id ?? 'new'}`;
 
-/** The form's fields as the Assignment stands now, or blank for a new one. */
-function saved(): {
-    project_id: string;
-    job_title: string;
-    start_date: string;
-    end_date: string;
-    capacity: string;
-} {
+/**
+ * The form's fields as the Assignment stands now, or blank for a new one.
+ * Given to the form as a function, so each reset reads them afresh.
+ */
+function saved() {
     return {
         project_id: '',
         job_title: props.assignment?.job_title ?? '',
@@ -58,14 +55,16 @@ function saved(): {
     };
 }
 
-const form = useForm(saved());
+const form = useForm(saved);
 
-/** Each opening starts from what is saved, dropping any cancelled edits and old errors. */
+/**
+ * Each opening of the edit dialog starts from what is saved, dropping any
+ * cancelled edits and old errors. A new Assignment keeps what was typed,
+ * so closing by accident loses nothing, and nothing resets mid-save.
+ */
 watch(open, (isOpen) => {
-    if (isOpen) {
-        form.defaults(saved());
-        form.reset();
-        form.clearErrors();
+    if (isOpen && props.assignment && !form.processing) {
+        form.resetAndClearErrors();
     }
 });
 

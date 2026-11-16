@@ -39,13 +39,11 @@ const open = ref(false);
 const fieldId = (field: string): string =>
     `project-${field}-${props.project?.id ?? 'new'}`;
 
-/** The form's fields as the Project stands now, or blank for a new one. */
-function saved(): {
-    name: string;
-    client_id: string;
-    start_date: string;
-    end_date: string;
-} {
+/**
+ * The form's fields as the Project stands now, or blank for a new one.
+ * Given to the form as a function, so each reset reads them afresh.
+ */
+function saved() {
     return {
         name: props.project?.name ?? '',
         client_id: props.project?.client
@@ -56,14 +54,16 @@ function saved(): {
     };
 }
 
-const form = useForm(saved());
+const form = useForm(saved);
 
-/** Each opening starts from what is saved, dropping any cancelled edits and old errors. */
+/**
+ * Each opening of the edit dialog starts from what is saved, dropping any
+ * cancelled edits and old errors. A new Project keeps what was typed, so
+ * closing by accident loses nothing, and nothing resets mid-save.
+ */
 watch(open, (isOpen) => {
-    if (isOpen) {
-        form.defaults(saved());
-        form.reset();
-        form.clearErrors();
+    if (isOpen && props.project && !form.processing) {
+        form.resetAndClearErrors();
     }
 });
 

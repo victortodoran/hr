@@ -38,6 +38,11 @@ const props = defineProps<{
 const open = ref(false);
 const inEffectOn = ref(today());
 
+watch(open, (isOpen) => {
+    if (isOpen) {
+        inEffectOn.value = today();
+    }
+});
 const entryInEffect = computed(() =>
     inEffectOn.value
         ? payInEffectOn(props.assignment.pay, inEffectOn.value)
@@ -51,15 +56,6 @@ const form = useForm({
     kind: 'fixed',
     amount: '',
     effective_from: '',
-});
-
-/** Each opening starts blank, dropping any half-typed entry and old errors. */
-watch(open, (isOpen) => {
-    if (isOpen) {
-        inEffectOn.value = today();
-        form.reset();
-        form.clearErrors();
-    }
 });
 
 function add(): void {
