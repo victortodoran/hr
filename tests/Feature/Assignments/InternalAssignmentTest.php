@@ -18,8 +18,8 @@ covers(AssignmentController::class, AssignmentRequest::class, EmployeeRequest::c
 beforeEach(fn () => travelTo('2026-03-01 09:00'));
 
 /**
- * An Employee working since 2024 with their Internal Assignment, reporting
- * to the top Employee.
+ * An Employee working since 2024 with their Internal Assignment, who has a
+ * Manager.
  *
  * @param  array<string, mixed>  $attributes
  */
@@ -27,7 +27,7 @@ function internallyAssigned(array $attributes = []): Employee
 {
     $employee = Employee::factory()->create([
         'start_date' => '2024-01-01',
-        'manager_id' => Employee::factory()->top()->create()->id,
+        'manager_id' => Employee::factory()->create()->id,
         ...$attributes,
     ]);
     Assignment::factory()->internal()->for($employee)->create();

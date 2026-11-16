@@ -18,9 +18,7 @@ export type EmployeeRecord = {
     start_date: string;
     leaving_date: string | null;
     status: EmploymentStatus;
-    is_top: boolean;
     can_resend_invitation: boolean;
-    can_become_top: boolean;
 };
 
 /**
@@ -37,11 +35,10 @@ export type EmployeePageRecord = {
 
 /**
  * Where an Employee stands, shown in their page's header on every tab:
- * their employment status and whether they are the top Employee.
+ * their employment status.
  */
 export type EmployeeStanding = {
     status: EmploymentStatus;
-    is_top: boolean;
 };
 
 /**

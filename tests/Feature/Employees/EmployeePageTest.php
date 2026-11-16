@@ -18,7 +18,7 @@ use function Pest\Laravel\get;
 covers(EmployeeController::class, EmployeePolicy::class, DirectoryController::class, ReportingChain::class);
 
 it('shows an Employee their own record, with no Assignments or Pay when they may only see the record', function () {
-    $ben = Employee::factory()->top()->create(['name' => 'Ben Ford']);
+    $ben = Employee::factory()->create(['name' => 'Ben Ford']);
     $finance = Department::factory()->create(['name' => 'Finance']);
     $ana = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Own], [
         'name' => 'Ana Pop',
@@ -76,7 +76,7 @@ it('refuses an Employee\'s page to a viewer who may see none of their record, As
  * └── Eve
  */
 it('lets Scope decide whose record an Employee may see', function (Scope $scope, array $visible) {
-    $dana = Employee::factory()->top()->create();
+    $dana = Employee::factory()->create();
     $ben = employeeWith([Permission::ViewEmployeeRecords->value => $scope], ['manager_id' => $dana->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
     $people = [
@@ -103,7 +103,7 @@ it('shows a Manager their Report\'s record and Assignments but no Pay', function
         Permission::ViewAssignments->value => Scope::Reports,
         Permission::ManageAssignments->value => Scope::Reports,
         Permission::ViewProjects->value => null,
-    ], ['manager_id' => Employee::factory()->top()->create()->id]);
+    ], ['manager_id' => Employee::factory()->create()->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
     Assignment::factory()->internal()->for($cara)->create();
 
@@ -129,7 +129,7 @@ it('offers Edit only to those who manage Employees', function (array $grants, bo
 ]);
 
 it('lists, on a Former Employee\'s page, the Employees who still report to them and need a new Manager', function () {
-    $dana = Employee::factory()->top()->create();
+    $dana = Employee::factory()->create();
     $ben = Employee::factory()->former()->reportingTo($dana)->create();
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara Lane']);
     Employee::factory()->former()->reportingTo($ben)->create();
@@ -142,23 +142,23 @@ it('lists, on a Former Employee\'s page, the Employees who still report to them 
 });
 
 it('gives an Employee\'s employment status on every tab to those who may see their record, and to nobody else', function () {
-    $ana = Employee::factory()->top()->create();
+    $ana = Employee::factory()->create();
     $ben = Employee::factory()->former()->reportingTo($ana)->create();
     $recordViewer = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ViewAssignments->value => Scope::Everyone, Permission::ViewTimeOff->value => Scope::Everyone]);
     $assignmentViewer = employeeWith([Permission::ViewAssignments->value => Scope::Everyone]);
 
     foreach (['overview', 'assignments', 'time-off'] as $tab) {
         actingAs($recordViewer)->get(route('employees.show', ['employee' => $ben, 'tab' => $tab]))
-            ->assertInertia(fn (Assert $page) => $page->where('tab', $tab)->where('standing', ['status' => 'former', 'is_top' => false]));
+            ->assertInertia(fn (Assert $page) => $page->where('tab', $tab)->where('standing', ['status' => 'former']));
     }
     actingAs($recordViewer)->get(route('employees.show', $ana))
-        ->assertInertia(fn (Assert $page) => $page->where('standing', ['status' => 'current', 'is_top' => true]));
+        ->assertInertia(fn (Assert $page) => $page->where('standing', ['status' => 'current']));
     actingAs($assignmentViewer)->get(route('employees.show', ['employee' => $ben, 'tab' => 'assignments']))
         ->assertInertia(fn (Assert $page) => $page->where('standing', null));
 });
 
 it('links to an Employee\'s page from their Reporting Chain only when the viewer may open it', function (array $grants, string $expected) {
-    $ben = employeeWith([Permission::ViewDirectory->value => null, ...$grants], ['manager_id' => Employee::factory()->top()->create()->id]);
+    $ben = employeeWith([Permission::ViewDirectory->value => null, ...$grants], ['manager_id' => Employee::factory()->create()->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
 
     actingAs($ben)->get(route('directory.show', $cara))
@@ -170,7 +170,7 @@ it('links to an Employee\'s page from their Reporting Chain only when the viewer
 ]);
 
 it('shows an Employee\'s Reporting Chain on their page to anyone who may open it, from the top down to those they are the Manager of', function () {
-    $top = Employee::factory()->top()->create(['name' => 'Ada', 'department_id' => Department::factory()->create(['name' => 'Board'])->id]);
+    $top = Employee::factory()->create(['name' => 'Ada', 'department_id' => Department::factory()->create(['name' => 'Board'])->id]);
     $ana = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Own], ['name' => 'Ana', 'manager_id' => $top->id]);
     $cara = Employee::factory()->reportingTo($ana)->create(['name' => 'Cara', 'department_id' => Department::factory()->create(['name' => 'Design'])->id]);
 
@@ -188,7 +188,7 @@ it('shows an Employee\'s Reporting Chain on their page to anyone who may open it
 });
 
 it('shows no Reporting Chain on a Former Employee\'s page', function () {
-    $top = Employee::factory()->top()->create();
+    $top = Employee::factory()->create();
     $gone = Employee::factory()->former()->reportingTo($top)->create();
 
     $response = actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]))->get(route('employees.show', $gone));
@@ -201,7 +201,7 @@ it('shows no Reporting Chain on a Former Employee\'s page', function () {
  */
 it('offers each viewer only the tabs they may see, each carrying only its own data, and opens Overview for a tab they may not see', function (Closure $viewer, array $offered) {
     CompanySettings::factory()->create();
-    $ben = Employee::factory()->create(['manager_id' => Employee::factory()->top()->create()->id]);
+    $ben = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
     $props = [
         'overview' => ['record', 'reportsNeedingAManager', 'reportingChain'],

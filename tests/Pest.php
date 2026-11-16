@@ -66,15 +66,6 @@ function employeeWhoManagesEmployees(): Employee
 }
 
 /**
- * An Employee who manages the company (including naming the top Employee)
- * as well as Employees, like the starter Admin.
- */
-function employeeWhoManagesTheCompany(): Employee
-{
-    return employeeWith([Permission::ManageCompany->value => null, Permission::ManageEmployees->value => null]);
-}
-
-/**
  * Ada, who manages Roles through a Role with that one Permission, named
  * Admin unless told otherwise.
  */
@@ -92,7 +83,7 @@ function employeeWhoManagesRoles(string $role = 'Admin'): Employee
  */
 function managerBen(): Employee
 {
-    $ada = Employee::factory()->top()->create(['name' => 'Ada']);
+    $ada = Employee::factory()->create(['name' => 'Ada']);
 
     return Employee::factory()->reportingTo($ada)->create(['name' => 'Ben']);
 }

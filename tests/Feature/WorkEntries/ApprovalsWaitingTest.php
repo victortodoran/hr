@@ -24,7 +24,7 @@ beforeEach(function () {
  */
 function waitingTeam(): array
 {
-    $ada = Employee::factory()->top()->create(['name' => 'Ada']);
+    $ada = Employee::factory()->create(['name' => 'Ada']);
     $ben = Employee::factory()->reportingTo($ada)->create(['name' => 'Ben']);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
     $dev = Employee::factory()->reportingTo($cara)->create(['name' => 'Dev']);

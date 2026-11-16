@@ -39,7 +39,7 @@ function reportingEmployee(array $attributes = []): Employee
 {
     return Employee::factory()->create([
         'start_date' => '2024-05-01',
-        'manager_id' => Employee::factory()->top()->create()->id,
+        'manager_id' => Employee::factory()->create()->id,
         ...$attributes,
     ]);
 }
@@ -103,14 +103,15 @@ it('refuses a Leaving Date that is not a date', function () {
         ->assertSessionHasErrors(['leaving_date' => 'The Leaving Date field must be a valid date.']);
 });
 
-it('refuses a Leaving Date for the top Employee until a new top Employee is named', function () {
-    $top = Employee::factory()->top()->create();
+it('lets an Employee with no Manager be given a Leaving Date when no Report is left undecided', function () {
+    $ana = Employee::factory()->create(['start_date' => '2024-05-01']);
+    Employee::factory()->reportingTo($ana)->create();
 
     actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $top), recordWith($top, ['leaving_date' => '2026-06-30']))
-        ->assertSessionHasErrors(['leaving_date' => 'Name a new top Employee before the current one can leave.']);
+        ->patch(route('employees.update', $ana), recordWith($ana, ['leaving_date' => '2026-06-30']))
+        ->assertSessionHasNoErrors();
 
-    expect($top->refresh()->leaving_date)->toBeNull();
+    expect($ana->refresh()->leaving_date?->toDateString())->toBe('2026-06-30');
 });
 
 it('shows whether an Employee is future, current or former, with their Leaving Date', function (string $state, string $status) {

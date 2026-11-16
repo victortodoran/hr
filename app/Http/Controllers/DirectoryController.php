@@ -50,8 +50,8 @@ class DirectoryController extends Controller
     }
 
     /**
-     * Show an Employee's Reporting Chain: everyone above them up to the top
-     * Employee, and the Employees they are the Manager of.
+     * Show an Employee's Reporting Chain: everyone above them up to one with
+     * no Manager, and the Employees they are the Manager of.
      * Former Employees have left the directory, so they have no page.
      */
     public function show(#[CurrentUser] Employee $actor, Employee $employee): Response

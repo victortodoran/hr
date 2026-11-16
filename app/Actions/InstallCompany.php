@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 /**
  * Sets up a brand-new installation: the company, its Internal Project, its
  * first Department, the Admin Role and the other starter Roles, and the
- * first Employee as the top Employee with Admin.
+ * first Employee, with no Manager and with Admin.
  */
 class InstallCompany
 {
@@ -48,7 +48,6 @@ class InstallCompany
                 'department_id' => Department::query()->create(['name' => $department])->id,
                 'start_date' => today(),
             ]);
-            $employee->is_top = true;
             $employee->save();
             $employee->createInternalAssignment();
 

@@ -145,7 +145,7 @@ it('rejects a search that is not text or is too long', function (mixed $search, 
 
 it('loads the directory in the same number of queries however many Employees it lists', function () {
     $viewer = colleague();
-    $top = Employee::factory()->top()->create();
+    $top = Employee::factory()->create();
     $queriesToList = function () use ($viewer): int {
         DB::flushQueryLog();
         DB::enableQueryLog();
@@ -164,7 +164,7 @@ it('loads the directory in the same number of queries however many Employees it 
 
 it('shows the effective Manager when an Employee\'s own Manager has left', function () {
     $viewer = colleague();
-    $top = Employee::factory()->top()->create(['name' => 'Ada Top']);
+    $top = Employee::factory()->create(['name' => 'Ada Top']);
     $gone = Employee::factory()->former()->reportingTo($top)->create(['name' => 'Gus Gone']);
     $alsoGone = Employee::factory()->former()->reportingTo($gone)->create(['name' => 'Gil Gone']);
     $cara = Employee::factory()->reportingTo($alsoGone)->create(['name' => 'Cara Report']);

@@ -15,7 +15,7 @@ use function Pest\Laravel\actingAs;
 covers(TeamController::class, Employee::class, EmployeePolicy::class, HandleInertiaRequests::class);
 
 it('shows a Manager their Direct Reports by name, with email, internal Job Title and Department', function () {
-    $ben = Employee::factory()->top()->create(['name' => 'Ben Manager']);
+    $ben = Employee::factory()->create(['name' => 'Ben Manager']);
     $zoe = Employee::factory()->create([
         'name' => 'Zoe Report',
         'email' => 'zoe@acme.test',
@@ -48,7 +48,7 @@ it('shows a Manager their Direct Reports by name, with email, internal Job Title
  * └── Fay (former)
  */
 it('lists the Employees of a Manager who has left and Future Direct Reports, but not Former ones or Reports further down', function () {
-    $ana = Employee::factory()->top()->create(['name' => 'Ana Top']);
+    $ana = Employee::factory()->create(['name' => 'Ana Top']);
     $ben = Employee::factory()->former()->reportingTo($ana)->create(['name' => 'Ben Left']);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara Report']);
     $dev = Employee::factory()->future()->reportingTo($ana)->create(['name' => 'Dev Future']);

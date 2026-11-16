@@ -24,7 +24,6 @@ use App\Http\Controllers\TimeOffCancellationController;
 use App\Http\Controllers\TimeOffController;
 use App\Http\Controllers\TimeOffDeclineController;
 use App\Http\Controllers\TimeOffPreviewController;
-use App\Http\Controllers\TopEmployeeController;
 use App\Http\Controllers\WorkEntryController;
 use App\Http\Controllers\WorkEntryCopyController;
 use App\Http\Controllers\WorkEntryDeclineController;
@@ -60,7 +59,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('employees/{employee}', [EmployeeController::class, 'show'])->middleware('can:view,employee')->name('employees.show');
     Route::post('employees/{employee}/invitation', [EmployeeInvitationController::class, 'store'])->middleware('can:resendInvitation,employee')->name('employees.invitation.store');
     Route::post('employees/{employee}/paid-days', [PaidDaysController::class, 'store'])->middleware('can:setPaidDays,employee')->name('employees.paid-days.store');
-    Route::post('employees/{employee}/top', [TopEmployeeController::class, 'store'])->middleware('can:becomeTop,employee')->name('employees.top.store');
 
     Route::post('employees/{employee}/assignments', [AssignmentController::class, 'store'])->middleware('can:create,'.Assignment::class.',employee')->name('employees.assignments.store');
     Route::patch('assignments/{assignment}', [AssignmentController::class, 'update'])->middleware('can:update,assignment')->name('assignments.update');

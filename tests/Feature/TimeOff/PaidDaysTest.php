@@ -153,7 +153,7 @@ it('refuses setting Paid Days to someone without Manage Paid Days for the Employ
  * └── Eve
  */
 it('lets someone with the reports Scope set Paid Days for their Reports only', function () {
-    $dana = Employee::factory()->top()->create();
+    $dana = Employee::factory()->create();
     $ben = employeeWith([Permission::ManagePaidDays->value => Scope::Reports], ['manager_id' => $dana->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
     $dev = Employee::factory()->reportingTo($cara)->create();

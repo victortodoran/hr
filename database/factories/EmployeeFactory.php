@@ -61,12 +61,11 @@ class EmployeeFactory extends Factory
     }
 
     /**
-     * An Employee whose Manager is the given Employee, so never the top one.
+     * An Employee whose Manager is the given Employee.
      */
     public function reportingTo(Employee $manager): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_top' => false,
             'manager_id' => $manager->id,
         ]);
     }
@@ -89,17 +88,6 @@ class EmployeeFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'start_date' => today()->subYears(2)->toDateString(),
             'leaving_date' => today()->subMonth()->toDateString(),
-        ]);
-    }
-
-    /**
-     * The single Employee at the top of the company, with no Manager.
-     */
-    public function top(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'is_top' => true,
-            'manager_id' => null,
         ]);
     }
 

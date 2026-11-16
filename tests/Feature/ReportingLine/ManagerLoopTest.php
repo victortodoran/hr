@@ -27,7 +27,7 @@ function managerChange(Employee $employee, array $changes): array
  * Dana (top) ── Ben ── Cara ── Dev
  */
 it('refuses a Manager change that would create a loop', function (string $newManager) {
-    $dana = Employee::factory()->top()->create();
+    $dana = Employee::factory()->create();
     $ben = Employee::factory()->reportingTo($dana)->create();
     $cara = Employee::factory()->reportingTo($ben)->create();
     $dev = Employee::factory()->reportingTo($cara)->create();
@@ -41,7 +41,7 @@ it('refuses a Manager change that would create a loop', function (string $newMan
 })->with(['a direct Report' => 'Cara', 'an indirect Report' => 'Dev']);
 
 it('allows moving an Employee under someone outside their own reporting line', function () {
-    $dana = Employee::factory()->top()->create();
+    $dana = Employee::factory()->create();
     $ben = Employee::factory()->reportingTo($dana)->create();
     $eve = Employee::factory()->reportingTo($dana)->create();
     $cara = Employee::factory()->reportingTo($ben)->create();
@@ -54,7 +54,7 @@ it('allows moving an Employee under someone outside their own reporting line', f
 });
 
 it('rejects a Manager that is not an Employee before checking for loops', function (mixed $managerId, string $message) {
-    $ben = Employee::factory()->create(['manager_id' => Employee::factory()->top()->create()->id]);
+    $ben = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
 
     actingAs(employeeWhoManagesEmployees())
         ->patch(route('employees.update', $ben), managerChange($ben, ['manager_id' => $managerId]))

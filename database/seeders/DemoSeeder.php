@@ -148,7 +148,7 @@ class DemoSeeder extends Seeder
         $this->recordWeeks($ivanOnWebsite, 4, ['Homepage mock-ups', 'Design review with Hana', 'Icon set'], $hana, $finn);
 
         foreach ([$ana, $ben, $hana, $finn, $cara, $eve, $lia, $dan] as $employee) {
-            $this->paidDays($employee, $employee->is_top ? 25 : 20);
+            $this->paidDays($employee, $employee->manager_id === null ? 25 : 20);
         }
         $this->paidDays($ivan, 0);
 

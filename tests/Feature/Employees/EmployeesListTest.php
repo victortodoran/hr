@@ -18,7 +18,7 @@ covers(EmployeeController::class, EmployeePolicy::class, Employee::class);
 it('lists every Employee to someone who may see everyone\'s record, Future and Former ones included, by name', function () {
     travelTo('2026-03-10');
     $finance = Department::factory()->create(['name' => 'Finance']);
-    $dana = Employee::factory()->top()->create(['name' => 'Dana Top', 'department_id' => $finance->id, 'start_date' => '2020-01-01']);
+    $dana = Employee::factory()->create(['name' => 'Dana Top', 'department_id' => $finance->id, 'start_date' => '2020-01-01']);
     $cara = Employee::factory()->reportingTo($dana)->create(['name' => 'Cara Lane', 'department_id' => $finance->id, 'start_date' => '2026-04-01']);
     $ben = Employee::factory()->reportingTo($dana)->create(['name' => 'Ben Ford', 'department_id' => $finance->id, 'start_date' => '2024-01-01', 'leaving_date' => '2026-02-28']);
     $ana = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone], ['name' => 'Ana Pop', 'department_id' => $finance->id, 'manager_id' => $dana->id, 'start_date' => '2025-01-01']);
@@ -44,7 +44,7 @@ it('lists every Employee to someone who may see everyone\'s record, Future and F
  * └── Eve
  */
 it('lists only the Employees the viewer\'s Scope covers', function (Scope $scope, array $listed) {
-    $dana = Employee::factory()->top()->create(['name' => 'Dana']);
+    $dana = Employee::factory()->create(['name' => 'Dana']);
     $ben = employeeWith([Permission::ViewEmployeeRecords->value => $scope], ['name' => 'Ben', 'manager_id' => $dana->id]);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
     Employee::factory()->former()->reportingTo($cara)->create(['name' => 'Dev']);
@@ -128,7 +128,7 @@ it('shows everyone for an empty search and no status', function () {
 
 it('loads the list in the same number of queries however many Employees it lists', function () {
     $viewer = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]);
-    $top = Employee::factory()->top()->create();
+    $top = Employee::factory()->create();
     $queriesToList = function () use ($viewer): int {
         DB::flushQueryLog();
         DB::enableQueryLog();
