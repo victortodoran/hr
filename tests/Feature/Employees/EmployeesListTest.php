@@ -132,7 +132,7 @@ it('loads the list in the same number of queries however many Employees it lists
     $queriesToList = function () use ($viewer): int {
         DB::flushQueryLog();
         DB::enableQueryLog();
-        actingAs($viewer)->get(route('employees.index'))->assertOk();
+        actingAs(Employee::query()->findOrFail($viewer->id))->get(route('employees.index'))->assertOk();
 
         return count(DB::getQueryLog());
     };

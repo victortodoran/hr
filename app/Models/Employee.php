@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope as QueryScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -512,13 +513,12 @@ class Employee extends Authenticatable implements MustVerifyEmail
                 ->all();
         }
 
-        return RolePermission::query()
-            ->whereIn('role_id', $this->roles()->select('roles.id'))
-            ->distinct()
-            ->orderBy('permission')
+        return $this->grantsHeld()
             ->pluck('permission')
             ->reject(fn (Permission $permission): bool => $permission->isScoped())
             ->map(fn (Permission $permission): string => $permission->value)
+            ->unique()
+            ->sort()
             ->values()
             ->all();
     }
@@ -674,7 +674,38 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function holdsAdmin(): bool
     {
-        return $this->roles()->where('is_admin', true)->exists();
+        return $this->rolesWithGrants()->contains(fn (Role $role): bool => $role->is_admin);
+    }
+
+    /**
+     * Forget the Roles and grants loaded so far, so the next check reads them
+     * afresh: for when Roles or who holds them change while this Employee
+     * is in hand. Refreshing the Employee does the same.
+     */
+    public function forgetAccess(): void
+    {
+        $this->unsetRelation('roles');
+    }
+
+    /**
+     * The Employee's Roles with their grants, loaded once with the Employee
+     * and kept, as every Permission check needs them.
+     *
+     * @return EloquentCollection<int, Role>
+     */
+    private function rolesWithGrants(): EloquentCollection
+    {
+        return $this->loadMissing('roles.permissions')->roles;
+    }
+
+    /**
+     * Every grant across the Employee's Roles.
+     *
+     * @return Collection<int, RolePermission>
+     */
+    private function grantsHeld(): Collection
+    {
+        return $this->rolesWithGrants()->flatMap(fn (Role $role) => $role->permissions);
     }
 
     /**
@@ -693,9 +724,8 @@ class Employee extends Authenticatable implements MustVerifyEmail
             ])]);
         }
 
-        return RolePermission::query()
-            ->whereIn('role_id', $this->roles()->select('roles.id'))
-            ->where('permission', $permission)
-            ->get();
+        return $this->grantsHeld()
+            ->filter(fn (RolePermission $grant): bool => $grant->permission === $permission)
+            ->values();
     }
 }

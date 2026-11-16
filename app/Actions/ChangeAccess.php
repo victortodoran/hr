@@ -250,11 +250,18 @@ class ChangeAccess
     }
 
     /**
+     * Write the change to the Access Log. Every change passes through here,
+     * so it also makes the actor, who may have changed their own Roles, and
+     * the Employee given or losing a Role read their access afresh.
+     *
      * @param  array<string, mixed>|null  $before
      * @param  array<string, mixed>|null  $after
      */
     private function log(Employee $actor, AccessChange $change, Role $role, ?Employee $employee = null, ?array $before = null, ?array $after = null): void
     {
+        $actor->forgetAccess();
+        $employee?->forgetAccess();
+
         AccessLogEntry::query()->create([
             'change' => $change,
             'actor_id' => $actor->id,

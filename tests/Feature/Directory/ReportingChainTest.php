@@ -7,6 +7,7 @@ use App\Models\Assignment;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Support\ReportingChain;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -123,4 +124,28 @@ it('refuses a Reporting Chain to an Employee without view directory', function (
     actingAs(employeeWith([Permission::ManageDepartments->value => null]))
         ->get(route('directory.show', $top))
         ->assertForbidden();
+});
+
+it('reads the viewer\'s Roles and grants as often for a Reporting Chain of 15 as for one of 3', function () {
+    $viewer = employeeWith([Permission::ViewDirectory->value => null, Permission::ViewEmployeeRecords->value => Scope::Reports, Permission::ViewAssignments->value => Scope::Own]);
+    $accessReadsToOpen = function (int $length) use ($viewer): int {
+        $manager = Employee::factory()->top()->create();
+        foreach (range(2, $length) as $level) {
+            $manager = Employee::factory()->reportingTo($manager)->create();
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        actingAs(Employee::query()->findOrFail($viewer->id))->get(route('directory.show', $manager))->assertOk();
+
+        return collect(DB::getQueryLog())
+            ->filter(fn (array $query): bool => str_contains($query['query'], '"roles"') || str_contains($query['query'], '"role_permissions"'))
+            ->count();
+    };
+
+    $forThree = $accessReadsToOpen(3);
+    Employee::query()->update(['is_top' => false]);
+
+    expect($accessReadsToOpen(15))->toBe($forThree)
+        ->and($forThree)->toBe(2);
 });
