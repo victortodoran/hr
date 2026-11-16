@@ -36,7 +36,7 @@ function reopener(?array $grants = null): Employee
 it('lists everyone a reopen Scope covers, offering to reopen their Approved Work Entries but never one\'s own', function () {
     $rae = reopener([Permission::ReopenWorkEntries->value => Scope::Everyone]);
     $ada = Employee::query()->findOrFail($rae->manager_id);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ada->id]);
+    $cara = Employee::factory()->reportingTo($ada)->create(['name' => 'Cara']);
     $relaunch = assignmentOf($cara);
     $ben = Employee::factory()->create(['name' => 'Ben']);
     $approved = WorkEntry::factory()->for($relaunch)->approved($ben)->create(['date' => '2026-11-10', 'minutes' => 60, 'description' => 'API', 'approved_at' => '2026-11-10 17:00']);
@@ -59,7 +59,7 @@ it('lists everyone a reopen Scope covers, offering to reopen their Approved Work
 
 it('reopens the selected Approved Work Entries, withdrawing their approval', function () {
     $rae = reopener();
-    $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $rae->id]));
+    $relaunch = assignmentOf(Employee::factory()->reportingTo($rae)->create());
     $first = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-09']);
     $second = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
     $untouched = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
@@ -80,7 +80,7 @@ it('reopens the selected Approved Work Entries, withdrawing their approval', fun
 
 it('reopens only the selected Work Entries it may, and says how many it skipped', function () {
     $rae = reopener([Permission::ReopenWorkEntries->value => Scope::Everyone]);
-    $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $rae->id]));
+    $relaunch = assignmentOf(Employee::factory()->reportingTo($rae)->create());
     $approved = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
     $own = WorkEntry::factory()->for(assignmentOf($rae))->approved()->create(['date' => '2026-11-10']);
     $pending = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
@@ -98,7 +98,7 @@ it('reopens only the selected Work Entries it may, and says how many it skipped'
 it('neither offers nor lets a Manager with no reopen Role reopen their Direct Report\'s Work Entries', function () {
     $ada = Employee::factory()->top()->create();
     $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Reports], ['manager_id' => $ada->id]);
-    $approved = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $ben->id])))->approved()->create(['date' => '2026-11-10']);
+    $approved = WorkEntry::factory()->for(assignmentOf(Employee::factory()->reportingTo($ben)->create()))->approved()->create(['date' => '2026-11-10']);
 
     actingAs($ben)->get(route('work-entry-list.index'))
         ->assertInertia(fn (Assert $page) => $page
@@ -112,7 +112,7 @@ it('neither offers nor lets a Manager with no reopen Role reopen their Direct Re
 
 it('reopens only for the Reports a reopen Scope of reports covers', function () {
     $rae = reopener();
-    $report = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $rae->id])))->approved()->create(['date' => '2026-11-10']);
+    $report = WorkEntry::factory()->for(assignmentOf(Employee::factory()->reportingTo($rae)->create()))->approved()->create(['date' => '2026-11-10']);
     $peer = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $rae->manager_id])))->approved()->create(['date' => '2026-11-10']);
 
     actingAs($rae)->post(route('reopenings.store'), ['ids' => [$report->id, $peer->id]])
@@ -125,8 +125,8 @@ it('reopens only for the Reports a reopen Scope of reports covers', function () 
 it('never lets a reopen Role approve beyond the Employees one is the Manager of', function () {
     $ada = Employee::factory()->top()->create();
     $reopener = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone], ['manager_id' => $ada->id]);
-    Employee::factory()->create(['manager_id' => $reopener->id]);
-    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $ada->id])))->create(['date' => '2026-11-10']);
+    Employee::factory()->reportingTo($reopener)->create();
+    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->reportingTo($ada)->create()))->create(['date' => '2026-11-10']);
 
     actingAs($reopener)->post(route('approvals.store'), ['ids' => [$pending->id]])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Work Entries approved, 1 skipped.']);

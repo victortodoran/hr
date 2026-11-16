@@ -49,6 +49,29 @@ class EmployeeFactory extends Factory
     }
 
     /**
+     * An Employee who started on Mon 6 Jan 2025, well before the dates tests
+     * freeze time at, so Paid Days, Assignments and Work Entries don't hang
+     * on the random default Start Date.
+     */
+    public function startedLongAgo(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'start_date' => '2025-01-06',
+        ]);
+    }
+
+    /**
+     * An Employee whose Manager is the given Employee, so never the top one.
+     */
+    public function reportingTo(Employee $manager): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_top' => false,
+            'manager_id' => $manager->id,
+        ]);
+    }
+
+    /**
      * An Employee whose Start Date is still ahead.
      */
     public function future(): static

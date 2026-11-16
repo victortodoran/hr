@@ -208,7 +208,7 @@ it('lets an Employee record hours on their Internal Assignment', function () {
 
 it('lets someone record hours for the Employees their manage work entries Scope covers', function (Scope $scope) {
     $ben = employeeWith([Permission::ManageWorkEntries->value => $scope], ['manager_id' => Employee::factory()->top()->create()->id]);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
     $relaunch = assignmentOf($cara);
 
     actingAs($ben)->post(route('employees.work-entries.store', $cara), workEntryForm($relaunch))
@@ -233,7 +233,7 @@ it('forbids recording hours for an Employee outside the Scope, or with only view
 
 it('lets someone fix a Former Employee\'s hours up to their Leaving Date', function () {
     $admin = employeeWith([Permission::ManageWorkEntries->value => Scope::Everyone]);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'leaving_date' => '2026-11-05']);
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'leaving_date' => '2026-11-05']);
     $relaunch = assignmentOf($cara, attributes: ['end_date' => '2026-11-05']);
 
     actingAs($admin)->post(route('employees.work-entries.store', $cara), workEntryForm($relaunch, ['date' => '2026-11-05']))

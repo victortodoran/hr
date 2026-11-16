@@ -245,7 +245,7 @@ it('marks no day before the Start Date or after the Leaving Date as nothing logg
 
 it('shows a Manager the Time Off and nothing logged days of their Direct Report\'s week', function () {
     $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Reports], ['name' => 'Ben']);
-    $cara = Employee::factory()->create(['manager_id' => $ben->id, 'start_date' => '2025-01-06']);
+    $cara = Employee::factory()->reportingTo($ben)->startedLongAgo()->create();
     TimeOff::factory()->for($cara)->unpaid()->approved($ben)->create(['first_date' => '2026-11-03', 'last_date' => '2026-11-03']);
 
     $response = actingAs($ben)->get(route('work-entries.index', ['employee' => $cara->id, 'week' => '2026-11-02']));
@@ -283,7 +283,7 @@ it('offers the Employee\'s Assignments that run during the week', function () {
 it('lets someone see the week of an Employee their Scope covers, as not their own, with Assignments to add to only when they may', function (array $grants, bool $canManage) {
     $top = Employee::factory()->top()->create(['name' => 'Ada']);
     $ben = employeeWith($grants, ['name' => 'Ben', 'manager_id' => $top->id]);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
     assignmentOf($cara);
 
     $response = actingAs($ben)->get(route('work-entries.index', ['employee' => $cara->id]));

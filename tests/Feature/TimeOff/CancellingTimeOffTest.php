@@ -22,7 +22,7 @@ beforeEach(function () {
  */
 function carasTimeOff(?string $state = null): TimeOff
 {
-    $factory = TimeOff::factory()->for(Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'paid_days' => 20]));
+    $factory = TimeOff::factory()->for(Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'paid_days' => 20]));
 
     return ($state === null ? $factory : $factory->{$state}())->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
 }

@@ -41,7 +41,7 @@ function assignmentForm(Project $project, array $overrides = []): array
 }
 
 it('lets an assignment manager put an Employee on a Project', function () {
-    $ana = Employee::factory()->create(['start_date' => '2025-01-06']);
+    $ana = Employee::factory()->startedLongAgo()->create();
     $project = Project::factory()->create(['start_date' => '2026-01-05']);
 
     actingAs(assignmentManager())
@@ -105,7 +105,7 @@ it('lets a Future Employee be planned onto a Project from their Start Date', fun
 
 it('accepts an Assignment on a Project that ends today', function () {
     travelTo('2026-02-10');
-    $ana = Employee::factory()->create(['start_date' => '2025-01-06']);
+    $ana = Employee::factory()->startedLongAgo()->create();
     $relaunch = Project::factory()->create(['start_date' => '2025-06-01', 'end_date' => '2026-02-10']);
 
     actingAs(assignmentManager())
@@ -114,7 +114,7 @@ it('accepts an Assignment on a Project that ends today', function () {
 });
 
 it('rejects an invalid Assignment and explains why', function (Closure $overrides, string $field, string $message) {
-    $ana = Employee::factory()->create(['start_date' => '2025-01-06']);
+    $ana = Employee::factory()->startedLongAgo()->create();
     $relaunch = Project::factory()->create(['start_date' => '2026-01-05']);
 
     actingAs(assignmentManager())
@@ -141,7 +141,7 @@ it('rejects an invalid Assignment and explains why', function (Closure $override
 ]);
 
 it('accepts a Capacity anywhere from 0% to 100%', function (int $capacity) {
-    $ana = Employee::factory()->create(['start_date' => '2025-01-06']);
+    $ana = Employee::factory()->startedLongAgo()->create();
     $relaunch = Project::factory()->create(['start_date' => '2026-01-05']);
 
     actingAs(assignmentManager())
@@ -152,7 +152,7 @@ it('accepts a Capacity anywhere from 0% to 100%', function (int $capacity) {
 })->with([0, 60, 100]);
 
 it('lets an assignment manager change an Assignment\'s Job Title, dates and Capacity, but not its Project', function (int $capacity) {
-    $ana = Employee::factory()->create(['start_date' => '2025-01-06']);
+    $ana = Employee::factory()->startedLongAgo()->create();
     $relaunch = Project::factory()->create(['start_date' => '2026-01-05']);
     $assignment = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2026-02-01', 'end_date' => null, 'capacity' => 50]);
 
@@ -173,7 +173,7 @@ it('lets an assignment manager change an Assignment\'s Job Title, dates and Capa
 it('lets an assignment manager end an Assignment early', function () {
     travelTo('2026-05-10');
     $assignment = Assignment::factory()
-        ->for(Employee::factory()->create(['start_date' => '2025-01-06']))
+        ->for(Employee::factory()->startedLongAgo()->create())
         ->for(Project::factory()->create(['start_date' => '2026-01-05', 'end_date' => '2026-12-31']))
         ->create(['start_date' => '2026-01-05', 'end_date' => '2026-12-31']);
 
@@ -185,7 +185,7 @@ it('lets an assignment manager end an Assignment early', function () {
 });
 
 it('keeps a changed Assignment within its Employee\'s and its Project\'s dates', function () {
-    $ana = Employee::factory()->create(['name' => 'Ana', 'start_date' => '2025-01-06', 'leaving_date' => '2026-10-31']);
+    $ana = Employee::factory()->startedLongAgo()->create(['name' => 'Ana', 'leaving_date' => '2026-10-31']);
     $relaunch = Project::factory()->create(['name' => 'Relaunch', 'start_date' => '2026-01-05']);
     $assignment = Assignment::factory()->for($ana)->for($relaunch)->create(['start_date' => '2026-02-01', 'end_date' => '2026-06-30']);
 
@@ -202,7 +202,7 @@ it('keeps a changed Assignment within its Employee\'s and its Project\'s dates',
 it('lets an Assignment on a finished Project still be corrected', function () {
     travelTo('2026-05-10');
     $assignment = Assignment::factory()
-        ->for(Employee::factory()->create(['start_date' => '2025-01-06']))
+        ->for(Employee::factory()->startedLongAgo()->create())
         ->for(Project::factory()->create(['start_date' => '2025-01-06', 'end_date' => '2025-12-31']))
         ->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31']);
 

@@ -71,13 +71,13 @@ it('offers an assignment manager the Projects still open to Assignments, by name
 it('lets Scope decide whose Assignments an Employee may see', function (Scope $scope, array $visible) {
     $dana = Employee::factory()->top()->create();
     $ben = employeeWith([Permission::ViewAssignments->value => $scope], ['manager_id' => $dana->id]);
-    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create();
     $people = [
         'Dana' => $dana,
         'Ben' => $ben,
         'Cara' => $cara,
-        'Dev' => Employee::factory()->create(['manager_id' => $cara->id]),
-        'Eve' => Employee::factory()->create(['manager_id' => $dana->id]),
+        'Dev' => Employee::factory()->reportingTo($cara)->create(),
+        'Eve' => Employee::factory()->reportingTo($dana)->create(),
     ];
 
     foreach ($people as $name => $employee) {
@@ -92,7 +92,7 @@ it('lets Scope decide whose Assignments an Employee may see', function (Scope $s
 
 it('lets an Employee who manages someone\'s Assignments see them too', function () {
     $ben = employeeWith([Permission::ManageAssignments->value => Scope::Reports], ['manager_id' => Employee::factory()->top()->create()->id]);
-    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create();
 
     actingAs($ben)->get(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
         ->assertInertia(fn (Assert $page) => $page->where('canManage', true));
@@ -109,13 +109,13 @@ it('shows Assignments read-only to an Employee who may see but not manage them',
 it('lets Scope decide whose Assignments an Employee may create and change', function (Scope $scope, array $allowed) {
     $dana = Employee::factory()->top()->create(['start_date' => '2024-01-01']);
     $ben = employeeWith([Permission::ManageAssignments->value => $scope], ['manager_id' => $dana->id, 'start_date' => '2024-01-01']);
-    $cara = Employee::factory()->create(['manager_id' => $ben->id, 'start_date' => '2024-01-01']);
+    $cara = Employee::factory()->reportingTo($ben)->create(['start_date' => '2024-01-01']);
     $people = [
         'Dana' => $dana,
         'Ben' => $ben,
         'Cara' => $cara,
-        'Dev' => Employee::factory()->create(['manager_id' => $cara->id, 'start_date' => '2024-01-01']),
-        'Eve' => Employee::factory()->create(['manager_id' => $dana->id, 'start_date' => '2024-01-01']),
+        'Dev' => Employee::factory()->reportingTo($cara)->create(['start_date' => '2024-01-01']),
+        'Eve' => Employee::factory()->reportingTo($dana)->create(['start_date' => '2024-01-01']),
     ];
     $project = Project::factory()->create(['start_date' => '2024-01-01']);
     $form = ['project_id' => $project->id, 'job_title' => 'Analyst', 'start_date' => '2026-03-01', 'end_date' => null, 'capacity' => 50];

@@ -35,7 +35,7 @@ function paidDaysManager(): Employee
  */
 function cara(array $attributes = []): Employee
 {
-    return Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', ...$attributes]);
+    return Employee::factory()->startedLongAgo()->create(['name' => 'Cara', ...$attributes]);
 }
 
 /**
@@ -155,9 +155,9 @@ it('refuses setting Paid Days to someone without Manage Paid Days for the Employ
 it('lets someone with the reports Scope set Paid Days for their Reports only', function () {
     $dana = Employee::factory()->top()->create();
     $ben = employeeWith([Permission::ManagePaidDays->value => Scope::Reports], ['manager_id' => $dana->id]);
-    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
-    $dev = Employee::factory()->create(['manager_id' => $cara->id]);
-    $eve = Employee::factory()->create(['manager_id' => $dana->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create();
+    $dev = Employee::factory()->reportingTo($cara)->create();
+    $eve = Employee::factory()->reportingTo($dana)->create();
 
     foreach ([$cara, $dev] as $report) {
         actingAs($ben)->post(route('employees.paid-days.store', $report), ['days' => 20])->assertSessionHasNoErrors();

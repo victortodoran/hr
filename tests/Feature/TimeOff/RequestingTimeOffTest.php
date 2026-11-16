@@ -24,7 +24,7 @@ beforeEach(function () {
  */
 function timeOffRequester(array $attributes = []): Employee
 {
-    return Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'paid_days' => 20, ...$attributes]);
+    return Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'paid_days' => 20, ...$attributes]);
 }
 
 /**
@@ -71,7 +71,7 @@ it('lets an Employee request Paid Time Off, which starts Pending', function () {
 });
 
 it('lets an Employee with no Paid Days at all request Unpaid Time Off, a single day long', function () {
-    $dev = Employee::factory()->create(['start_date' => '2025-01-06']);
+    $dev = Employee::factory()->startedLongAgo()->create();
 
     actingAs($dev)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-01', 'last_date' => '2026-12-01', 'is_paid' => false]))
         ->assertSessionHasNoErrors();
@@ -207,7 +207,7 @@ it('accepts Paid Time Off using exactly the Paid Days left, not counting Unpaid,
 });
 
 it('checks Time Off across New Year against each year\'s own days left from the same Paid Days: 28 Dec 2026 to 8 Jan 2027 is 4 days in 2026 and 6 in 2027', function (string $taken2026, string $taken2027, ?string $message) {
-    $cara = Employee::factory()->create(['start_date' => '2025-01-06', 'paid_days' => 10]);
+    $cara = Employee::factory()->startedLongAgo()->create(['paid_days' => 10]);
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => $taken2026]);
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2027-02-01', 'last_date' => $taken2027]);
 
@@ -227,7 +227,7 @@ it('checks Time Off across New Year against each year\'s own days left from the 
 ]);
 
 it('counts Paid Time Off on the last and first day of a year in that year only', function () {
-    $cara = Employee::factory()->create(['start_date' => '2025-01-06', 'paid_days' => 1]);
+    $cara = Employee::factory()->startedLongAgo()->create(['paid_days' => 1]);
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-31', 'last_date' => '2026-12-31']);
     TimeOff::factory()->for($cara)->create(['first_date' => '2027-01-01', 'last_date' => '2027-01-01']);
 

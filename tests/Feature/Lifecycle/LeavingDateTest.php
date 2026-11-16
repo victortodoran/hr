@@ -139,7 +139,7 @@ it('does not offer Former Employees as Managers, and marks Future ones', functio
 
 it('keeps offering an Employee\'s current Manager after that Manager has left', function () {
     $ben = Employee::factory()->former()->create(['name' => 'Ben Ford']);
-    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create();
 
     actingAs(employeeWhoManagesEmployees())->get(route('employees.edit', $cara))
         ->assertInertia(fn (Assert $page) => $page->where('managers', fn (Collection $managers): bool => $managers->firstWhere('id', $ben->id) === ['id' => $ben->id, 'name' => 'Ben Ford', 'status' => 'former']));

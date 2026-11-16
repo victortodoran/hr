@@ -43,8 +43,7 @@ beforeEach(function () {
  */
 function benAndCara(): array
 {
-    $ada = Employee::factory()->top()->create(['name' => 'Ada']);
-    $ben = Employee::factory()->create(['name' => 'Ben', 'manager_id' => $ada->id]);
+    $ben = managerBen();
 
     return ['ben' => $ben, 'cara' => recorder(['manager_id' => $ben->id])];
 }
@@ -80,7 +79,7 @@ it('declines only Pending Work Entries of the decliner\'s Direct Reports, never 
     $own = WorkEntry::factory()->for(assignmentOf($ben))->create(['date' => '2026-11-10']);
     $approved = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
     $locked = WorkEntry::factory()->for($relaunch)->locked()->create(['date' => '2026-11-10']);
-    $below = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $cara->id])))->create(['date' => '2026-11-10']);
+    $below = WorkEntry::factory()->for(assignmentOf(Employee::factory()->reportingTo($cara)->create()))->create(['date' => '2026-11-10']);
 
     $response = actingAs($ben)->post(route('approvals.declines.store'), [
         'ids' => [$pending->id, $pending->id, $own->id, $approved->id, $locked->id, $below->id],
@@ -97,8 +96,8 @@ it('declines only Pending Work Entries of the decliner\'s Direct Reports, never 
 
 it('lets the next Manager up decline for a Manager who has left', function () {
     ['ben' => $ben] = benAndCara();
-    $fay = Employee::factory()->former()->create(['manager_id' => $ben->id]);
-    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $fay->id])))->create(['date' => '2026-11-10']);
+    $fay = Employee::factory()->former()->reportingTo($ben)->create();
+    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->reportingTo($fay)->create()))->create(['date' => '2026-11-10']);
 
     actingAs($ben)->post(route('approvals.declines.store'), ['ids' => [$pending->id], 'decline_reason' => 'Wrong Project']);
 
@@ -110,7 +109,7 @@ it('gives declining to no Role, not even one that grants reopening for everyone'
     $pending = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10']);
     $dan = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone, Permission::ManageWorkEntries->value => Scope::Everyone]);
     $eve = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone]);
-    Employee::factory()->create(['manager_id' => $eve->id]);
+    Employee::factory()->reportingTo($eve)->create();
 
     actingAs($dan)->post(route('approvals.declines.store'), ['ids' => [$pending->id], 'decline_reason' => 'Wrong Project'])->assertForbidden();
     actingAs($eve)->post(route('approvals.declines.store'), ['ids' => [$pending->id], 'decline_reason' => 'Wrong Project'])

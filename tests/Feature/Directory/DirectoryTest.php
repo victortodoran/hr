@@ -154,10 +154,10 @@ it('loads the directory in the same number of queries however many Employees it 
         return count(DB::getQueryLog());
     };
 
-    Employee::factory()->create(['manager_id' => $top->id]);
+    Employee::factory()->reportingTo($top)->create();
     $forThree = $queriesToList();
 
-    Employee::factory()->count(5)->create(['manager_id' => $top->id]);
+    Employee::factory()->count(5)->reportingTo($top)->create();
 
     expect($queriesToList())->toBe($forThree);
 });
@@ -165,9 +165,9 @@ it('loads the directory in the same number of queries however many Employees it 
 it('shows the effective Manager when an Employee\'s own Manager has left', function () {
     $viewer = colleague();
     $top = Employee::factory()->top()->create(['name' => 'Ada Top']);
-    $gone = Employee::factory()->former()->create(['name' => 'Gus Gone', 'manager_id' => $top->id]);
-    $alsoGone = Employee::factory()->former()->create(['name' => 'Gil Gone', 'manager_id' => $gone->id]);
-    $cara = Employee::factory()->create(['name' => 'Cara Report', 'manager_id' => $alsoGone->id]);
+    $gone = Employee::factory()->former()->reportingTo($top)->create(['name' => 'Gus Gone']);
+    $alsoGone = Employee::factory()->former()->reportingTo($gone)->create(['name' => 'Gil Gone']);
+    $cara = Employee::factory()->reportingTo($alsoGone)->create(['name' => 'Cara Report']);
 
     actingAs($viewer)->get(route('directory.index', ['search' => 'Cara']))
         ->assertInertia(fn (Assert $page) => $page
@@ -181,8 +181,8 @@ it('keeps a Manager who leaves today, and one who has yet to start', function ()
     $viewer = colleague();
     $leavingToday = Employee::factory()->create(['name' => 'Lou Leaving', 'start_date' => today()->subYear(), 'leaving_date' => today()]);
     $starting = Employee::factory()->future()->create(['name' => 'Fay Future']);
-    Employee::factory()->create(['name' => 'Bea Report', 'manager_id' => $leavingToday->id]);
-    Employee::factory()->create(['name' => 'Bo Report', 'manager_id' => $starting->id]);
+    Employee::factory()->reportingTo($leavingToday)->create(['name' => 'Bea Report']);
+    Employee::factory()->reportingTo($starting)->create(['name' => 'Bo Report']);
 
     actingAs($viewer)->get(route('directory.index', ['search' => 'Report']))
         ->assertInertia(fn (Assert $page) => $page

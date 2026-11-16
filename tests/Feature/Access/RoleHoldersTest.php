@@ -16,21 +16,10 @@ use function Pest\Laravel\actingAs;
 
 covers(RoleHolderController::class, GiveRoleRequest::class, RoleController::class, ChangeAccess::class, AccessLogEntry::class);
 
-/**
- * An Employee who manages Roles through a Role named Admin.
- */
-function holderManager(): Employee
-{
-    $admin = Employee::factory()->create(['name' => 'Ada Admin']);
-    $admin->roles()->attach(Role::factory()->withPermissions([Permission::ManageRoles->value => null])->create(['name' => 'Admin']));
-
-    return $admin;
-}
-
 it('lets an Employee who manages Roles give a Role, and the widest Scope across Roles wins', function () {
-    $admin = holderManager();
+    $admin = employeeWhoManagesRoles();
     $ben = Employee::factory()->create();
-    $cara = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
+    $cara = Employee::factory()->reportingTo(Employee::factory()->create())->create();
     giveRole($ben, [Permission::ViewPay->value => Scope::Own]);
     $payroll = Role::factory()->withPermissions([Permission::ViewPay->value => Scope::Everyone])->create(['name' => 'Payroll']);
 
@@ -54,7 +43,7 @@ it('lets an Employee who manages Roles give a Role, and the widest Scope across 
 });
 
 it('lets an Employee who manages Roles give any Role to themselves', function () {
-    $admin = holderManager();
+    $admin = employeeWhoManagesRoles();
     $payroll = Role::factory()->withPermissions([Permission::ManagePay->value => Scope::Everyone])->create();
 
     actingAs($admin)
@@ -67,7 +56,7 @@ it('lets an Employee who manages Roles give any Role to themselves', function ()
 it('refuses to give a Role to someone who already holds it, has left, or does not exist', function (Closure $employee, string $message) {
     $payroll = Role::factory()->create(['name' => 'Payroll']);
 
-    actingAs(holderManager())
+    actingAs(employeeWhoManagesRoles())
         ->post(route('roles.holders.store', $payroll), ['employee_ids' => [$employee($payroll)]])
         ->assertSessionHasErrors(['employee_ids.0' => $message]);
 
@@ -85,13 +74,13 @@ it('refuses to give a Role to someone who already holds it, has left, or does no
 ]);
 
 it('refuses to give a Role to nobody', function () {
-    actingAs(holderManager())
+    actingAs(employeeWhoManagesRoles())
         ->post(route('roles.holders.store', Role::factory()->create()), ['employee_ids' => []])
         ->assertSessionHasErrors(['employee_ids' => 'Choose someone to give the Role to.']);
 });
 
 it('gives a Role to several Employees at once, or to none of them when one can\'t have it', function () {
-    $admin = holderManager();
+    $admin = employeeWhoManagesRoles();
     $payroll = Role::factory()->create(['name' => 'Payroll']);
     $ben = Employee::factory()->create();
     $zoe = Employee::factory()->future()->create();
@@ -112,7 +101,7 @@ it('gives a Role to several Employees at once, or to none of them when one can\'
 });
 
 it('lets an Employee who manages Roles take a Role away', function () {
-    $admin = holderManager();
+    $admin = employeeWhoManagesRoles();
     $ben = Employee::factory()->create();
     $payroll = giveRole($ben, [Permission::ViewPay->value => Scope::Everyone]);
 
@@ -133,7 +122,7 @@ it('lets an Employee who manages Roles take a Role away', function () {
 it('refuses to take a Role from an Employee who does not hold it', function () {
     $payroll = Role::factory()->create();
 
-    actingAs(holderManager())
+    actingAs(employeeWhoManagesRoles())
         ->delete(route('roles.holders.destroy', [$payroll, Employee::factory()->create()]))
         ->assertNotFound();
 
@@ -141,7 +130,7 @@ it('refuses to take a Role from an Employee who does not hold it', function () {
 });
 
 it('refuses to take away the last current Employee\'s manage roles, even from themselves', function () {
-    $admin = holderManager();
+    $admin = employeeWhoManagesRoles();
     $role = $admin->roles()->sole();
 
     actingAs($admin)
@@ -165,7 +154,7 @@ it('refuses giving and taking Roles to an Employee who does not manage Roles', f
 ]);
 
 it('offers every Employee who has not left as someone to give Roles to', function () {
-    $admin = holderManager();
+    $admin = employeeWhoManagesRoles();
     $future = Employee::factory()->future()->create(['name' => 'Zoe Future']);
     Employee::factory()->former()->create();
 

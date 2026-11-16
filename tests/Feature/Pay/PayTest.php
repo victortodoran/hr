@@ -45,7 +45,7 @@ function payManager(): Employee
  */
 function relaunchAssignment(): Assignment
 {
-    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06']);
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara']);
 
     return Assignment::factory()->for($cara)->for(Project::factory()->create(['name' => 'Relaunch', 'start_date' => '2026-01-05']))
         ->create(['start_date' => '2026-02-01', 'end_date' => '2026-12-31']);
@@ -83,7 +83,7 @@ it('lets someone who manages Pay give an Assignment Fixed or Hourly Pay, from an
 ]);
 
 it('lets the Internal Assignment have either kind of Pay', function (string $kind) {
-    $internal = Assignment::factory()->internal()->for(Employee::factory()->create(['start_date' => '2025-01-06']))->create();
+    $internal = Assignment::factory()->internal()->for(Employee::factory()->startedLongAgo()->create())->create();
 
     actingAs(payManager())
         ->post(route('assignments.pay.store', $internal), payForm(['kind' => $kind, 'effective_from' => '2025-01-06']))
@@ -202,7 +202,7 @@ it('only removes a Pay entry through its own Assignment', function () {
 
 it('sends Pay only to viewers whose view pay or manage pay covers the Employee', function (Closure $viewer, bool $seesPay, bool $managesPay) {
     $ben = Employee::factory()->create(['name' => 'Ben']);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id, 'start_date' => '2025-01-06']);
+    $cara = Employee::factory()->reportingTo($ben)->startedLongAgo()->create(['name' => 'Cara']);
     PayEntry::factory()->for(Assignment::factory()->for($cara))->create();
 
     $page = actingAs($viewer($ben))->get(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))->assertOk();

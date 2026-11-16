@@ -75,6 +75,29 @@ function employeeWhoManagesTheCompany(): Employee
 }
 
 /**
+ * Ada, who manages Roles through a Role with that one Permission, named
+ * Admin unless told otherwise.
+ */
+function employeeWhoManagesRoles(string $role = 'Admin'): Employee
+{
+    $ada = Employee::factory()->create(['name' => 'Ada Admin']);
+    $ada->roles()->attach(Role::factory()->withPermissions([Permission::ManageRoles->value => null])->create(['name' => $role]));
+
+    return $ada;
+}
+
+/**
+ * Ben, whose own Manager is Ada, ready to be given Reports of his own whose
+ * Work Entries and Time Off he decides. No Role is involved.
+ */
+function managerBen(): Employee
+{
+    $ada = Employee::factory()->top()->create(['name' => 'Ada']);
+
+    return Employee::factory()->reportingTo($ada)->create(['name' => 'Ben']);
+}
+
+/**
  * Give an Employee a further Role with the given Permissions.
  *
  * @param  array<string, Scope|null>  $grants

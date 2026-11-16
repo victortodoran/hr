@@ -25,9 +25,9 @@ beforeEach(function () {
 function waitingTeam(): array
 {
     $ada = Employee::factory()->top()->create(['name' => 'Ada']);
-    $ben = Employee::factory()->create(['name' => 'Ben', 'manager_id' => $ada->id]);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
-    $dev = Employee::factory()->create(['name' => 'Dev', 'manager_id' => $cara->id]);
+    $ben = Employee::factory()->reportingTo($ada)->create(['name' => 'Ben']);
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
+    $dev = Employee::factory()->reportingTo($cara)->create(['name' => 'Dev']);
 
     return compact('ada', 'ben', 'cara', 'dev');
 }
@@ -43,7 +43,7 @@ function assertApprovalsWaiting(Employee $employee, int $count): void
 
 it('counts the Pending Work Entries and Pending Time Off of the Manager\'s Direct Reports, but not of Reports further down', function () {
     ['ben' => $ben, 'cara' => $cara, 'dev' => $dev] = waitingTeam();
-    $eve = Employee::factory()->create(['name' => 'Eve', 'manager_id' => $ben->id]);
+    $eve = Employee::factory()->reportingTo($ben)->create(['name' => 'Eve']);
     WorkEntry::factory()->for(assignmentOf($cara))->count(2)->create(['date' => '2026-11-10']);
     WorkEntry::factory()->for(assignmentOf($eve))->create(['date' => '2026-11-10']);
     TimeOff::factory()->unpaid()->for($cara)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);

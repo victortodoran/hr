@@ -26,7 +26,7 @@ beforeEach(function () {
  */
 function caraWithTimeOff(Employee $ben): Employee
 {
-    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'manager_id' => $ben->id, 'paid_days' => 20]);
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara', 'paid_days' => 20]);
 
     TimeOff::factory()->for($cara)->approved($ben)->create(['first_date' => '2026-02-16', 'last_date' => '2026-02-20']);
     TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-04-06', 'last_date' => '2026-04-07', 'decided_by' => $ben->id, 'decline_reason' => 'Release week']);
@@ -101,13 +101,13 @@ it('shows Cara\'s Time Off to someone who manages her Paid Days', function () {
 it('lets someone with the reports Scope see the Time Off of their Reports only', function () {
     $dana = Employee::factory()->top()->create();
     $ben = employeeWith([Permission::ViewTimeOff->value => Scope::Reports], ['manager_id' => $dana->id]);
-    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create();
     $people = [
         'Dana' => $dana,
         'Ben' => $ben,
         'Cara' => $cara,
-        'Dev' => Employee::factory()->create(['manager_id' => $cara->id]),
-        'Eve' => Employee::factory()->create(['manager_id' => $dana->id]),
+        'Dev' => Employee::factory()->reportingTo($cara)->create(),
+        'Eve' => Employee::factory()->reportingTo($dana)->create(),
     ];
 
     foreach ($people as $name => $employee) {

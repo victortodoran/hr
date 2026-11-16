@@ -20,8 +20,8 @@ covers(ProjectController::class, ClientController::class, ProjectPolicy::class, 
 it('shows a Project with its team, by name', function () {
     $globex = Client::factory()->create(['name' => 'Globex']);
     $relaunch = Project::factory()->forClient($globex)->create(['name' => 'Relaunch', 'start_date' => '2025-01-06', 'end_date' => '2026-12-31']);
-    $zoe = Employee::factory()->create(['name' => 'Zoe', 'start_date' => '2025-01-06']);
-    $ana = Employee::factory()->create(['name' => 'Ana', 'start_date' => '2025-01-06']);
+    $zoe = Employee::factory()->startedLongAgo()->create(['name' => 'Zoe']);
+    $ana = Employee::factory()->startedLongAgo()->create(['name' => 'Ana']);
     $zoes = Assignment::factory()->for($zoe)->for($relaunch)->create(['job_title' => 'Designer', 'start_date' => '2025-03-01', 'end_date' => null, 'capacity' => 50]);
     $anasLater = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Tech Lead', 'start_date' => '2026-01-01', 'end_date' => '2026-12-31', 'capacity' => 100]);
     $anasEarlier = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2025-12-31', 'capacity' => 80]);
@@ -67,9 +67,9 @@ it('shows on a Project\'s team and a Client\'s page only the Assignments the vie
     $project = Project::factory()->forClient($globex)->create(['start_date' => '2024-01-01']);
     $dana = Employee::factory()->top()->create(['name' => 'Dana', 'start_date' => '2024-01-01']);
     $ben = employeeWith([Permission::ViewProjects->value => null, Permission::ManageClients->value => null, ...$grants], ['name' => 'Ben', 'manager_id' => $dana->id, 'start_date' => '2024-01-01']);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id, 'start_date' => '2024-01-01']);
-    Employee::factory()->create(['name' => 'Dev', 'manager_id' => $cara->id, 'start_date' => '2024-01-01']);
-    Employee::factory()->create(['name' => 'Eve', 'manager_id' => $dana->id, 'start_date' => '2024-01-01']);
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara', 'start_date' => '2024-01-01']);
+    Employee::factory()->reportingTo($cara)->create(['name' => 'Dev', 'start_date' => '2024-01-01']);
+    Employee::factory()->reportingTo($dana)->create(['name' => 'Eve', 'start_date' => '2024-01-01']);
     Employee::query()->each(fn (Employee $employee) => Assignment::factory()->for($employee)->for($project)->create());
 
     actingAs($ben)->get(route('projects.show', $project))
@@ -93,8 +93,8 @@ it('shows a Client\'s Projects by name, empty ones included, each with the Emplo
     $audit = Project::factory()->forClient($globex)->create(['name' => 'Audit', 'start_date' => '2025-01-06', 'end_date' => '2026-12-31']);
     $empty = Project::factory()->forClient($globex)->create(['name' => 'Brand', 'start_date' => '2026-04-01', 'end_date' => null]);
     Project::factory()->forClient()->create();
-    $ana = Employee::factory()->create(['name' => 'Ana', 'start_date' => '2025-01-06']);
-    $zoe = Employee::factory()->create(['name' => 'Zoe', 'start_date' => '2025-01-06']);
+    $ana = Employee::factory()->startedLongAgo()->create(['name' => 'Ana']);
+    $zoe = Employee::factory()->startedLongAgo()->create(['name' => 'Zoe']);
     $zoes = Assignment::factory()->for($zoe)->for($audit)->create(['job_title' => 'Auditor', 'start_date' => '2025-02-01', 'end_date' => null, 'capacity' => 20]);
     $anas = Assignment::factory()->for($ana)->for($audit)->create(['job_title' => 'Analyst', 'start_date' => '2026-03-10', 'end_date' => null, 'capacity' => 20]);
     $endsToday = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2025-02-01', 'end_date' => '2026-03-10', 'capacity' => 80]);

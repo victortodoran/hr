@@ -20,7 +20,7 @@ beforeEach(function () {
 it('opens every tab of an Employee\'s page, keeping the header, leading Time Off with the Paid Days left, and shows each Assignment\'s Pay on a phone', function () {
     CompanySettings::factory()->create();
     $ana = Employee::factory()->top()->create(['name' => 'Ana Popescu']);
-    $cara = Employee::factory()->create(['name' => 'Cara Lane', 'manager_id' => $ana->id]);
+    $cara = Employee::factory()->reportingTo($ana)->create(['name' => 'Cara Lane']);
     $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-01-05']);
     PayEntry::factory()->for($relaunch)->create(['effective_from' => '2026-01-05', 'kind' => PayKind::Hourly, 'amount' => 2500]);
     assignmentOf($cara, 'Data Audit', ['start_date' => '2026-01-05', 'end_date' => '2026-09-15']);
