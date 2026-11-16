@@ -9,6 +9,10 @@ arch('each builder builds queries for its model')
     ->toExtend('Illuminate\Database\Eloquent\Builder')
     ->toHaveSuffix('Builder');
 
+arch('model concerns are traits')
+    ->expect('App\Models\Concerns')
+    ->toBeTraits();
+
 arch('no insecure functions')->preset()->security();
 
 /*

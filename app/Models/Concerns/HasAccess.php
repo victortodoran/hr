@@ -17,6 +17,8 @@ use Illuminate\Support\Collection;
  * grant, with the Scope each reaches (ADR 0004). Used by Employee only.
  *
  * @mixin Employee
+ *
+ * @phpstan-require-extends Employee
  */
 trait HasAccess
 {
