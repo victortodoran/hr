@@ -3,7 +3,6 @@
 use App\Enums\TimeOffState;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\TimeOffApprovalController;
-use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;
 
@@ -17,7 +16,7 @@ beforeEach(function () {
 });
 
 it('lets a Manager work through one Employee\'s Work Entries on one Project at a time, switch tabs, kept in the URL, and approve Time Off from its tab', function () {
-    $ben = Employee::factory()->create(['name' => 'Ben', 'manager_id' => Employee::factory()->top()->create()->id]);
+    $ben = managerBen();
     $cara = recorder(['manager_id' => $ben->id]);
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-30', 'description' => 'Reviewing the API']);
     WorkEntry::factory()->for(assignmentOf($cara, 'Website'))->create(['date' => '2026-11-30', 'description' => 'Fixing the footer']);

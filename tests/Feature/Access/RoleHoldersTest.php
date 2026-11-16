@@ -19,7 +19,7 @@ covers(RoleHolderController::class, GiveRoleRequest::class, RoleController::clas
 it('lets an Employee who manages Roles give a Role, and the widest Scope across Roles wins', function () {
     $admin = employeeWhoManagesRoles();
     $ben = Employee::factory()->create();
-    $cara = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
+    $cara = Employee::factory()->reportingTo(Employee::factory()->create())->create();
     giveRole($ben, [Permission::ViewPay->value => Scope::Own]);
     $payroll = Role::factory()->withPermissions([Permission::ViewPay->value => Scope::Everyone])->create(['name' => 'Payroll']);
 

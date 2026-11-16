@@ -16,7 +16,7 @@ beforeEach(function () {
 });
 
 it('lets a Manager decline ticked Work Entries with a reason, which then leave the list', function () {
-    $ben = Employee::factory()->create(['name' => 'Ben', 'manager_id' => Employee::factory()->top()->create()->id]);
+    $ben = managerBen();
     $cara = recorder(['manager_id' => $ben->id]);
     $relaunch = assignmentOf($cara);
     $interviews = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'description' => 'Interviews']);

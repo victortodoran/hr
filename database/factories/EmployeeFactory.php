@@ -61,11 +61,12 @@ class EmployeeFactory extends Factory
     }
 
     /**
-     * An Employee whose Manager is the given Employee.
+     * An Employee whose Manager is the given Employee, so never the top one.
      */
     public function reportingTo(Employee $manager): static
     {
         return $this->state(fn (array $attributes) => [
+            'is_top' => false,
             'manager_id' => $manager->id,
         ]);
     }

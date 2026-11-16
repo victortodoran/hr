@@ -43,8 +43,7 @@ beforeEach(function () {
  */
 function benAndCara(): array
 {
-    $ada = Employee::factory()->top()->create(['name' => 'Ada']);
-    $ben = Employee::factory()->reportingTo($ada)->create(['name' => 'Ben']);
+    $ben = managerBen();
 
     return ['ben' => $ben, 'cara' => recorder(['manager_id' => $ben->id])];
 }
