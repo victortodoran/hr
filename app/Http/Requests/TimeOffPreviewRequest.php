@@ -5,13 +5,14 @@ namespace App\Http\Requests;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Time Off the signed-in Employee is about to request for themselves:
- * whole days from a first to a last date, Paid or Unpaid, starting today or
- * later. It is enough to preview the days it would take; requesting it
+ * whole days from a first to a last date, at most a year apart, Paid or
+ * Unpaid, starting today or later. It is enough to preview the days it would take; requesting it
  * checks the rest.
  */
 class TimeOffPreviewRequest extends FormRequest
@@ -23,7 +24,7 @@ class TimeOffPreviewRequest extends FormRequest
     {
         return [
             'first_date' => ['bail', 'required', 'date_format:Y-m-d', 'after_or_equal:today'],
-            'last_date' => ['bail', 'required', 'date_format:Y-m-d', 'after_or_equal:first_date'],
+            'last_date' => ['bail', 'required', 'date_format:Y-m-d', 'after_or_equal:first_date', $this->atMostAYear(...)],
             'is_paid' => ['required', 'boolean'],
         ];
     }
@@ -57,6 +58,19 @@ class TimeOffPreviewRequest extends FormRequest
     {
         /** @var Employee */
         return $this->user();
+    }
+
+    /**
+     * Refuse a Last Date more than a year after the First Date; longer leave
+     * is several Time Off. Runs only once both dates are known to be valid.
+     *
+     * @param  Closure(string): mixed  $fail
+     */
+    private function atMostAYear(string $attribute, mixed $value, Closure $fail): void
+    {
+        if ($this->lastDate()->greaterThan($this->firstDate()->addYear())) {
+            $fail(__('The longest Time Off is a year. Request longer leave as several Time Off.'));
+        }
     }
 
     protected function firstDate(): CarbonImmutable

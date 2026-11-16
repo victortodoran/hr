@@ -282,3 +282,17 @@ it('refuses Paid Time Off while Paid Days left are negative, but still takes Unp
 it('needs signing in to see or request Time Off', function () {
     get(route('time-off.index'))->assertRedirect(route('login'));
 });
+
+it('accepts Time Off covering exactly a year and refuses one a day longer, as longer leave is several requests', function () {
+    $cara = timeOffRequester();
+
+    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-14', 'last_date' => '2027-12-15', 'is_paid' => false]))
+        ->assertSessionHasErrors(['last_date' => 'The longest Time Off is a year. Request longer leave as several Time Off.']);
+
+    expect(storedTimeOff($cara))->toBe([]);
+
+    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-14', 'last_date' => '2027-12-14', 'is_paid' => false]))
+        ->assertSessionHasNoErrors();
+
+    expect(storedTimeOff($cara))->toHaveCount(1);
+});
