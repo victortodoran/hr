@@ -11,11 +11,9 @@ use App\Http\Requests\WorkEntries\WorkEntryPeriodRequest;
 use App\Http\Requests\WorkEntries\WorkEntryRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
-use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use App\Support\Period;
-use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
+use App\Support\WorkEntryDays;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -59,8 +57,7 @@ class WorkEntryController extends Controller
 
         $canManage = $actor->can('create', [WorkEntry::class, $employee]);
         $canDelete = $actor->can(Permission::ManageWorkEntries->value, $employee);
-        $copySources = $canManage ? $this->datesWithEntries($employee, $period, $counted) : collect();
-        $days = $this->days($employee, $period, $entries, $timeOff, $canManage, $canDelete, $copySources);
+        $days = WorkEntryDays::of($employee, $period, $entries, $timeOff, $canManage, $canDelete);
 
         $tab = $request->tab();
 
@@ -76,8 +73,8 @@ class WorkEntryController extends Controller
             'canManage' => $canManage,
             'isOwn' => $employee->is($actor),
             ...match ($tab) {
-                WorkEntriesTab::List => ['days' => $days, 'weeks' => $this->weeks($days)],
-                WorkEntriesTab::Calendar => ['calendar' => $this->calendar($days)],
+                WorkEntriesTab::List => ['days' => $days->days(), 'weeks' => $days->weeks()],
+                WorkEntriesTab::Calendar => ['calendar' => $days->calendar()],
             },
         ]);
     }
@@ -125,133 +122,6 @@ class WorkEntryController extends Controller
             ])
             ->sortBy([['hours', 'desc'], ['project', 'asc']])
             ->values();
-    }
-
-    /**
-     * The Calendar tab: the month's ISO weeks, each with its number, its
-     * hours, and its seven days from Monday to Sunday, null for a day of
-     * another month. Each day is the List's day, so it can be added to,
-     * copied onto and have Work Entries deleted from the Calendar.
-     *
-     * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool, copy_from: string|null}>  $days
-     * @return list<array{number: int, hours: float|int, days: list<array<string, mixed>|null>}>
-     */
-    private function calendar(array $days): array
-    {
-        $byDate = collect($days)->keyBy('date');
-
-        return array_map(function (array $week) use ($byDate): array {
-            $monday = CarbonImmutable::parse($week['from'])->startOfWeek(CarbonInterface::MONDAY);
-
-            return [
-                'number' => $week['number'],
-                'hours' => $week['hours'],
-                'days' => array_map(fn (int $offset): ?array => $byDate->get($monday->addDays($offset)->toDateString()), range(0, 6)),
-            ];
-        }, $this->weeks($days));
-    }
-
-    /**
-     * Every day of the Period, each with its Work Entries and the hours of
-     * those that count, all but the Declined. Each Work Entry carries its
-     * state, who declined it and why, and whether the viewer can change or
-     * delete it: both need a Pending or Declined Work Entry, changing needs
-     * what recording does, and deleting needs only manage work entries for
-     * the Employee, one with no Manager included.
-     *
-     * A weekday covered by Pending or Approved Time Off says whether that
-     * Time Off is Paid or Unpaid. A past weekday while the Employee works
-     * here, with neither Work Entries nor such Time Off, is nothing logged.
-     * A day up to today with no Work Entries but Declined ones and no such
-     * Time Off, when the viewer can record hours, names the day copying Work
-     * Entries onto it would copy from: the latest day in the week before
-     * with any that aren't Declined, or null.
-     *
-     * @param  Collection<int, WorkEntry>  $entries
-     * @param  Collection<int, TimeOff>  $timeOff  the Employee's Pending and Approved Time Off overlapping the Period
-     * @param  SupportCollection<int, string>  $copySources  the dates, in order, the Employee has Work Entries on from a week before the Period
-     * @return array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool, copy_from: string|null}>
-     */
-    private function days(Employee $employee, Period $period, Collection $entries, Collection $timeOff, bool $canManage, bool $canDelete, SupportCollection $copySources): array
-    {
-        return collect($period->days())->map(function (CarbonImmutable $day) use ($employee, $entries, $timeOff, $canManage, $canDelete, $copySources): array {
-            $date = $day->toDateString();
-            $onDay = $entries->filter(fn (WorkEntry $entry): bool => $entry->date->toDateString() === $date);
-            $countedOnDay = $onDay->reject(fn (WorkEntry $entry): bool => $entry->isDeclined());
-            $away = $day->isWeekday()
-                ? $timeOff->first(fn (TimeOff $covering): bool => $day->between($covering->first_date, $covering->last_date))
-                : null;
-            $employed = ! $day->isBefore($employee->start_date)
-                && ($employee->leaving_date === null || ! $day->isAfter($employee->leaving_date));
-
-            return [
-                'date' => $date,
-                'entries' => $onDay->map(fn (WorkEntry $entry): array => [
-                    'id' => $entry->id,
-                    'assignment_id' => $entry->assignment_id,
-                    'project' => $entry->assignment->project->name,
-                    'hours' => $entry->hours,
-                    'description' => $entry->description,
-                    'state' => $entry->state->value,
-                    'can_edit' => $canManage && $entry->isOpen(),
-                    'can_delete' => $canDelete && $entry->isOpen(),
-                    'declined' => $entry->decline(),
-                ])->values()->all(),
-                'hours' => $countedOnDay->sum('hours'),
-                'time_off' => $away === null ? null : ($away->is_paid ? 'paid' : 'unpaid'),
-                'nothing_logged' => $day->isWeekday() && $day->isBefore(today()) && $employed && $onDay->isEmpty() && $away === null,
-                'copy_from' => $canManage && ! $day->isAfter(today()) && $away === null && $countedOnDay->isEmpty()
-                    ? $copySources->last(fn (string $source): bool => $source < $date && $source >= $day->subDays(WorkEntry::COPY_LOOKBACK_DAYS)->toDateString())
-                    : null,
-            ];
-        })->all();
-    }
-
-    /**
-     * The dates, in order, the Employee has Work Entries that aren't
-     * Declined on from a week before the Period to its end: those in the
-     * week before are looked up, those within it come from its Work Entries.
-     *
-     * @param  Collection<int, WorkEntry>  $entries  the Employee's Work Entries in the Period that aren't Declined
-     * @return SupportCollection<int, string>
-     */
-    private function datesWithEntries(Employee $employee, Period $period, Collection $entries): SupportCollection
-    {
-        $before = $employee->workEntries()
-            ->counted()
-            ->whereDate('work_entries.date', '>=', $period->from->subDays(WorkEntry::COPY_LOOKBACK_DAYS))
-            ->whereDate('work_entries.date', '<', $period->from)
-            ->get(['work_entries.date']);
-
-        return $before->toBase()
-            ->merge($entries)
-            ->map(fn (WorkEntry $entry): string => $entry->date->toDateString())
-            ->unique()
-            ->sort()
-            ->values();
-    }
-
-    /**
-     * The Period's days split into ISO weeks, Monday to Sunday, each with
-     * its number and the first and last of its days that fall within the
-     * Period, and their hours.
-     *
-     * @param  array<int, array{date: string, hours: float|int}>  $days
-     * @return list<array{number: int, from: string, to: string, hours: float|int}>
-     */
-    private function weeks(array $days): array
-    {
-        $weeks = [];
-
-        foreach ($days as $day) {
-            $date = CarbonImmutable::parse($day['date']);
-            $monday = $date->startOfWeek(CarbonInterface::MONDAY)->toDateString();
-            $weeks[$monday] ??= ['number' => $date->isoWeek, 'from' => $day['date'], 'to' => $day['date'], 'hours' => 0];
-            $weeks[$monday]['to'] = $day['date'];
-            $weeks[$monday]['hours'] += $day['hours'];
-        }
-
-        return array_values($weeks);
     }
 
     /**
