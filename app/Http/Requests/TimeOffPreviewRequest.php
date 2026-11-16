@@ -7,12 +7,13 @@ use App\Models\TimeOff;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 /**
  * Time Off the signed-in Employee is about to request for themselves:
- * whole days from a first to a last date, Paid or Unpaid, starting today or
- * later. It is enough to preview the days it would take; requesting it
- * checks the rest.
+ * whole days from a first to a last date, covering at most a year, Paid
+ * or Unpaid, starting today or later. It is enough to preview the days it
+ * would take; requesting it checks the rest.
  */
 class TimeOffPreviewRequest extends FormRequest
 {
@@ -57,6 +58,33 @@ class TimeOffPreviewRequest extends FormRequest
     {
         /** @var Employee */
         return $this->user();
+    }
+
+    /**
+     * Once the dates are valid on their own, check the Time Off covers at
+     * most a year.
+     *
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [fn (Validator $validator) => $this->checkLength($validator)];
+    }
+
+    /**
+     * Refuse Time Off covering more than a year, counting both its first and
+     * last date: from 14 Dec 2026 it can last until 13 Dec 2027. Longer
+     * leave is several Time Off. A year from 29 Feb ends on 27 Feb.
+     */
+    private function checkLength(Validator $validator): void
+    {
+        if ($validator->errors()->isNotEmpty()) {
+            return;
+        }
+
+        if ($this->lastDate()->greaterThanOrEqualTo($this->firstDate()->addYearNoOverflow())) {
+            $validator->errors()->add('last_date', __('The longest Time Off is a year. Request longer leave as several Time Off.'));
+        }
     }
 
     protected function firstDate(): CarbonImmutable

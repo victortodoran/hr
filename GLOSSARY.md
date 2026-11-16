@@ -115,7 +115,7 @@ _Avoid_: Invoiced, closed, final, frozen, archived
 ### Time Off
 
 **Time Off**:
-One or more whole days an Employee asks to be away from work, from a first to a last date, as in "Cara requested Time Off from 22 to 24 Dec". Only weekdays count as days of Time Off; weekends never do, and public holidays count like any other weekday. Each Time Off is either Paid Time Off or Unpaid Time Off. It is Pending until the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't). The top Employee's Time Off is Approved as soon as they request it. An Employee's Time Off can't overlap their other Pending or Approved Time Off.
+One or more whole days an Employee asks to be away from work, from a first to a last date, as in "Cara requested Time Off from 22 to 24 Dec". Only weekdays count as days of Time Off; weekends never do, and public holidays count like any other weekday. Each Time Off is either Paid Time Off or Unpaid Time Off. It is Pending until the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't). The top Employee's Time Off is Approved as soon as they request it. An Employee's Time Off can't overlap their other Pending or Approved Time Off, and one Time Off covers at most a year; longer leave is several.
 _Avoid_: Holiday, leave, vacation, absence, day off, PTO
 
 **Paid Time Off**:
