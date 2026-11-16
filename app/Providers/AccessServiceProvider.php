@@ -10,17 +10,18 @@ use Illuminate\Support\ServiceProvider;
 class AccessServiceProvider extends ServiceProvider
 {
     /**
-     * Define one Gate per Permission (ADR 0004). A scoped Permission is
-     * checked against a target Employee using the widest Scope the acting
-     * Employee's Roles give them; the rest apply company-wide.
+     * Define one Gate per Permission (ADR 0004), each asking how far the
+     * acting Employee's Roles let it reach (Employee::reachOf()): a scoped
+     * Permission is checked against a target Employee, the rest apply
+     * company-wide.
      */
     public function boot(): void
     {
         foreach (Permission::cases() as $permission) {
             if ($permission->isScoped()) {
-                Gate::define($permission->value, fn (Employee $actor, Employee $target): bool => $actor->widestScopeFor($permission)?->covers($actor, $target) ?? false);
+                Gate::define($permission->value, fn (Employee $actor, Employee $target): bool => $actor->reachesThrough([$permission], $target));
             } else {
-                Gate::define($permission->value, fn (Employee $actor): bool => $actor->holds($permission));
+                Gate::define($permission->value, fn (Employee $actor): bool => $actor->reachOf($permission) !== null);
             }
         }
     }

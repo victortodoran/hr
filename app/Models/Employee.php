@@ -56,18 +56,6 @@ class Employee extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable;
 
     /**
-     * The Permissions whose Scope decides whose Work Entries someone sees
-     * across Employees, besides locking, which shows everyone's.
-     *
-     * @var list<Permission>
-     */
-    private const array WORK_ENTRY_SEEING_PERMISSIONS = [
-        Permission::ViewWorkEntries,
-        Permission::ManageWorkEntries,
-        Permission::ReopenWorkEntries,
-    ];
-
-    /**
      * A new Employee starts with no Paid Days, as the database does.
      *
      * @var array<string, mixed>
@@ -422,25 +410,79 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Whether the Employee may open the Work Entries page: any of their Roles
-     * lets them view or manage Work Entries.
+     * Whether the Employee may open My Work Entries: they may see their own,
+     * as the policy decides.
      */
     public function canSeeWorkEntries(): bool
     {
-        return $this->holds(Permission::ViewWorkEntries) || $this->holds(Permission::ManageWorkEntries);
+        return $this->reachesThrough(Permission::seeingWorkEntries(), $this);
     }
 
     /**
      * Whether the Employee sees Work Entries of anyone besides themselves
-     * across Employees: they can lock, or their view, manage or reopen Scope
-     * reaches beyond themselves.
+     * across Employees: one of the Permissions for seeing them reaches
+     * beyond themselves.
      */
     public function seesOthersWorkEntries(): bool
     {
-        return $this->holds(Permission::LockWorkEntries)
-            || collect(self::WORK_ENTRY_SEEING_PERMISSIONS)->contains(
-                fn (Permission $permission): bool => $this->widestScopeFor($permission)?->coversOthers() ?? false,
-            );
+        return $this->reachesOthersThrough(Permission::seeingWorkEntries());
+    }
+
+    /**
+     * How far a Permission reaches for the Employee: the widest Scope their
+     * Roles give for one about Employees, Everyone for a company-wide one
+     * they hold, or null when no Role grants it.
+     */
+    public function reachOf(Permission $permission): ?Scope
+    {
+        if ($permission->isScoped()) {
+            return $this->widestScopeFor($permission);
+        }
+
+        return $this->holds($permission) ? Scope::Everyone : null;
+    }
+
+    /**
+     * Whether any of the Permissions reaches the target Employee.
+     *
+     * @param  list<Permission>  $permissions
+     */
+    public function reachesThrough(array $permissions, Employee $target): bool
+    {
+        return collect($permissions)->contains(
+            fn (Permission $permission): bool => $this->reachOf($permission)?->covers($this, $target) ?? false,
+        );
+    }
+
+    /**
+     * Whether any of the Permissions reaches anyone besides the Employee.
+     *
+     * @param  list<Permission>  $permissions
+     */
+    public function reachesOthersThrough(array $permissions): bool
+    {
+        return collect($permissions)->contains(
+            fn (Permission $permission): bool => $this->reachOf($permission)?->coversOthers() ?? false,
+        );
+    }
+
+    /**
+     * Limit a query of Employees to those any of the Permissions reaches for
+     * the Employee: the query counterpart of reachesThrough().
+     *
+     * @param  Builder<Employee>  $employees
+     * @param  list<Permission>  $permissions
+     */
+    public function limitToReachOf(Builder $employees, array $permissions): void
+    {
+        $scopes = collect($permissions)
+            ->map(fn (Permission $permission): ?Scope => $this->reachOf($permission))
+            ->filter();
+
+        $employees->where(function (Builder $covered) use ($scopes): void {
+            $covered->whereRaw('false');
+            $scopes->each(fn (Scope $scope) => $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $this)));
+        });
     }
 
     /**
@@ -559,34 +601,14 @@ class Employee extends Authenticatable implements MustVerifyEmail
 
     /**
      * Limit the query to the Employees whose Work Entries the given Employee
-     * may see across Employees: everyone for someone who can lock, otherwise
-     * those their view, manage or reopen Scope covers. You can always see
-     * what you can act on.
+     * may see, matching WorkEntryPolicy::viewAny().
      *
      * @param  Builder<Employee>  $query
      */
     #[QueryScope]
     protected function withWorkEntriesVisibleTo(Builder $query, Employee $viewer): void
     {
-        if ($viewer->holds(Permission::LockWorkEntries)) {
-            return;
-        }
-
-        $scopes = collect(self::WORK_ENTRY_SEEING_PERMISSIONS)
-            ->map(fn (Permission $permission): ?Scope => $viewer->widestScopeFor($permission))
-            ->filter();
-
-        if ($scopes->isEmpty()) {
-            $query->whereRaw('false');
-
-            return;
-        }
-
-        $query->where(function (Builder $covered) use ($scopes, $viewer): void {
-            foreach ($scopes as $scope) {
-                $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $viewer));
-            }
-        });
+        $viewer->limitToReachOf($query, Permission::seeingWorkEntries());
     }
 
     /**

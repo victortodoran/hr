@@ -91,4 +91,28 @@ enum Permission: string
 
         return $this->isScoped() ? [Scope::Own, Scope::Reports, Scope::Everyone] : [];
     }
+
+    /**
+     * The Permissions that let someone see an Employee's Assignments: seeing
+     * or managing them, or seeing or managing their Pay, which belongs to
+     * them (ADR 0002). The one list the policy, the lists and the flags use.
+     *
+     * @return list<Permission>
+     */
+    public static function seeingAssignments(): array
+    {
+        return [self::ViewAssignments, self::ManageAssignments, self::ViewPay, self::ManagePay];
+    }
+
+    /**
+     * The Permissions that let someone see an Employee's Work Entries: you
+     * can always see what you can act on. Locking covers everyone. The one
+     * list the policy, the lists and the flags use.
+     *
+     * @return list<Permission>
+     */
+    public static function seeingWorkEntries(): array
+    {
+        return [self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries, self::LockWorkEntries];
+    }
 }

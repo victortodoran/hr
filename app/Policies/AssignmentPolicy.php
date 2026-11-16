@@ -8,21 +8,19 @@ use App\Models\Employee;
 
 /**
  * Who may see and change Assignments. Each check is made against the
- * Employee the Assignments belong to, through the Gate of the Permission
- * behind it, so the acting Employee's Scope decides.
+ * Employee the Assignments belong to, so the acting Employee's Scope decides:
+ * through the Gate of the Permission behind it, or, for seeing them, the
+ * Permissions that show them, read the same way the Gates read them.
  */
 class AssignmentPolicy
 {
     /**
-     * Seeing an Employee's Assignments needs view assignments for them, or
-     * manage assignments, since managing them means seeing them. Pay belongs
-     * to Assignments (ADR 0002), so seeing their Pay also shows them.
+     * Seeing an Employee's Assignments needs one of the Permissions for
+     * seeing them (Permission::seeingAssignments()) to reach them.
      */
     public function viewAny(Employee $actor, Employee $employee): bool
     {
-        return $actor->can(Permission::ViewAssignments->value, $employee)
-            || $this->create($actor, $employee)
-            || $this->viewPay($actor, $employee);
+        return $actor->reachesThrough(Permission::seeingAssignments(), $employee);
     }
 
     /**

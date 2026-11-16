@@ -8,22 +8,19 @@ use App\Models\WorkEntry;
 
 /**
  * Who may see and change Work Entries. Each check is made against the
- * Employee the Work Entries belong to, through the Gate of the Permission
- * behind it, so the acting Employee's Scope decides.
+ * Employee the Work Entries belong to, so the acting Employee's Scope decides:
+ * through the Gate of the Permission behind it, or, for seeing them, the
+ * Permissions that show them, read the same way the Gates read them.
  */
 class WorkEntryPolicy
 {
     /**
-     * Seeing an Employee's Work Entries needs view, manage or reopen work
-     * entries for them, or lock work entries, which covers everyone: you can
-     * always see what you can act on.
+     * Seeing an Employee's Work Entries needs one of the Permissions for
+     * seeing them (Permission::seeingWorkEntries()) to reach them.
      */
     public function viewAny(Employee $actor, Employee $employee): bool
     {
-        return $actor->can(Permission::ViewWorkEntries->value, $employee)
-            || $actor->can(Permission::ManageWorkEntries->value, $employee)
-            || $actor->can(Permission::ReopenWorkEntries->value, $employee)
-            || $this->lock($actor);
+        return $actor->reachesThrough(Permission::seeingWorkEntries(), $employee);
     }
 
     /**
