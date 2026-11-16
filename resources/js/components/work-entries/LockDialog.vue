@@ -67,6 +67,16 @@ async function loadSummary(isOpen: boolean): Promise<void> {
 /** Whether locking is on its way, so it can't be sent twice. */
 const locking = ref(false);
 
+/** Opens or closes the dialog, but keeps it open while locking. */
+function setOpen(isOpen: boolean): void {
+    if (locking.value) {
+        return;
+    }
+
+    open.value = isOpen;
+    void loadSummary(isOpen);
+}
+
 function lock(): void {
     if (locking.value) {
         return;
@@ -89,10 +99,7 @@ function lock(): void {
 </script>
 
 <template>
-    <Dialog
-        v-model:open="open"
-        @update:open="(isOpen: boolean) => loadSummary(isOpen)"
-    >
+    <Dialog :open="open" @update:open="setOpen">
         <DialogTrigger as-child>
             <Button variant="outline" :disabled="ids.length === 0">Lock</Button>
         </DialogTrigger>
@@ -166,6 +173,7 @@ function lock(): void {
                 <SubmitButton
                     variant="destructive"
                     :processing="locking"
+                    type="button"
                     :disabled="!summary || summary.locking.count === 0"
                     @click="lock"
                     >Lock for good</SubmitButton

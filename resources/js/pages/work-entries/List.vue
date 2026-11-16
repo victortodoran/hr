@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import ReopeningController from '@/actions/App/Http/Controllers/ReopeningController';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
@@ -101,6 +101,8 @@ const {
     togglePage,
     selectAllMatching,
     clear,
+    submit,
+    processing,
 } = useBulkSelection(() => selectableOnPage.value, {
     prop: 'matchingIds',
     ids: () => props.matchingIds,
@@ -114,24 +116,8 @@ const canSelectAllMatching = computed(
         canSelect.value,
 );
 
-/** Whether reopening is on its way, so it can't be sent twice. */
-const reopening = ref(false);
-
 function reopen(): void {
-    if (reopening.value) {
-        return;
-    }
-
-    reopening.value = true;
-    router.post(
-        ReopeningController.store.url(),
-        { ids: selected.value },
-        {
-            preserveScroll: true,
-            onFinish: () => (reopening.value = false),
-            onSuccess: clear,
-        },
-    );
+    submit(ReopeningController.store.url());
 }
 
 /**
@@ -205,7 +191,8 @@ function signOffs(entry: ListedWorkEntry): string {
                     <SubmitButton
                         v-if="canReopen"
                         variant="outline"
-                        :processing="reopening"
+                        :processing="processing"
+                        type="button"
                         :disabled="selected.length === 0"
                         @click="reopen"
                         >Reopen</SubmitButton

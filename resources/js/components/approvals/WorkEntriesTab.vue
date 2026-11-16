@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { CheckCheck } from '@lucide/vue';
-import { ref } from 'vue';
 import ApprovalController from '@/actions/App/Http/Controllers/ApprovalController';
 import ApprovalFilterBar from '@/components/approvals/ApprovalFilterBar.vue';
 import DeclineWorkEntriesDialog from '@/components/approvals/DeclineWorkEntriesDialog.vue';
@@ -57,6 +56,8 @@ const {
     togglePage,
     selectAllMatching,
     clear,
+    processing,
+    submit,
 } = useBulkSelection(() => props.entries.data, {
     prop: 'matchingIds',
     ids: () => props.matchingIds,
@@ -71,24 +72,8 @@ function reloadList(query: Record<string, string>): void {
     );
 }
 
-/** Whether approving is on its way, so it can't be sent twice. */
-const approving = ref(false);
-
 function approve(): void {
-    if (approving.value) {
-        return;
-    }
-
-    approving.value = true;
-    router.post(
-        ApprovalController.store.url(),
-        { ids: selected.value },
-        {
-            preserveScroll: true,
-            onFinish: () => (approving.value = false),
-            onSuccess: clear,
-        },
-    );
+    submit(ApprovalController.store.url());
 }
 </script>
 
@@ -111,7 +96,8 @@ function approve(): void {
             <template #actions>
                 <DeclineWorkEntriesDialog :ids="selected" @declined="clear" />
                 <SubmitButton
-                    :processing="approving"
+                    :processing="processing"
+                    type="button"
                     :disabled="selected.length === 0"
                     @click="approve"
                     >Approve</SubmitButton
