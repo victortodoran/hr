@@ -126,7 +126,7 @@ it('lets a Manager approve two Travel Expenses together and decline another with
         ->assertDontSee('Hotel')
         ->click('main table tbody tr:first-child [role="checkbox"]')
         ->click('Decline…')
-        ->fill('#travel-expense-decline-reason', 'The taxi isn\'t on the receipt.')
+        ->fill('#decline-reason', 'The taxi isn\'t on the receipt.')
         ->click('internal:role=dialog >> internal:role=button[name="Decline"s]')
         ->assertSee('1 Travel Expense declined.')
         ->assertSee('None is waiting')

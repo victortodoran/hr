@@ -5,7 +5,7 @@ import { computed, ref } from 'vue';
 /**
  * The rows ticked on a paginated list, kept across its pages: tick one, a
  * whole page, or every match (reloaded as an optional page prop listing
- * their IDs), and clear them. Pair it with pagination links that preserve
+ * their IDs) on a paginated list, and clear them. Pair it with pagination links that preserve
  * state, or a page change remounts the list and drops the selection.
  * `submit` sends a bulk action for the selected rows, once at a time, and
  * then unticks the rows it sent.
@@ -13,8 +13,11 @@ import { computed, ref } from 'vue';
 export function useBulkSelection(
     /** The rows on the current page that may be selected. */
     selectableOnPage: () => { id: number }[],
-    /** The optional page prop with every matching row's ID, and its name. */
-    matching: { prop: string; ids: () => number[] | undefined },
+    /**
+     * The optional page prop with every matching row's ID, and its name;
+     * left out for a list shown whole, which has no other matches.
+     */
+    matching?: { prop: string; ids: () => number[] | undefined },
 ): {
     selected: Ref<number[]>;
     isPageSelected: Ref<boolean>;
@@ -56,6 +59,10 @@ export function useBulkSelection(
     }
 
     function selectAllMatching(): void {
+        if (!matching) {
+            return;
+        }
+
         router.reload({
             only: [matching.prop],
             onSuccess: () => {

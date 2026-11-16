@@ -17,10 +17,7 @@ class SelectedTravelExpensesRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'ids' => ['required', 'list'],
-            'ids.*' => ['integer'],
-        ];
+        return SelectedWorkEntriesRequest::idRules();
     }
 
     /**

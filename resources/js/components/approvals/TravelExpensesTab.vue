@@ -2,8 +2,9 @@
 import { Receipt } from '@lucide/vue';
 import { computed } from 'vue';
 import TravelExpenseApprovalController from '@/actions/App/Http/Controllers/Travel/TravelExpenseApprovalController';
+import TravelExpenseDeclineController from '@/actions/App/Http/Controllers/Travel/TravelExpenseDeclineController';
 import TravelExpenseReceiptController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReceiptController';
-import DeclineTravelExpensesDialog from '@/components/approvals/DeclineTravelExpensesDialog.vue';
+import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
@@ -35,10 +36,7 @@ const allExpenses = computed(() =>
 );
 
 const { selected, isSelected, toggle, clear, processing, submit } =
-    useBulkSelection(() => allExpenses.value, {
-        prop: 'travelExpensesToApprove',
-        ids: () => allExpenses.value.map((expense) => expense.id),
-    });
+    useBulkSelection(() => allExpenses.value);
 
 function isGroupSelected(travelRequest: TravelExpensesToApprove): boolean {
     return travelRequest.expenses.every((expense) => isSelected(expense.id));
@@ -60,8 +58,12 @@ function approve(): void {
     <div class="flex flex-col gap-6">
         <SelectionBar :count="selected.length" @clear="clear">
             <template #actions>
-                <DeclineTravelExpensesDialog
+                <DeclineSelectedDialog
                     :ids="selected"
+                    :action="TravelExpenseDeclineController.store()"
+                    :noun="{ one: 'Travel Expense', many: 'Travel Expenses' }"
+                    description="The Employee sees the reason under each one on their Travel page, and can change or delete it. Declined expenses aren't paid back."
+                    placeholder="The receipt doesn't show the amount"
                     @declined="clear"
                 />
                 <SubmitButton
