@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import AssignmentController from '@/actions/App/Http/Controllers/AssignmentController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -41,12 +41,32 @@ const jobTitleLabel = isInternal
 const fieldId = (field: string): string =>
     `assignment-${field}-${props.assignment?.id ?? 'new'}`;
 
-const form = useForm({
-    project_id: '',
-    job_title: props.assignment?.job_title ?? '',
-    start_date: props.assignment?.start_date ?? '',
-    end_date: props.assignment?.end_date ?? '',
-    capacity: String(props.assignment?.capacity ?? ''),
+/** The form's fields as the Assignment stands now, or blank for a new one. */
+function saved(): {
+    project_id: string;
+    job_title: string;
+    start_date: string;
+    end_date: string;
+    capacity: string;
+} {
+    return {
+        project_id: '',
+        job_title: props.assignment?.job_title ?? '',
+        start_date: props.assignment?.start_date ?? '',
+        end_date: props.assignment?.end_date ?? '',
+        capacity: String(props.assignment?.capacity ?? ''),
+    };
+}
+
+const form = useForm(saved());
+
+/** Each opening starts from what is saved, dropping any cancelled edits and old errors. */
+watch(open, (isOpen) => {
+    if (isOpen) {
+        form.defaults(saved());
+        form.reset();
+        form.clearErrors();
+    }
 });
 
 function submit(): void {

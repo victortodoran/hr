@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -39,13 +39,32 @@ const open = ref(false);
 const fieldId = (field: string): string =>
     `project-${field}-${props.project?.id ?? 'new'}`;
 
-const form = useForm({
-    name: props.project?.name ?? '',
-    client_id: props.project?.client
-        ? String(props.project.client.id)
-        : noClient,
-    start_date: props.project?.start_date ?? '',
-    end_date: props.project?.end_date ?? '',
+/** The form's fields as the Project stands now, or blank for a new one. */
+function saved(): {
+    name: string;
+    client_id: string;
+    start_date: string;
+    end_date: string;
+} {
+    return {
+        name: props.project?.name ?? '',
+        client_id: props.project?.client
+            ? String(props.project.client.id)
+            : noClient,
+        start_date: props.project?.start_date ?? '',
+        end_date: props.project?.end_date ?? '',
+    };
+}
+
+const form = useForm(saved());
+
+/** Each opening starts from what is saved, dropping any cancelled edits and old errors. */
+watch(open, (isOpen) => {
+    if (isOpen) {
+        form.defaults(saved());
+        form.reset();
+        form.clearErrors();
+    }
 });
 
 function submit(): void {

@@ -52,3 +52,30 @@ it('opens every tab of an Employee\'s page, keeping the header, leading Time Off
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertNoJavaScriptErrors();
 });
+
+it('drops an Assignment edit that was cancelled, so reopening shows what is saved and saving another change leaves it out', function () {
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara Lane']);
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-01-05', 'capacity' => 100]);
+    $manager = employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+        Permission::ManageAssignments->value => Scope::Everyone,
+    ]);
+
+    actingAs($manager);
+
+    visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
+        ->click('[aria-label="Edit the Assignment to Relaunch"]')
+        ->fill("#assignment-capacity-{$relaunch->id}", '50')
+        ->click('Cancel')
+        ->click('[aria-label="Edit the Assignment to Relaunch"]')
+        ->assertValue("#assignment-capacity-{$relaunch->id}", '100')
+        ->fill("#assignment-job-title-{$relaunch->id}", 'Lead Developer')
+        ->click('Save')
+        ->assertSee('Lead Developer')
+        ->assertNoJavaScriptErrors();
+
+    expect($relaunch->refresh())
+        ->capacity->toBe(100)
+        ->job_title->toBe('Lead Developer');
+});
+
