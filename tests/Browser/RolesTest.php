@@ -72,6 +72,24 @@ it('edits a Role\'s Permissions and Scopes in place, counting the changes, and s
     expect($payroll->refresh()->grants())->toBe(['view-pay' => 'everyone', 'view-time-off' => 'reports']);
 });
 
+it('adds someone to a Role while editing it with Enter in the people search, saving them with the Role', function () {
+    [, $payroll] = rolesToManage();
+    Employee::factory()->create(['name' => 'Cara Lane']);
+
+    visit(route('roles.edit', $payroll))
+        ->fill('[aria-label="Add an Employee"]', 'cara')
+        ->keys('[aria-label="Add an Employee"]', 'Enter')
+        ->assertPathIs("/roles/{$payroll->id}/edit")
+        ->assertSee('Will be added')
+        ->assertSee('1 unsaved change')
+        ->click('Save changes')
+        ->assertPathIs("/roles/{$payroll->id}")
+        ->assertSee('Cara Lane')
+        ->assertNoJavaScriptErrors();
+
+    expect($payroll->employees()->orderBy('name')->pluck('name')->all())->toBe(['Ben Brown', 'Cara Lane']);
+});
+
 it('refuses a name another Role already has before saving', function () {
     [, $payroll] = rolesToManage();
 
@@ -111,6 +129,9 @@ it('asks before leaving unsaved changes, from Cancel or the sidebar, and leaves 
     [, $payroll] = rolesToManage();
 
     visit(route('roles.edit', $payroll))
+        ->click('Cancel')
+        ->assertPathIs("/roles/{$payroll->id}")
+        ->click('New Role')
         ->click('Cancel')
         ->assertPathIs("/roles/{$payroll->id}")
         ->click('Edit')

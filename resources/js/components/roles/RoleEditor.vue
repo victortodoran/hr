@@ -221,6 +221,15 @@ function addHolder(id: number): void {
     personSearch.value = '';
 }
 
+/** Enter adds the top match, as in a combobox, instead of saving the Role. */
+function addTopMatch(): void {
+    const top = matches.value[0];
+
+    if (top) {
+        addHolder(top.id);
+    }
+}
+
 function removeHolder(id: number): void {
     form.holders = form.holders.filter((holder) => holder !== id);
 }
@@ -247,6 +256,16 @@ const changes = computed(() => {
 
 const dirty = computed(() => changes.value > 0);
 
+/**
+ * Whether anyone was added or removed. Holders are only sent then, so a
+ * save that leaves People alone never undoes someone else's changes to it.
+ */
+const peopleChanged = computed(
+    () =>
+        form.holders.length !== initial.holders.length ||
+        form.holders.some((id) => !initial.holders.includes(id)),
+);
+
 const blocked = computed(
     () =>
         form.name.trim() === '' ||
@@ -262,7 +281,11 @@ const otherErrors = computed(() =>
 );
 
 function save(): void {
-    form.transform((data) => ({ ...data, name: data.name.trim() })).submit(
+    form.transform(({ holders, ...data }) => ({
+        ...data,
+        name: data.name.trim(),
+        ...(peopleChanged.value ? { holders } : {}),
+    })).submit(
         props.role
             ? RoleController.update(props.role.id)
             : RoleController.store(),
@@ -463,6 +486,7 @@ const discardDescription = computed(() =>
                         placeholder="Add an Employee…"
                         aria-label="Add an Employee"
                         autocomplete="off"
+                        @keydown.enter.prevent="addTopMatch"
                         class="h-11 pl-9"
                     />
                 </div>

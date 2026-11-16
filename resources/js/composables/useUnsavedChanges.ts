@@ -6,8 +6,8 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
  * Asks before leaving a page with unsaved changes. Any Inertia visit that
  * would leave (a link, the sidebar, choosing another item) is held while
  * `dirty` is true and `pending` is set to it, so the page can ask; `discard`
- * then makes it, and `keep` drops it. Saving isn't held: only GET visits
- * leave. Reloading or closing the tab gets the browser's own prompt.
+ * then makes it, and `keep` drops it. Saving and prefetching aren't held:
+ * only GET visits leave. Reloading or closing the tab gets the browser's own prompt.
  * Browsers don't let pages stop the back button within the app.
  */
 export function useUnsavedChanges(dirty: Ref<boolean>): {
@@ -22,7 +22,12 @@ export function useUnsavedChanges(dirty: Ref<boolean>): {
     const removeBefore = router.on('before', (event) => {
         const visit = event.detail.visit;
 
-        if (!dirty.value || leaving || visit.method !== 'get') {
+        if (
+            !dirty.value ||
+            leaving ||
+            visit.prefetch ||
+            visit.method !== 'get'
+        ) {
             return;
         }
 

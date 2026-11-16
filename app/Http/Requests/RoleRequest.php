@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\Role;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -38,7 +39,7 @@ class RoleRequest extends FormRequest
             'permissions' => ['present', 'array', $this->eachPermissionWithItsScope()],
             'given_to_new_employees' => ['required', 'boolean'],
             'holders' => ['sometimes', 'array'],
-            'holders.*' => ['bail', 'integer', 'distinct', Rule::exists(Employee::class, 'id'), $this->stillHereUnlessHolding($role instanceof Role ? $role : null)],
+            'holders.*' => ['bail', 'integer', 'distinct', $this->stillHereUnlessHolding($role instanceof Role ? $role : null)],
         ];
     }
 
@@ -83,16 +84,25 @@ class RoleRequest extends FormRequest
     }
 
     /**
-     * Refuses a Former Employee as a holder, unless they already hold the
-     * Role and are only kept on.
+     * Refuses a holder who doesn't exist, or who has left, unless they
+     * already hold the Role and are only kept on. The holders sent and the
+     * Role's current ones are each loaded once, however many are sent.
      */
     private function stillHereUnlessHolding(?Role $role): Closure
     {
-        return function (string $attribute, mixed $employeeId, Closure $fail) use ($role): void {
-            $employee = Employee::query()->findOrFail(intval($employeeId));
+        /** @var EloquentCollection<int, Employee>|null $sent */
+        $sent = null;
+        /** @var array<int, int>|null $holding */
+        $holding = null;
 
-            if ($employee->employmentStatus() === EmploymentStatus::Former
-                && ! ($role?->employees()->whereKey($employee->id)->exists() ?? false)) {
+        return function (string $attribute, mixed $employeeId, Closure $fail) use ($role, &$sent, &$holding): void {
+            $sent ??= Employee::query()->whereKey(array_filter($this->array('holders'), fn (mixed $id): bool => filter_var($id, FILTER_VALIDATE_INT) !== false))->get()->keyBy('id');
+            $holding ??= $role?->employees()->pluck('employees.id')->all() ?? [];
+            $employee = $sent->get(intval($employeeId));
+
+            if ($employee === null) {
+                $fail(__('validation.exists', ['attribute' => __('Employee')]));
+            } elseif ($employee->employmentStatus() === EmploymentStatus::Former && ! in_array($employee->id, $holding, true)) {
                 $fail(__(':name has left, so they can\'t be given a Role.', ['name' => $employee->name]));
             }
         };

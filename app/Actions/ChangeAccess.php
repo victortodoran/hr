@@ -199,15 +199,9 @@ class ChangeAccess
         $current = $role->employees()->pluck('employees.id')->all();
 
         Employee::query()->whereKey(array_diff($holders, $current))->orderBy('id')->get()
-            ->each(function (Employee $employee) use ($actor, $role): void {
-                $role->employees()->attach($employee);
-                $this->log($actor, AccessChange::RoleGiven, $role, $employee);
-            });
+            ->each(fn (Employee $employee) => $this->giveRole($actor, $role, $employee));
         Employee::query()->whereKey(array_diff($current, $holders))->orderBy('id')->get()
-            ->each(function (Employee $employee) use ($actor, $role): void {
-                $role->employees()->detach($employee);
-                $this->log($actor, AccessChange::RoleTaken, $role, $employee);
-            });
+            ->each(fn (Employee $employee) => $this->takeRole($actor, $role, $employee));
     }
 
     /**

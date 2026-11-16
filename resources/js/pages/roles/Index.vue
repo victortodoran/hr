@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import { Plus, ShieldCheck } from '@lucide/vue';
-import { computed, ref, watchEffect } from 'vue';
+import { computed, ref, watch, watchEffect } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
@@ -38,6 +38,24 @@ const selectedRole = computed(
 );
 
 const draftName = ref('');
+
+/** The Role last shown, which Cancel on a new Role goes back to. */
+const lastSelected = ref<number | null>(props.selected);
+
+watch(
+    () => props.selected,
+    (id) => {
+        if (id !== null) {
+            lastSelected.value = id;
+        }
+    },
+);
+
+const cancelNewTo = computed(() =>
+    props.roles.some((role) => role.id === lastSelected.value)
+        ? show(lastSelected.value!).url
+        : index().url,
+);
 
 function permissionCount(role: RoleRecord): number {
     return role.is_admin
@@ -112,9 +130,7 @@ watchEffect(() => {
                     :roles="roles"
                     :permissions="permissions"
                     :employees="employees"
-                    :cancel-to="
-                        selectedRole ? show(selectedRole.id).url : index().url
-                    "
+                    :cancel-to="cancelNewTo"
                 />
                 <RoleEditor
                     v-else-if="mode === 'edit' && selectedRole"
@@ -127,6 +143,7 @@ watchEffect(() => {
                 />
                 <RoleView
                     v-else-if="selectedRole"
+                    :key="selectedRole.id"
                     :role="selectedRole"
                     :permissions="permissions"
                     :employees="employees"
