@@ -22,7 +22,7 @@ import { index as timeOff } from '@/routes/time-off';
 import { index as workEntries } from '@/routes/work-entries';
 import type {
     ApprovalsWaiting,
-    HoursThisWeek,
+    HoursThisMonth,
     HoursThisYear,
     PaidDaysLeft,
     TimeOffDetails,
@@ -39,8 +39,8 @@ defineOptions({
  */
 defineProps<{
     /** Null for the top Employee and anyone who can't see Work Entries. */
-    hoursThisWeek: HoursThisWeek | null;
-    /** Null exactly when hoursThisWeek is. */
+    hoursThisMonth: HoursThisMonth | null;
+    /** Null exactly when hoursThisMonth is. */
     hoursThisYear: HoursThisYear | null;
     paidDaysLeft: PaidDaysLeft;
     /** The next Pending or Approved Time Off that hasn't ended. */
@@ -100,22 +100,29 @@ defineProps<{
                 </CardContent>
             </Card>
 
-            <Card v-if="hoursThisWeek !== null">
+            <Card v-if="hoursThisMonth !== null">
                 <CardHeader>
-                    <CardTitle>Hours this week</CardTitle>
+                    <CardTitle>Hours this month</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <EmptyState
                         v-if="
-                            hoursThisWeek.hours === 0 &&
-                            hoursThisWeek.pending === 0
+                            hoursThisMonth.hours === 0 &&
+                            hoursThisMonth.pending === 0
                         "
                         :icon="Clock"
-                        message="You haven't logged any hours this week."
+                        message="You haven't logged any hours this month."
                     >
                         <template #action>
                             <Button variant="outline" as-child>
-                                <Link :href="workEntries()"
+                                <Link
+                                    :href="
+                                        workEntries({
+                                            query: {
+                                                month: hoursThisMonth.month,
+                                            },
+                                        })
+                                    "
                                     >Open My Work Entries</Link
                                 >
                             </Button>
@@ -123,24 +130,28 @@ defineProps<{
                     </EmptyState>
                     <div v-else class="space-y-2 text-sm">
                         <p class="text-2xl font-semibold tabular-nums">
-                            {{ formatHours(hoursThisWeek.hours) }}
+                            {{ formatHours(hoursThisMonth.hours) }}
                         </p>
                         <p
-                            v-if="hoursThisWeek.pending > 0"
+                            v-if="hoursThisMonth.pending > 0"
                             class="flex items-center gap-2"
                         >
                             <StatusBadge state="pending" />
                             <span class="text-muted-foreground"
-                                >{{ hoursThisWeek.pending }} Work
+                                >{{ hoursThisMonth.pending }} Work
                                 {{
-                                    hoursThisWeek.pending === 1
+                                    hoursThisMonth.pending === 1
                                         ? 'Entry'
                                         : 'Entries'
                                 }}</span
                             >
                         </p>
                         <Link
-                            :href="workEntries()"
+                            :href="
+                                workEntries({
+                                    query: { month: hoursThisMonth.month },
+                                })
+                            "
                             class="inline-block underline underline-offset-4"
                             >Open My Work Entries</Link
                         >

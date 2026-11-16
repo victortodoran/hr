@@ -1,10 +1,10 @@
 /**
- * The signed-in Employee's hours this week, Monday to Sunday, and how many of
- * its Work Entries are still Pending.
+ * The signed-in Employee's hours this month, leaving out Declined Work
+ * Entries, and how many of its Work Entries are still Pending.
  */
-export type HoursThisWeek = {
-    /** The week's Monday. */
-    week: string;
+export type HoursThisMonth = {
+    /** The month, as YYYY-MM. */
+    month: string;
     hours: number;
     pending: number;
 };

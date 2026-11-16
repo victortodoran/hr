@@ -13,7 +13,7 @@ beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
 
-it('lands an Employee on Home after signing in, showing their week, Paid Days and next Time Off', function () {
+it('lands an Employee on Home after signing in, showing their month, Paid Days and next Time Off', function () {
     $cara = recorder(['paid_days' => 20]);
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10', 'minutes' => 90]);
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-23']);
@@ -23,12 +23,14 @@ it('lands an Employee on Home after signing in, showing their week, Paid Days an
         ->fill('password', 'password')
         ->click('Log in')
         ->assertPathIs('/home')
-        ->assertSee('Hours this week')
+        ->assertSee('Hours this month')
         ->assertSee('1.5 h')
         ->assertSee('Paid Days left in 2026')
         ->assertSee('17')
         ->assertSee('Next Time Off')
         ->assertDontSee('Waiting for you')
+        ->click('Open My Work Entries')
+        ->assertQueryStringHas('month', '2026-11')
         ->assertNoJavaScriptErrors();
 });
 
