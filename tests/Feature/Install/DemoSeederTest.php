@@ -98,6 +98,15 @@ it('gives Travel Expenses only on Travel Requests that take them, each with a PD
             && str_starts_with((string) Storage::disk(TravelExpense::RECEIPT_DISK)->get($expense->receipt_path), '%PDF-')))->toBeTrue();
 });
 
+it('clears receipts left over from an earlier demo before adding its own', function () {
+    Storage::disk(TravelExpense::RECEIPT_DISK)->put(TravelExpense::RECEIPT_FOLDER.'/left-over.pdf', '%PDF-');
+
+    seed(DemoSeeder::class);
+
+    expect(Storage::disk(TravelExpense::RECEIPT_DISK)->files(TravelExpense::RECEIPT_FOLDER))
+        ->toEqualCanonicalizing(TravelExpense::query()->pluck('receipt_path')->all());
+});
+
 it('lets the demo Admin sign in with the demo password', function () {
     seed(DemoSeeder::class);
 
