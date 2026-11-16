@@ -120,6 +120,23 @@ const thisMonthsWorkEntries = computed(() =>
                             }}</Link
                         >
                     </Button>
+                    <Button
+                        v-if="waitingForYou.travelExpenses > 0"
+                        variant="outline"
+                        as-child
+                    >
+                        <Link
+                            :href="
+                                approvals({ query: { tab: 'travel-expenses' } })
+                            "
+                            >{{ waitingForYou.travelExpenses }} Pending Travel
+                            {{
+                                waitingForYou.travelExpenses === 1
+                                    ? 'Expense'
+                                    : 'Expenses'
+                            }}</Link
+                        >
+                    </Button>
                 </CardContent>
             </Card>
 

@@ -9,14 +9,18 @@ use App\Enums\WorkEntryState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\ApprovalFiltersRequest;
 use App\Http\Requests\WorkEntries\SelectedWorkEntriesRequest;
+use App\Models\Builders\TravelExpenseBuilder;
+use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\TimeOff;
+use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use App\Support\PageWithin;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,13 +37,16 @@ use Inertia\Response;
  * TimeOffApprovalController and TimeOffDeclineController. Travel Requests:
  * the Pending Travel Requests the viewer decides, answered by the
  * TravelRequestApprovalController and TravelRequestDeclineController.
+ * Travel Expenses: the Pending Travel Expenses the viewer decides, answered
+ * several at once by the TravelExpenseApprovalController and
+ * TravelExpenseDeclineController.
  */
 class ApprovalController extends Controller
 {
     /**
-     * The open tab, Work Entries unless Time Off or Travel Requests are
-     * asked for, with how many Work Entries, Time Off and Travel Requests
-     * wait for the viewer's decision. Only the open tab's list is loaded.
+     * The open tab, Work Entries unless another is asked for, with how
+     * many Work Entries, Time Off, Travel Requests and Travel Expenses wait
+     * for the viewer's decision. Only the open tab's list is loaded.
      */
     public function index(#[CurrentUser] Employee $actor, ApprovalFiltersRequest $request): Response
     {
@@ -52,6 +59,7 @@ class ApprovalController extends Controller
                 ApprovalsTab::WorkEntries => $this->workEntriesTab($actor, $request),
                 ApprovalsTab::TimeOff => ['toApprove' => $this->timeOffToApprove($actor)],
                 ApprovalsTab::TravelRequests => ['travelRequestsToApprove' => $this->travelRequestsToApprove($actor)],
+                ApprovalsTab::TravelExpenses => ['travelExpensesToApprove' => $this->travelExpensesToApprove($actor)],
             },
         ]);
     }
@@ -182,6 +190,44 @@ class ApprovalController extends Controller
                 'last_date' => $travelRequest->last_date->toDateString(),
                 'days' => $travelRequest->days(),
                 'purpose' => $travelRequest->purpose,
+            ])
+            ->all();
+    }
+
+    /**
+     * The Travel Expenses tab: the Pending Travel Expenses of the Employees
+     * whose effective Manager the actor is, grouped by their Travel Request,
+     * earliest travel first, and within it by the date paid. Each amount is
+     * shown in the company currency.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function travelExpensesToApprove(Employee $actor): array
+    {
+        $currency = CompanySettings::payCurrency();
+
+        return TravelRequest::query()
+            ->whereIn('employee_id', Employee::query()->effectivelyManagedBy($actor)->select('employees.id'))
+            ->whereHas('travelExpenses', fn (TravelExpenseBuilder $expenses) => $expenses->pending())
+            ->with(['employee:id,name', 'travelExpenses' => fn (HasMany $expenses) => $expenses->pending()->orderBy('paid_on')->orderBy('id')])
+            ->orderBy('first_date')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (TravelRequest $travelRequest): array => [
+                'id' => $travelRequest->id,
+                'employee' => $travelRequest->employee->only('id', 'name'),
+                'destination' => $travelRequest->destination,
+                'first_date' => $travelRequest->first_date->toDateString(),
+                'last_date' => $travelRequest->last_date->toDateString(),
+                'expenses' => $travelRequest->travelExpenses
+                    ->map(fn (TravelExpense $travelExpense): array => [
+                        'id' => $travelExpense->id,
+                        'paid_on' => $travelExpense->paid_on->toDateString(),
+                        'category' => $travelExpense->category->value,
+                        'description' => $travelExpense->description,
+                        'amount' => $currency->format($travelExpense->amount),
+                    ])
+                    ->all(),
             ])
             ->all();
     }

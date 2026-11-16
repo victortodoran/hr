@@ -104,3 +104,25 @@ export type TravelRequestToApprove = {
     days: number;
     purpose: string;
 };
+
+/**
+ * A Travel Request with the Pending Travel Expenses of an Employee the
+ * viewer effectively manages, for them to approve or decline on the
+ * Approvals page.
+ */
+export type TravelExpensesToApprove = {
+    /** The Travel Request's ID. */
+    id: number;
+    employee: { id: number; name: string };
+    destination: string;
+    first_date: string;
+    last_date: string;
+    expenses: {
+        id: number;
+        paid_on: string;
+        category: TravelExpenseCategory;
+        description: string;
+        /** Already shown in the company currency, such as "RON 1,990.00". */
+        amount: string;
+    }[];
+};
