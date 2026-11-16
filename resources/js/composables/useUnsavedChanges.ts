@@ -6,13 +6,15 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
  * Asks before leaving a page with unsaved changes. Any Inertia visit that
  * would leave (a link, the sidebar, choosing another item) is held while
  * `dirty` is true and `pending` is set to it, so the page can ask; `discard`
- * then makes it, and `keep` drops it. Saving and prefetching aren't held:
- * only GET visits leave. Reloading or closing the tab gets the browser's own prompt.
- * Browsers don't let pages stop the back button within the app.
+ * then makes it, and `keep` drops it. Once that visit succeeds, `onDiscard`
+ * lets the page forget its changes; when it fails, the page stays guarded.
+ * Saving and prefetching aren't held: only GET visits leave. Reloading or
+ * closing the tab gets the browser's own prompt. Browsers don't let pages
+ * stop the back button within the app.
  */
 export function useUnsavedChanges(
     dirty: Ref<boolean>,
-    /** Called as the page gives up its changes, before it leaves. */
+    /** Called once the page has left after giving up its changes, never when leaving fails. */
     onDiscard?: () => void,
 ): {
     pending: Ref<string | null>;
@@ -61,9 +63,9 @@ export function useUnsavedChanges(
         pending.value = null;
 
         if (url !== null) {
-            onDiscard?.();
             leaving = true;
             router.visit(url, {
+                onSuccess: () => onDiscard?.(),
                 onFinish: () => {
                     leaving = false;
                 },
