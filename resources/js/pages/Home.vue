@@ -129,18 +129,13 @@ const thisMonthsWorkEntries = computed(() =>
                             {{ formatHours(hoursThisMonth.hours) }}
                         </p>
                         <p
-                            v-if="hoursThisMonth.pending > 0"
+                            v-if="hoursThisMonth.pendingHours > 0"
                             class="flex items-center gap-2"
                         >
                             <StatusBadge state="pending" />
-                            <span class="text-muted-foreground"
-                                >{{ hoursThisMonth.pending }} Work
-                                {{
-                                    hoursThisMonth.pending === 1
-                                        ? 'Entry'
-                                        : 'Entries'
-                                }}</span
-                            >
+                            <span class="text-muted-foreground">{{
+                                formatHours(hoursThisMonth.pendingHours)
+                            }}</span>
                         </p>
                         <Link
                             :href="thisMonthsWorkEntries"

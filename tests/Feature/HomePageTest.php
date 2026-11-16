@@ -48,7 +48,7 @@ it('shows a regular Employee their hours this month, Paid Days left and next Tim
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->where('hoursThisMonth', ['month' => '2026-11', 'hours' => 7.5, 'pending' => 1])
+            ->where('hoursThisMonth', ['month' => '2026-11', 'hours' => 7.5, 'pendingHours' => 1.5])
             ->where('paidDaysLeft', ['year' => 2026, 'days' => 17])
             ->where('nextTimeOff.id', $next->id)
             ->where('nextTimeOff.state', 'approved')
@@ -70,7 +70,7 @@ it('shows a Manager what waits for them, matching the Approvals badge', function
             ->component('Home')
             ->where('waitingForYou', ['workEntries' => 2, 'timeOff' => 1])
             ->where('auth.approvalsWaiting', 3)
-            ->where('hoursThisMonth', ['month' => '2026-11', 'hours' => 0, 'pending' => 0])
+            ->where('hoursThisMonth', ['month' => '2026-11', 'hours' => 0, 'pendingHours' => 0])
             ->where('nextTimeOff', null),
         );
 });

@@ -1,12 +1,13 @@
 /**
  * The signed-in Employee's hours this month, leaving out Declined Work
- * Entries, and how many of its Work Entries are still Pending.
+ * Entries, and how many of those hours are still Pending.
  */
 export type HoursThisMonth = {
     /** The month, as YYYY-MM. */
     month: string;
     hours: number;
-    pending: number;
+    /** How many of those hours are still Pending. */
+    pendingHours: number;
 };
 
 /**

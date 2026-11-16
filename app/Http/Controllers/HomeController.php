@@ -70,11 +70,11 @@ class HomeController extends Controller
     /**
      * The Employee's hours this month, from its first day to today, as this
      * month's bar in hours this year counts them, leaving out Declined Work
-     * Entries, and how many of its Work Entries
-     * are Pending. Only for an Employee who records hours and can see them:
-     * not the top Employee, who records no Work Entries.
+     * Entries, and how many of those hours are Pending. Only for an
+     * Employee who records hours and can see them: not the top Employee,
+     * who records no Work Entries.
      *
-     * @return array{month: string, hours: float|int, pending: int}
+     * @return array{month: string, hours: float|int, pendingHours: float|int}
      */
     private function hoursThisMonth(Employee $employee): array
     {
@@ -88,7 +88,7 @@ class HomeController extends Controller
         return [
             'month' => $month->format('Y-m'),
             'hours' => $entries->sum(fn (WorkEntry $workEntry): float|int => $workEntry->hours),
-            'pending' => $entries->where('state', WorkEntryState::Pending)->count(),
+            'pendingHours' => $entries->where('state', WorkEntryState::Pending)->sum(fn (WorkEntry $workEntry): float|int => $workEntry->hours),
         ];
     }
 
