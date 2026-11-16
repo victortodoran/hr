@@ -10,6 +10,24 @@ An HR system that a company runs for itself, one installation per company, to ma
 
 The domain terms are defined in [`GLOSSARY.md`](GLOSSARY.md), and the design decisions are recorded in [`docs/adr/`](docs/adr).
 
+## Screenshots
+
+**My Page**: an Employee's record and Reporting Chain, with tabs for Assignments & Pay and Time Off.
+
+![My Page](docs/screenshots/my-page.png)
+
+**My Work Entries**, as a list for one week:
+
+![My Work Entries, list view](docs/screenshots/work-entries-list.png)
+
+and as a calendar for one month:
+
+![My Work Entries, calendar view](docs/screenshots/work-entries-calendar.png)
+
+**Approvals**: a Manager's Pending Work Entries and Time Off, approved or declined in bulk.
+
+![Approvals](docs/screenshots/approvals.png)
+
 ## Tech stack
 
 - **Backend**: PHP 8.4, Laravel 13, Laravel Fortify (authentication), PostgreSQL
