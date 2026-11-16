@@ -43,6 +43,40 @@ function endingAssignment(Assignment $assignment, string $endDate): array
 }
 
 /**
+ * The edit form's fields for starting the Assignment on the date.
+ *
+ * @return array<string, mixed>
+ */
+function startingAssignment(Assignment $assignment, string $startDate): array
+{
+    return ['job_title' => $assignment->job_title, 'start_date' => $startDate, 'end_date' => null, 'capacity' => $assignment->capacity];
+}
+
+it('refuses starting an Assignment after the first day of a Pending or Approved Travel Request on it', function (?string $state) {
+    $relaunch = relaunchWithTravel($state);
+
+    actingAs(employeeWith([Permission::ManageAssignments->value => Scope::Everyone]))
+        ->patch(route('assignments.update', $relaunch), startingAssignment($relaunch, '2026-12-04'))
+        ->assertInvalid(['start_date' => 'Cara has a Travel Request on this Assignment from 3 Dec 2026, so it can\'t start later than that.']);
+
+    expect($relaunch->refresh()->start_date->toDateString())->toBe('2026-11-02');
+})->with(['pending' => null, 'approved' => 'approved']);
+
+it('lets an Assignment start on the first day of travel, or after Declined or Cancelled travel', function (?string $state, string $startDate) {
+    $relaunch = relaunchWithTravel($state);
+
+    actingAs(employeeWith([Permission::ManageAssignments->value => Scope::Everyone]))
+        ->patch(route('assignments.update', $relaunch), startingAssignment($relaunch, $startDate))
+        ->assertValid();
+
+    expect($relaunch->refresh()->start_date->toDateString())->toBe($startDate);
+})->with([
+    'on the first day' => [null, '2026-12-03'],
+    'after Declined travel' => ['declined', '2026-12-06'],
+    'after Cancelled travel' => ['cancelled', '2026-12-06'],
+]);
+
+/**
  * The edit form's fields for ending the Project on the date.
  *
  * @return array<string, mixed>

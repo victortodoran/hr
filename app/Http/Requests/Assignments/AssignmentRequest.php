@@ -48,7 +48,7 @@ class AssignmentRequest extends FormRequest
         return [
             ...$projectRules,
             'job_title' => ['required', 'string', 'max:255'],
-            'start_date' => ['bail', 'required', 'date', WorkEntriesFit::startOf($this->assignment()?->workEntries(), $this->workEntriesMessage(':name has Work Entries on this Assignment from :date, so it can\'t start later than that.'))],
+            'start_date' => ['bail', 'required', 'date', WorkEntriesFit::startOf($this->assignment()?->workEntries(), $this->workEntriesMessage(':name has Work Entries on this Assignment from :date, so it can\'t start later than that.')), TravelRequestsFit::startOf($this->assignment()?->travelRequests(), ':name has a Travel Request on this Assignment from :date, so it can\'t start later than that.')],
             'end_date' => ['bail', 'nullable', 'date', 'after_or_equal:start_date', WorkEntriesFit::endOf($this->assignment()?->workEntries(), $this->workEntriesMessage(':name has Work Entries on this Assignment up to :date, so it can\'t end earlier than that.')), TravelRequestsFit::endOf($this->assignment()?->travelRequests(), ':name has a Travel Request on this Assignment up to :date, so it can\'t end earlier than that.')],
             ...$capacityRules,
         ];
