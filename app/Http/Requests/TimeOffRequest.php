@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Models\TimeOff;
-use Closure;
 use Illuminate\Validation\Validator;
 
 /**
@@ -20,7 +19,7 @@ class TimeOffRequest extends TimeOffPreviewRequest
      * them against the Employee's period of work and other Time Off, then
      * the Paid Days left.
      *
-     * @return array<int, Closure(Validator): void>
+     * @return array<int, callable(Validator): void>
      */
     public function after(): array
     {
