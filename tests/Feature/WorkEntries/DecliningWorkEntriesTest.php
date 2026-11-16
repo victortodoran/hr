@@ -161,7 +161,7 @@ it('shows a Declined Work Entry with who declined it and why, open to change or 
         ->where('calendar.2.hours', 5)
         ->where('calendar.2.days.1.hours', 5));
     actingAs($cara)->get(route('landing'))
-        ->assertInertia(fn (Assert $page) => $page->where('hoursThisWeek.hours', 5));
+        ->assertInertia(fn (Assert $page) => $page->where('hoursThisMonth.hours', 5));
 });
 
 it('sends a changed Declined Work Entry back to Pending without its reason', function () {

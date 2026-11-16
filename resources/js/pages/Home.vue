@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
+import { computed } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
@@ -22,7 +23,7 @@ import { index as timeOff } from '@/routes/time-off';
 import { index as workEntries } from '@/routes/work-entries';
 import type {
     ApprovalsWaiting,
-    HoursThisWeek,
+    HoursThisMonth,
     HoursThisYear,
     PaidDaysLeft,
     TimeOffDetails,
@@ -37,10 +38,10 @@ defineOptions({
 /**
  * Each block is null when it doesn't apply to the Employee.
  */
-defineProps<{
+const props = defineProps<{
     /** Null for the top Employee and anyone who can't see Work Entries. */
-    hoursThisWeek: HoursThisWeek | null;
-    /** Null exactly when hoursThisWeek is. */
+    hoursThisMonth: HoursThisMonth | null;
+    /** Null exactly when hoursThisMonth is. */
     hoursThisYear: HoursThisYear | null;
     paidDaysLeft: PaidDaysLeft;
     /** The next Pending or Approved Time Off that hasn't ended. */
@@ -50,6 +51,11 @@ defineProps<{
     /** What waits for the Employee to decide; null when nothing does. */
     waitingForYou: ApprovalsWaiting | null;
 }>();
+
+/** My Work Entries on this month. */
+const thisMonthsWorkEntries = computed(() =>
+    workEntries({ query: { month: props.hoursThisMonth?.month ?? '' } }),
+);
 </script>
 
 <template>
@@ -100,22 +106,19 @@ defineProps<{
                 </CardContent>
             </Card>
 
-            <Card v-if="hoursThisWeek !== null">
+            <Card v-if="hoursThisMonth !== null">
                 <CardHeader>
-                    <CardTitle>Hours this week</CardTitle>
+                    <CardTitle>Hours this month</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <EmptyState
-                        v-if="
-                            hoursThisWeek.hours === 0 &&
-                            hoursThisWeek.pending === 0
-                        "
+                        v-if="hoursThisMonth.hours === 0"
                         :icon="Clock"
-                        message="You haven't logged any hours this week."
+                        message="No hours this month yet. Declined ones don't count."
                     >
                         <template #action>
                             <Button variant="outline" as-child>
-                                <Link :href="workEntries()"
+                                <Link :href="thisMonthsWorkEntries"
                                     >Open My Work Entries</Link
                                 >
                             </Button>
@@ -123,24 +126,19 @@ defineProps<{
                     </EmptyState>
                     <div v-else class="space-y-2 text-sm">
                         <p class="text-2xl font-semibold tabular-nums">
-                            {{ formatHours(hoursThisWeek.hours) }}
+                            {{ formatHours(hoursThisMonth.hours) }}
                         </p>
                         <p
-                            v-if="hoursThisWeek.pending > 0"
+                            v-if="hoursThisMonth.pendingHours > 0"
                             class="flex items-center gap-2"
                         >
                             <StatusBadge state="pending" />
-                            <span class="text-muted-foreground"
-                                >{{ hoursThisWeek.pending }} Work
-                                {{
-                                    hoursThisWeek.pending === 1
-                                        ? 'Entry'
-                                        : 'Entries'
-                                }}</span
-                            >
+                            <span class="text-muted-foreground">{{
+                                formatHours(hoursThisMonth.pendingHours)
+                            }}</span>
                         </p>
                         <Link
-                            :href="workEntries()"
+                            :href="thisMonthsWorkEntries"
                             class="inline-block underline underline-offset-4"
                             >Open My Work Entries</Link
                         >

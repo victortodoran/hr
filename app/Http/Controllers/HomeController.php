@@ -16,7 +16,7 @@ use Inertia\Response;
 
 /**
  * Home, where every Employee lands after signing in: a summary of their
- * hours this week and this year, their Time Off and what waits for them to
+ * hours this month and this year, their Time Off and what waits for them to
  * decide. Each block is null when it doesn't apply to them. Nothing is
  * logged or decided here.
  */
@@ -31,7 +31,7 @@ class HomeController extends Controller
         $hasHours = ! $employee->is_top && $employee->canSeeWorkEntries();
 
         return Inertia::render('Home', [
-            'hoursThisWeek' => $hasHours ? $this->hoursThisWeek($employee) : null,
+            'hoursThisMonth' => $hasHours ? $this->hoursThisMonth($employee) : null,
             'hoursThisYear' => $hasHours ? $this->hoursThisYear($employee) : null,
             'paidDaysLeft' => [
                 'year' => today()->year,
@@ -68,25 +68,27 @@ class HomeController extends Controller
     }
 
     /**
-     * The Employee's hours this week, Monday to Sunday, leaving out Declined
-     * Work Entries, and how many of its Work Entries are Pending. Only for
-     * an Employee who records hours and can see them: not the top Employee,
+     * The Employee's hours this month, from its first day to today, as this
+     * month's bar in hours this year counts them, leaving out Declined Work
+     * Entries, and how many of those hours are Pending. Only for an
+     * Employee who records hours and can see them: not the top Employee,
      * who records no Work Entries.
      *
-     * @return array{week: string, hours: float|int, pending: int}
+     * @return array{month: string, hours: float|int, pendingHours: float|int}
      */
-    private function hoursThisWeek(Employee $employee): array
+    private function hoursThisMonth(Employee $employee): array
     {
-        $monday = CarbonImmutable::today()->startOfWeek(CarbonInterface::MONDAY);
+        $today = CarbonImmutable::today();
+        $month = $today->startOfMonth();
         $entries = $employee->workEntries()
             ->counted()
-            ->whereBetween('work_entries.date', [$monday->toDateString(), $monday->endOfWeek(CarbonInterface::SUNDAY)->toDateString()])
+            ->whereBetween('work_entries.date', [$month->toDateString(), $today->toDateString()])
             ->get();
 
         return [
-            'week' => $monday->toDateString(),
+            'month' => $month->format('Y-m'),
             'hours' => $entries->sum(fn (WorkEntry $workEntry): float|int => $workEntry->hours),
-            'pending' => $entries->where('state', WorkEntryState::Pending)->count(),
+            'pendingHours' => $entries->where('state', WorkEntryState::Pending)->sum(fn (WorkEntry $workEntry): float|int => $workEntry->hours),
         ];
     }
 
@@ -96,7 +98,7 @@ class HomeController extends Controller
      * totals. The months run from January, or from their Start Date's month
      * when they started this year, to this month, those with no hours at 0;
      * the totals cover the same months. For the same Employees as hours
-     * this week.
+     * this month.
      *
      * @return array{year: int, hours: float|int, pendingHours: float|int, months: array<int, array{month: string, hours: float|int, pendingHours: float|int}>}
      */

@@ -34,19 +34,21 @@ it('lands every Employee on Home after signing in', function () {
         ->assertInertia(fn (Assert $page) => $page->component('Home'));
 });
 
-it('shows a regular Employee their hours this week, Paid Days left and next Time Off, with nothing waiting for them', function () {
+it('shows a regular Employee their hours this month, Paid Days left and next Time Off, with nothing waiting for them', function () {
     $cara = recorder(['manager_id' => Employee::factory()->create()->id, 'paid_days' => 20]);
-    $relaunch = assignmentOf($cara);
-    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-09', 'minutes' => 90]);
-    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-15', 'minutes' => 360]);
-    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-08', 'minutes' => 480]);
-    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-16', 'minutes' => 480]);
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-10-01']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-02', 'minutes' => 90]);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10', 'minutes' => 360]);
+    WorkEntry::factory()->for($relaunch)->declined()->create(['date' => '2026-11-05', 'minutes' => 60]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-10-31', 'minutes' => 480]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-12', 'minutes' => 480]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-12-01', 'minutes' => 480]);
     $next = TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-23']);
 
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->where('hoursThisWeek', ['week' => '2026-11-09', 'hours' => 7.5, 'pending' => 1])
+            ->where('hoursThisMonth', ['month' => '2026-11', 'hours' => 7.5, 'pendingHours' => 1.5])
             ->where('paidDaysLeft', ['year' => 2026, 'days' => 17])
             ->where('nextTimeOff.id', $next->id)
             ->where('nextTimeOff.state', 'approved')
@@ -68,7 +70,7 @@ it('shows a Manager what waits for them, matching the Approvals badge', function
             ->component('Home')
             ->where('waitingForYou', ['workEntries' => 2, 'timeOff' => 1])
             ->where('auth.approvalsWaiting', 3)
-            ->where('hoursThisWeek', ['week' => '2026-11-09', 'hours' => 0, 'pending' => 0])
+            ->where('hoursThisMonth', ['month' => '2026-11', 'hours' => 0, 'pendingHours' => 0])
             ->where('nextTimeOff', null),
         );
 });
@@ -122,14 +124,14 @@ it('starts an Employee\'s months this year at the month of their Start Date when
         );
 });
 
-it('leaves hours this week and this year out for the top Employee, who records no Work Entries', function () {
+it('leaves hours this month and this year out for the top Employee, who records no Work Entries', function () {
     $ana = recorder(['is_top' => true]);
     TimeOff::factory()->for($ana)->approved()->create(['first_date' => '2026-11-11', 'last_date' => '2026-11-11']);
 
     actingAs($ana)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->where('hoursThisWeek', null)
+            ->where('hoursThisMonth', null)
             ->where('hoursThisYear', null)
             ->where('paidDaysLeft', ['year' => 2026, 'days' => -1])
             ->where('nextTimeOff.first_date', '2026-11-11')
@@ -137,13 +139,13 @@ it('leaves hours this week and this year out for the top Employee, who records n
         );
 });
 
-it('leaves hours this week and this year out for an Employee who can\'t see their Work Entries', function () {
+it('leaves hours this month and this year out for an Employee who can\'t see their Work Entries', function () {
     $cara = employeeWith([Permission::ViewDirectory->value => null]);
 
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->where('hoursThisWeek', null)
+            ->where('hoursThisMonth', null)
             ->where('hoursThisYear', null)
             ->where('paidDaysLeft', ['year' => 2026, 'days' => 0]),
         );
