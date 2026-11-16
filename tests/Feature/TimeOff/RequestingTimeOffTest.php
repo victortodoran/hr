@@ -24,7 +24,7 @@ beforeEach(function () {
  */
 function timeOffRequester(array $attributes = []): Employee
 {
-    return Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'paid_days' => 20, ...$attributes]);
+    return Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'paid_days' => 20, 'manager_id' => fn () => Employee::factory()->startedLongAgo()->create()->id, ...$attributes]);
 }
 
 /**
@@ -71,7 +71,7 @@ it('lets an Employee request Paid Time Off, which starts Pending', function () {
 });
 
 it('lets an Employee with no Paid Days at all request Unpaid Time Off, a single day long', function () {
-    $dev = Employee::factory()->startedLongAgo()->create();
+    $dev = timeOffRequester(['paid_days' => 0]);
 
     actingAs($dev)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-01', 'last_date' => '2026-12-01', 'is_paid' => false]))
         ->assertSessionHasNoErrors();
@@ -81,8 +81,8 @@ it('lets an Employee with no Paid Days at all request Unpaid Time Off, a single 
     ]);
 });
 
-it('approves the top Employee\'s Time Off at once, with nobody deciding', function () {
-    $ana = timeOffRequester(['is_top' => true]);
+it('approves the Time Off of an Employee with no Manager at once, with nobody deciding', function () {
+    $ana = timeOffRequester(['manager_id' => null]);
 
     actingAs($ana)->post(route('time-off.store'), timeOffForm())->assertSessionHasNoErrors();
 

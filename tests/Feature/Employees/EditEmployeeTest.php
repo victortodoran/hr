@@ -111,12 +111,14 @@ it('refuses making an Employee their own Manager', function () {
         ->assertSessionHasErrors(['manager_id' => 'An Employee cannot be their own Manager.']);
 });
 
-it('refuses removing the Manager of anyone but the top Employee', function () {
+it('lets HR remove an Employee\'s Manager when nothing of theirs is Pending', function () {
     $cara = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
 
     actingAs(employeeWhoManagesEmployees())
         ->patch(route('employees.update', $cara), employeeRecordFields($cara, ['manager_id' => null]))
-        ->assertSessionHasErrors(['manager_id' => 'Choose a Manager. Only the top Employee has none.']);
+        ->assertSessionHasNoErrors();
+
+    expect($cara->refresh()->manager_id)->toBeNull();
 });
 
 it('saves the top Employee without a Manager, and refuses giving them one', function () {

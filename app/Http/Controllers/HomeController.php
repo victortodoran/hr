@@ -28,7 +28,7 @@ class HomeController extends Controller
     public function __invoke(#[CurrentUser] Employee $employee): Response
     {
         $waiting = $employee->waitingForDecision();
-        $hasHours = ! $employee->is_top && $employee->canSeeWorkEntries();
+        $hasHours = ! $employee->hasNoManager() && $employee->canSeeWorkEntries();
 
         return Inertia::render('Home', [
             'hoursThisMonth' => $hasHours ? $this->hoursThisMonth($employee) : null,

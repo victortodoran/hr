@@ -18,8 +18,8 @@ beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
 
-it('lets nobody record Work Entries for the top Employee, neither they nor someone managing everyone\'s', function () {
-    $ana = recorder(['is_top' => true]);
+it('lets nobody record Work Entries for an Employee with no Manager, neither they nor someone managing everyone\'s', function () {
+    $ana = recorder(['manager_id' => null]);
     $relaunch = assignmentOf($ana);
     $hr = employeeWith([Permission::ManageWorkEntries->value => Scope::Everyone]);
 
@@ -29,8 +29,8 @@ it('lets nobody record Work Entries for the top Employee, neither they nor someo
     expect(WorkEntry::query()->exists())->toBeFalse();
 });
 
-it('keeps the top Employee\'s Pending Work Entries from being changed, but lets them be deleted', function () {
-    $ana = recorder(['is_top' => true]);
+it('keeps the Pending Work Entries of an Employee with no Manager from being changed, but lets them be deleted', function () {
+    $ana = recorder(['manager_id' => null]);
     $relaunch = assignmentOf($ana);
     $changed = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'minutes' => 60]);
     $deleted = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
@@ -43,8 +43,8 @@ it('keeps the top Employee\'s Pending Work Entries from being changed, but lets 
     assertModelMissing($deleted);
 });
 
-it('shows the top Employee their week with no recording or changing, only deleting Pending Work Entries', function () {
-    $ana = recorder(['is_top' => true]);
+it('shows an Employee with no Manager their week with no recording or changing, only deleting Pending Work Entries', function () {
+    $ana = recorder(['manager_id' => null]);
     WorkEntry::factory()->for(assignmentOf($ana))->create(['date' => '2026-11-10']);
 
     actingAs($ana)->get(route('work-entries.index'))

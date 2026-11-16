@@ -368,7 +368,7 @@ it('forbids an Employee who doesn\'t exist just as one outside the Scope, so nei
 });
 
 it('offers My Work Entries in the navigation, opens it and shows the hours on Home exactly for those who may see their own Work Entries', function (array $grants, bool $shown) {
-    $ben = employeeWith($grants);
+    $ben = employeeWith($grants, ['manager_id' => Employee::factory()->create()->id]);
 
     actingAs($ben)->get(route('work-entries.index'))->assertStatus($shown ? 200 : 403);
 

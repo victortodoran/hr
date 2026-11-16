@@ -292,6 +292,26 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Whether the Employee has no Manager: none is recorded, or every Manager
+     * up the chain has left. Nobody could decide for them, so they record
+     * no Work Entries and their Time Off is Approved as soon as requested.
+     */
+    public function hasNoManager(): bool
+    {
+        return $this->manager_id === null
+            || self::query()->withEffectiveManager()->whereKey($this->id)->value('effective_manager_id') === null;
+    }
+
+    /**
+     * Whether the Employee has Pending Work Entries or Pending Time Off,
+     * which their Manager is to decide.
+     */
+    public function hasPendingDecisions(): bool
+    {
+        return self::query()->whereKey($this->id)->withPendingDecisions()->exists();
+    }
+
+    /**
      * Whether the Employee is the effective Manager of anyone, Former
      * Employees included, and so approves someone's Work Entries.
      */
@@ -609,6 +629,20 @@ class Employee extends Authenticatable implements MustVerifyEmail
     protected function withWorkEntriesVisibleTo(Builder $query, Employee $viewer): void
     {
         $viewer->limitToReachOf($query, Permission::seeingWorkEntries());
+    }
+
+    /**
+     * Limit the query to Employees with Pending Work Entries or Pending Time
+     * Off, which their Manager is to decide.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function withPendingDecisions(Builder $query): void
+    {
+        $query->where(fn (Builder $pending) => $pending
+            ->whereHas('workEntries', fn (Builder $entries) => $entries->where('work_entries.state', WorkEntryState::Pending))
+            ->orWhereHas('timeOff', fn (Builder $timeOff) => $timeOff->where('state', TimeOffState::Pending)));
     }
 
     /**

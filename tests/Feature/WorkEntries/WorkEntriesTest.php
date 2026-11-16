@@ -233,7 +233,7 @@ it('forbids recording hours for an Employee outside the Scope, or with only view
 
 it('lets someone fix a Former Employee\'s hours up to their Leaving Date', function () {
     $admin = employeeWith([Permission::ManageWorkEntries->value => Scope::Everyone]);
-    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'leaving_date' => '2026-11-05']);
+    $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara', 'leaving_date' => '2026-11-05']);
     $relaunch = assignmentOf($cara, attributes: ['end_date' => '2026-11-05']);
 
     actingAs($admin)->post(route('employees.work-entries.store', $cara), workEntryForm($relaunch, ['date' => '2026-11-05']))

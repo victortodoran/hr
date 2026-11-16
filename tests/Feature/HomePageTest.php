@@ -124,8 +124,8 @@ it('starts an Employee\'s months this year at the month of their Start Date when
         );
 });
 
-it('leaves hours this month and this year out for the top Employee, who records no Work Entries', function () {
-    $ana = recorder(['is_top' => true]);
+it('leaves hours this month and this year out for an Employee with no Manager, who records no Work Entries', function () {
+    $ana = recorder(['manager_id' => null]);
     TimeOff::factory()->for($ana)->approved()->create(['first_date' => '2026-11-11', 'last_date' => '2026-11-11']);
 
     actingAs($ana)->get(route('landing'))

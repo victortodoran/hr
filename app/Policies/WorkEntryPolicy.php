@@ -34,12 +34,12 @@ class WorkEntryPolicy
 
     /**
      * Recording hours for an Employee needs manage work entries for them.
-     * Nobody records hours for the top Employee: with no Manager, nobody
-     * could approve them.
+     * Nobody records hours for an Employee with no Manager: nobody could
+     * approve them.
      */
     public function create(Employee $actor, Employee $employee): bool
     {
-        return ! $employee->is_top
+        return ! $employee->hasNoManager()
             && $actor->can(Permission::ManageWorkEntries->value, $employee);
     }
 
@@ -56,8 +56,9 @@ class WorkEntryPolicy
     /**
      * Deleting a Work Entry needs manage work entries for the Employee whose
      * Assignment it is on, and only a Pending or Declined one can be
-     * deleted. Unlike changing, it is allowed for the top Employee, so
-     * Pending Work Entries nobody can approve can be cleared away.
+     * deleted. Unlike changing, it is allowed for an Employee with no
+     * Manager, so Pending Work Entries nobody can approve can be cleared
+     * away.
      */
     public function delete(Employee $actor, WorkEntry $workEntry): bool
     {

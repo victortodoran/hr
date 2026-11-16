@@ -132,13 +132,13 @@ function employeeRecordChanging(Employee $employee, array $changes): array
 
 /**
  * An Employee named Cara who records their own hours, as the starter
- * Employee Role allows.
+ * Employee Role allows, reporting to Mona, who could approve them.
  *
  * @param  array<string, mixed>  $attributes
  */
 function recorder(array $attributes = []): Employee
 {
-    return employeeWith([Permission::ManageWorkEntries->value => Scope::Own], ['name' => 'Cara', 'start_date' => '2025-01-06', ...$attributes]);
+    return employeeWith([Permission::ManageWorkEntries->value => Scope::Own], ['name' => 'Cara', 'start_date' => '2025-01-06', 'manager_id' => fn () => Employee::factory()->startedLongAgo()->create(['name' => 'Mona'])->id, ...$attributes]);
 }
 
 /**

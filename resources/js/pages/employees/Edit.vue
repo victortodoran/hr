@@ -10,6 +10,7 @@ import SubmitButton from '@/components/SubmitButton.vue';
 import { Badge } from '@/components/ui/badge';
 import { edit, show } from '@/routes/employees';
 import type { Choice, EmployeeRecord, ManagerChoice } from '@/types';
+import { withNoManagerAsEmpty } from '@/lib/employees';
 
 const props = defineProps<{
     employee: EmployeeRecord;
@@ -83,6 +84,7 @@ setLayoutProps({
         <Form
             v-bind="EmployeeController.update.form(employee.id)"
             :options="{ preserveScroll: true }"
+            :transform="withNoManagerAsEmpty"
             class="grid gap-6"
             v-slot="{ errors, processing }"
         >

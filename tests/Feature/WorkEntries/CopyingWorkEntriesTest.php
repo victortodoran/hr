@@ -129,7 +129,7 @@ it('requires a valid date', function (mixed $date) {
 })->with([null, 'yesterday', '13/11/2026']);
 
 it('lets only those who may record hours for the Employee copy them', function () {
-    $cara = Employee::factory()->create(['name' => 'Cara']);
+    $cara = Employee::factory()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-12']);
     $viewer = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
     $manager = employeeWith([Permission::ManageWorkEntries->value => Scope::Everyone]);

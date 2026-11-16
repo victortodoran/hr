@@ -23,13 +23,13 @@ An Employee who has left the company. Their records are kept, but they can no lo
 _Avoid_: Leaver, ex-employee, deleted user, inactive user
 
 **Leaving Date**:
-The last day an Employee works for the company. From the next day on, they are a Former Employee.
+The last day an Employee works for the company. From the next day on, they are a Former Employee. An Employee can't be given a Leaving Date while it would leave one of their Reports with no Manager and with Pending Work Entries or Pending Time Off.
 _Avoid_: End date, termination date, exit date
 
 ### Reporting line
 
 **Manager**:
-The one Employee that another Employee reports to directly. Every Employee has exactly one Manager, except the single Employee at the top of the company (for example the CEO), who has none. With no Manager to approve them, the top Employee records no Work Entries.
+The one Employee that another Employee reports to directly. An Employee has at most one Manager; any number of Employees have none, such as a CEO or co-founders. An Employee with no Manager records no Work Entries, since nobody could approve them, and their Time Off is Approved as soon as they request it. An Employee's Manager can't be removed while they have Pending Work Entries or Pending Time Off, which nobody could then decide.
 _Avoid_: Boss, supervisor, line manager, team lead
 
 **Report**:
@@ -41,7 +41,7 @@ An Employee one level below another in the reporting line: one whose Manager the
 _Avoid_: Direct, team member, subordinate
 
 **Reporting Chain**:
-An Employee's place in the reporting line: their Manager, that Manager's Manager, and so on up to the single Employee at the top of the company, then the Employee themselves, then the Employees they are the Manager of. It reaches only one level down, not to every Report.
+An Employee's place in the reporting line: their Manager, that Manager's Manager, and so on up to an Employee with no Manager, then the Employee themselves, then the Employees they are the Manager of. It reaches only one level down, not to every Report.
 _Avoid_: Hierarchy, org path, chain of command, management line
 
 ### Organisation
@@ -115,7 +115,7 @@ _Avoid_: Invoiced, closed, final, frozen, archived
 ### Time Off
 
 **Time Off**:
-One or more whole days an Employee asks to be away from work, from a first to a last date, as in "Cara requested Time Off from 22 to 24 Dec". Only weekdays count as days of Time Off; weekends never do, and public holidays count like any other weekday. Each Time Off is either Paid Time Off or Unpaid Time Off. It is Pending until the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't). The top Employee's Time Off is Approved as soon as they request it. An Employee's Time Off can't overlap their other Pending or Approved Time Off, and one Time Off covers at most a year; longer leave is several.
+One or more whole days an Employee asks to be away from work, from a first to a last date, as in "Cara requested Time Off from 22 to 24 Dec". Only weekdays count as days of Time Off; weekends never do, and public holidays count like any other weekday. Each Time Off is either Paid Time Off or Unpaid Time Off. It is Pending until the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't). The Time Off of an Employee with no Manager is Approved as soon as they request it. An Employee's Time Off can't overlap their other Pending or Approved Time Off, and one Time Off covers at most a year; longer leave is several.
 _Avoid_: Holiday, leave, vacation, absence, day off, PTO
 
 **Paid Time Off**:
