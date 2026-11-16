@@ -28,7 +28,7 @@ class HomeController extends Controller
     public function __invoke(#[CurrentUser] Employee $employee): Response
     {
         $waiting = $employee->waitingForDecision();
-        $hasHours = ! $employee->hasNoManager() && $employee->canSeeWorkEntries();
+        $hasHours = $employee->canSeeWorkEntries() && ! $employee->hasNoManager();
 
         return Inertia::render('Home', [
             'hoursThisMonth' => $hasHours ? $this->hoursThisMonth($employee) : null,
@@ -71,8 +71,8 @@ class HomeController extends Controller
      * The Employee's hours this month, from its first day to today, as this
      * month's bar in hours this year counts them, leaving out Declined Work
      * Entries, and how many of those hours are Pending. Only for an
-     * Employee who records hours and can see them: not the top Employee,
-     * who records no Work Entries.
+     * Employee who records hours and can see them: not one with no
+     * Manager, who records no Work Entries.
      *
      * @return array{month: string, hours: float|int, pendingHours: float|int}
      */

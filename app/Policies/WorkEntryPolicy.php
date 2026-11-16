@@ -39,8 +39,8 @@ class WorkEntryPolicy
      */
     public function create(Employee $actor, Employee $employee): bool
     {
-        return ! $employee->hasNoManager()
-            && $actor->can(Permission::ManageWorkEntries->value, $employee);
+        return $actor->can(Permission::ManageWorkEntries->value, $employee)
+            && ! $employee->hasNoManager();
     }
 
     /**

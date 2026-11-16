@@ -39,7 +39,7 @@ defineOptions({
  * Each block is null when it doesn't apply to the Employee.
  */
 const props = defineProps<{
-    /** Null for the top Employee and anyone who can't see Work Entries. */
+    /** Null for an Employee with no Manager and anyone who can't see Work Entries. */
     hoursThisMonth: HoursThisMonth | null;
     /** Null exactly when hoursThisMonth is. */
     hoursThisYear: HoursThisYear | null;

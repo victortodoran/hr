@@ -308,7 +308,7 @@ class DemoSeeder extends Seeder
     /**
      * Add Time Off from a first date to the given number of days after it,
      * Pending unless given another state. Approved and Declined Time Off is
-     * decided by the decider, or by nobody for the top Employee's.
+     * decided by the decider, or by nobody for an Employee with no Manager.
      */
     private function timeOff(Employee $employee, CarbonInterface $first, int $daysAfter, bool $isPaid, TimeOffState $state = TimeOffState::Pending, ?Employee $decider = null, ?string $declineReason = null): void
     {

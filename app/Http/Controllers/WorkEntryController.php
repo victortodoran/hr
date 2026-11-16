@@ -156,7 +156,7 @@ class WorkEntryController extends Controller
      * state, who declined it and why, and whether the viewer can change or
      * delete it: both need a Pending or Declined Work Entry, changing needs
      * what recording does, and deleting needs only manage work entries for
-     * the Employee, the top Employee included.
+     * the Employee, one with no Manager included.
      *
      * A weekday covered by Pending or Approved Time Off says whether that
      * Time Off is Paid or Unpaid. A past weekday while the Employee works

@@ -6,10 +6,11 @@ use App\Enums\Permission;
 use App\Models\Employee;
 
 /**
- * An Employee's Reporting Chain as a page shows it: everyone above them
- * from the top Employee down to their Manager, the Employee, and the
- * Employees they are the Manager of, each with where the viewer may follow
- * their name: their Employee page, their Directory page, or nowhere.
+ * An Employee's Reporting Chain as a page shows it: everyone above them,
+ * from the highest, who has no Manager, down to their own Manager, then
+ * the Employee, and the Employees they are the Manager of, each with where
+ * the viewer may follow their name: their Employee page, their Directory
+ * page, or nowhere.
  *
  * @phpstan-type ChainMember array{id: int, name: string, job_title: string|null, department: string|null, status: string, link: 'employee'|'directory'|null}
  */

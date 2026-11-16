@@ -257,7 +257,7 @@ setLayoutProps({
                                                 <span
                                                     v-else
                                                     class="text-muted-foreground"
-                                                    >None (top Employee)</span
+                                                    >None</span
                                                 >
                                             </dd>
                                         </div>
