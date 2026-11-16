@@ -71,6 +71,16 @@ export type TravelExpenses = {
     can_create: boolean;
 };
 
+/**
+ * What recording and changing Travel Expenses needs: today, for the latest
+ * date one can be paid on, and the company currency. Only the Travel page
+ * passes it; without it a list of travel is only to be seen.
+ */
+export type TravelEditing = {
+    today: string;
+    currency: TravelCurrency;
+};
+
 /** The company currency every Travel Expense is recorded in. */
 export type TravelCurrency = {
     code: string;

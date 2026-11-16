@@ -9,20 +9,19 @@ import SubmitButton from '@/components/SubmitButton.vue';
 import TravelExpenseList from '@/components/travel-requests/TravelExpenseList.vue';
 import { formatDate } from '@/lib/dates';
 import { formatDays } from '@/lib/time-off';
-import type { TableColumn, TravelCurrency, TravelRequestRecord } from '@/types';
+import type { TableColumn, TravelEditing, TravelRequestRecord } from '@/types';
 
 /**
  * An Employee's Travel Requests, each with its Travel Expenses, cancelling
- * it and recording or changing its Travel Expenses where its flags allow.
- * Without `today` and `currency` the list is only to be seen, as on the
- * Employee page.
+ * it and recording or changing its Travel Expenses where `editing` is given
+ * and its flags allow. Without `editing` the list is only to be seen, as on
+ * the Employee page.
  */
 defineProps<{
     travelRequests: TravelRequestRecord[];
     /** What the empty state says. */
     emptyMessage: string;
-    today?: string;
-    currency?: TravelCurrency;
+    editing?: TravelEditing;
 }>();
 
 const columns: TableColumn[] = [
@@ -60,8 +59,7 @@ const columns: TableColumn[] = [
             </p>
             <TravelExpenseList
                 v-if="row.expenses !== null"
-                :today="today"
-                :currency="currency"
+                :editing="editing"
                 :travel-request-id="row.id"
                 :expenses="row.expenses"
             />

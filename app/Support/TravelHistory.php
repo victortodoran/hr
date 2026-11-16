@@ -6,6 +6,7 @@ use App\Enums\TravelExpenseState;
 use App\Models\Employee;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
+use Closure;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -26,6 +27,8 @@ final class TravelHistory
      */
     public static function of(Employee $employee, Currency $currency, ?Employee $actor = null): array
     {
+        $allows = fn (string $ability, mixed $arguments): bool => $actor?->can($ability, $arguments) ?? false;
+
         return $employee->travelRequests()
             ->with(['assignment.project.client:id,name', 'decider:id,name', 'travelExpenses' => fn (HasMany $expenses) => $expenses->orderBy('paid_on')->orderBy('id')]) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
             ->orderByDesc('first_date')
@@ -43,8 +46,8 @@ final class TravelHistory
                 'state' => $travelRequest->state->value,
                 'decided_by' => $travelRequest->decider?->name,
                 'decline_reason' => $travelRequest->decline_reason,
-                'can_cancel' => $actor?->can('cancel', $travelRequest) ?? false,
-                'expenses' => $travelRequest->takesExpenses() ? self::expenses($travelRequest, $currency, $actor) : null,
+                'can_cancel' => $allows('cancel', $travelRequest),
+                'expenses' => $travelRequest->takesExpenses() ? self::expenses($travelRequest, $currency, $allows) : null,
             ])
             ->all();
     }
@@ -54,13 +57,14 @@ final class TravelHistory
      * total of those not Declined in the company currency, and whether the
      * actor, when there is one, may change each and record more.
      *
+     * @param  Closure(string, mixed): bool  $allows  whether the actor may do something; never without one
      * @return array{items: array<int, array<string, mixed>>, total: string, can_create: bool}
      */
-    private static function expenses(TravelRequest $travelRequest, Currency $currency, ?Employee $actor): array
+    private static function expenses(TravelRequest $travelRequest, Currency $currency, Closure $allows): array
     {
         return [
             'items' => $travelRequest->travelExpenses
-                ->map(function (TravelExpense $travelExpense) use ($travelRequest, $currency, $actor): array {
+                ->map(function (TravelExpense $travelExpense) use ($travelRequest, $currency, $allows): array {
                     $travelExpense->setRelation('travelRequest', $travelRequest);
 
                     return [
@@ -72,14 +76,14 @@ final class TravelHistory
                         'amount_typed' => $currency->toAmount($travelExpense->amount),
                         'state' => $travelExpense->state->value,
                         'decline_reason' => $travelExpense->decline_reason,
-                        'can_change' => $actor?->can('update', $travelExpense) ?? false,
+                        'can_change' => $allows('update', $travelExpense),
                     ];
                 })
                 ->all(),
             'total' => $currency->format((int) $travelRequest->travelExpenses
                 ->reject(fn (TravelExpense $travelExpense): bool => $travelExpense->state === TravelExpenseState::Declined)
                 ->sum('amount')),
-            'can_create' => $actor?->can('create', [TravelExpense::class, $travelRequest]) ?? false,
+            'can_create' => $allows('create', [TravelExpense::class, $travelRequest]),
         ];
     }
 }

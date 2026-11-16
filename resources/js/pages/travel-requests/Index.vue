@@ -42,8 +42,7 @@ defineProps<{
             <h2 class="text-sm font-medium">Your Travel Requests</h2>
             <TravelRequestList
                 :travel-requests="travelRequests"
-                :today="today"
-                :currency="currency"
+                :editing="{ today, currency }"
                 empty-message="Your Travel Requests appear here. You haven't made any yet."
             />
         </section>
