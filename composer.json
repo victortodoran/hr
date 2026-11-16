@@ -45,7 +45,9 @@
         }
     },
     "scripts-descriptions": {
-        "lint:callbacks": "Fails when a Collection callback is a built-in with an optional second parameter, such as map(intval(...)): Collections pass the key as that argument."
+        "lint:callbacks": "Fails when a Collection callback is a built-in with an optional second parameter, such as map(intval(...)): Collections pass the key as that argument.",
+        "lint:migrations": "Fail when the branch changes a migration already on main; add a new migration instead.",
+        "lint:folders": "Fail when a controller or form request sits directly in app/Http/Controllers or app/Http/Requests instead of an area folder."
     },
     "scripts": {
         "setup": [
