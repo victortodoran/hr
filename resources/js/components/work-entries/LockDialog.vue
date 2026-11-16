@@ -2,6 +2,7 @@
 import { router, useHttp } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import LockController from '@/actions/App/Http/Controllers/LockController';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -63,12 +64,21 @@ async function loadSummary(isOpen: boolean): Promise<void> {
     }
 }
 
+/** Whether locking is on its way, so it can't be sent twice. */
+const locking = ref(false);
+
 function lock(): void {
+    if (locking.value) {
+        return;
+    }
+
+    locking.value = true;
     router.post(
         LockController.store.url(),
         { ids: props.ids },
         {
             preserveScroll: true,
+            onFinish: () => (locking.value = false),
             onSuccess: () => {
                 open.value = false;
                 emit('locked');
@@ -153,11 +163,12 @@ function lock(): void {
                 <DialogClose as-child>
                     <Button variant="secondary">Cancel</Button>
                 </DialogClose>
-                <Button
+                <SubmitButton
                     variant="destructive"
+                    :processing="locking"
                     :disabled="!summary || summary.locking.count === 0"
                     @click="lock"
-                    >Lock for good</Button
+                    >Lock for good</SubmitButton
                 >
             </DialogFooter>
         </DialogContent>

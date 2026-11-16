@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import ReopeningController from '@/actions/App/Http/Controllers/ReopeningController';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
@@ -9,6 +9,7 @@ import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -113,12 +114,21 @@ const canSelectAllMatching = computed(
         canSelect.value,
 );
 
+/** Whether reopening is on its way, so it can't be sent twice. */
+const reopening = ref(false);
+
 function reopen(): void {
+    if (reopening.value) {
+        return;
+    }
+
+    reopening.value = true;
     router.post(
         ReopeningController.store.url(),
         { ids: selected.value },
         {
             preserveScroll: true,
+            onFinish: () => (reopening.value = false),
             onSuccess: clear,
         },
     );
@@ -192,12 +202,13 @@ function signOffs(entry: ListedWorkEntry): string {
                         :filters="filters"
                         @locked="clear"
                     />
-                    <Button
+                    <SubmitButton
                         v-if="canReopen"
                         variant="outline"
+                        :processing="reopening"
                         :disabled="selected.length === 0"
                         @click="reopen"
-                        >Reopen</Button
+                        >Reopen</SubmitButton
                     >
                 </template>
             </SelectionBar>
