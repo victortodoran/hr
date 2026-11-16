@@ -6,6 +6,15 @@ Rules for reviewing a diff. Each one needs judgement; anything a tool can check 
 
 When a diff changes a term's meaning in `GLOSSARY.md`, every use of that term must match the new meaning: names of classes, methods and props, docblocks, comments, test names and UI copy. Grep for the term and its code spellings (for example `Reporting Chain`, `reportingChain`) and list each use that still carries the old meaning.
 
+## Where code goes
+
+List each piece of a diff that sits in the wrong layer.
+
+- A query reused across controllers, policies or actions is a method on the model's builder (`app/Models/Builders`); a one-off query stays where it is used.
+- A write that changes several models, or that more than one controller makes, is an Action (`app/Actions`).
+- Shaping models into page props stays in the controller; once it holds most of the controller, or another page needs the same shape, it moves to `app/Support` (see `PayHistory`, `ReportingChain`).
+- A form request sits in the area folder of the controller that uses it.
+
 ## UI
 
 One line per rule; list each place a diff breaks one.

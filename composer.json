@@ -47,7 +47,8 @@
     "scripts-descriptions": {
         "lint:callbacks": "Fails when a Collection callback is a built-in with an optional second parameter, such as map(intval(...)): Collections pass the key as that argument.",
         "lint:migrations": "Fails when the branch changes a migration already on main; add a new migration instead.",
-        "lint:folders": "Fails when a controller or form request sits directly in app/Http/Controllers or app/Http/Requests instead of an area folder."
+        "lint:folders": "Fails when a controller or form request sits directly in app/Http/Controllers or app/Http/Requests instead of an area folder.",
+        "lint:scopes": "Fails when a model declares query scopes; reusable queries go in the model's builder in app/Models/Builders."
     },
     "scripts": {
         "setup": [
@@ -74,6 +75,7 @@
             "@lint:callbacks",
             "@lint:migrations",
             "@lint:folders",
+            "@lint:scopes",
             "npm run build",
             "npm run types:check",
             "@test"
@@ -83,6 +85,7 @@
             "base=$(git merge-base origin/main HEAD) || { echo 'lint:migrations needs origin/main with shared history: run git fetch origin'; exit 1; }; ! git diff --diff-filter=MDRT --name-status \"$base\" HEAD -- database/migrations | sed 's/^/Shipped migration changed (add a new one instead): /' | grep ."
         ],
         "lint:folders": "! find app/Http/Controllers app/Http/Requests -maxdepth 1 -name '*.php' ! -path app/Http/Controllers/Controller.php ! -path app/Http/Controllers/HomeController.php | sed 's/^/Move into an area folder (Employees, WorkEntries, TimeOff, ...): /' | grep .",
+        "lint:scopes": "! grep -rlE 'Attributes.Scope( |;)|function scope[A-Z]' app/Models --exclude-dir=Builders | sed 's|^|Move its query scopes into its builder in app/Models/Builders: |' | grep .",
         "types:check": [
             "phpstan analyse --memory-limit=1G"
         ],

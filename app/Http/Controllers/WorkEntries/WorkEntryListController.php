@@ -6,13 +6,14 @@ use App\Enums\Permission;
 use App\Enums\WorkEntryState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\WorkEntryListRequest;
+use App\Models\Builders\EmployeeBuilder;
+use App\Models\Builders\WorkEntryBuilder;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\WorkEntry;
 use App\Support\PageWithin;
 use App\Support\Period;
 use Illuminate\Container\Attributes\CurrentUser;
-use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -41,8 +42,8 @@ class WorkEntryListController extends Controller
     {
         $canLock = $actor->can('lock', WorkEntry::class);
         $requested = $request->filters();
-        $visible = fn (): Builder => Employee::query()->withWorkEntriesVisibleTo($actor);
-        $inPeriod = fn (Builder $entries): Builder => self::inPeriod($entries, $requested['period'], $requested['state']);
+        $visible = fn (): EmployeeBuilder => Employee::query()->withWorkEntriesVisibleTo($actor);
+        $inPeriod = fn (WorkEntryBuilder $entries): WorkEntryBuilder => self::inPeriod($entries, $requested['period'], $requested['state']);
         $employees = $visible()
             ->whereHas('workEntries', $inPeriod)
             ->withCount(['workEntries as entries_count' => $inPeriod])
@@ -55,7 +56,7 @@ class WorkEntryListController extends Controller
             ? 'all'
             : collect($employees)->firstWhere('id', $requested['employee'])['id'] ?? $employees[0]['id'] ?? null;
         $projects = $employees === [] ? [] : Project::query()
-            ->whereHas('workEntries', fn (Builder $entries): Builder => $inPeriod($entries)
+            ->whereHas('workEntries', fn (WorkEntryBuilder $entries): WorkEntryBuilder => $inPeriod($entries)
                 ->ofEmployees($employee === 'all' ? $visible() : Employee::query()->whereKey($employee)))
             ->orderBy('name')
             ->orderBy('id') // @pest-mutate-ignore (only orders Projects that share a name)
@@ -108,11 +109,8 @@ class WorkEntryListController extends Controller
     /**
      * Narrows Work Entries to those in the Period, and in the state, or any
      * state when none is given.
-     *
-     * @param  Builder<WorkEntry>  $entries
-     * @return Builder<WorkEntry>
      */
-    private static function inPeriod(Builder $entries, Period $period, ?string $state): Builder
+    private static function inPeriod(WorkEntryBuilder $entries, Period $period, ?string $state): WorkEntryBuilder
     {
         return $entries->filteredBy(['period' => $period, 'state' => $state]);
     }

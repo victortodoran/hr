@@ -3,14 +3,14 @@
 namespace App\Models;
 
 use App\Enums\TimeOffState;
+use App\Models\Builders\TimeOffBuilder;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Carbon\CarbonPeriod;
 use Database\Factories\TimeOffFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Scope as QueryScope;
 use Illuminate\Database\Eloquent\Attributes\Table;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,6 +39,7 @@ use Illuminate\Support\Carbon;
  */
 #[Table('time_off')] // @pest-mutate-ignore (class attributes never show as covered)
 #[Fillable(['first_date', 'last_date', 'is_paid'])] // @pest-mutate-ignore (class attributes never show as covered)
+#[UseEloquentBuilder(TimeOffBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
 class TimeOff extends Model
 {
     /** @use HasFactory<TimeOffFactory> */
@@ -155,28 +156,5 @@ class TimeOff extends Model
     public function decider(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'decided_by');
-    }
-
-    /**
-     * Limit the query to Time Off that still stands: Pending or Approved.
-     *
-     * @param  Builder<TimeOff>  $query
-     */
-    #[QueryScope]
-    protected function standing(Builder $query): void
-    {
-        $query->whereIn('state', TimeOffState::standing());
-    }
-
-    /**
-     * Limit the query to Time Off with at least one date from the first to
-     * the last date given.
-     *
-     * @param  Builder<TimeOff>  $query
-     */
-    #[QueryScope]
-    protected function overlapping(Builder $query, CarbonInterface $first, CarbonInterface $last): void
-    {
-        $query->whereDate('first_date', '<=', $last)->whereDate('last_date', '>=', $first);
     }
 }

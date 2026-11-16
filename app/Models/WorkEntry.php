@@ -3,12 +3,11 @@
 namespace App\Models;
 
 use App\Enums\WorkEntryState;
-use App\Support\Period;
+use App\Models\Builders\WorkEntryBuilder;
 use Carbon\CarbonInterface;
 use Database\Factories\WorkEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Scope as QueryScope;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -45,6 +44,7 @@ use Illuminate\Support\Carbon;
  * @property-read Employee|null $decliner
  */
 #[Fillable(['assignment_id', 'date', 'minutes', 'description'])] // @pest-mutate-ignore (class attributes never show as covered)
+#[UseEloquentBuilder(WorkEntryBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
 class WorkEntry extends Model
 {
     /** @use HasFactory<WorkEntryFactory> */
@@ -219,52 +219,6 @@ class WorkEntry extends Model
     public function decliner(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'declined_by');
-    }
-
-    /**
-     * Limit the query to the Work Entries whose hours count: all but the
-     * Declined ones.
-     *
-     * @param  Builder<WorkEntry>  $query
-     */
-    #[QueryScope]
-    protected function counted(Builder $query): void
-    {
-        $query->where($query->qualifyColumn('state'), '!=', WorkEntryState::Declined);
-    }
-
-    /**
-     * Limit the query to the Work Entries matching the filters, each applied
-     * only when set: an Employee, a Project, a Period and a state.
-     *
-     * @param  Builder<WorkEntry>  $query
-     * @param  array{employee?: int|null, project?: int|null, period?: Period|null, state?: string|null}  $filters
-     */
-    #[QueryScope]
-    protected function filteredBy(Builder $query, array $filters): void
-    {
-        $query->when($filters['employee'] ?? null, fn (Builder $entries, int $employee) => $entries->whereRelation('assignment', 'employee_id', $employee))
-            ->when($filters['project'] ?? null, fn (Builder $entries, int $project) => $entries->whereRelation('assignment', 'project_id', $project))
-            ->when($filters['period'] ?? null, fn (Builder $entries, Period $period) => $entries->whereBetween($entries->qualifyColumn('date'), [
-                $period->from->toDateString(),
-                $period->to->toDateString(),
-            ]))
-            ->when($filters['state'] ?? null, fn (Builder $entries, string $state) => $entries->where($entries->qualifyColumn('state'), $state));
-    }
-
-    /**
-     * Limit the query to the Work Entries of the given Employees, on any of
-     * their Assignments.
-     *
-     * @param  Builder<WorkEntry>  $query
-     * @param  Builder<Employee>  $employees
-     */
-    #[QueryScope]
-    protected function ofEmployees(Builder $query, Builder $employees): void
-    {
-        $query->whereIn('assignment_id', Assignment::query()
-            ->select('id')
-            ->whereIn('employee_id', $employees->select('employees.id')));
     }
 
     /**
