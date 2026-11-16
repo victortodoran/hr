@@ -71,7 +71,7 @@ class WorkEntryPolicy
     /**
      * The Approvals page is an inbox for those who approve: anyone who is
      * someone's effective Manager. Reopening and locking happen on the Work
-     * Entries page instead.
+     * Entries page and an Employee's Work Entries tab instead.
      */
     public function viewApprovals(Employee $actor): bool
     {

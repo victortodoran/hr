@@ -10,6 +10,7 @@ import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
 import type {
     Choice,
     EmployeeWithWorkEntries,
+    EmployeeWorkEntryFilters,
     WorkEntryListFilters,
     WorkEntryState,
 } from '@/types';
@@ -23,14 +24,20 @@ import type {
  * whenever one changes. Changing the Period or state keeps "Any Employee"
  * but otherwise lets the server pick the first Employee; changing anything
  * but the Project drops the Project. With nobody to choose, only the Period
- * and state are offered.
+ * and state are offered. Without `employees`, as on one Employee's page,
+ * there is no Employee to choose and the Project is offered whenever there
+ * is one.
  */
 const props = defineProps<{
-    filters: WorkEntryListFilters;
+    filters: WorkEntryListFilters | EmployeeWorkEntryFilters;
     today: string;
-    employees: EmployeeWithWorkEntries[];
+    employees?: EmployeeWithWorkEntries[];
     projects: Choice[];
 }>();
+
+/** The Employee filter, when the list has one. */
+const employeeFilter = (): WorkEntryListFilters['employee'] | undefined =>
+    'employee' in props.filters ? props.filters.employee : undefined;
 
 const emit = defineEmits<{
     change: [query: Record<string, string>];
@@ -60,7 +67,7 @@ function query(
 
 /** "all" when any Employee is chosen, kept across Periods and states. */
 const anyEmployee = (): string | undefined =>
-    props.filters.employee === 'all' ? 'all' : undefined;
+    employeeFilter() === 'all' ? 'all' : undefined;
 
 function choosePeriod(period: Record<string, string>): void {
     emit('change', query({ period, employee: anyEmployee() }));
@@ -78,7 +85,9 @@ function chooseProject(project: unknown): void {
     emit(
         'change',
         query({
-            employee: String(props.filters.employee),
+            ...(employeeFilter() != null
+                ? { employee: String(employeeFilter()) }
+                : {}),
             ...(project !== 'all' ? { project: String(project) } : {}),
         }),
     );
@@ -94,9 +103,12 @@ function chooseProject(project: unknown): void {
             @change="choosePeriod"
         />
         <div class="flex flex-wrap items-center gap-3">
-            <template v-if="employees.length > 0">
+            <template
+                v-if="employees ? employees.length > 0 : projects.length > 0"
+            >
                 <Select
-                    :model-value="String(filters.employee)"
+                    v-if="employees"
+                    :model-value="String(employeeFilter())"
                     @update:model-value="chooseEmployee"
                 >
                     <SelectTrigger class="w-48" aria-label="Employee">

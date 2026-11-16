@@ -9,7 +9,8 @@ use Illuminate\Validation\Rule;
 
 /**
  * The Work Entries page's filters: a Period, an Employee or "all" for any
- * Employee, a Project and a state, any state when none is chosen.
+ * Employee, a Project and a state, any state when none is chosen. An
+ * Employee's Work Entries tab uses the same filters, its Employee fixed.
  */
 class WorkEntryListRequest extends WorkEntryFiltersRequest
 {

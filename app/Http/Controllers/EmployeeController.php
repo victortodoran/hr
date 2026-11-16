@@ -9,6 +9,7 @@ use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Http\Requests\EmployeeRequest;
+use App\Http\Requests\WorkEntryListRequest;
 use App\Models\Assignment;
 use App\Models\CompanySettings;
 use App\Models\Department;
@@ -16,9 +17,11 @@ use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\Project;
 use App\Models\TimeOff;
+use App\Models\WorkEntry;
 use App\Support\Currency;
 use App\Support\PayHistory;
 use App\Support\ReportingChain;
+use App\Support\WorkEntryListing;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -104,7 +107,8 @@ class EmployeeController extends Controller
      * see something on it. Overview: their record, the reports needing a new
      * Manager when they have left, and their Reporting Chain unless they have
      * left. Assignments & Pay: their Assignments, with Pay for viewers allowed
-     * to see it. Time Off: their Paid Days to set, and their Time Off with
+     * to see it. Work Entries: theirs alone, for viewers who may see them, to
+     * approve, decline, reopen or lock. Time Off: their Paid Days to set, and their Time Off with
      * this year's Paid Days left. Only the open tab's data is loaded, apart
      * from the Employee's employment status, which the header shows on
      * every tab to viewers who may see their record; an unknown or
@@ -118,12 +122,14 @@ class EmployeeController extends Controller
         $canManagePay = $actor->can('managePay', [Assignment::class, $employee]);
         $canSetPaidDays = $actor->can('setPaidDays', $employee);
         $canViewTimeOff = $actor->can('viewTimeOffAndPaidDays', $employee);
+        $canViewWorkEntries = $actor->can('viewAny', [WorkEntry::class, $employee]);
         $currency = $canViewPay ? CompanySettings::payCurrency() : null;
         $canViewRecord = $actor->can(Permission::ViewEmployeeRecords->value, $employee);
 
         $tabs = array_values(array_filter([
             EmployeePageTab::Overview,
             $canViewAssignments ? EmployeePageTab::Assignments : null,
+            $canViewWorkEntries ? EmployeePageTab::WorkEntries : null,
             $canSetPaidDays || $canViewTimeOff ? EmployeePageTab::TimeOff : null,
         ]));
         $query = $request->query('tab');
@@ -152,6 +158,7 @@ class EmployeeController extends Controller
                     'assignments' => $this->assignments($employee, $currency),
                     'projects' => $canManage ? $this->openProjects() : [],
                 ],
+                EmployeePageTab::WorkEntries => ['workEntries' => $this->workEntriesTab($actor, $employee, app(WorkEntryListRequest::class))],
                 EmployeePageTab::TimeOff => $this->timeOffTab($employee, $canSetPaidDays, $canViewTimeOff),
             },
         ]);
@@ -207,6 +214,41 @@ class EmployeeController extends Controller
             'record' => $canViewRecord ? $this->record($employee) : null,
             'reportsNeedingAManager' => $canViewRecord ? $this->reportsNeedingAManager($employee) : [],
             'reportingChain' => $employee->employmentStatus() === EmploymentStatus::Former ? null : ReportingChain::of($employee, $actor),
+        ];
+    }
+
+    /**
+     * The Work Entries tab: the Employee's Work Entries matching the filters,
+     * in every state unless one is chosen, as the Work Entries page lists
+     * them, with what the viewer may do to them and whether they may record
+     * hours for the Employee on the week page. The Projects to choose from
+     * are those the Employee has Work Entries on in the Period; one not
+     * among them falls back to any Project.
+     *
+     * @return array<string, mixed>
+     */
+    private function workEntriesTab(Employee $actor, Employee $employee, WorkEntryListRequest $request): array
+    {
+        $requested = $request->filters();
+        $projects = WorkEntryListing::projects(Employee::query()->whereKey($employee->id), $requested['period'], $requested['state']);
+        $filters = [
+            'period' => $requested['period'],
+            'project' => collect($projects)->firstWhere('id', $requested['project'])['id'] ?? null,
+            'state' => $requested['state'],
+        ];
+
+        return [
+            'filters' => $filters,
+            'today' => today()->toDateString(),
+            'canDecide' => Employee::query()->effectivelyManagedBy($actor)->whereKey($employee->id)->exists(),
+            'canReopen' => Employee::query()->reopenableBy($actor)->whereKey($employee->id)->exists(),
+            'canLock' => $actor->can('lock', WorkEntry::class),
+            'canRecord' => $actor->can('create', [WorkEntry::class, $employee]),
+            ...(new WorkEntryListing($actor))->of(
+                WorkEntry::query()->filteredBy([...$filters, 'employee' => $employee->id]),
+                withDeciding: true,
+            ),
+            'projects' => $projects,
         ];
     }
 

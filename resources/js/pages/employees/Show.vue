@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
 import { CalendarDays, FolderKanban, TriangleAlert } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -17,10 +17,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ValueOr from '@/components/ValueOr.vue';
+import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
+import WorkEntryReview from '@/components/work-entries/WorkEntryReview.vue';
+import WorkEntrySummary from '@/components/work-entries/WorkEntrySummary.vue';
 import { formatDate, formatPeriod } from '@/lib/dates';
 import { useInitials } from '@/composables/useInitials';
 import { formatPay } from '@/lib/pay';
 import { edit, show } from '@/routes/employees';
+import { index as week } from '@/routes/work-entries';
 import type {
     AssignmentRecord,
     Choice,
@@ -28,6 +32,7 @@ import type {
     EmployeePageTab,
     EmployeeStanding,
     EmployeeTimeOff,
+    EmployeeWorkEntries,
     OpenProject,
     PayEntryRecord,
     ReportingChainView,
@@ -36,7 +41,7 @@ import type {
 /**
  * Only the open tab's props are sent: `record`, `reportsNeedingAManager` and
  * `reportingChain` on Overview, `assignments` and `projects` on Assignments &
- * Pay, `paidDays` and `timeOff` on Time Off.
+ * Pay, `workEntries` on Work Entries, `paidDays` and `timeOff` on Time Off.
  */
 const props = withDefaults(
     defineProps<{
@@ -63,6 +68,7 @@ const props = withDefaults(
         paidDays?: number | null;
         /** Null unless the viewer may see the Employee's Time Off. */
         timeOff?: EmployeeTimeOff | null;
+        workEntries?: EmployeeWorkEntries;
     }>(),
     { reportsNeedingAManager: () => [], projects: () => [] },
 );
@@ -82,6 +88,7 @@ const linkClass =
 const tabLabels = computed<Record<EmployeePageTab, string>>(() => ({
     overview: 'Overview',
     assignments: props.canViewPay ? 'Assignments & Pay' : 'Assignments',
+    'work-entries': 'Work Entries',
     'time-off': 'Time Off',
 }));
 
@@ -121,6 +128,32 @@ const assignmentRows = computed(() =>
  */
 function payInEffect(assignment: AssignmentRecord): PayEntryRecord | null {
     return assignment.pay?.find((entry) => entry.is_in_effect) ?? null;
+}
+
+/** The IDs of the Work Entries selected on the Work Entries tab, kept across pages. */
+const selectedWorkEntries = ref<number[]>([]);
+
+/** Shows the Work Entries tab with other filters. */
+function filterWorkEntries(query: Record<string, string>): void {
+    selectedWorkEntries.value = [];
+    router.get(
+        show.url(props.employee.id, {
+            query: { tab: 'work-entries', ...query },
+        }),
+        {},
+        { preserveState: true, replace: true },
+    );
+}
+
+function selectAllMatchingWorkEntries(): void {
+    router.reload({
+        only: ['workEntries.matchingIds'],
+        onSuccess: () => {
+            selectedWorkEntries.value = [
+                ...(props.workEntries?.matchingIds ?? []),
+            ];
+        },
+    });
 }
 
 setLayoutProps({
@@ -450,6 +483,60 @@ setLayoutProps({
                             </template>
                         </EmptyState>
                     </div>
+                </EmployeePageSection>
+            </TabsContent>
+            <TabsContent
+                v-if="workEntries"
+                value="work-entries"
+                class="mt-6 flex flex-col gap-10"
+            >
+                <EmployeePageSection
+                    title="Work Entries"
+                    :description="`Hours ${employee.name} has recorded`"
+                >
+                    <template v-if="workEntries.canRecord" #action>
+                        <Button variant="outline" as-child>
+                            <Link
+                                :href="
+                                    week({ query: { employee: employee.id } })
+                                "
+                                >Record hours</Link
+                            >
+                        </Button>
+                    </template>
+
+                    <WorkEntryListFilterBar
+                        :filters="workEntries.filters"
+                        :today="workEntries.today"
+                        :projects="workEntries.projects"
+                        @change="filterWorkEntries"
+                    />
+
+                    <WorkEntrySummary
+                        v-if="workEntries.entries.total > 0"
+                        :total="workEntries.total"
+                        :declined-hours="workEntries.declinedTotal"
+                        :caption="`in ${workEntries.entries.total} matching ${workEntries.entries.total === 1 ? 'Work Entry' : 'Work Entries'}`"
+                    />
+
+                    <WorkEntryReview
+                        v-model:selected="selectedWorkEntries"
+                        :entries="workEntries.entries"
+                        :filters="{
+                            ...workEntries.filters,
+                            employee: employee.id,
+                        }"
+                        :can-decide="workEntries.canDecide"
+                        :can-reopen="workEntries.canReopen"
+                        :can-lock="workEntries.canLock"
+                        :show-employee="false"
+                        :empty-message="
+                            workEntries.projects.length > 0
+                                ? 'No Work Entries match these filters.'
+                                : `${employee.name}'s Work Entries appear here. There are none in this period.`
+                        "
+                        @select-all-matching="selectAllMatchingWorkEntries"
+                    />
                 </EmployeePageSection>
             </TabsContent>
             <TabsContent value="time-off" class="mt-6 flex flex-col gap-10">

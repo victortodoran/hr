@@ -1,3 +1,6 @@
+import type { Choice } from './employee-record';
+import type { Paginated } from './pagination';
+
 /**
  * Where a Work Entry stands: only a Pending or Declined one can be changed,
  * and a Declined one's hours count nowhere.
@@ -134,6 +137,8 @@ export type ListedWorkEntry = ApprovalEntry & {
     declined: WorkEntryDecline | null;
     can_reopen: boolean;
     can_lock: boolean;
+    /** Whether the viewer may approve or decline it; only sent where they can. */
+    can_decide?: boolean;
 };
 
 /** The tabs of the Approvals page. */
@@ -171,6 +176,29 @@ export type WorkEntryListFilters = {
     employee: number | 'all' | null;
     project: number | null;
     state: WorkEntryState | null;
+};
+
+/** The filters of an Employee's Work Entries tab, whose Employee is fixed. */
+export type EmployeeWorkEntryFilters = Omit<WorkEntryListFilters, 'employee'>;
+
+/** An Employee's Work Entries tab: theirs alone, to review and act on. */
+export type EmployeeWorkEntries = {
+    filters: EmployeeWorkEntryFilters;
+    today: string;
+    canDecide: boolean;
+    canReopen: boolean;
+    canLock: boolean;
+    /** Whether the viewer may record hours for the Employee on the week page. */
+    canRecord: boolean;
+    entries: Paginated<ListedWorkEntry>;
+    /** Total hours of the matching Work Entries that aren't Declined. */
+    total: number;
+    /** Total hours of the matching Declined Work Entries, which count nowhere. */
+    declinedTotal: number;
+    /** Every matching Work Entry's ID; only sent when asked for. */
+    matchingIds?: number[];
+    /** The Projects the Employee has Work Entries on in the Period. */
+    projects: Choice[];
 };
 
 /** An Employee with Work Entries in the month shown, and how many. */

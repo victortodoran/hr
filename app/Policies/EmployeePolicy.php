@@ -6,6 +6,7 @@ use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Models\Assignment;
 use App\Models\Employee;
+use App\Models\WorkEntry;
 
 /**
  * Who may add and change Employees. Each check delegates to the Gate of the
@@ -25,12 +26,13 @@ class EmployeePolicy
     /**
      * Opening an Employee's page needs something on it the viewer may see:
      * their record, their Assignments (which seeing their Pay also
-     * allows), or their Time Off and Paid Days.
+     * allows), their Work Entries, or their Time Off and Paid Days.
      */
     public function view(Employee $actor, Employee $employee): bool
     {
         return $actor->can(Permission::ViewEmployeeRecords->value, $employee)
             || $actor->can('viewAny', [Assignment::class, $employee])
+            || $actor->can('viewAny', [WorkEntry::class, $employee])
             || $this->viewTimeOffAndPaidDays($actor, $employee);
     }
 

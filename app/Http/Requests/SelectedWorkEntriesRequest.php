@@ -6,8 +6,9 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * The Work Entries selected on the Approvals page, by ID, for approving,
- * reopening or locking them all at once.
+ * The Work Entries selected on the Approvals page, the Work Entries page or
+ * an Employee's Work Entries tab, by ID, for approving, reopening or locking
+ * them all at once.
  */
 class SelectedWorkEntriesRequest extends FormRequest
 {

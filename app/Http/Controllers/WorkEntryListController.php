@@ -3,12 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
-use App\Enums\WorkEntryState;
 use App\Http\Requests\WorkEntryListRequest;
 use App\Models\Employee;
-use App\Models\Project;
 use App\Models\WorkEntry;
-use App\Support\Period;
+use App\Support\WorkEntryListing;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
@@ -20,7 +18,8 @@ use Inertia\Response;
  * reopening and locking many of them at once. Who is listed comes from the
  * viewer's view, manage and reopen Scopes, or everyone for someone who can
  * lock. Reopening is done by the ReopeningController and locking by the
- * LockController; approving happens on the Approvals page.
+ * LockController; approving happens on the Approvals page and an
+ * Employee's Work Entries tab.
  */
 class WorkEntryListController extends Controller
 {
@@ -37,10 +36,9 @@ class WorkEntryListController extends Controller
      */
     public function index(#[CurrentUser] Employee $actor, WorkEntryListRequest $request): Response
     {
-        $canLock = $actor->can('lock', WorkEntry::class);
         $requested = $request->filters();
         $visible = fn (): Builder => Employee::query()->withWorkEntriesVisibleTo($actor);
-        $inPeriod = fn (Builder $entries): Builder => self::inPeriod($entries, $requested['period'], $requested['state']);
+        $inPeriod = fn (Builder $entries): Builder => WorkEntryListing::inPeriod($entries, $requested['period'], $requested['state']);
         $employees = $visible()
             ->whereHas('workEntries', $inPeriod)
             ->withCount(['workEntries as entries_count' => $inPeriod])
@@ -52,14 +50,11 @@ class WorkEntryListController extends Controller
         $employee = $requested['employee'] === 'all'
             ? 'all'
             : collect($employees)->firstWhere('id', $requested['employee'])['id'] ?? $employees[0]['id'] ?? null;
-        $projects = $employees === [] ? [] : Project::query()
-            ->whereHas('workEntries', fn (Builder $entries): Builder => $inPeriod($entries)
-                ->ofEmployees($employee === 'all' ? $visible() : Employee::query()->whereKey($employee)))
-            ->orderBy('name')
-            ->orderBy('id') // @pest-mutate-ignore (only orders Projects that share a name)
-            ->get(['id', 'name'])
-            ->map(fn (Project $project): array => $project->only('id', 'name'))
-            ->all();
+        $projects = $employees === [] ? [] : WorkEntryListing::projects(
+            $employee === 'all' ? $visible() : Employee::query()->whereKey($employee),
+            $requested['period'],
+            $requested['state'],
+        );
         $filters = [
             'period' => $requested['period'],
             'employee' => $employee,
@@ -69,50 +64,15 @@ class WorkEntryListController extends Controller
         $matching = WorkEntry::query()
             ->ofEmployees($visible())
             ->filteredBy([...$filters, 'employee' => is_int($employee) ? $employee : null]);
-        $reopenable = Employee::query()->reopenableBy($actor)->pluck('id');
 
         return Inertia::render('work-entries/List', [
             'filters' => $filters,
             'today' => today()->toDateString(),
             'canReopen' => $actor->holds(Permission::ReopenWorkEntries),
-            'canLock' => $canLock,
-            'entries' => (clone $matching)
-                ->with(['assignment.employee:id,name', 'assignment.project:id,name', 'approver:id,name', 'locker:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
-                ->orderBy('date')
-                ->orderBy('id')
-                ->paginate(25)
-                ->withQueryString()
-                ->through(fn (WorkEntry $entry): array => [
-                    'id' => $entry->id,
-                    'date' => $entry->date->toDateString(),
-                    'employee' => $entry->assignment->employee->only('id', 'name'),
-                    'project' => $entry->assignment->project->name,
-                    'hours' => $entry->hours,
-                    'description' => $entry->description,
-                    'state' => $entry->state->value,
-                    'approved' => $entry->approval(),
-                    'locked' => $entry->lock(),
-                    'declined' => $entry->decline(),
-                    'can_reopen' => $entry->state === WorkEntryState::Approved && $reopenable->contains($entry->assignment->employee_id),
-                    'can_lock' => $entry->state === WorkEntryState::Approved && $canLock,
-                ]),
-            'total' => (int) (clone $matching)->counted()->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)
-            'declinedTotal' => (int) (clone $matching)->where('state', WorkEntryState::Declined)->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)
-            'matchingIds' => Inertia::optional(fn (): array => (clone $matching)->orderBy('id')->pluck('id')->all()),
+            'canLock' => $actor->can('lock', WorkEntry::class),
+            ...(new WorkEntryListing($actor))->of($matching),
             'employees' => $employees,
             'projects' => $projects,
         ]);
-    }
-
-    /**
-     * Narrows Work Entries to those in the Period, and in the state, or any
-     * state when none is given.
-     *
-     * @param  Builder<WorkEntry>  $entries
-     * @return Builder<WorkEntry>
-     */
-    private static function inPeriod(Builder $entries, Period $period, ?string $state): Builder
-    {
-        return $entries->filteredBy(['period' => $period, 'state' => $state]);
     }
 }
