@@ -48,7 +48,9 @@
         "lint:callbacks": "Fails when a Collection callback is a built-in with an optional second parameter, such as map(intval(...)): Collections pass the key as that argument.",
         "lint:migrations": "Fails when the branch changes a migration already on main; add a new migration instead.",
         "lint:folders": "Fails when a controller or form request sits directly in app/Http/Controllers or app/Http/Requests instead of an area folder.",
-        "lint:scopes": "Fails when a model declares query scopes; reusable queries go in the model's builder in app/Models/Builders."
+        "lint:scopes": "Fails when a model declares query scopes; reusable queries go in the model's builder in app/Models/Builders.",
+        "lint:builders": "Fails when a public builder method in app/Models/Builders doesn't apply its conditions through scoped().",
+        "test:failures": "Runs the tests (or the paths given) and prints one line per failure: test name and message."
     },
     "scripts": {
         "setup": [
@@ -76,16 +78,16 @@
             "@lint:migrations",
             "@lint:folders",
             "@lint:scopes",
+            "@lint:builders",
             "npm run build",
             "npm run types:check",
             "@test"
         ],
-        "lint:callbacks": "! grep -rnE '\\b(map|each|filter|reject|every|contains|first|sortBy|groupBy|keyBy)\\((intval|floatval|strval|boolval|trim|ltrim|rtrim|round|explode)\\(\\.\\.\\.\\)' app",
-        "lint:migrations": [
-            "base=$(git merge-base origin/main HEAD) || { echo 'lint:migrations needs origin/main with shared history: run git fetch origin'; exit 1; }; ! git diff --diff-filter=MDRT --name-status \"$base\" HEAD -- database/migrations | sed 's/^/Shipped migration changed (add a new one instead): /' | grep ."
-        ],
-        "lint:folders": "! find app/Http/Controllers app/Http/Requests -maxdepth 1 -name '*.php' ! -path app/Http/Controllers/Controller.php ! -path app/Http/Controllers/HomeController.php | sed 's/^/Move into an area folder (Employees, WorkEntries, TimeOff, ...): /' | grep .",
-        "lint:scopes": "! grep -rlE 'Attributes.(\\{[^}]*)?Scope([^A-Za-z]|$)|function scope[A-Z]' app/Models --exclude-dir=Builders | sed 's|^|Move its query scopes into its builder in app/Models/Builders: |' | grep .",
+        "lint:callbacks": "bin/lint-callbacks.sh",
+        "lint:migrations": "bin/lint-migrations.sh",
+        "lint:folders": "bin/lint-folders.sh",
+        "lint:scopes": "bin/lint-scopes.sh",
+        "lint:builders": "bin/lint-builders.sh",
         "types:check": [
             "phpstan analyse --memory-limit=1G"
         ],
@@ -98,6 +100,10 @@
         ],
         "test:readable": [
             "env -u CLAUDECODE -u AI_AGENT -u CLAUDE_CODE_ENTRYPOINT php artisan test --compact"
+        ],
+        "test:failures": [
+            "Composer\\Config::disableProcessTimeout",
+            "bin/test-failures.sh"
         ],
         "test:mutate": [
             "Composer\\Config::disableProcessTimeout",

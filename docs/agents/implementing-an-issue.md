@@ -18,7 +18,7 @@ Point it at this doc for the rest.
 
 - Pipe long commands through `tail`, and re-run one in full only when it fails: `composer ci:check 2>&1 | tail -40`, `npm run build 2>&1 | tail -20`.
 - Run single test files with `php artisan test --compact <path>`, one test command at a time: every run shares the `hr_testing` database, and overlapping runs deadlock.
-- When tests fail, read why with `composer test:readable -- <path>`.
+- When tests fail, list them one per line with `composer test:failures -- <path>`, and read why with `composer test:readable -- <path>`.
 - Open the files the brief points to and their direct imports. Read the parent spec or the whole glossary only when the issue is unclear without them.
 - Read files in ranges when only part is needed.
 
@@ -28,6 +28,8 @@ Point it at this doc for the rest.
 - Adding an Employee needs the Internal Project (`Project::factory()->internal()->create()`), or the request returns 404, and `Notification::fake()` for the invitation.
 - `actingAs($employee)` reuses that one model across every request in the test, so a value remembered on the Employee (a property or `once()`) carries stale data into the next request.
 - In Pest, chaining `->not` after another matcher fails PHPStan; start a second `expect()`.
+- After moving or renaming PHP files, run `vendor/bin/pint app routes tests`: `--dirty` skips moved files.
+- Pest architecture failures don't name the offending file, so a check about where code sits belongs in a `bin/lint-*.sh` script run by `composer ci:check`.
 
 ## Steps
 
