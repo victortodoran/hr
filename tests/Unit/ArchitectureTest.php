@@ -2,7 +2,7 @@
 
 arch('PHP best practices')->preset()->php();
 
-arch('Laravel conventions')->preset()->laravel()->ignoring('App\Models\Builders');
+arch('Laravel conventions')->preset()->laravel()->ignoring(['App\Models\Builders', 'App\Models\Concerns']);
 
 arch('each builder builds queries for its model')
     ->expect('App\Models\Builders')
