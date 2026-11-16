@@ -123,7 +123,7 @@ it('opens the list for a tab it doesn\'t know, or none, loading only its own day
 
 it('shows the calendar of an Employee the viewer\'s Scope covers, as not their own', function () {
     $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Reports]);
-    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create();
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03', 'minutes' => 60]);
 
     actingAs($ben)->get(route('work-entries.index', ['employee' => $cara->id, 'tab' => 'calendar']))

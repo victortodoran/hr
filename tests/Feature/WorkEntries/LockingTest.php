@@ -56,7 +56,7 @@ it('lists everyone\'s Work Entries, the locker\'s own included, offering to lock
 
 it('offers to lock only Approved Work Entries', function () {
     $finn = locker();
-    $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $finn->id]));
+    $relaunch = assignmentOf(Employee::factory()->reportingTo($finn)->create());
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     WorkEntry::factory()->for($relaunch)->locked($finn)->create(['date' => '2026-11-10']);
 

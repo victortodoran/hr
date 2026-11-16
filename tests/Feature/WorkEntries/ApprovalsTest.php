@@ -22,32 +22,21 @@ beforeEach(function () {
 });
 
 /**
- * Ben, below Ada at the top, who approves the Work Entries of the Employees
- * he is the Manager of. No Role is involved.
- */
-function approver(): Employee
-{
-    $ada = Employee::factory()->top()->create(['name' => 'Ada']);
-
-    return Employee::factory()->create(['name' => 'Ben', 'manager_id' => $ada->id]);
-}
-
-/**
  * An approver who is already some Employee's Manager, so the Approvals page
  * is open to them.
  */
 function managingApprover(): Employee
 {
-    $ben = approver();
-    Employee::factory()->create(['manager_id' => $ben->id]);
+    $ben = managerBen();
+    Employee::factory()->reportingTo($ben)->create();
 
     return $ben;
 }
 
 it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest first, but not of Reports further down', function () {
-    $ben = approver();
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
-    $dev = Employee::factory()->create(['name' => 'Dev', 'manager_id' => $cara->id]);
+    $ben = managerBen();
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
+    $dev = Employee::factory()->reportingTo($cara)->create(['name' => 'Dev']);
     $carasRelaunch = assignmentOf($cara);
     $later = WorkEntry::factory()->for($carasRelaunch)->create(['date' => '2026-11-10', 'minutes' => 90, 'description' => 'API']);
     $earlier = WorkEntry::factory()->for($carasRelaunch)->create(['date' => '2026-11-03', 'minutes' => 60, 'description' => 'Specs']);
@@ -77,8 +66,8 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
 });
 
 it('never lists the approver\'s own Work Entries, nor their Manager\'s', function () {
-    $ben = approver();
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
+    $ben = managerBen();
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
     $caras = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10']);
     WorkEntry::factory()->for(assignmentOf($ben, 'Billing'))->create(['date' => '2026-11-10']);
     WorkEntry::factory()->for(assignmentOf(Employee::query()->findOrFail($ben->manager_id), 'Archive'))->create(['date' => '2026-11-10']);
@@ -91,9 +80,9 @@ it('never lists the approver\'s own Work Entries, nor their Manager\'s', functio
 });
 
 it('lets the next Manager up approve for a Manager who has left', function () {
-    $ben = approver();
-    $fay = Employee::factory()->former()->create(['manager_id' => $ben->id]);
-    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $fay->id])))->create(['date' => '2026-11-10']);
+    $ben = managerBen();
+    $fay = Employee::factory()->former()->reportingTo($ben)->create();
+    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->reportingTo($fay)->create()))->create(['date' => '2026-11-10']);
 
     actingAs($ben)->post(route('approvals.store'), ['ids' => [$pending->id]])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry approved.']);
@@ -102,8 +91,8 @@ it('lets the next Manager up approve for a Manager who has left', function () {
 });
 
 it('lets a Manager approve the remaining Work Entries of a Direct Report who has left, and open the page for them', function () {
-    $ben = approver();
-    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->former()->create(['manager_id' => $ben->id])))->create(['date' => '2026-11-01']);
+    $ben = managerBen();
+    $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->former()->reportingTo($ben)->create()))->create(['date' => '2026-11-01']);
 
     actingAs($ben)->get(route('approvals.index'))
         ->assertInertia(fn (Assert $page) => $page->where('entries.data.0.id', $pending->id));
@@ -139,10 +128,10 @@ it('refuses the Approvals page to someone who manages nobody, however their Role
  */
 function approverOfCaraAndDev(): array
 {
-    $ben = approver();
-    $dev = Employee::factory()->create(['name' => 'Dev', 'manager_id' => $ben->id]);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
-    $bea = Employee::factory()->create(['name' => 'Bea', 'manager_id' => $ben->id]);
+    $ben = managerBen();
+    $dev = Employee::factory()->reportingTo($ben)->create(['name' => 'Dev']);
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
+    $bea = Employee::factory()->reportingTo($ben)->create(['name' => 'Bea']);
     WorkEntry::factory()->for(assignmentOf($bea, 'Archive'))->approved()->create(['date' => '2026-11-03']);
 
     return ['ben' => $ben, 'cara' => $cara, 'dev' => $dev, 'bea' => $bea];
@@ -311,8 +300,8 @@ it('refuses malformed filters', function (array $filters, string $field, string 
 ]);
 
 it('pages through 25 Work Entries at a time, keeping the filters', function () {
-    $ben = approver();
-    $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $ben->id]));
+    $ben = managerBen();
+    $relaunch = assignmentOf(Employee::factory()->reportingTo($ben)->create());
     WorkEntry::factory()->for($relaunch)->count(26)->create(['date' => '2026-11-10', 'minutes' => 15]);
 
     $response = actingAs($ben)->get(route('approvals.index', ['project' => $relaunch->project_id]));
@@ -325,8 +314,8 @@ it('pages through 25 Work Entries at a time, keeping the filters', function () {
 });
 
 it('gives every matching Work Entry\'s ID on the chosen Project when asked, for selecting them all', function () {
-    $ben = approver();
-    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
+    $ben = managerBen();
+    $cara = Employee::factory()->reportingTo($ben)->create();
     $relaunch = assignmentOf($cara);
     $ids = WorkEntry::factory()->for($relaunch)->count(26)->create(['date' => '2026-11-10'])->pluck('id')->all();
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
@@ -339,8 +328,8 @@ it('gives every matching Work Entry\'s ID on the chosen Project when asked, for 
 });
 
 it('approves the selected Pending Work Entries, recording who approved them and when', function () {
-    $ben = approver();
-    $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $ben->id]));
+    $ben = managerBen();
+    $relaunch = assignmentOf(Employee::factory()->reportingTo($ben)->create());
     $first = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-09']);
     $second = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     $untouched = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
@@ -360,8 +349,8 @@ it('approves the selected Pending Work Entries, recording who approved them and 
 });
 
 it('approves only the selected Work Entries it may, counting each once, and says how many it skipped', function () {
-    $ben = approver();
-    $relaunch = assignmentOf(Employee::factory()->create(['manager_id' => $ben->id]));
+    $ben = managerBen();
+    $relaunch = assignmentOf(Employee::factory()->reportingTo($ben)->create());
     $pending = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     $own = WorkEntry::factory()->for(assignmentOf($ben))->create(['date' => '2026-11-10']);
     $approved = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
@@ -378,10 +367,10 @@ it('approves only the selected Work Entries it may, counting each once, and says
 });
 
 it('skips Work Entries of Employees the approver is not the Manager of, Reports further down included', function () {
-    $ben = approver();
-    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
+    $ben = managerBen();
+    $cara = Employee::factory()->reportingTo($ben)->create();
     $outside = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create()))->create(['date' => '2026-11-10']);
-    $below = WorkEntry::factory()->for(assignmentOf(Employee::factory()->create(['manager_id' => $cara->id])))->create(['date' => '2026-11-10']);
+    $below = WorkEntry::factory()->for(assignmentOf(Employee::factory()->reportingTo($cara)->create()))->create(['date' => '2026-11-10']);
 
     $response = actingAs($ben)->post(route('approvals.store'), ['ids' => [$outside->id, $below->id]]);
 
@@ -402,8 +391,8 @@ it('refuses a selection that is not a list of Work Entry IDs', function (mixed $
 ]);
 
 it('shows the Approvals item in the navigation to Managers only, not to someone who only manages, reopens or locks Work Entries', function () {
-    $ben = approver();
-    Employee::factory()->create(['manager_id' => $ben->id]);
+    $ben = managerBen();
+    Employee::factory()->reportingTo($ben)->create();
     $cara = employeeWith([
         Permission::ManageWorkEntries->value => Scope::Everyone,
         Permission::ReopenWorkEntries->value => Scope::Everyone,

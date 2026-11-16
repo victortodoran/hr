@@ -23,28 +23,18 @@ beforeEach(function () {
 });
 
 /**
- * Ben, below Ada at the top, who is Cara's Manager.
- */
-function timeOffManager(): Employee
-{
-    $ada = Employee::factory()->top()->create(['name' => 'Ada']);
-
-    return Employee::factory()->create(['name' => 'Ben', 'manager_id' => $ada->id]);
-}
-
-/**
  * Unpaid Time Off from Mon 14 to Wed 16 Dec 2026 for Cara, who reports to
  * the given Manager, Pending unless given another factory state.
  */
 function pendingTimeOffOf(Employee $manager, ?string $state = null): TimeOff
 {
-    $factory = TimeOff::factory()->unpaid()->for(Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'manager_id' => $manager->id]));
+    $factory = TimeOff::factory()->unpaid()->for(Employee::factory()->startedLongAgo()->reportingTo($manager)->create(['name' => 'Cara']));
 
     return ($state === null ? $factory : $factory->{$state}())->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
 }
 
 it('lets the Manager approve their Direct Report\'s Pending Time Off, recording who and when', function () {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben);
 
     actingAs($ben)->post(route('time-off.approval.store', $timeOff))
@@ -58,7 +48,7 @@ it('lets the Manager approve their Direct Report\'s Pending Time Off, recording 
 });
 
 it('lets the Manager decline their Direct Report\'s Pending Time Off with a reason, recording who, when and why', function () {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben);
 
     actingAs($ben)->post(route('time-off.decline.store', $timeOff), ['decline_reason' => 'The release is that week.'])
@@ -73,7 +63,7 @@ it('lets the Manager decline their Direct Report\'s Pending Time Off with a reas
 });
 
 it('refuses a decline without a reason', function (?string $reason) {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben);
 
     actingAs($ben)->post(route('time-off.decline.store', $timeOff), ['decline_reason' => $reason])
@@ -83,7 +73,7 @@ it('refuses a decline without a reason', function (?string $reason) {
 })->with(['missing' => null, 'blank' => '   ']);
 
 it('refuses a decline reason that isn\'t text', function () {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben);
 
     actingAs($ben)->post(route('time-off.decline.store', $timeOff), ['decline_reason' => ['The release is that week.']])
@@ -98,7 +88,7 @@ dataset('answers', [
 ]);
 
 it('refuses answering Time Off to anyone but the Employee\'s Manager, even with the Admin Role', function (string $route, array $form) {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben);
     $admin = Employee::factory()->create(['manager_id' => $ben->manager_id]);
     $admin->roles()->attach(Role::factory()->admin()->create());
@@ -113,7 +103,7 @@ it('refuses answering Time Off to anyone but the Employee\'s Manager, even with 
 })->with('answers');
 
 it('lets the Employee\'s current Manager answer after they move, and not the one before', function (string $route, array $form) {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben);
     $hana = Employee::factory()->create(['name' => 'Hana', 'manager_id' => $ben->manager_id]);
     $timeOff->employee->update(['manager_id' => $hana->id]);
@@ -125,7 +115,7 @@ it('lets the Employee\'s current Manager answer after they move, and not the one
 })->with('answers');
 
 it('lets the next Manager up answer once the Employee\'s Manager has left', function (string $route, array $form) {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben);
     $ben->update(['leaving_date' => '2026-11-30']);
 
@@ -135,7 +125,7 @@ it('lets the next Manager up answer once the Employee\'s Manager has left', func
 })->with('answers');
 
 it('refuses answering Time Off that isn\'t Pending', function (string $state, string $route, array $form) {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben, $state);
 
     actingAs($ben)->post(route($route, $timeOff), $form)->assertForbidden();
@@ -144,7 +134,7 @@ it('refuses answering Time Off that isn\'t Pending', function (string $state, st
 })->with(['approved', 'declined', 'cancelled'])->with('answers');
 
 it('lets the Manager answer Pending Time Off whose first date has passed', function (string $route, array $form) {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben);
     travelTo('2026-12-17 09:00');
 
@@ -160,13 +150,13 @@ it('lets the Manager answer Pending Time Off whose first date has passed', funct
  */
 function pendingPaidTimeOffOverNewYear(Employee $ben, int $paidDays = 20): TimeOff
 {
-    $cara = Employee::factory()->create(['name' => 'Cara', 'start_date' => '2025-01-06', 'manager_id' => $ben->id, 'paid_days' => $paidDays]);
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara', 'paid_days' => $paidDays]);
 
     return TimeOff::factory()->for($cara)->create(['first_date' => '2026-12-28', 'last_date' => '2027-01-08']);
 }
 
 it('approves Paid Time Off that takes exactly the Paid Days left', function () {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingPaidTimeOffOverNewYear($ben);
     TimeOff::factory()->for($timeOff->employee)->approved()->create(['first_date' => '2026-12-04', 'last_date' => '2026-12-25']);
     TimeOff::factory()->for($timeOff->employee)->approved()->create(['first_date' => '2027-02-01', 'last_date' => '2027-02-18']);
@@ -177,7 +167,7 @@ it('approves Paid Time Off that takes exactly the Paid Days left', function () {
 });
 
 it('refuses approving Paid Time Off once Paid Days left fall below what it takes, saying how many are left', function (int $paidDays, ?array $taken, string $message) {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingPaidTimeOffOverNewYear($ben, $paidDays);
     if ($taken !== null) {
         TimeOff::factory()->for($timeOff->employee)->approved()->create(['first_date' => $taken[0], 'last_date' => $taken[1]]);
@@ -195,7 +185,7 @@ it('refuses approving Paid Time Off once Paid Days left fall below what it takes
 ]);
 
 it('approves Unpaid Time Off whatever Paid Days are left', function () {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben);
 
     actingAs($ben)->post(route('time-off.approval.store', $timeOff))->assertSessionHasNoErrors();
@@ -204,7 +194,7 @@ it('approves Unpaid Time Off whatever Paid Days are left', function () {
 });
 
 it('shows the Employee who declined their Time Off and why', function () {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $timeOff = pendingTimeOffOf($ben);
     actingAs($ben)->post(route('time-off.decline.store', $timeOff), ['decline_reason' => 'The release is that week.']);
 
@@ -216,14 +206,14 @@ it('shows the Employee who declined their Time Off and why', function () {
 });
 
 it('lists the Pending Time Off of the Manager\'s Direct Reports on the Approvals Time Off tab, earliest first, with the Paid Days they leave', function () {
-    $ben = timeOffManager();
+    $ben = managerBen();
     $newYear = pendingPaidTimeOffOverNewYear($ben);
     $cara = $newYear->employee;
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-07', 'last_date' => '2026-12-11']);
     TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-21']);
-    $dev = Employee::factory()->former()->create(['name' => 'Dev', 'manager_id' => $ben->id]);
+    $dev = Employee::factory()->former()->reportingTo($ben)->create(['name' => 'Dev']);
     $devs = TimeOff::factory()->for($dev)->unpaid()->create(['first_date' => '2026-11-16', 'last_date' => '2026-11-17']);
-    TimeOff::factory()->for(Employee::factory()->create(['manager_id' => $cara->id]))->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-14']);
+    TimeOff::factory()->for(Employee::factory()->reportingTo($cara)->create())->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-14']);
     TimeOff::factory()->for($ben)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-14']);
 
     actingAs($ben)->get(route('approvals.index', ['tab' => 'time-off']))
@@ -239,7 +229,7 @@ it('lists the Pending Time Off of the Manager\'s Direct Reports on the Approvals
 });
 
 it('no longer lists Time Off to approve on the Time Off page', function () {
-    $ben = timeOffManager();
+    $ben = managerBen();
     pendingTimeOffOf($ben);
 
     actingAs($ben)->get(route('time-off.index'))

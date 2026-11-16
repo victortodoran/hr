@@ -19,8 +19,8 @@ it('lists every Employee to someone who may see everyone\'s record, Future and F
     travelTo('2026-03-10');
     $finance = Department::factory()->create(['name' => 'Finance']);
     $dana = Employee::factory()->top()->create(['name' => 'Dana Top', 'department_id' => $finance->id, 'start_date' => '2020-01-01']);
-    $cara = Employee::factory()->create(['name' => 'Cara Lane', 'department_id' => $finance->id, 'manager_id' => $dana->id, 'start_date' => '2026-04-01']);
-    $ben = Employee::factory()->create(['name' => 'Ben Ford', 'department_id' => $finance->id, 'manager_id' => $dana->id, 'start_date' => '2024-01-01', 'leaving_date' => '2026-02-28']);
+    $cara = Employee::factory()->reportingTo($dana)->create(['name' => 'Cara Lane', 'department_id' => $finance->id, 'start_date' => '2026-04-01']);
+    $ben = Employee::factory()->reportingTo($dana)->create(['name' => 'Ben Ford', 'department_id' => $finance->id, 'start_date' => '2024-01-01', 'leaving_date' => '2026-02-28']);
     $ana = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone], ['name' => 'Ana Pop', 'department_id' => $finance->id, 'manager_id' => $dana->id, 'start_date' => '2025-01-01']);
 
     actingAs($ana)->get(route('employees.index'))
@@ -46,9 +46,9 @@ it('lists every Employee to someone who may see everyone\'s record, Future and F
 it('lists only the Employees the viewer\'s Scope covers', function (Scope $scope, array $listed) {
     $dana = Employee::factory()->top()->create(['name' => 'Dana']);
     $ben = employeeWith([Permission::ViewEmployeeRecords->value => $scope], ['name' => 'Ben', 'manager_id' => $dana->id]);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
-    Employee::factory()->former()->create(['name' => 'Dev', 'manager_id' => $cara->id]);
-    Employee::factory()->create(['name' => 'Eve', 'manager_id' => $dana->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
+    Employee::factory()->former()->reportingTo($cara)->create(['name' => 'Dev']);
+    Employee::factory()->reportingTo($dana)->create(['name' => 'Eve']);
 
     actingAs($ben)->get(route('employees.index'))
         ->assertInertia(fn (Assert $page) => $page->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === $listed));
@@ -137,10 +137,10 @@ it('loads the list in the same number of queries however many Employees it lists
         return count(DB::getQueryLog());
     };
 
-    Employee::factory()->create(['manager_id' => $top->id]);
+    Employee::factory()->reportingTo($top)->create();
     $forThree = $queriesToList();
 
-    Employee::factory()->count(5)->create(['manager_id' => $top->id]);
+    Employee::factory()->count(5)->reportingTo($top)->create();
 
     expect($queriesToList())->toBe($forThree);
 });

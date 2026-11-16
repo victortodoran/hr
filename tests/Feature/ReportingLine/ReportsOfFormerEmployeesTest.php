@@ -10,10 +10,10 @@ covers(EmployeeController::class, Employee::class);
 
 it('lists who still reports to a Former Employee, so HR can pick them a new Manager', function () {
     $fay = Employee::factory()->former()->create();
-    $cara = Employee::factory()->create(['name' => 'Cara Lane', 'manager_id' => $fay->id]);
-    $dev = Employee::factory()->future()->create(['name' => 'Dev Patel', 'manager_id' => $fay->id]);
-    Employee::factory()->former()->create(['manager_id' => $fay->id]);
-    Employee::factory()->create(['manager_id' => $cara->id]);
+    $cara = Employee::factory()->reportingTo($fay)->create(['name' => 'Cara Lane']);
+    $dev = Employee::factory()->future()->reportingTo($fay)->create(['name' => 'Dev Patel']);
+    Employee::factory()->former()->reportingTo($fay)->create();
+    Employee::factory()->reportingTo($cara)->create();
 
     actingAs(employeeWhoManagesEmployees())->get(route('employees.edit', $fay))
         ->assertInertia(fn (Assert $page) => $page->where('reportsNeedingAManager', [
@@ -24,7 +24,7 @@ it('lists who still reports to a Former Employee, so HR can pick them a new Mana
 
 it('lists nobody for a Manager who has not left', function () {
     $ben = Employee::factory()->create();
-    Employee::factory()->create(['manager_id' => $ben->id]);
+    Employee::factory()->reportingTo($ben)->create();
 
     actingAs(employeeWhoManagesEmployees())->get(route('employees.edit', $ben))
         ->assertInertia(fn (Assert $page) => $page->where('reportsNeedingAManager', []));

@@ -18,19 +18,8 @@ use function Pest\Laravel\freezeTime;
 
 covers(RoleController::class, RoleRequest::class, ChangeAccess::class, Role::class, Permission::class, AccessLogEntry::class, Employee::class);
 
-/**
- * An Employee who manages Roles, like the starter Admin.
- */
-function roleManager(string $role = 'Admin'): Employee
-{
-    $admin = Employee::factory()->create(['name' => 'Ada Admin']);
-    $admin->roles()->attach(Role::factory()->withPermissions([Permission::ManageRoles->value => null])->create(['name' => $role]));
-
-    return $admin;
-}
-
 it('shows an Employee who manages Roles every Role with its Permissions, Scopes and holders', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $payroll = Role::factory()->withPermissions([
         Permission::ViewPay->value => Scope::Everyone,
         Permission::ViewProjects->value => null,
@@ -55,7 +44,7 @@ it('shows an Employee who manages Roles every Role with its Permissions, Scopes 
 });
 
 it('offers every Permission with the Scopes it can carry, in its group', function () {
-    actingAs(roleManager())->get(route('roles.index'))
+    actingAs(employeeWhoManagesRoles())->get(route('roles.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('permissions', 19)
             ->where('permissions.0', ['value' => 'view-employee-records', 'label' => 'View employee records', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Employees'])
@@ -86,7 +75,7 @@ it('refuses every Roles page to an Employee who does not manage Roles', function
 ]);
 
 it('opens the Roles page on the first Role by name, or on the Role in the URL, to view, edit or create', function (Closure $url, string $mode, ?string $selected) {
-    $admin = roleManager('Role Managers');
+    $admin = employeeWhoManagesRoles('Role Managers');
     $roles = [
         'Auditor' => Role::factory()->create(['name' => 'Auditor']),
         'Payroll' => Role::factory()->create(['name' => 'Payroll']),
@@ -107,12 +96,12 @@ it('opens the Roles page on the first Role by name, or on the Role in the URL, t
 ]);
 
 it('answers a Role that does not exist with not found', function () {
-    actingAs(roleManager())->get('/roles/999999')->assertNotFound();
+    actingAs(employeeWhoManagesRoles())->get('/roles/999999')->assertNotFound();
 });
 
 it('lets an Employee who manages Roles create one, choosing Permissions and Scopes', function () {
     freezeTime();
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
 
     actingAs($admin)
         ->post(route('roles.store'), [
@@ -139,7 +128,7 @@ it('lets an Employee who manages Roles create one, choosing Permissions and Scop
 });
 
 it('rejects a Role whose name or Permissions are invalid', function (array $input, string $field, string $message) {
-    actingAs(roleManager())
+    actingAs(employeeWhoManagesRoles())
         ->post(route('roles.store'), ['name' => 'Payroll', 'permissions' => [], 'given_to_new_employees' => false, ...$input])
         ->assertSessionHasErrors([$field => $message]);
 
@@ -162,13 +151,13 @@ it('rejects a Role whose name or Permissions are invalid', function (array $inpu
 ]);
 
 it('requires the Permissions to be sent, even when the Role has none', function () {
-    actingAs(roleManager())
+    actingAs(employeeWhoManagesRoles())
         ->post(route('roles.store'), ['name' => 'Payroll', 'given_to_new_employees' => false])
         ->assertSessionHasErrors(['permissions' => 'The permissions field must be present.']);
 });
 
 it('lets an Employee who manages Roles rename a Role and change its Permissions, logging before and after', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $manager = Role::factory()->withPermissions([
         Permission::ViewEmployeeRecords->value => Scope::Reports,
         Permission::ViewProjects->value => null,
@@ -197,7 +186,7 @@ it('lets an Employee who manages Roles rename a Role and change its Permissions,
 });
 
 it('lets a Role keep its own name when saved', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
 
     actingAs($admin)
         ->patch(route('roles.update', $admin->roles()->sole()), ['name' => 'Admin', 'permissions' => ['manage-roles' => null], 'given_to_new_employees' => false])
@@ -205,7 +194,7 @@ it('lets a Role keep its own name when saved', function () {
 });
 
 it('refuses to take manage roles out of the only Role that gives it to a current Employee', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $role = $admin->roles()->sole();
 
     actingAs($admin)
@@ -217,8 +206,8 @@ it('refuses to take manage roles out of the only Role that gives it to a current
 });
 
 it('lets manage roles leave a Role while another current Employee keeps it', function () {
-    $admin = roleManager();
-    roleManager('Second Admin');
+    $admin = employeeWhoManagesRoles();
+    employeeWhoManagesRoles('Second Admin');
 
     actingAs($admin)
         ->patch(route('roles.update', $admin->roles()->sole()), ['name' => 'Admin', 'permissions' => [], 'given_to_new_employees' => false])
@@ -228,7 +217,7 @@ it('lets manage roles leave a Role while another current Employee keeps it', fun
 });
 
 it('still allows changes that do not make it worse when nobody can manage Roles from now on', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $admin->update(['leaving_date' => today()->addMonth()]);
     $payroll = Role::factory()->create(['name' => 'Payroll']);
 
@@ -240,8 +229,8 @@ it('still allows changes that do not make it worse when nobody can manage Roles 
 });
 
 it('does not count an Employee who is leaving, has left or has yet to start as able to manage Roles', function (Closure $state) {
-    $admin = roleManager();
-    $other = roleManager('Second Admin');
+    $admin = employeeWhoManagesRoles();
+    $other = employeeWhoManagesRoles('Second Admin');
     $other->update($state());
 
     actingAs($admin)
@@ -254,7 +243,7 @@ it('does not count an Employee who is leaving, has left or has yet to start as a
 ]);
 
 it('lets an Employee who manages Roles delete a Role, logging what it held and who held it', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $ben = Employee::factory()->create();
     $payroll = Role::factory()->withPermissions([Permission::ViewPay->value => Scope::Everyone])->create(['name' => 'Payroll']);
     $payroll->employees()->attach($ben);
@@ -277,7 +266,7 @@ it('lets an Employee who manages Roles delete a Role, logging what it held and w
 });
 
 it('refuses to delete the only Role that lets a current Employee manage Roles', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $role = $admin->roles()->sole();
 
     actingAs($admin)
@@ -289,7 +278,7 @@ it('refuses to delete the only Role that lets a current Employee manage Roles', 
 });
 
 it('gives new Employees the Role marked for them on the Role form, so another Role can take over from the starter one', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $admin->roles()->sole()->permissions()->create(['permission' => Permission::ManageEmployees, 'scope' => null]);
     $starter = Role::factory()->create(['name' => 'Employee', 'is_given_to_new_employees' => true]);
     $staff = Role::factory()->create(['name' => 'Staff']);
@@ -309,7 +298,7 @@ it('gives new Employees the Role marked for them on the Role form, so another Ro
 });
 
 it('gives new Employees at most one Role: turning it on for a Role takes it off the previous one, logged, and turning it off leaves none', function (Closure $save) {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $starter = Role::factory()->create(['name' => 'Employee', 'is_given_to_new_employees' => true]);
 
     $taker = $save($admin);
@@ -339,7 +328,7 @@ it('gives new Employees at most one Role: turning it on for a Role takes it off 
 ]);
 
 it('gives and takes a Role from the holders sent with it, logging each, when creating or editing it', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $ben = Employee::factory()->create(['name' => 'Ben']);
     $cara = Employee::factory()->create(['name' => 'Cara']);
     $zoe = Employee::factory()->future()->create(['name' => 'Zoe']);
@@ -361,7 +350,7 @@ it('gives and takes a Role from the holders sent with it, logging each, when cre
 });
 
 it('leaves who holds a Role alone when no holders are sent with it', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $payroll = Role::factory()->create(['name' => 'Payroll']);
     $payroll->employees()->attach($ben = Employee::factory()->create());
 
@@ -372,7 +361,7 @@ it('leaves who holds a Role alone when no holders are sent with it', function ()
 });
 
 it('refuses holders who have left or do not exist, saving nothing', function (Closure $holder) {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $payroll = Role::factory()->create(['name' => 'Payroll']);
 
     actingAs($admin)->patch(route('roles.update', $payroll), ['name' => 'Pay Team', 'permissions' => [], 'given_to_new_employees' => false, 'holders' => [$holder()]])
@@ -386,7 +375,7 @@ it('refuses holders who have left or do not exist, saving nothing', function (Cl
 ]);
 
 it('saves nothing when the holders sent would leave nobody able to manage Roles', function () {
-    $admin = roleManager('Role Managers');
+    $admin = employeeWhoManagesRoles('Role Managers');
     $roleManagers = $admin->roles()->sole();
 
     actingAs($admin)->patch(route('roles.update', $roleManagers), ['name' => 'Renamed', 'permissions' => ['manage-roles' => null], 'given_to_new_employees' => false, 'holders' => []])
@@ -398,7 +387,7 @@ it('saves nothing when the holders sent would leave nobody able to manage Roles'
 });
 
 it('counts an Admin holder as able to manage Roles, so the last other Role that manages them can go', function () {
-    $admin = roleManager('Role Managers');
+    $admin = employeeWhoManagesRoles('Role Managers');
     $roleManagers = $admin->roles()->sole();
     Employee::factory()->create()->roles()->attach(Role::factory()->admin()->create());
 
@@ -410,7 +399,7 @@ it('counts an Admin holder as able to manage Roles, so the last other Role that 
 });
 
 it('lets Admin be renamed, but keeps every Permission, never gives it to new Employees, and logs the marker instead of grants', function () {
-    $admin = roleManager();
+    $admin = employeeWhoManagesRoles();
     $adminRole = Role::factory()->admin()->create(['name' => 'Owners']);
 
     actingAs($admin)
@@ -427,7 +416,7 @@ it('lets Admin be renamed, but keeps every Permission, never gives it to new Emp
 });
 
 it('refuses to delete Admin', function () {
-    $admin = roleManager('Role Managers');
+    $admin = employeeWhoManagesRoles('Role Managers');
     $adminRole = Role::factory()->admin()->create();
 
     actingAs($admin)
@@ -439,7 +428,7 @@ it('refuses to delete Admin', function () {
 });
 
 it('shows Admin as holding every Permission with Scope everyone, marked so the editor can fix them', function () {
-    $admin = roleManager('Role Managers');
+    $admin = employeeWhoManagesRoles('Role Managers');
     Role::factory()->admin()->create();
 
     actingAs($admin)->get(route('roles.index'))

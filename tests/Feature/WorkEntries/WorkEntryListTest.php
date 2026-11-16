@@ -24,8 +24,8 @@ beforeEach(function () {
 it('opens on the current month and the first Employee by name with Work Entries in it, read-only, for someone who may view everyone\'s', function () {
     $ada = Employee::factory()->top()->create(['name' => 'Ada']);
     $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Dan', 'manager_id' => $ada->id]);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ada->id]);
-    $bea = Employee::factory()->create(['name' => 'Bea', 'manager_id' => $ada->id]);
+    $cara = Employee::factory()->reportingTo($ada)->create(['name' => 'Cara']);
+    $bea = Employee::factory()->reportingTo($ada)->create(['name' => 'Bea']);
     $carasRelaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-10-01']);
     $carasBilling = assignmentOf($cara, 'Billing');
     $locked = WorkEntry::factory()->for($carasBilling)->approved($dan)->locked($dan)->create(['date' => '2026-11-02']);
@@ -108,12 +108,12 @@ it('refuses a custom period that ends before it starts or is longer than three m
 it('lists only a Manager\'s Reports for someone who may view their Reports\' Work Entries', function () {
     $ada = Employee::factory()->top()->create(['name' => 'Ada']);
     $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Reports], ['name' => 'Ben', 'manager_id' => $ada->id]);
-    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => $ben->id]);
-    $dev = Employee::factory()->create(['name' => 'Dev', 'manager_id' => $cara->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
+    $dev = Employee::factory()->reportingTo($cara)->create(['name' => 'Dev']);
     $caras = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-09']);
     $devs = WorkEntry::factory()->for(assignmentOf($dev))->approved()->create(['date' => '2026-11-10']);
     WorkEntry::factory()->for(assignmentOf($ben))->create(['date' => '2026-11-10']);
-    $outsider = Employee::factory()->create(['name' => 'Aaron', 'manager_id' => $ada->id]);
+    $outsider = Employee::factory()->reportingTo($ada)->create(['name' => 'Aaron']);
     WorkEntry::factory()->for(assignmentOf($outsider))->create(['date' => '2026-11-10']);
 
     actingAs($ben)->get(route('work-entry-list.index', ['employee' => 'all']))

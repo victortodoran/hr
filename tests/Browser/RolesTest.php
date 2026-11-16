@@ -18,8 +18,7 @@ covers(RoleController::class);
  */
 function rolesToManage(): array
 {
-    $ada = Employee::factory()->create(['name' => 'Ada Admin']);
-    $ada->roles()->attach(Role::factory()->withPermissions([Permission::ManageRoles->value => null])->create(['name' => 'Role Managers']));
+    $ada = employeeWhoManagesRoles('Role Managers');
     $payroll = Role::factory()->withPermissions([Permission::ViewPay->value => Scope::Everyone, Permission::ViewProjects->value => null])->create(['name' => 'Payroll']);
     $payroll->employees()->attach(Employee::factory()->create(['name' => 'Ben Brown']));
     $auditor = Role::factory()->create(['name' => 'Auditor']);

@@ -21,7 +21,7 @@ beforeEach(fn () => Notification::fake());
 
 it('shows an Employee\'s record on the edit page, without themselves as a possible Manager', function () {
     $ben = Employee::factory()->create(['name' => 'Ben Ford']);
-    $cara = Employee::factory()->create(['name' => 'Cara Lane', 'manager_id' => $ben->id, 'start_date' => '2025-03-01']);
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara Lane', 'start_date' => '2025-03-01']);
 
     actingAs(employeeWhoManagesEmployees())->get(route('employees.edit', $cara))
         ->assertInertia(fn (Assert $page) => $page
@@ -155,7 +155,7 @@ it('does not resend an invitation once the password is set', function () {
 
 it('refuses editing Employees, even yourself, without manage employees', function () {
     $ben = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]);
-    $cara = Employee::factory()->invited()->create(['manager_id' => $ben->id]);
+    $cara = Employee::factory()->invited()->reportingTo($ben)->create();
 
     foreach ([$cara, $ben] as $employee) {
         actingAs($ben)->get(route('employees.edit', $employee))->assertForbidden();

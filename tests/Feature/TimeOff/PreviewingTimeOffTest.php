@@ -20,7 +20,7 @@ beforeEach(function () {
  */
 function timeOffPreviewer(): Employee
 {
-    return Employee::factory()->create(['name' => 'Dev', 'start_date' => '2025-01-06', 'paid_days' => 20]);
+    return Employee::factory()->startedLongAgo()->create(['name' => 'Dev', 'paid_days' => 20]);
 }
 
 /**

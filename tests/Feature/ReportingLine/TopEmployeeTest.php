@@ -15,7 +15,7 @@ covers(TopEmployeeController::class, EmployeeController::class, NameTopEmployee:
 
 it('hands the top spot to another Employee, and the old top then reports to them', function () {
     $dana = Employee::factory()->top()->create();
-    $ben = Employee::factory()->create(['manager_id' => $dana->id]);
+    $ben = Employee::factory()->reportingTo($dana)->create();
 
     actingAs(employeeWhoManagesTheCompany())
         ->post(route('employees.top.store', $ben))
@@ -31,7 +31,7 @@ it('hands the top spot to another Employee, and the old top then reports to them
 
 it('lets the old top Employee be given a Leaving Date once they have handed over', function () {
     $dana = Employee::factory()->top()->create();
-    $ben = Employee::factory()->create(['manager_id' => $dana->id]);
+    $ben = Employee::factory()->reportingTo($dana)->create();
     $admin = employeeWhoManagesTheCompany();
 
     actingAs($admin)->post(route('employees.top.store', $ben));
@@ -54,7 +54,7 @@ it('only lets a current Employee who is not already top, and is not leaving, tak
     $dana = Employee::factory()->top()->create();
     $candidate = match ($state) {
         'top' => $dana,
-        'leaving' => Employee::factory()->create(['manager_id' => $dana->id, 'leaving_date' => today()->addMonth()->toDateString()]),
+        'leaving' => Employee::factory()->reportingTo($dana)->create(['leaving_date' => today()->addMonth()->toDateString()]),
         default => Employee::factory()->{$state}()->create(['manager_id' => $dana->id]),
     };
 
@@ -67,7 +67,7 @@ it('only lets a current Employee who is not already top, and is not leaving, tak
 
 it('refuses naming the top Employee without manage company', function () {
     $dana = Employee::factory()->top()->create();
-    $ben = Employee::factory()->create(['manager_id' => $dana->id]);
+    $ben = Employee::factory()->reportingTo($dana)->create();
 
     actingAs(employeeWhoManagesEmployees())
         ->post(route('employees.top.store', $ben))
@@ -78,7 +78,7 @@ it('refuses naming the top Employee without manage company', function () {
 
 it('offers handing over the top spot only to those allowed, for Employees who can take it', function () {
     $dana = Employee::factory()->top()->create();
-    $ben = Employee::factory()->create(['manager_id' => $dana->id]);
+    $ben = Employee::factory()->reportingTo($dana)->create();
 
     actingAs(employeeWhoManagesTheCompany())->get(route('employees.edit', $ben))
         ->assertInertia(fn (Assert $page) => $page->where('employee.can_become_top', true));
@@ -92,7 +92,7 @@ it('offers handing over the top spot only to those allowed, for Employees who ca
 
 it('refuses to make someone the top Employee while they have Pending Work Entries, which nobody could then approve', function () {
     $dana = Employee::factory()->top()->create();
-    $ben = Employee::factory()->create(['name' => 'Ben', 'manager_id' => $dana->id]);
+    $ben = Employee::factory()->reportingTo($dana)->create(['name' => 'Ben']);
     WorkEntry::factory()->for(Assignment::factory()->for($ben))->create();
 
     actingAs(employeeWhoManagesTheCompany())
@@ -105,7 +105,7 @@ it('refuses to make someone the top Employee while they have Pending Work Entrie
 
 it('makes someone the top Employee when their Work Entries are all Approved or Locked', function () {
     $dana = Employee::factory()->top()->create();
-    $ben = Employee::factory()->create(['manager_id' => $dana->id]);
+    $ben = Employee::factory()->reportingTo($dana)->create();
     $assignment = Assignment::factory()->for($ben)->create();
     WorkEntry::factory()->for($assignment)->approved()->create();
     WorkEntry::factory()->for($assignment)->locked()->create();

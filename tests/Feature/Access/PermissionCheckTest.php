@@ -64,9 +64,9 @@ it('uses the widest Scope across all of an Employee\'s Roles', function () {
 it('lets Scope reports cover direct and indirect Reports, and nobody else', function () {
     $dana = Employee::factory()->top()->create();
     $ben = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Reports], ['manager_id' => $dana->id]);
-    $cara = Employee::factory()->create(['manager_id' => $ben->id]);
-    $dev = Employee::factory()->create(['manager_id' => $cara->id]);
-    $eve = Employee::factory()->create(['manager_id' => $dana->id]);
+    $cara = Employee::factory()->reportingTo($ben)->create();
+    $dev = Employee::factory()->reportingTo($cara)->create();
+    $eve = Employee::factory()->reportingTo($dana)->create();
 
     actingAs($ben)->get("/_test/employees/{$cara->id}")->assertOk();
     actingAs($ben)->get("/_test/employees/{$dev->id}")->assertOk();
@@ -77,8 +77,8 @@ it('lets Scope reports cover direct and indirect Reports, and nobody else', func
 
 it('keeps covering Reports below a Manager who has left, through the next Manager up', function () {
     $ben = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Reports], ['manager_id' => Employee::factory()->top()->create()->id]);
-    $fay = Employee::factory()->former()->create(['manager_id' => $ben->id]);
-    $cara = Employee::factory()->create(['manager_id' => $fay->id]);
+    $fay = Employee::factory()->former()->reportingTo($ben)->create();
+    $cara = Employee::factory()->reportingTo($fay)->create();
 
     actingAs($ben)->get("/_test/employees/{$cara->id}")->assertOk();
 });
