@@ -25,13 +25,14 @@ class EmployeePolicy
     /**
      * Opening an Employee's page needs something on it the viewer may see:
      * their record, their Assignments (which seeing their Pay also
-     * allows), or their Time Off and Paid Days.
+     * allows), their Time Off and Paid Days, or their travel.
      */
     public function view(Employee $actor, Employee $employee): bool
     {
         return $actor->can(Permission::ViewEmployeeRecords->value, $employee)
             || $actor->can('viewAny', [Assignment::class, $employee])
-            || $this->viewTimeOffAndPaidDays($actor, $employee);
+            || $this->viewTimeOffAndPaidDays($actor, $employee)
+            || $actor->can(Permission::ViewTravel->value, $employee);
     }
 
     /**

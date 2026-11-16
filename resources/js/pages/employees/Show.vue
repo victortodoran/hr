@@ -11,6 +11,7 @@ import PayDialog from '@/components/pay/PayDialog.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import PaidDaysForm from '@/components/time-off/PaidDaysForm.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
+import TravelRequestList from '@/components/travel-requests/TravelRequestList.vue';
 import ReportingChain from '@/components/employees/ReportingChain.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -31,12 +32,13 @@ import type {
     OpenProject,
     PayEntryRecord,
     ReportingChainView,
+    TravelRequestRecord,
 } from '@/types';
 
 /**
  * Only the open tab's props are sent: `record`, `reportsNeedingAManager` and
  * `reportingChain` on Overview, `assignments` and `projects` on Assignments &
- * Pay, `paidDays` and `timeOff` on Time Off.
+ * Pay, `paidDays` and `timeOff` on Time Off, `travelRequests` on Travel.
  */
 const props = withDefaults(
     defineProps<{
@@ -63,6 +65,8 @@ const props = withDefaults(
         paidDays?: number | null;
         /** Null unless the viewer may see the Employee's Time Off. */
         timeOff?: EmployeeTimeOff | null;
+        /** Only to be seen: nothing on them can be done from here. */
+        travelRequests?: TravelRequestRecord[];
     }>(),
     { reportsNeedingAManager: () => [], projects: () => [] },
 );
@@ -83,6 +87,7 @@ const tabLabels = computed<Record<EmployeePageTab, string>>(() => ({
     overview: 'Overview',
     assignments: props.canViewPay ? 'Assignments & Pay' : 'Assignments',
     'time-off': 'Time Off',
+    travel: 'Travel',
 }));
 
 function openTab(tab: string | number): void {
@@ -506,6 +511,14 @@ setLayoutProps({
                             :message="`${employee.name}'s Time Off requests appear here. They haven't requested any yet.`"
                         />
                     </div>
+                </EmployeePageSection>
+            </TabsContent>
+            <TabsContent value="travel" class="mt-6 flex flex-col gap-10">
+                <EmployeePageSection v-if="travelRequests" title="Travel">
+                    <TravelRequestList
+                        :travel-requests="travelRequests"
+                        :empty-message="`${employee.name}'s Travel Requests appear here. They haven't made any yet.`"
+                    />
                 </EmployeePageSection>
             </TabsContent>
         </Tabs>

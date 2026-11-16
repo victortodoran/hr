@@ -45,7 +45,11 @@ export type EmployeeStanding = {
  * The tabs of an Employee's page: Overview (record and Reporting Chain),
  * Assignments & Pay, and Time Off (Paid Days and Time Off).
  */
-export type EmployeePageTab = 'overview' | 'assignments' | 'time-off';
+export type EmployeePageTab =
+    | 'overview'
+    | 'assignments'
+    | 'time-off'
+    | 'travel';
 
 /**
  * One row of the Employees list.

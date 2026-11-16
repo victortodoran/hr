@@ -85,6 +85,7 @@ class InstallCompany
                 Permission::ViewPay->value => Scope::Own->value,
                 Permission::ManageWorkEntries->value => Scope::Own->value,
                 Permission::ViewTimeOff->value => Scope::Own->value,
+                Permission::ViewTravel->value => Scope::Own->value,
             ], 'givenToNewEmployees' => true],
         ];
 

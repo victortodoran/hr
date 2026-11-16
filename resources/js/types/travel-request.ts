@@ -11,8 +11,9 @@ export type TravelRequestState =
     | 'cancelled';
 
 /**
- * One of the signed-in Employee's Travel Requests, with the Project and
- * Client of its Assignment and whether they may still cancel it.
+ * One of an Employee's Travel Requests, with the Project and Client of its
+ * Assignment and whether the viewer may still cancel it: only the Employee
+ * themselves on the Travel page, never on the Employee page.
  */
 export type TravelRequestRecord = {
     id: number;
@@ -45,7 +46,7 @@ export type TravelExpenseCategory =
 /** Where a Travel Expense stands, like a Work Entry. */
 export type TravelExpenseState = 'pending' | 'approved' | 'declined' | 'locked';
 
-/** One Travel Expense of the signed-in Employee, with its receipt. */
+/** One Travel Expense of an Employee, with its receipt. */
 export type TravelExpenseRecord = {
     id: number;
     paid_on: string;

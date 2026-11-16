@@ -14,11 +14,12 @@ import type { TableColumn, TravelCurrency, TravelExpenses } from '@/types';
 
 /**
  * The Travel Expenses of one Travel Request, with their total, adding one,
- * and changing or deleting each while it is Pending or Declined.
+ * and changing or deleting each while it is Pending or Declined. Without
+ * `today` and `currency` they are only to be seen, as on the Employee page.
  */
 defineProps<{
-    today: string;
-    currency: TravelCurrency;
+    today?: string;
+    currency?: TravelCurrency;
     travelRequestId: number;
     expenses: TravelExpenses;
 }>();
@@ -41,7 +42,7 @@ const columns: TableColumn[] = [
                 >
             </h3>
             <TravelExpenseDialog
-                v-if="expenses.can_create"
+                v-if="expenses.can_create && today && currency"
                 :today="today"
                 :currency="currency"
                 :travel-request-id="travelRequestId"
@@ -82,7 +83,7 @@ const columns: TableColumn[] = [
             <template #cell-state="{ row }">
                 <div class="flex flex-wrap items-center justify-end gap-1">
                     <StatusBadge :state="row.state" />
-                    <template v-if="row.can_change">
+                    <template v-if="row.can_change && today && currency">
                         <TravelExpenseDialog
                             :today="today"
                             :currency="currency"
