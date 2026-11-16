@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Enums\TravelExpenseCategory;
 use App\Enums\TravelExpenseState;
 use App\Models\Builders\TravelExpenseBuilder;
-use Carbon\CarbonInterface;
 use Database\Factories\TravelExpenseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
@@ -98,13 +97,19 @@ class TravelExpense extends Model
 
     /**
      * Who approved the Travel Expense and on which day, or null while it
-     * isn't Approved or Locked. Needs the approver loaded.
+     * isn't Approved or Locked. Nobody approved that of an Employee with no
+     * Manager, which was Approved at once, so its approver is null. Needs
+     * the approver loaded.
      *
-     * @return array{by: string, on: string}|null
+     * @return array{by: string|null, on: string}|null
      */
     public function approval(): ?array
     {
-        return self::signOff($this->approver, $this->approved_at);
+        if ($this->approved_at === null) {
+            return null;
+        }
+
+        return ['by' => $this->approver?->name, 'on' => $this->approved_at->toDateString()];
     }
 
     /**
@@ -115,19 +120,11 @@ class TravelExpense extends Model
      */
     public function lock(): ?array
     {
-        return self::signOff($this->locker, $this->locked_at);
-    }
-
-    /**
-     * @return array{by: string, on: string}|null
-     */
-    private static function signOff(?Employee $employee, ?CarbonInterface $at): ?array
-    {
-        if ($employee === null || $at === null) { // @pest-mutate-ignore (who and when are always set together)
+        if ($this->locker === null || $this->locked_at === null) { // @pest-mutate-ignore (the travel_expenses_state constraint keeps who and when both set or both empty)
             return null;
         }
 
-        return ['by' => $employee->name, 'on' => $at->toDateString()];
+        return ['by' => $this->locker->name, 'on' => $this->locked_at->toDateString()];
     }
 
     /**

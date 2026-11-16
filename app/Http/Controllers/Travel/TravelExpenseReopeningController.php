@@ -23,8 +23,10 @@ class TravelExpenseReopeningController extends Controller
     /**
      * Reopen the selected Travel Expenses the actor may reopen: Approved
      * ones of Employees their reopen Scope covers, never their own, sent
-     * back to Pending with their approval withdrawn. The rest, Locked ones
-     * included, are skipped, and the toast says how many of each.
+     * back to Pending with their approval withdrawn. One of an Employee
+     * with no Manager waits for them to correct it, which Approves it again
+     * at once. The rest, Locked ones included, are skipped, and the toast
+     * says how many of each.
      */
     public function store(#[CurrentUser] Employee $actor, SelectedTravelExpensesRequest $request): RedirectResponse
     {

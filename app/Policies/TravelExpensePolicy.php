@@ -25,11 +25,9 @@ class TravelExpensePolicy
      */
     public function view(Employee $actor, TravelExpense $travelExpense): bool
     {
-        $employee = $travelExpense->travelRequest->employee;
-
-        return $employee->id === $actor->id
-            || $this->decide($actor, $travelExpense)
-            || $actor->reachesThrough(Permission::seeingTravelExpenses(), $employee);
+        return $travelExpense->travelRequest->employee_id === $actor->id
+            || $actor->reachesThrough(Permission::seeingTravelExpenses(), $travelExpense->travelRequest->employee)
+            || $this->decide($actor, $travelExpense);
     }
 
     /**

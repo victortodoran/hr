@@ -149,3 +149,27 @@ it('shows the Travel Expenses page in the menu to reopen holders, but not to som
     actingAs(employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone]))->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeTravelExpenseList', false));
 });
+
+it('shows when an expense of an Employee with no Manager was approved and locked, and leaves it reopened for them to correct, which approves it again', function () {
+    $rae = travelReopener([Permission::ReopenTravelExpenses->value => Scope::Everyone]);
+    $ada = Employee::query()->findOrFail($rae->manager_id);
+    $finn = Employee::factory()->create(['name' => 'Finn']);
+    $locked = reopenableExpenseOf($ada, 'locked', ['approved_by' => null, 'approved_at' => '2026-12-04 10:00', 'locked_by' => $finn->id, 'locked_at' => '2026-12-09 10:00']);
+    $approved = reopenableExpenseOf($ada, attributes: ['approved_by' => null, 'approved_at' => '2026-12-04 10:00']);
+
+    actingAs($rae)->get(route('travel-expense-list.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('expenses.data.0.approved', ['by' => null, 'on' => '2026-12-04'])
+            ->where('expenses.data.0.locked', ['by' => 'Finn', 'on' => '2026-12-09'])
+            ->where('expenses.data.1.id', $approved->id)
+            ->where('expenses.data.1.can_reopen', true));
+    actingAs($rae)->post(route('travel-expenses.reopenings.store'), ['ids' => [$locked->id, $approved->id]])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Travel Expense reopened, 1 skipped.']);
+    expect($approved->refresh()->state)->toBe(TravelExpenseState::Pending);
+
+    actingAs($ada)->put(route('travel-expenses.update', $approved), [
+        'paid_on' => '2026-12-04', 'amount' => '25', 'category' => 'meals', 'description' => 'Lunch, corrected',
+    ])->assertRedirect(route('travel-requests.index'));
+
+    expect($approved->refresh()->state)->toBe(TravelExpenseState::Approved);
+});

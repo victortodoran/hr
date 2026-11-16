@@ -126,7 +126,9 @@ function lock(): void {
 function signOffs(expense: ListedTravelExpense): string {
     return [
         expense.approved &&
-            `Approved by ${expense.approved.by} on ${formatDate(expense.approved.on)}`,
+            (expense.approved.by
+                ? `Approved by ${expense.approved.by} on ${formatDate(expense.approved.on)}`
+                : `Approved on ${formatDate(expense.approved.on)}`),
         expense.locked &&
             `Locked by ${expense.locked.by} on ${formatDate(expense.locked.on)}`,
     ]
@@ -240,7 +242,7 @@ function signOffs(expense: ListedTravelExpense): string {
                             >Receipt</a
                         >
                         <span
-                            v-if="row.approved"
+                            v-if="row.approved || row.locked"
                             class="block text-xs text-muted-foreground"
                             >{{ signOffs(row) }}</span
                         >

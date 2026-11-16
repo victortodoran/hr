@@ -149,7 +149,8 @@ export type ListedTravelExpense = {
     /** Already shown in the company currency, such as "RON 1,990.00". */
     amount: string;
     state: TravelExpenseState;
-    approved: WorkEntrySignOff | null;
+    /** Who approved it and when; nobody for an Employee with no Manager, approved at once. */
+    approved: { by: string | null; on: string } | null;
     locked: WorkEntrySignOff | null;
     decline_reason: string | null;
     can_reopen: boolean;
