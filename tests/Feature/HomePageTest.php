@@ -4,6 +4,7 @@ use App\Enums\Permission;
 use App\Http\Controllers\HomeController;
 use App\Models\Employee;
 use App\Models\TimeOff;
+use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -67,12 +68,15 @@ it('shows a Manager what waits for them, matching the Approvals badge', function
     TimeOff::factory()->for($ben)->create();
     TravelRequest::factory()->on($relaunch)->create();
     TravelRequest::factory()->on($relaunch)->declined()->create();
+    $trip = TravelRequest::factory()->on($relaunch)->approved()->create();
+    TravelExpense::factory()->for($trip)->create();
+    TravelExpense::factory()->for($trip)->declined()->create();
 
     actingAs($ada)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->where('waitingForYou', ['workEntries' => 2, 'timeOff' => 1, 'travelRequests' => 1])
-            ->where('auth.approvalsWaiting', 4)
+            ->where('waitingForYou', ['workEntries' => 2, 'timeOff' => 1, 'travelRequests' => 1, 'travelExpenses' => 1])
+            ->where('auth.approvalsWaiting', 5)
             ->where('hoursThisMonth', ['month' => '2026-11', 'hours' => 0, 'pendingHours' => 0])
             ->where('nextTimeOff', null),
         );

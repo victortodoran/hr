@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import WorkEntryDeclineController from '@/actions/App/Http/Controllers/WorkEntries/WorkEntryDeclineController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
@@ -17,14 +16,22 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { RouteDefinition } from '@/wayfinder';
 
 /**
- * Declines the selected Work Entries, asking for the one reason the
- * Employee will see on each.
+ * Declines the selected Work Entries or Travel Expenses on the Approvals
+ * page, asking for the one reason the Employee will see on each.
  */
 const props = defineProps<{
-    /** The selected Work Entries. */
+    /** The selected rows. */
     ids: number[];
+    /** Where the decline is sent. */
+    action: RouteDefinition<'post'>;
+    /** What is declined, such as "Work Entry" and "Work Entries". */
+    noun: { one: string; many: string };
+    /** What declining means for the Employee. */
+    description: string;
+    placeholder: string;
 }>();
 
 const emit = defineEmits<{
@@ -44,7 +51,7 @@ function opened(isOpen: boolean): void {
 
 function decline(): void {
     form.ids = props.ids;
-    form.submit(WorkEntryDeclineController.store(), {
+    form.submit(props.action, {
         preserveScroll: true,
         onSuccess: () => {
             open.value = false;
@@ -65,22 +72,19 @@ function decline(): void {
             <form class="flex flex-col gap-4" @submit.prevent="decline">
                 <DialogHeader>
                     <DialogTitle
-                        >Decline {{ ids.length }} Work
+                        >Decline {{ ids.length }}
                         {{
-                            ids.length === 1 ? 'Entry' : 'Entries'
+                            ids.length === 1 ? noun.one : noun.many
                         }}?</DialogTitle
                     >
-                    <DialogDescription>
-                        The Employee sees the reason under each one, and can
-                        change or delete it. Declined hours aren't counted.
-                    </DialogDescription>
+                    <DialogDescription>{{ description }}</DialogDescription>
                 </DialogHeader>
                 <div class="grid gap-2">
                     <Label for="decline-reason">Reason</Label>
                     <Input
                         id="decline-reason"
                         v-model="form.decline_reason"
-                        placeholder="Interviews go on Internal, not Acme"
+                        :placeholder="placeholder"
                         required
                     />
                     <InputError :message="form.errors.decline_reason" />

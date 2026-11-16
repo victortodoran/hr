@@ -4,8 +4,10 @@ namespace App\Models;
 
 use App\Enums\TravelExpenseCategory;
 use App\Enums\TravelExpenseState;
+use App\Models\Builders\TravelExpenseBuilder;
 use Database\Factories\TravelExpenseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @property-read TravelRequest $travelRequest
  */
 #[Fillable(['paid_on', 'amount', 'category', 'description', 'receipt_path'])] // @pest-mutate-ignore (class attributes never show as covered)
+#[UseEloquentBuilder(TravelExpenseBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
 class TravelExpense extends Model
 {
     /** @use HasFactory<TravelExpenseFactory> */

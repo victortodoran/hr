@@ -177,7 +177,7 @@ it('lists the Pending Travel Requests of the Employees the Manager effectively m
     actingAs($ben)->get(route('approvals.index', ['tab' => 'travel-requests']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('tab', 'travel-requests')
-            ->where('waiting', ['workEntries' => 0, 'timeOff' => 0, 'travelRequests' => 2])
+            ->where('waiting', ['workEntries' => 0, 'timeOff' => 0, 'travelRequests' => 2, 'travelExpenses' => 0])
             ->where('travelRequestsToApprove', [
                 ['id' => $devs->id, 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'project' => 'Website', 'client' => null, 'destination' => 'Lisbon', 'first_date' => '2026-11-16', 'last_date' => '2026-11-16', 'days' => 1, 'purpose' => 'Design conference'],
                 ['id' => $berlin->id, 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'client' => 'Globex', 'destination' => 'Berlin', 'first_date' => '2026-12-14', 'last_date' => '2026-12-16', 'days' => 3, 'purpose' => $berlin->purpose],

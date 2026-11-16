@@ -2,8 +2,9 @@
 import { router } from '@inertiajs/vue3';
 import { CheckCheck } from '@lucide/vue';
 import ApprovalController from '@/actions/App/Http/Controllers/WorkEntries/ApprovalController';
+import WorkEntryDeclineController from '@/actions/App/Http/Controllers/WorkEntries/WorkEntryDeclineController';
 import ApprovalFilterBar from '@/components/approvals/ApprovalFilterBar.vue';
-import DeclineWorkEntriesDialog from '@/components/approvals/DeclineWorkEntriesDialog.vue';
+import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Pagination from '@/components/Pagination.vue';
@@ -94,7 +95,14 @@ function approve(): void {
             @clear="clear"
         >
             <template #actions>
-                <DeclineWorkEntriesDialog :ids="selected" @declined="clear" />
+                <DeclineSelectedDialog
+                    :ids="selected"
+                    :action="WorkEntryDeclineController.store()"
+                    :noun="{ one: 'Work Entry', many: 'Work Entries' }"
+                    description="The Employee sees the reason under each one, and can change or delete it. Declined hours aren't counted."
+                    placeholder="Interviews go on Internal, not Acme"
+                    @declined="clear"
+                />
                 <SubmitButton
                     :processing="processing"
                     type="button"

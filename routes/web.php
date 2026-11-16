@@ -21,7 +21,9 @@ use App\Http\Controllers\TimeOff\TimeOffCancellationController;
 use App\Http\Controllers\TimeOff\TimeOffController;
 use App\Http\Controllers\TimeOff\TimeOffDeclineController;
 use App\Http\Controllers\TimeOff\TimeOffPreviewController;
+use App\Http\Controllers\Travel\TravelExpenseApprovalController;
 use App\Http\Controllers\Travel\TravelExpenseController;
+use App\Http\Controllers\Travel\TravelExpenseDeclineController;
 use App\Http\Controllers\Travel\TravelExpenseReceiptController;
 use App\Http\Controllers\Travel\TravelRequestApprovalController;
 use App\Http\Controllers\Travel\TravelRequestCancellationController;
@@ -84,6 +86,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('approvals', [ApprovalController::class, 'index'])->name('approvals.index');
         Route::post('approvals', [ApprovalController::class, 'store'])->name('approvals.store');
         Route::post('approvals/declines', [WorkEntryDeclineController::class, 'store'])->name('approvals.declines.store');
+        Route::post('approvals/travel-expenses', [TravelExpenseApprovalController::class, 'store'])->name('approvals.travel-expenses.store');
+        Route::post('approvals/travel-expenses/declines', [TravelExpenseDeclineController::class, 'store'])->name('approvals.travel-expenses.declines.store');
     });
     Route::get('work-entries/all', [WorkEntryListController::class, 'index'])->middleware('can:viewList,'.WorkEntry::class)->name('work-entry-list.index');
     Route::post('reopenings', [ReopeningController::class, 'store'])->middleware('can:reopen,'.WorkEntry::class)->name('reopenings.store');

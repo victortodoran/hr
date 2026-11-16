@@ -51,7 +51,7 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
     $response->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('approvals/Index')
         ->where('tab', 'work-entries')
-        ->where('waiting', ['workEntries' => 2, 'timeOff' => 0, 'travelRequests' => 0])
+        ->where('waiting', ['workEntries' => 2, 'timeOff' => 0, 'travelRequests' => 0, 'travelExpenses' => 0])
         ->missing('toApprove')
         ->missing('canReopen')
         ->missing('canLock')

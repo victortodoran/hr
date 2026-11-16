@@ -332,11 +332,11 @@ class Employee extends Authenticatable implements MustVerifyEmail
 
     /**
      * What is waiting for this Employee to decide: the Pending Work Entries,
-     * Time Off and Travel Requests of the Employees whose effective Manager
-     * they are, the same Employees they approve for. The reporting line is
+     * Time Off, Travel Requests and Travel Expenses of the Employees whose
+     * effective Manager they are, the same Employees they approve for. The reporting line is
      * walked once, not once per count.
      *
-     * @return array{workEntries: int, timeOff: int, travelRequests: int}
+     * @return array{workEntries: int, timeOff: int, travelRequests: int, travelExpenses: int}
      */
     public function waitingForDecision(): array
     {
@@ -386,11 +386,11 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * The Pending Work Entries, Time Off and Travel Requests of the given
-     * Employees.
+     * The Pending Work Entries, Time Off, Travel Requests and Travel
+     * Expenses of the given Employees.
      *
      * @param  array<int, int|string>  $decidedFor
-     * @return array{workEntries: int, timeOff: int, travelRequests: int}
+     * @return array{workEntries: int, timeOff: int, travelRequests: int, travelExpenses: int}
      */
     private function waitingFor(array $decidedFor): array
     {
@@ -406,6 +406,10 @@ class Employee extends Authenticatable implements MustVerifyEmail
             'travelRequests' => TravelRequest::query()
                 ->where('state', TravelRequestState::Pending)
                 ->whereIn('employee_id', $decidedFor)
+                ->count(),
+            'travelExpenses' => TravelExpense::query()
+                ->pending()
+                ->ofEmployees($decidedFor)
                 ->count(),
         ];
     }

@@ -1,12 +1,17 @@
 <?php
 
 use App\Enums\TimeOffState;
+use App\Enums\TravelExpenseState;
 use App\Enums\TravelRequestState;
 use App\Enums\WorkEntryState;
 use App\Http\Controllers\TimeOff\TimeOffApprovalController;
+use App\Http\Controllers\Travel\TravelExpenseApprovalController;
+use App\Http\Controllers\Travel\TravelExpenseDeclineController;
 use App\Http\Controllers\Travel\TravelRequestDeclineController;
 use App\Http\Controllers\WorkEntries\ApprovalController;
+use App\Models\CompanySettings;
 use App\Models\TimeOff;
+use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Carbon\CarbonImmutable;
@@ -14,7 +19,7 @@ use Carbon\CarbonImmutable;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(ApprovalController::class, TimeOffApprovalController::class, TravelRequestDeclineController::class);
+covers(ApprovalController::class, TimeOffApprovalController::class, TravelRequestDeclineController::class, TravelExpenseApprovalController::class, TravelExpenseDeclineController::class);
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
@@ -94,4 +99,40 @@ it('lets a Manager decline a Travel Request from its tab with a reason', functio
         ->assertNoJavaScriptErrors();
 
     expect($travelRequest->refresh()->state)->toBe(TravelRequestState::Declined);
+});
+
+it('lets a Manager approve two Travel Expenses together and decline another with a reason from their tab', function () {
+    CompanySettings::factory()->create(['currency' => 'RON']);
+    $ben = managerBen();
+    $cara = recorder(['manager_id' => $ben->id, 'name' => 'Cara']);
+    $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-11-23', 'last_date' => '2026-11-25']);
+    $flight = TravelExpense::factory()->for($berlin)->create(['paid_on' => '2026-11-20', 'description' => 'Flight']);
+    $hotel = TravelExpense::factory()->for($berlin)->create(['paid_on' => '2026-11-25', 'description' => 'Hotel']);
+    $taxi = TravelExpense::factory()->for($berlin)->create(['paid_on' => '2026-11-26', 'description' => 'Taxi']);
+
+    actingAs($ben);
+
+    visit(route('approvals.index'))
+        ->click('internal:role=tab[name="Travel Expenses"i]')
+        ->assertQueryStringHas('tab', 'travel-expenses')
+        ->assertSee('Berlin')
+        ->assertSee('Receipt')
+        ->click('main table tbody tr:nth-child(1) [role="checkbox"]')
+        ->click('main table tbody tr:nth-child(2) [role="checkbox"]')
+        ->assertSee('2 selected')
+        ->click('Approve')
+        ->assertSee('2 Travel Expenses approved.')
+        ->assertSee('Taxi')
+        ->assertDontSee('Hotel')
+        ->click('main table tbody tr:first-child [role="checkbox"]')
+        ->click('Decline…')
+        ->fill('#decline-reason', 'The taxi isn\'t on the receipt.')
+        ->click('internal:role=dialog >> internal:role=button[name="Decline"s]')
+        ->assertSee('1 Travel Expense declined.')
+        ->assertSee('None is waiting')
+        ->assertNoJavaScriptErrors();
+
+    expect($flight->refresh()->state)->toBe(TravelExpenseState::Approved);
+    expect($hotel->refresh()->state)->toBe(TravelExpenseState::Approved);
+    expect($taxi->refresh()->state)->toBe(TravelExpenseState::Declined);
 });

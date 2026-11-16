@@ -3,6 +3,7 @@
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Employee;
 use App\Models\TimeOff;
+use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Illuminate\Database\Events\QueryExecuted;
@@ -44,7 +45,7 @@ function assertApprovalsWaiting(Employee $employee, int $count): void
         ->assertInertia(fn (Assert $page) => $page->where('auth.approvalsWaiting', $count));
 }
 
-it('counts the Pending Work Entries, Time Off and Travel Requests of the Manager\'s Direct Reports, but not of Reports further down', function () {
+it('counts the Pending Work Entries, Time Off, Travel Requests and Travel Expenses of the Manager\'s Direct Reports, but not of Reports further down', function () {
     ['ben' => $ben, 'cara' => $cara, 'dev' => $dev] = waitingTeam();
     $eve = Employee::factory()->reportingTo($ben)->create(['name' => 'Eve']);
     WorkEntry::factory()->for(assignmentOf($cara))->count(2)->create(['date' => '2026-11-10']);
@@ -54,9 +55,13 @@ it('counts the Pending Work Entries, Time Off and Travel Requests of the Manager
     WorkEntry::factory()->for(assignmentOf($dev))->create(['date' => '2026-11-10']);
     TimeOff::factory()->unpaid()->for($dev)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
     TravelRequest::factory()->on(assignmentOf($dev))->create();
+    $evesTrip = TravelRequest::factory()->on(assignmentOf($eve, 'Website'))->approved()->create();
+    TravelExpense::factory()->for($evesTrip)->create();
+    TravelExpense::factory()->for($evesTrip)->approved()->create();
+    TravelExpense::factory()->for(TravelRequest::factory()->on(assignmentOf($dev, 'Website'))->approved())->create();
 
-    assertApprovalsWaiting($ben, 5);
-    assertApprovalsWaiting($cara, 3);
+    assertApprovalsWaiting($ben, 6);
+    assertApprovalsWaiting($cara, 4);
 });
 
 it('counts nothing for an Employee who manages no one, their own Pending Work Entries and Time Off included', function () {
@@ -84,8 +89,8 @@ it('counts below several Managers in a row who have left, for the first one up w
     $cara->update(['leaving_date' => '2026-11-10']);
 
     assertApprovalsWaiting($ada, 2);
-    expect($ben->waitingForDecision())->toBe(['workEntries' => 0, 'timeOff' => 0, 'travelRequests' => 0])
-        ->and($cara->waitingForDecision())->toBe(['workEntries' => 0, 'timeOff' => 0, 'travelRequests' => 0]);
+    expect($ben->waitingForDecision())->toBe(['workEntries' => 0, 'timeOff' => 0, 'travelRequests' => 0, 'travelExpenses' => 0])
+        ->and($cara->waitingForDecision())->toBe(['workEntries' => 0, 'timeOff' => 0, 'travelRequests' => 0, 'travelExpenses' => 0]);
 });
 
 it('keeps counting for a Manager on their Leaving Date', function () {
