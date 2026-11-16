@@ -160,9 +160,7 @@ final class WorkEntryDays
     private static function datesWithEntries(Employee $employee, Period $period, Collection $entries): SupportCollection
     {
         $before = $employee->workEntries()
-            ->counted()
-            ->whereDate('work_entries.date', '>=', $period->from->subDays(WorkEntry::COPY_LOOKBACK_DAYS))
-            ->whereDate('work_entries.date', '<', $period->from)
+            ->toCopyOnto($period->from)
             ->get(['work_entries.date']);
 
         return $before->toBase()

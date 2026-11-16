@@ -137,8 +137,18 @@ class EmployeeBuilder extends ModelBuilder
     public function current(): static
     {
         return $this->scoped(function (): void {
-            $this->whereDate('start_date', '<=', today())
-                ->where(fn (Builder $staying) => $staying->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today()));
+            $this->whereDate('start_date', '<=', today())->notFormer();
+        });
+    }
+
+    /**
+     * Limit the query to Employees who aren't Former today: no Leaving Date,
+     * or one from today on. Future Employees are included.
+     */
+    public function notFormer(): static
+    {
+        return $this->scoped(function (): void {
+            $this->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today());
         });
     }
 

@@ -102,9 +102,7 @@ class CopyWorkEntriesRequest extends FormRequest
         }
 
         $latest = $this->employee()->workEntries()
-            ->counted()
-            ->whereDate('work_entries.date', '>=', $this->day()->subDays(WorkEntry::COPY_LOOKBACK_DAYS))
-            ->whereDate('work_entries.date', '<', $this->day())
+            ->toCopyOnto($this->day())
             ->max('work_entries.date');
 
         $this->sourceDateFound = true;
