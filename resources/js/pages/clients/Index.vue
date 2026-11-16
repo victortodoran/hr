@@ -2,13 +2,13 @@
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { Briefcase } from '@lucide/vue';
 import ClientController from '@/actions/App/Http/Controllers/ClientController';
-import DeleteClient from '@/components/clients/DeleteClient.vue';
-import RenameClient from '@/components/clients/RenameClient.vue';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import RenameDialog from '@/components/RenameDialog.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,8 +79,16 @@ const columns: TableColumn[] = [
             </template>
             <template #cell-actions="{ row }">
                 <div class="flex justify-end gap-2">
-                    <RenameClient :client="row" />
-                    <DeleteClient :client="row" />
+                    <RenameDialog
+                        :form="ClientController.update.form(row)"
+                        :name="row.name"
+                        :field-id="`client-name-${row.id}`"
+                    />
+                    <ConfirmDeleteDialog
+                        :form="ClientController.destroy.form(row)"
+                        :title="`Delete ${row.name}?`"
+                        description="Only a Client with no Projects can be deleted."
+                    />
                 </div>
             </template>
             <template #empty>

@@ -2,13 +2,13 @@
 import { Form, Head } from '@inertiajs/vue3';
 import { Building2 } from '@lucide/vue';
 import DepartmentController from '@/actions/App/Http/Controllers/DepartmentController';
-import DeleteDepartment from '@/components/departments/DeleteDepartment.vue';
-import RenameDepartment from '@/components/departments/RenameDepartment.vue';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import RenameDialog from '@/components/RenameDialog.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,8 +70,16 @@ const columns: TableColumn[] = [
             </template>
             <template #cell-actions="{ row }">
                 <div class="flex justify-end gap-2">
-                    <RenameDepartment :department="row" />
-                    <DeleteDepartment :department="row" />
+                    <RenameDialog
+                        :form="DepartmentController.update.form(row)"
+                        :name="row.name"
+                        :field-id="`department-name-${row.id}`"
+                    />
+                    <ConfirmDeleteDialog
+                        :form="DepartmentController.destroy.form(row)"
+                        :title="`Delete ${row.name}?`"
+                        description="Only a Department with no Employees can be deleted."
+                    />
                 </div>
             </template>
             <template #empty>
