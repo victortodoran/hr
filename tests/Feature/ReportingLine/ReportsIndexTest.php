@@ -19,3 +19,20 @@ it('lets the Reports query find each level by Manager through its index', functi
 
     expect($plan)->toContain('employees_manager_id_index');
 });
+
+/**
+ * Finding whom someone is the effective Manager of walks down from them the
+ * same way, so it must not read the whole employees table either.
+ */
+it('lets the effective-Manager query find each level by Manager through its index', function () {
+    $ada = Employee::factory()->create();
+    Employee::factory()->reportingTo($ada)->create();
+
+    $plan = DB::transaction(function () use ($ada): string {
+        DB::statement('SET LOCAL enable_seqscan = off');
+
+        return collect(DB::select('EXPLAIN '.Employee::query()->effectivelyManagedBy($ada)->toRawSql()))->pluck('QUERY PLAN')->implode("\n");
+    });
+
+    expect($plan)->toContain('employees_manager_id_index');
+});
