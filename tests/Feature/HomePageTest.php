@@ -83,16 +83,16 @@ it('shows an Employee their hours for each month this year up to this one, leavi
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-02', 'minutes' => 360]);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'minutes' => 90]);
 
-    $empty = fn (string $month): array => ['month' => $month, 'hours' => 0, 'pending' => 0];
+    $empty = fn (string $month): array => ['month' => $month, 'hours' => 0, 'pendingHours' => 0];
 
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('hoursThisYear', [
                 'year' => 2026,
                 'hours' => 19.5,
-                'pending' => 1.5,
+                'pendingHours' => 1.5,
                 'months' => [
-                    ['month' => '2026-01', 'hours' => 12, 'pending' => 0],
+                    ['month' => '2026-01', 'hours' => 12, 'pendingHours' => 0],
                     $empty('2026-02'),
                     $empty('2026-03'),
                     $empty('2026-04'),
@@ -102,7 +102,7 @@ it('shows an Employee their hours for each month this year up to this one, leavi
                     $empty('2026-08'),
                     $empty('2026-09'),
                     $empty('2026-10'),
-                    ['month' => '2026-11', 'hours' => 7.5, 'pending' => 1.5],
+                    ['month' => '2026-11', 'hours' => 7.5, 'pendingHours' => 1.5],
                 ],
             ]),
         );
@@ -115,9 +115,9 @@ it('starts an Employee\'s months this year at the month of their Start Date when
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('hoursThisYear.months', [
-                ['month' => '2026-09', 'hours' => 2, 'pending' => 2],
-                ['month' => '2026-10', 'hours' => 0, 'pending' => 0],
-                ['month' => '2026-11', 'hours' => 0, 'pending' => 0],
+                ['month' => '2026-09', 'hours' => 2, 'pendingHours' => 2],
+                ['month' => '2026-10', 'hours' => 0, 'pendingHours' => 0],
+                ['month' => '2026-11', 'hours' => 0, 'pendingHours' => 0],
             ]),
         );
 });

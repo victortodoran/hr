@@ -79,3 +79,13 @@ it('shows an Employee their hours this year month by month on a phone, opening a
         ->assertQueryStringHas('month', '2026-10')
         ->assertNoJavaScriptErrors();
 });
+
+it('tells an Employee with no hours this year that none are recorded yet', function () {
+    actingAs(recorder());
+
+    visit(route('landing'))
+        ->assertSee('Hours this year')
+        ->assertSee("You haven't recorded any hours this year.")
+        ->assertNotPresent('[data-test="month-of-hours"]')
+        ->assertNoJavaScriptErrors();
+});

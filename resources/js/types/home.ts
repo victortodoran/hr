@@ -24,7 +24,7 @@ export type MonthOfHours = {
     /** Hours of the month's Work Entries that aren't Declined. */
     hours: number;
     /** How many of those hours are still Pending. */
-    pending: number;
+    pendingHours: number;
 };
 
 /**
@@ -35,6 +35,6 @@ export type MonthOfHours = {
 export type HoursThisYear = {
     year: number;
     hours: number;
-    pending: number;
+    pendingHours: number;
     months: MonthOfHours[];
 };
