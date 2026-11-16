@@ -6,29 +6,38 @@ use App\Enums\AccessChange;
 use App\Models\AccessLogEntry;
 use App\Models\Employee;
 use App\Models\Role;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Every change to Roles and who holds them. Each change is written to the
- * Access Log, with who made it, in the same transaction as the change.
+ * Access Log, with who made it, in the same transaction as the change. At
+ * most one Role is given to every new Employee: giving a Role to them takes
+ * that from any other.
  */
 class ChangeAccess
 {
     /**
      * Create a Role with the given Permissions, each mapped to its Scope or
      * to null for company-wide Permissions, and say whether every new
-     * Employee gets it.
+     * Employee gets it, and, when given, who holds it.
      *
      * @param  array<string, string|null>  $grants
+     * @param  array<int, int>|null  $holders
      */
-    public function createRole(Employee $actor, string $name, array $grants, bool $givenToNewEmployees): Role
+    public function createRole(Employee $actor, string $name, array $grants, bool $givenToNewEmployees, ?array $holders = null): Role
     {
-        return DB::transaction(function () use ($actor, $name, $grants, $givenToNewEmployees): Role {
+        return DB::transaction(function () use ($actor, $name, $grants, $givenToNewEmployees, $holders): Role {
+            if ($givenToNewEmployees) {
+                $this->takeDefaultFromOthers($actor, null);
+            }
+
             $role = Role::query()->create(['name' => $name, 'is_given_to_new_employees' => $givenToNewEmployees]);
             $this->grant($role, $grants);
 
             $this->log($actor, AccessChange::RoleCreated, $role, after: $this->snapshot($role));
+            $this->holdBy($actor, $role, $holders);
 
             return $role;
         });
@@ -54,16 +63,23 @@ class ChangeAccess
     /**
      * Rename the Role, replace its Permissions and Scopes, and say whether
      * every new Employee gets it. Admin always holds every Permission, so
-     * the grants sent for it are ignored, and it is only ever given to
-     * Employees one by one, never to every new Employee.
+     * the grants sent for it are ignored, and it is never given to every
+     * new Employee. When holders are given, the Role is given to and taken
+     * from Employees so exactly they hold it. Everything is refused together
+     * when it leaves nobody able to manage Roles.
      *
      * @param  array<string, string|null>  $grants
+     * @param  array<int, int>|null  $holders
      */
-    public function editRole(Employee $actor, Role $role, string $name, array $grants, bool $givenToNewEmployees): void
+    public function editRole(Employee $actor, Role $role, string $name, array $grants, bool $givenToNewEmployees, ?array $holders = null): void
     {
-        DB::transaction(function () use ($actor, $role, $name, $grants, $givenToNewEmployees): void {
+        DB::transaction(function () use ($actor, $role, $name, $grants, $givenToNewEmployees, $holders): void {
             $someoneCouldManageRoles = $this->someoneCanManageRoles();
             $before = $this->snapshot($role);
+
+            if ($givenToNewEmployees && ! $role->is_admin) {
+                $this->takeDefaultFromOthers($actor, $role);
+            }
 
             $role->update(['name' => $name, 'is_given_to_new_employees' => $givenToNewEmployees && ! $role->is_admin]);
 
@@ -72,8 +88,9 @@ class ChangeAccess
                 $this->grant($role, $grants);
             }
 
-            $this->ensureSomeoneStillCanManageRoles($someoneCouldManageRoles);
             $this->log($actor, AccessChange::RoleEdited, $role, before: $before, after: $this->snapshot($role));
+            $this->holdBy($actor, $role, $holders);
+            $this->ensureSomeoneStillCanManageRoles($someoneCouldManageRoles);
         });
     }
 
@@ -115,6 +132,20 @@ class ChangeAccess
     }
 
     /**
+     * Give the Role to each of the Employees, all or none.
+     *
+     * @param  iterable<int, Employee>  $employees
+     */
+    public function giveRoleToEach(Employee $actor, Role $role, iterable $employees): void
+    {
+        DB::transaction(function () use ($actor, $role, $employees): void {
+            foreach ($employees as $employee) {
+                $this->giveRole($actor, $role, $employee);
+            }
+        });
+    }
+
+    /**
      * Take the Role away from an Employee who holds it.
      */
     public function takeRole(Employee $actor, Role $role, Employee $employee): void
@@ -150,6 +181,50 @@ class ChangeAccess
     private function someoneCanManageRoles(): bool
     {
         return Employee::query()->lastingRoleManagers()->exists();
+    }
+
+    /**
+     * Give the Role to the listed Employees who don't hold it and take it
+     * from those who hold it but aren't listed, logging each; nothing when
+     * no list is given.
+     *
+     * @param  array<int, int>|null  $holders
+     */
+    private function holdBy(Employee $actor, Role $role, ?array $holders): void
+    {
+        if ($holders === null) {
+            return;
+        }
+
+        $current = $role->employees()->pluck('employees.id')->all();
+
+        Employee::query()->whereKey(array_diff($holders, $current))->orderBy('id')->get()
+            ->each(function (Employee $employee) use ($actor, $role): void {
+                $role->employees()->attach($employee);
+                $this->log($actor, AccessChange::RoleGiven, $role, $employee);
+            });
+        Employee::query()->whereKey(array_diff($current, $holders))->orderBy('id')->get()
+            ->each(function (Employee $employee) use ($actor, $role): void {
+                $role->employees()->detach($employee);
+                $this->log($actor, AccessChange::RoleTaken, $role, $employee);
+            });
+    }
+
+    /**
+     * Stop giving every other Role to new Employees, logging each, so at
+     * most one Role is given to them.
+     */
+    private function takeDefaultFromOthers(Employee $actor, ?Role $keep): void
+    {
+        Role::query()
+            ->where('is_given_to_new_employees', true)
+            ->when($keep, fn (Builder $roles, Role $role) => $roles->whereKeyNot($role->id))
+            ->get()
+            ->each(function (Role $previous) use ($actor): void {
+                $before = $this->snapshot($previous);
+                $previous->update(['is_given_to_new_employees' => false]);
+                $this->log($actor, AccessChange::RoleEdited, $previous, before: $before, after: $this->snapshot($previous));
+            });
     }
 
     /**

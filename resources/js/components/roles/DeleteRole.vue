@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
+import { Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import RoleController from '@/actions/App/Http/Controllers/RoleController';
 import InputError from '@/components/InputError.vue';
@@ -27,9 +28,14 @@ const open = ref(false);
 <template>
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
-            <Button variant="ghost" size="sm" class="text-destructive"
-                >Delete</Button
+            <Button
+                variant="ghost"
+                size="icon"
+                class="size-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                :aria-label="`Delete ${role.name}`"
             >
+                <Trash2 class="size-4" aria-hidden="true" />
+            </Button>
         </DialogTrigger>
         <DialogContent>
             <Form

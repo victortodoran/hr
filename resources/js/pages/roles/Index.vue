@@ -1,119 +1,142 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
-import { ShieldCheck } from '@lucide/vue';
-import DataTable from '@/components/DataTable.vue';
+import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
+import { Plus, ShieldCheck } from '@lucide/vue';
+import { computed, ref, watchEffect } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
-import DeleteRole from '@/components/roles/DeleteRole.vue';
-import RoleForm from '@/components/roles/RoleForm.vue';
-import RoleHolders from '@/components/roles/RoleHolders.vue';
-import { Badge } from '@/components/ui/badge';
-import { index } from '@/routes/roles';
+import RoleEditor from '@/components/roles/RoleEditor.vue';
+import RoleList from '@/components/roles/RoleList.vue';
+import RoleView from '@/components/roles/RoleView.vue';
+import { Button } from '@/components/ui/button';
+import { create, edit, index, show } from '@/routes/roles';
 import type {
-    Choice,
+    BreadcrumbItem,
     PermissionChoice,
+    RoleCandidate,
     RoleRecord,
-    TableColumn,
+    RolesPageMode,
 } from '@/types';
 
-defineOptions({
-    layout: {
-        breadcrumbs: [{ title: 'Roles', href: index() }],
-    },
-});
-
+/**
+ * The Roles page: every Role in a list on the left, and on the right the
+ * selected Role, either as it stands or being edited, or a new Role being
+ * made. Which Role and what is being done to it live in the URL.
+ */
 const props = defineProps<{
+    mode: RolesPageMode;
+    /** The selected Role's ID; null when making a new one or there are none. */
+    selected: number | null;
     roles: RoleRecord[];
     permissions: PermissionChoice[];
-    employees: Choice[];
+    /** Every Employee who can be given a Role: current and Future ones. */
+    employees: RoleCandidate[];
 }>();
 
-const columns: TableColumn[] = [
-    { key: 'role', label: 'Role' },
-    { key: 'permissions', label: 'Permissions', minor: true },
-    { key: 'holders', label: 'Held by' },
-];
+const selectedRole = computed(
+    () => props.roles.find((role) => role.id === props.selected) ?? null,
+);
 
-function labelOf(permission: string): string {
-    return (
-        props.permissions.find((choice) => choice.value === permission)
-            ?.label ?? permission
-    );
+const draftName = ref('');
+
+function permissionCount(role: RoleRecord): number {
+    return role.is_admin
+        ? props.permissions.length
+        : Object.keys(role.permissions).length;
 }
+
+const title = computed(() => {
+    if (props.mode === 'create') {
+        return 'New Role';
+    }
+
+    if (props.mode === 'edit' && selectedRole.value) {
+        return `Edit ${selectedRole.value.name}`;
+    }
+
+    return selectedRole.value?.name ?? 'Roles';
+});
+
+watchEffect(() => {
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Company' },
+        { title: 'Roles', href: index() },
+    ];
+
+    if (props.mode === 'create') {
+        breadcrumbs.push({ title: 'New Role', href: create() });
+    } else if (selectedRole.value) {
+        breadcrumbs.push({
+            title: title.value,
+            href: (props.mode === 'edit' ? edit : show)(selectedRole.value.id),
+        });
+    }
+
+    setLayoutProps({ breadcrumbs });
+});
 </script>
 
 <template>
-    <Head title="Roles" />
+    <Head :title="title === 'Roles' ? 'Roles' : `${title} · Roles`" />
 
     <PageContainer width="wide">
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-wrap items-start justify-between gap-4">
             <Heading
                 title="Roles"
                 description="What each Role allows, and who holds it"
             />
-            <RoleForm :permissions="permissions" />
+            <Button v-if="mode !== 'create'" class="min-h-11" as-child>
+                <Link :href="create()" preserve-state preserve-scroll>
+                    <Plus class="size-4" aria-hidden="true" />
+                    New Role
+                </Link>
+            </Button>
         </div>
 
-        <DataTable :columns="columns" :rows="roles">
-            <template #cell-role="{ row }">
-                <div class="grid gap-2">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="font-medium">{{ row.name }}</span>
-                        <Badge
-                            v-if="row.given_to_new_employees"
-                            variant="outline"
-                            >Given to new Employees</Badge
-                        >
-                    </div>
-                    <div class="flex gap-2">
-                        <RoleForm
-                            :key="JSON.stringify(row)"
-                            :role="row"
-                            :permissions="permissions"
-                        />
-                        <DeleteRole v-if="!row.is_admin" :role="row" />
-                    </div>
-                </div>
-            </template>
-            <template #cell-permissions="{ row }">
-                <div class="grid gap-2">
-                    <p v-if="row.is_admin" class="text-muted-foreground">
-                        Admin always holds every Permission, with Scope
-                        everyone.
-                    </p>
-                    <ul
-                        v-if="Object.keys(row.permissions).length > 0"
-                        class="flex flex-wrap gap-2"
-                    >
-                        <li
-                            v-for="(scope, permission) in row.permissions"
-                            :key="permission"
-                        >
-                            <Badge variant="secondary">
-                                {{ labelOf(permission) }}
-                                <span v-if="scope" class="text-muted-foreground"
-                                    >· {{ scope }}</span
-                                >
-                            </Badge>
-                        </li>
-                    </ul>
-                    <p v-else class="text-muted-foreground">No Permissions.</p>
-                </div>
-            </template>
-            <template #cell-holders="{ row }">
-                <RoleHolders :role="row" :employees="employees" />
-            </template>
-            <template #empty>
+        <div class="grid items-start gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+            <RoleList
+                class="lg:sticky lg:top-4"
+                :roles="roles"
+                :selected="selected"
+                :mode="mode"
+                :permission-count="permissionCount"
+                :new-name="draftName"
+            />
+
+            <section class="min-w-0" aria-label="Selected Role">
+                <RoleEditor
+                    v-if="mode === 'create'"
+                    key="create"
+                    v-model:draft-name="draftName"
+                    :role="null"
+                    :roles="roles"
+                    :permissions="permissions"
+                    :employees="employees"
+                    :cancel-to="
+                        selectedRole ? show(selectedRole.id).url : index().url
+                    "
+                />
+                <RoleEditor
+                    v-else-if="mode === 'edit' && selectedRole"
+                    :key="`edit-${selectedRole.id}`"
+                    :role="selectedRole"
+                    :roles="roles"
+                    :permissions="permissions"
+                    :employees="employees"
+                    :cancel-to="show(selectedRole.id).url"
+                />
+                <RoleView
+                    v-else-if="selectedRole"
+                    :role="selectedRole"
+                    :permissions="permissions"
+                    :employees="employees"
+                />
                 <EmptyState
+                    v-else
                     :icon="ShieldCheck"
                     message="Roles say what the Employees holding them may do. There are none yet."
-                >
-                    <template #action>
-                        <RoleForm :permissions="permissions" />
-                    </template>
-                </EmptyState>
-            </template>
-        </DataTable>
+                />
+            </section>
+        </div>
     </PageContainer>
 </template>

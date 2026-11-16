@@ -37,8 +37,8 @@ it('lets an Employee who manages Roles give a Role, and the widest Scope across 
     expect($ben->can(Permission::ViewPay->value, $cara))->toBeFalse();
 
     actingAs($admin)
-        ->post(route('roles.holders.store', $payroll), ['employee_id' => $ben->id])
-        ->assertRedirect(route('roles.index'))
+        ->post(route('roles.holders.store', $payroll), ['employee_ids' => [$ben->id]])
+        ->assertRedirect(route('roles.show', $payroll))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Payroll given to '.$ben->name.'.']);
 
     expect($ben->can(Permission::ViewPay->value, $cara))->toBeTrue();
@@ -58,7 +58,7 @@ it('lets an Employee who manages Roles give any Role to themselves', function ()
     $payroll = Role::factory()->withPermissions([Permission::ManagePay->value => Scope::Everyone])->create();
 
     actingAs($admin)
-        ->post(route('roles.holders.store', $payroll), ['employee_id' => $admin->id])
+        ->post(route('roles.holders.store', $payroll), ['employee_ids' => [$admin->id]])
         ->assertSessionHasNoErrors();
 
     expect($admin->can(Permission::ManagePay->value, Employee::factory()->create()))->toBeTrue();
@@ -68,8 +68,8 @@ it('refuses to give a Role to someone who already holds it, has left, or does no
     $payroll = Role::factory()->create(['name' => 'Payroll']);
 
     actingAs(holderManager())
-        ->post(route('roles.holders.store', $payroll), ['employee_id' => $employee($payroll)])
-        ->assertSessionHasErrors(['employee_id' => $message]);
+        ->post(route('roles.holders.store', $payroll), ['employee_ids' => [$employee($payroll)]])
+        ->assertSessionHasErrors(['employee_ids.0' => $message]);
 
     expect(AccessLogEntry::query()->exists())->toBeFalse();
 })->with([
@@ -82,8 +82,34 @@ it('refuses to give a Role to someone who already holds it, has left, or does no
     'former' => [fn (Role $role): int => Employee::factory()->former()->create()->id, 'A Former Employee can\'t be given a Role.'],
     'not a number' => [fn (Role $role): string => 'ben', 'The Employee field must be an integer.'],
     'unknown' => [fn (Role $role): int => 999_999, 'The selected Employee is invalid.'],
-    'missing' => [fn (Role $role): string => '', 'The Employee field is required.'],
 ]);
+
+it('refuses to give a Role to nobody', function () {
+    actingAs(holderManager())
+        ->post(route('roles.holders.store', Role::factory()->create()), ['employee_ids' => []])
+        ->assertSessionHasErrors(['employee_ids' => 'Choose someone to give the Role to.']);
+});
+
+it('gives a Role to several Employees at once, or to none of them when one can\'t have it', function () {
+    $admin = holderManager();
+    $payroll = Role::factory()->create(['name' => 'Payroll']);
+    $ben = Employee::factory()->create();
+    $zoe = Employee::factory()->future()->create();
+
+    actingAs($admin)
+        ->post(route('roles.holders.store', $payroll), ['employee_ids' => [$ben->id, $zoe->id]])
+        ->assertRedirect(route('roles.show', $payroll))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Payroll given to 2 people.']);
+
+    expect($payroll->employees()->count())->toBe(2)
+        ->and(AccessLogEntry::query()->count())->toBe(2);
+
+    actingAs($admin)
+        ->post(route('roles.holders.store', $payroll), ['employee_ids' => [Employee::factory()->create()->id, Employee::factory()->former()->create()->id]])
+        ->assertSessionHasErrors('employee_ids.1');
+
+    expect($payroll->employees()->count())->toBe(2);
+});
 
 it('lets an Employee who manages Roles take a Role away', function () {
     $admin = holderManager();
@@ -92,7 +118,7 @@ it('lets an Employee who manages Roles take a Role away', function () {
 
     actingAs($admin)
         ->delete(route('roles.holders.destroy', [$payroll, $ben]))
-        ->assertRedirect(route('roles.index'))
+        ->assertRedirect(route('roles.show', $payroll))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => $payroll->name.' taken from '.$ben->name.'.']);
 
     expect($ben->can(Permission::ViewPay->value, $ben))->toBeFalse();
@@ -131,7 +157,7 @@ it('refuses giving and taking Roles to an Employee who does not manage Roles', f
     $payroll = Role::factory()->create();
 
     actingAs(employeeWith([Permission::ManageEmployees->value => null]))
-        ->{$method}($url($payroll, $ben), ['employee_id' => $ben->id])
+        ->{$method}($url($payroll, $ben), ['employee_ids' => [$ben->id]])
         ->assertForbidden();
 })->with([
     'give' => ['post', fn (Role $role, Employee $employee): string => route('roles.holders.store', $role)],
@@ -146,8 +172,8 @@ it('offers every Employee who has not left as someone to give Roles to', functio
     actingAs($admin)->get(route('roles.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('employees', [
-                ['id' => $admin->id, 'name' => $admin->name],
-                ['id' => $future->id, 'name' => 'Zoe Future'],
+                ['id' => $admin->id, 'name' => $admin->name, 'status' => 'current'],
+                ['id' => $future->id, 'name' => 'Zoe Future', 'status' => 'future'],
             ])
             ->etc(),
         );

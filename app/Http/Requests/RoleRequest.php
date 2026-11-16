@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Enums\Scope;
+use App\Models\Employee;
 use App\Models\Role;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -12,8 +14,10 @@ use Illuminate\Validation\Rule;
 
 /**
  * A Role's name, Permissions and whether new Employees get it, when creating
- * or editing one. Permissions arrive as a map from each chosen Permission to
- * its Scope, or to null for company-wide Permissions.
+ * or editing one, and, when sent, everyone who should hold it. Permissions
+ * arrive as a map from each chosen Permission to its Scope, or to null for
+ * company-wide Permissions. A holder must not have left, unless they already
+ * hold the Role.
  */
 class RoleRequest extends FormRequest
 {
@@ -33,6 +37,8 @@ class RoleRequest extends FormRequest
             ],
             'permissions' => ['present', 'array', $this->eachPermissionWithItsScope()],
             'given_to_new_employees' => ['required', 'boolean'],
+            'holders' => ['sometimes', 'array'],
+            'holders.*' => ['bail', 'integer', 'distinct', Rule::exists(Employee::class, 'id'), $this->stillHereUnlessHolding($role instanceof Role ? $role : null)],
         ];
     }
 
@@ -50,11 +56,46 @@ class RoleRequest extends FormRequest
     }
 
     /**
+     * The IDs of everyone who should hold the Role, or null when none were
+     * sent, to leave its holders as they are.
+     *
+     * @return array<int, int>|null
+     */
+    public function holders(): ?array
+    {
+        return $this->has('holders') ? array_map(intval(...), $this->array('holders')) : null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return ['holders.*' => __('Employee')];
+    }
+
+    /**
      * Whether every new Employee should be given the Role.
      */
     public function givenToNewEmployees(): bool
     {
         return $this->boolean('given_to_new_employees');
+    }
+
+    /**
+     * Refuses a Former Employee as a holder, unless they already hold the
+     * Role and are only kept on.
+     */
+    private function stillHereUnlessHolding(?Role $role): Closure
+    {
+        return function (string $attribute, mixed $employeeId, Closure $fail) use ($role): void {
+            $employee = Employee::query()->findOrFail(intval($employeeId));
+
+            if ($employee->employmentStatus() === EmploymentStatus::Former
+                && ! ($role?->employees()->whereKey($employee->id)->exists() ?? false)) {
+                $fail(__(':name has left, so they can\'t be given a Role.', ['name' => $employee->name]));
+            }
+        };
     }
 
     /**

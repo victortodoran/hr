@@ -38,6 +38,24 @@ enum Permission: string
     }
 
     /**
+     * The area of the HR system the Permission is about, as the Roles page
+     * groups them: Employees, Assignments, Pay, Work entries, Time off,
+     * Organization or Administration, in the Permissions' own order.
+     */
+    public function group(): string
+    {
+        return match ($this) {
+            self::ViewEmployeeRecords, self::ManageEmployees => 'Employees',
+            self::ViewAssignments, self::ManageAssignments => 'Assignments',
+            self::ViewPay, self::ManagePay => 'Pay',
+            self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries, self::LockWorkEntries => 'Work entries',
+            self::ViewTimeOff, self::ManagePaidDays => 'Time off',
+            self::ViewDirectory, self::ViewProjects, self::ManageProjects, self::ManageClients, self::ManageDepartments => 'Organization',
+            self::ManageRoles, self::ManageCompany => 'Administration',
+        };
+    }
+
+    /**
      * Whether this Permission is about Employees and so carries a Scope.
      * The others always apply company-wide.
      */

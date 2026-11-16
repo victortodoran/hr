@@ -5,12 +5,13 @@ import { Spinner } from '@/components/ui/spinner';
 
 /**
  * The submit button every form uses: disabled and showing a spinner while the
- * form is saving.
+ * form is saving, and disabled too when the form can't be sent yet.
  */
 defineProps<{
     processing: boolean;
     variant?: ButtonVariants['variant'];
     size?: ButtonVariants['size'];
+    disabled?: boolean;
 }>();
 </script>
 
@@ -19,7 +20,7 @@ defineProps<{
         type="submit"
         :variant="variant"
         :size="size"
-        :disabled="processing"
+        :disabled="processing || disabled"
     >
         <Spinner v-if="processing" />
         <slot />
