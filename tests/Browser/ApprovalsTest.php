@@ -1,10 +1,12 @@
 <?php
 
 use App\Enums\TimeOffState;
+use App\Enums\WorkEntryState;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\TimeOffApprovalController;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;
+use Carbon\CarbonImmutable;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
@@ -43,4 +45,26 @@ it('lets a Manager work through one Employee\'s Work Entries on one Project at a
         ->assertNoJavaScriptErrors();
 
     expect($timeOff->refresh()->state)->toBe(TimeOffState::Approved);
+});
+
+it('keeps Work Entries ticked on one page when moving to the next, approving them all together', function () {
+    $ben = managerBen();
+    $cara = recorder(['manager_id' => $ben->id]);
+    $relaunch = assignmentOf($cara);
+    collect(range(0, 25))->each(fn (int $day) => WorkEntry::factory()->for($relaunch)->create(['date' => CarbonImmutable::parse('2026-11-02')->addDays($day)]));
+
+    actingAs($ben);
+
+    visit(route('approvals.index', ['tab' => 'work-entries']))
+        ->click('main table tbody tr:first-child [role="checkbox"]')
+        ->assertSee('1 selected')
+        ->click('Next')
+        ->assertSee('26–26 of 26')
+        ->click('main table tbody tr:first-child [role="checkbox"]')
+        ->assertSee('2 selected')
+        ->click('Approve')
+        ->assertSee('0 selected')
+        ->assertNoJavaScriptErrors();
+
+    expect(WorkEntry::query()->where('state', WorkEntryState::Approved)->count())->toBe(2);
 });

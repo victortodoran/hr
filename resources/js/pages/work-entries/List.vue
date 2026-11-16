@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import ReopeningController from '@/actions/App/Http/Controllers/ReopeningController';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
+import SelectionBar from '@/components/SelectionBar.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useBulkSelection } from '@/composables/useBulkSelection';
 import { Label } from '@/components/ui/label';
 import LockDialog from '@/components/work-entries/LockDialog.vue';
 import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
@@ -69,11 +71,8 @@ const columns = computed(() =>
         : 'grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[4.5rem_minmax(0,10rem)_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem]',
 );
 
-/** The IDs of the selected Work Entries, kept across pages. */
-const selected = ref<number[]>([]);
-
 function reloadList(query: Record<string, string>): void {
-    selected.value = [];
+    clear();
     router.get(
         index.url({ query }),
         {},
@@ -93,25 +92,18 @@ const headerOnPhone = computed(
     () => canSelect.value && selectableOnPage.value.length > 0,
 );
 
-const isPageSelected = computed(
-    () =>
-        selectableOnPage.value.length > 0 &&
-        selectableOnPage.value.every((entry) =>
-            selected.value.includes(entry.id),
-        ),
+const {
+    selected,
+    isPageSelected,
+    isSelected,
+    toggle,
+    togglePage,
+    selectAllMatching,
+    clear,
+} = useBulkSelection(
+    () => selectableOnPage.value,
+    () => props.matchingIds,
 );
-
-function toggle(id: number, checked: boolean): void {
-    selected.value = checked
-        ? [...selected.value, id]
-        : selected.value.filter((selectedId) => selectedId !== id);
-}
-
-function togglePage(checked: boolean): void {
-    const onPage = selectableOnPage.value.map((entry) => entry.id);
-    const others = selected.value.filter((id) => !onPage.includes(id));
-    selected.value = checked ? [...others, ...onPage] : others;
-}
 
 /** Selecting every match is only useful when they are all Approved, the state the viewer can act on. */
 const canSelectAllMatching = computed(
@@ -121,24 +113,13 @@ const canSelectAllMatching = computed(
         canSelect.value,
 );
 
-function selectAllMatching(): void {
-    router.reload({
-        only: ['matchingIds'],
-        onSuccess: () => {
-            selected.value = [...(props.matchingIds ?? [])];
-        },
-    });
-}
-
 function reopen(): void {
     router.post(
         ReopeningController.store.url(),
         { ids: selected.value },
         {
             preserveScroll: true,
-            onSuccess: () => {
-                selected.value = [];
-            },
+            onSuccess: clear,
         },
     );
 }
@@ -197,37 +178,19 @@ function signOffs(entry: ListedWorkEntry): string {
         />
 
         <div class="flex flex-col gap-3">
-            <div
+            <SelectionBar
                 v-if="canSelect"
-                class="flex flex-wrap items-center justify-between gap-3 text-sm"
+                :count="selected.length"
+                :matching="canSelectAllMatching ? entries.total : undefined"
+                @select-all="selectAllMatching"
+                @clear="clear"
             >
-                <div class="flex items-center gap-3">
-                    <span class="text-muted-foreground"
-                        >{{ selected.length }} selected</span
-                    >
-                    <Button
-                        v-if="canSelectAllMatching"
-                        variant="link"
-                        size="sm"
-                        class="px-0"
-                        @click="selectAllMatching"
-                        >Select all {{ entries.total }} matching</Button
-                    >
-                    <Button
-                        v-if="selected.length > 0"
-                        variant="link"
-                        size="sm"
-                        class="px-0"
-                        @click="selected = []"
-                        >Clear</Button
-                    >
-                </div>
-                <div class="flex gap-2">
+                <template #actions>
                     <LockDialog
                         v-if="canLock"
                         :ids="selected"
                         :filters="filters"
-                        @locked="selected = []"
+                        @locked="clear"
                     />
                     <Button
                         v-if="canReopen"
@@ -236,8 +199,8 @@ function signOffs(entry: ListedWorkEntry): string {
                         @click="reopen"
                         >Reopen</Button
                     >
-                </div>
-            </div>
+                </template>
+            </SelectionBar>
 
             <div class="overflow-hidden rounded-lg border text-sm">
                 <div
@@ -289,7 +252,7 @@ function signOffs(entry: ListedWorkEntry): string {
                         <span v-if="canSelect" class="flex size-4">
                             <Checkbox
                                 v-if="entry.can_reopen || entry.can_lock"
-                                :model-value="selected.includes(entry.id)"
+                                :model-value="isSelected(entry.id)"
                                 :aria-label="`Select ${entry.employee.name}'s Work Entry on ${formatDate(entry.date)}`"
                                 @update:model-value="
                                     toggle(entry.id, $event === true)
@@ -358,7 +321,7 @@ function signOffs(entry: ListedWorkEntry): string {
                 />
             </div>
 
-            <Pagination :page="entries" />
+            <Pagination :page="entries" preserve-state />
         </div>
     </PageContainer>
 </template>

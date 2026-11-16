@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { CheckCheck } from '@lucide/vue';
-import { computed, ref } from 'vue';
 import ApprovalController from '@/actions/App/Http/Controllers/ApprovalController';
 import ApprovalFilterBar from '@/components/approvals/ApprovalFilterBar.vue';
 import DeclineWorkEntriesDialog from '@/components/approvals/DeclineWorkEntriesDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Pagination from '@/components/Pagination.vue';
+import SelectionBar from '@/components/SelectionBar.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useBulkSelection } from '@/composables/useBulkSelection';
 import { formatDate } from '@/lib/dates';
 import { formatHours } from '@/lib/work-entries';
 import { index } from '@/routes/approvals';
@@ -46,43 +47,26 @@ const columns: TableColumn[] = [
     { key: 'hours', label: 'Hours', align: 'end' },
 ];
 
-/** The IDs of the selected Work Entries, kept across pages. */
-const selected = ref<number[]>([]);
+const {
+    selected,
+    isPageSelected,
+    isSelected,
+    toggle,
+    togglePage,
+    selectAllMatching,
+    clear,
+} = useBulkSelection(
+    () => props.entries.data,
+    () => props.matchingIds,
+);
 
 function reloadList(query: Record<string, string>): void {
-    selected.value = [];
+    clear();
     router.get(
         index.url({ query: { ...query, tab: 'work-entries' } }),
         {},
         { preserveState: true, replace: true },
     );
-}
-
-const isPageSelected = computed(
-    () =>
-        props.entries.data.length > 0 &&
-        props.entries.data.every((entry) => selected.value.includes(entry.id)),
-);
-
-function toggle(id: number, checked: boolean): void {
-    selected.value = checked
-        ? [...selected.value, id]
-        : selected.value.filter((selectedId) => selectedId !== id);
-}
-
-function togglePage(checked: boolean): void {
-    const onPage = props.entries.data.map((entry) => entry.id);
-    const others = selected.value.filter((id) => !onPage.includes(id));
-    selected.value = checked ? [...others, ...onPage] : others;
-}
-
-function selectAllMatching(): void {
-    router.reload({
-        only: ['matchingIds'],
-        onSuccess: () => {
-            selected.value = [...(props.matchingIds ?? [])];
-        },
-    });
 }
 
 function approve(): void {
@@ -91,9 +75,7 @@ function approve(): void {
         { ids: selected.value },
         {
             preserveScroll: true,
-            onSuccess: () => {
-                selected.value = [];
-            },
+            onSuccess: clear,
         },
     );
 }
@@ -109,38 +91,19 @@ function approve(): void {
             @change="reloadList"
         />
 
-        <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <div class="flex items-center gap-3">
-                <span class="text-muted-foreground"
-                    >{{ selected.length }} selected</span
-                >
-                <Button
-                    v-if="entries.total > 0"
-                    variant="link"
-                    size="sm"
-                    class="px-0"
-                    @click="selectAllMatching"
-                    >Select all {{ entries.total }} matching</Button
-                >
-                <Button
-                    v-if="selected.length > 0"
-                    variant="link"
-                    size="sm"
-                    class="px-0"
-                    @click="selected = []"
-                    >Clear</Button
-                >
-            </div>
-            <div class="flex gap-2">
-                <DeclineWorkEntriesDialog
-                    :ids="selected"
-                    @declined="selected = []"
-                />
+        <SelectionBar
+            :count="selected.length"
+            :matching="entries.total"
+            @select-all="selectAllMatching"
+            @clear="clear"
+        >
+            <template #actions>
+                <DeclineWorkEntriesDialog :ids="selected" @declined="clear" />
                 <Button :disabled="selected.length === 0" @click="approve"
                     >Approve</Button
                 >
-            </div>
-        </div>
+            </template>
+        </SelectionBar>
 
         <DataTable :columns="columns" :rows="entries.data">
             <template #head-select>
@@ -153,7 +116,7 @@ function approve(): void {
             </template>
             <template #cell-select="{ row }">
                 <Checkbox
-                    :model-value="selected.includes(row.id)"
+                    :model-value="isSelected(row.id)"
                     :aria-label="`Select ${row.employee.name}'s Work Entry on ${formatDate(row.date)}`"
                     @update:model-value="toggle(row.id, $event === true)"
                 />
@@ -187,6 +150,6 @@ function approve(): void {
             <span class="tabular-nums">{{ formatHours(total) }}</span>
         </p>
 
-        <Pagination :page="entries" />
+        <Pagination :page="entries" preserve-state />
     </div>
 </template>
