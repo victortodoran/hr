@@ -82,12 +82,13 @@ it('shows an Employee their hours this year month by month on a phone, opening a
         ->assertNoJavaScriptErrors();
 });
 
-it('tells an Employee with no hours this year that none are recorded yet', function () {
+it('tells an Employee with no hours this month or year that none count yet, each card opening this month\'s Work Entries', function () {
     actingAs(recorder());
 
     visit(route('landing'))
-        ->assertSee('Hours this year')
+        ->assertSee('No hours this month yet. Declined ones don\'t count.')
         ->assertSee("You haven't recorded any hours this year.")
         ->assertNotPresent('[data-test="month-of-hours"]')
+        ->assertScript("[...document.querySelectorAll('a')].filter((link) => link.textContent.includes('Open My Work Entries')).map((link) => new URL(link.href).searchParams.get('month')).join()", '2026-11,2026-11')
         ->assertNoJavaScriptErrors();
 });

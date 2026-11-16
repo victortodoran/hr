@@ -68,8 +68,9 @@ class HomeController extends Controller
     }
 
     /**
-     * The Employee's hours this month, from its first day to its last,
-     * leaving out Declined Work Entries, and how many of its Work Entries
+     * The Employee's hours this month, from its first day to today, as this
+     * month's bar in hours this year counts them, leaving out Declined Work
+     * Entries, and how many of its Work Entries
      * are Pending. Only for an Employee who records hours and can see them:
      * not the top Employee, who records no Work Entries.
      *
@@ -77,10 +78,11 @@ class HomeController extends Controller
      */
     private function hoursThisMonth(Employee $employee): array
     {
-        $month = CarbonImmutable::today()->startOfMonth();
+        $today = CarbonImmutable::today();
+        $month = $today->startOfMonth();
         $entries = $employee->workEntries()
             ->counted()
-            ->whereBetween('work_entries.date', [$month->toDateString(), $month->endOfMonth()->toDateString()])
+            ->whereBetween('work_entries.date', [$month->toDateString(), $today->toDateString()])
             ->get();
 
         return [

@@ -41,6 +41,7 @@ it('shows a regular Employee their hours this month, Paid Days left and next Tim
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10', 'minutes' => 360]);
     WorkEntry::factory()->for($relaunch)->declined()->create(['date' => '2026-11-05', 'minutes' => 60]);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-10-31', 'minutes' => 480]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-12', 'minutes' => 480]);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-12-01', 'minutes' => 480]);
     $next = TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-23']);
 

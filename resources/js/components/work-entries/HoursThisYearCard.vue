@@ -68,7 +68,17 @@ function describe(month: MonthOfHours): string {
             >
                 <template #action>
                     <Button variant="outline" as-child>
-                        <Link :href="workEntries()">Open My Work Entries</Link>
+                        <Link
+                            :href="
+                                workEntries({
+                                    query: {
+                                        month: hoursThisYear.months.at(-1)
+                                            ?.month,
+                                    },
+                                })
+                            "
+                            >Open My Work Entries</Link
+                        >
                     </Button>
                 </template>
             </EmptyState>

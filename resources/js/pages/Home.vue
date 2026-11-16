@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
+import { computed } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
@@ -37,7 +38,7 @@ defineOptions({
 /**
  * Each block is null when it doesn't apply to the Employee.
  */
-defineProps<{
+const props = defineProps<{
     /** Null for the top Employee and anyone who can't see Work Entries. */
     hoursThisMonth: HoursThisMonth | null;
     /** Null exactly when hoursThisMonth is. */
@@ -50,6 +51,11 @@ defineProps<{
     /** What waits for the Employee to decide; null when nothing does. */
     waitingForYou: ApprovalsWaiting | null;
 }>();
+
+/** My Work Entries on this month. */
+const thisMonthsWorkEntries = computed(() =>
+    workEntries({ query: { month: props.hoursThisMonth?.month ?? '' } }),
+);
 </script>
 
 <template>
@@ -106,23 +112,13 @@ defineProps<{
                 </CardHeader>
                 <CardContent>
                     <EmptyState
-                        v-if="
-                            hoursThisMonth.hours === 0 &&
-                            hoursThisMonth.pending === 0
-                        "
+                        v-if="hoursThisMonth.hours === 0"
                         :icon="Clock"
-                        message="You haven't logged any hours this month."
+                        message="No hours this month yet. Declined ones don't count."
                     >
                         <template #action>
                             <Button variant="outline" as-child>
-                                <Link
-                                    :href="
-                                        workEntries({
-                                            query: {
-                                                month: hoursThisMonth.month,
-                                            },
-                                        })
-                                    "
+                                <Link :href="thisMonthsWorkEntries"
                                     >Open My Work Entries</Link
                                 >
                             </Button>
@@ -147,11 +143,7 @@ defineProps<{
                             >
                         </p>
                         <Link
-                            :href="
-                                workEntries({
-                                    query: { month: hoursThisMonth.month },
-                                })
-                            "
+                            :href="thisMonthsWorkEntries"
                             class="inline-block underline underline-offset-4"
                             >Open My Work Entries</Link
                         >
