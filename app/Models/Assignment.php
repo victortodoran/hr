@@ -2,12 +2,10 @@
 
 namespace App\Models;
 
-use App\Enums\Permission;
-use Carbon\CarbonInterface;
+use App\Models\Builders\AssignmentBuilder;
 use Database\Factories\AssignmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Scope as QueryScope;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -38,6 +36,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, WorkEntry> $workEntries
  */
 #[Fillable(['project_id', 'job_title', 'start_date', 'end_date', 'capacity'])] // @pest-mutate-ignore (class attributes never show as covered)
+#[UseEloquentBuilder(AssignmentBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
 class Assignment extends Model
 {
     /** @use HasFactory<AssignmentFactory> */
@@ -98,67 +97,5 @@ class Assignment extends Model
     public function isInternal(): bool
     {
         return $this->project->is_internal;
-    }
-
-    /**
-     * Limit the query to Internal Assignments.
-     *
-     * @param  Builder<Assignment>  $query
-     */
-    #[QueryScope]
-    protected function internal(Builder $query): void
-    {
-        $query->whereRelation('project', 'is_internal', true);
-    }
-
-    /**
-     * Limit the query to Assignments to Projects other than the Internal
-     * Project.
-     *
-     * @param  Builder<Assignment>  $query
-     */
-    #[QueryScope]
-    protected function notInternal(Builder $query): void
-    {
-        $query->whereRelation('project', 'is_internal', false);
-    }
-
-    /**
-     * Limit the query to the Assignments the Employee may see, matching
-     * AssignmentPolicy::viewAny().
-     *
-     * @param  Builder<Assignment>  $query
-     */
-    #[QueryScope]
-    protected function visibleTo(Builder $query, Employee $actor): void
-    {
-        $query->whereHas('employee', fn (Builder $employees) => $actor->limitToReachOf($employees, Permission::seeingAssignments()));
-    }
-
-    /**
-     * Limit the query to Assignments running on the day: started by then and
-     * not yet ended. The end date counts as a day of the Assignment.
-     *
-     * @param  Builder<Assignment>  $query
-     */
-    #[QueryScope]
-    protected function runningOn(Builder $query, CarbonInterface $day): void
-    {
-        $query->whereDate('start_date', '<=', $day)
-            ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $day));
-    }
-
-    /**
-     * Order Assignments by their Employee's name, then from the earliest.
-     *
-     * @param  Builder<Assignment>  $query
-     */
-    #[QueryScope]
-    protected function orderByEmployeeName(Builder $query): void
-    {
-        $query->orderBy(Employee::query()->select('name')->whereColumn('employees.id', 'assignments.employee_id'))
-            ->orderBy('employee_id')
-            ->orderBy('start_date')
-            ->orderBy('id');
     }
 }

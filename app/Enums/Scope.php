@@ -2,8 +2,8 @@
 
 namespace App\Enums;
 
+use App\Models\Builders\EmployeeBuilder;
 use App\Models\Employee;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Which Employees a Permission about Employees applies to.
@@ -54,10 +54,8 @@ enum Scope: string
      * Limit a query of Employees to those this Scope, held by the acting
      * Employee, covers: the query counterpart of covers(). Each Scope adds
      * a condition, even everyone, so Scopes can be combined with orWhere.
-     *
-     * @param  Builder<Employee>  $employees
      */
-    public function limit(Builder $employees, Employee $actor): void
+    public function limit(EmployeeBuilder $employees, Employee $actor): void
     {
         match ($this) {
             self::Own => $employees->whereKey($actor->id),

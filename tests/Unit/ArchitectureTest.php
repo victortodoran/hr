@@ -2,7 +2,12 @@
 
 arch('PHP best practices')->preset()->php();
 
-arch('Laravel conventions')->preset()->laravel();
+arch('Laravel conventions')->preset()->laravel()->ignoring('App\Models\Builders');
+
+arch('each builder builds queries for its model')
+    ->expect('App\Models\Builders')
+    ->toExtend('Illuminate\Database\Eloquent\Builder')
+    ->toHaveSuffix('Builder');
 
 arch('no insecure functions')->preset()->security();
 
