@@ -8,8 +8,9 @@ use App\Models\Employee;
 
 /**
  * Who may see and change Assignments. Each check is made against the
- * Employee the Assignments belong to, through the Gate of the Permission
- * behind it, so the acting Employee's Scope decides.
+ * Employee the Assignments belong to, so the acting Employee's Scope decides:
+ * through the Gate of the Permission behind it, or, for seeing them, the
+ * Permissions that show them, read the same way the Gates read them.
  */
 class AssignmentPolicy
 {

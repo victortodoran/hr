@@ -367,38 +367,19 @@ it('forbids an Employee who doesn\'t exist just as one outside the Scope, so nei
     $response->assertForbidden();
 });
 
-it('forbids the page to someone without either Work Entries Permission', function () {
-    $ben = employeeWith([Permission::ViewAssignments->value => Scope::Everyone]);
-
-    $response = actingAs($ben)->get(route('work-entries.index'));
-
-    $response->assertForbidden();
-});
-
-it('shows the Work Entries item in the navigation only to those holding a Work Entries Permission', function (array $grants, bool $shown) {
+it('offers My Work Entries in the navigation, opens it and shows the hours on Home exactly for those who may see their own Work Entries', function (array $grants, bool $shown) {
     $ben = employeeWith($grants);
 
-    $response = actingAs($ben)->get(route('profile.edit'));
+    actingAs($ben)->get(route('work-entries.index'))->assertStatus($shown ? 200 : 403);
 
-    $response->assertInertia(fn (Assert $page) => $page->where('auth.canSeeWorkEntries', $shown));
+    actingAs($ben)->get(route('landing'))->assertInertia(fn (Assert $page) => $page
+        ->where('auth.canSeeWorkEntries', $shown)
+        ->where('hoursThisMonth', fn (mixed $hours): bool => $shown ? $hours !== null : $hours === null));
 })->with([
     'view own' => [[Permission::ViewWorkEntries->value => Scope::Own], true],
     'manage own' => [[Permission::ManageWorkEntries->value => Scope::Own], true],
     'reopen for everyone' => [[Permission::ReopenWorkEntries->value => Scope::Everyone], true],
     'lock' => [[Permission::LockWorkEntries->value => null], true],
-    'view only for Reports' => [[Permission::ViewWorkEntries->value => Scope::Reports], false],
-    'neither' => [[Permission::ViewAssignments->value => Scope::Own], false],
-]);
-
-it('opens My Work Entries exactly when the navigation offers it', function (array $grants, bool $shown) {
-    $ben = employeeWith($grants);
-
-    $response = actingAs($ben)->get(route('work-entries.index'));
-
-    $response->assertStatus($shown ? 200 : 403);
-})->with([
-    'view own' => [[Permission::ViewWorkEntries->value => Scope::Own], true],
-    'reopen for everyone' => [[Permission::ReopenWorkEntries->value => Scope::Everyone], true],
-    'lock' => [[Permission::LockWorkEntries->value => null], true],
-    'view only for Reports' => [[Permission::ViewWorkEntries->value => Scope::Reports], false],
+    'view only for Reports, which never covers one\'s own' => [[Permission::ViewWorkEntries->value => Scope::Reports], false],
+    'no Work Entries Permission' => [[Permission::ViewAssignments->value => Scope::Everyone], false],
 ]);

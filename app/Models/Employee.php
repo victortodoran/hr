@@ -477,8 +477,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
     {
         $scopes = collect($permissions)
             ->map(fn (Permission $permission): ?Scope => $this->reachOf($permission))
-            ->filter()
-            ->unique();
+            ->filter();
 
         $employees->where(function (Builder $covered) use ($scopes): void {
             $covered->whereRaw('false');
