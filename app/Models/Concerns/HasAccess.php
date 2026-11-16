@@ -58,6 +58,16 @@ trait HasAccess
     }
 
     /**
+     * Whether the Employee sees Travel Expenses of anyone besides themselves
+     * across Employees: one of the Permissions for seeing them reaches
+     * beyond themselves.
+     */
+    public function seesOthersTravelExpenses(): bool
+    {
+        return $this->reachesOthersThrough(Permission::seeingTravelExpenses());
+    }
+
+    /**
      * How far a Permission reaches for the Employee: the widest Scope their
      * Roles give for one about Employees, Everyone for a company-wide one
      * they hold, or null when no Role grants it.

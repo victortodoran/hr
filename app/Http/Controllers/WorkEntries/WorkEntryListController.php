@@ -72,7 +72,7 @@ class WorkEntryListController extends Controller
         $matching = WorkEntry::query()
             ->ofEmployees($visible())
             ->filteredBy([...$filters, 'employee' => is_int($employee) ? $employee : null]);
-        $reopenable = Employee::query()->reopenableBy($actor)->pluck('id');
+        $reopenable = Employee::query()->reopenableBy($actor, Permission::ReopenWorkEntries)->pluck('id');
 
         return Inertia::render('work-entries/List', [
             'filters' => $filters,

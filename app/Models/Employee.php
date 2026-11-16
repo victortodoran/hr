@@ -141,6 +141,17 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * The Travel Expenses the Employee recorded on their Travel Requests,
+     * in every state.
+     *
+     * @return HasManyThrough<TravelExpense, TravelRequest, $this>
+     */
+    public function travelExpenses(): HasManyThrough
+    {
+        return $this->hasManyThrough(TravelExpense::class, TravelRequest::class);
+    }
+
+    /**
      * How many Paid Days the Employee has left in a year: their Paid Days,
      * which every year gets in full, minus the weekdays that year of their
      * Pending and Approved Paid Time Off. It is negative when their Paid Days

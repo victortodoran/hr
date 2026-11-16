@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\Permission;
 use App\Enums\TravelExpenseState;
 use App\Models\Employee;
 use App\Models\TravelExpense;
@@ -11,17 +12,50 @@ use App\Models\TravelRequest;
  * Who may act on Travel Expenses. Every Employee records their own, on
  * their own Travel Requests, with no Permission needed, and nobody records
  * one for someone else. Only the Employee's effective Manager approves or
- * declines them: no Role grants that.
+ * declines them: no Role grants that. Reopening and locking them come from
+ * a Role, like those of Work Entries (ADR 0005).
  */
 class TravelExpensePolicy
 {
     /**
      * Seeing a Travel Expense and its receipt: the Employee whose Travel
-     * Expense it is, and their effective Manager while they can answer it.
+     * Expense it is, their effective Manager while they can answer it, and
+     * whoever one of the Permissions for seeing them
+     * (Permission::seeingTravelExpenses()) reaches the Employee for.
      */
     public function view(Employee $actor, TravelExpense $travelExpense): bool
     {
-        return $travelExpense->travelRequest->employee_id === $actor->id || $this->decide($actor, $travelExpense);
+        return $travelExpense->travelRequest->employee_id === $actor->id
+            || $actor->reachesThrough(Permission::seeingTravelExpenses(), $travelExpense->travelRequest->employee)
+            || $this->decide($actor, $travelExpense);
+    }
+
+    /**
+     * The Travel Expenses page, across Employees, is for someone who sees
+     * the Travel Expenses of anyone besides themselves.
+     */
+    public function viewList(Employee $actor): bool
+    {
+        return $actor->seesOthersTravelExpenses();
+    }
+
+    /**
+     * Reopening Travel Expenses needs reopen travel expenses from a Role;
+     * whose Travel Expenses it covers depends on its Scope, never the
+     * reopener's own.
+     */
+    public function reopen(Employee $actor): bool
+    {
+        return $actor->holds(Permission::ReopenTravelExpenses);
+    }
+
+    /**
+     * Locking Travel Expenses needs lock travel expenses, which applies
+     * company-wide, the locker's own Travel Expenses included.
+     */
+    public function lock(Employee $actor): bool
+    {
+        return $actor->holds(Permission::LockTravelExpenses);
     }
 
     /**

@@ -89,14 +89,15 @@ class EmployeeBuilder extends ModelBuilder
     }
 
     /**
-     * Limit the query to the Employees whose Work Entries the given Employee
-     * may reopen: those their reopen Scope covers, never themselves. Being
-     * someone's Manager doesn't count, so without the Permission it's nobody.
+     * Limit the query to the Employees whose Work Entries, or Travel
+     * Expenses, the given Employee may reopen through the reopen Permission
+     * given: those its Scope covers, never themselves. Being someone's
+     * Manager doesn't count, so without the Permission it's nobody.
      */
-    public function reopenableBy(Employee $reopener): static
+    public function reopenableBy(Employee $reopener, Permission $reopen): static
     {
-        return $this->scoped(function () use ($reopener): void {
-            $scope = $reopener->widestScopeFor(Permission::ReopenWorkEntries);
+        return $this->scoped(function () use ($reopener, $reopen): void {
+            $scope = $reopener->widestScopeFor($reopen);
 
             if ($scope === null) {
                 $this->whereRaw('false');
@@ -117,6 +118,18 @@ class EmployeeBuilder extends ModelBuilder
     {
         return $this->scoped(function () use ($viewer): void {
             $viewer->limitToReachOf($this, Permission::seeingWorkEntries());
+        });
+    }
+
+    /**
+     * Limit the query to the Employees whose Travel Expenses the given
+     * Employee may see across Employees, through the Permissions that show
+     * them (Permission::seeingTravelExpenses()).
+     */
+    public function withTravelExpensesVisibleTo(Employee $viewer): static
+    {
+        return $this->scoped(function () use ($viewer): void {
+            $viewer->limitToReachOf($this, Permission::seeingTravelExpenses());
         });
     }
 

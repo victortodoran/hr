@@ -39,6 +39,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read TravelRequest $travelRequest
+ * @property-read Employee|null $approver
+ * @property-read Employee|null $locker
  */
 #[Fillable(['paid_on', 'amount', 'category', 'description', 'receipt_path'])] // @pest-mutate-ignore (class attributes never show as covered)
 #[UseEloquentBuilder(TravelExpenseBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
@@ -94,6 +96,38 @@ class TravelExpense extends Model
     }
 
     /**
+     * Who approved the Travel Expense and on which day, or null while it
+     * isn't Approved or Locked. Nobody approved that of an Employee with no
+     * Manager, which was Approved at once, so its approver is null. Needs
+     * the approver loaded.
+     *
+     * @return array{by: string|null, on: string}|null
+     */
+    public function approval(): ?array
+    {
+        if ($this->approved_at === null) {
+            return null;
+        }
+
+        return ['by' => $this->approver?->name, 'on' => $this->approved_at->toDateString()];
+    }
+
+    /**
+     * Who locked the Travel Expense and on which day, or null until it is
+     * Locked. Needs the locker loaded.
+     *
+     * @return array{by: string, on: string}|null
+     */
+    public function lock(): ?array
+    {
+        if ($this->locker === null || $this->locked_at === null) { // @pest-mutate-ignore (the travel_expenses_state constraint keeps who and when both set or both empty)
+            return null;
+        }
+
+        return ['by' => $this->locker->name, 'on' => $this->locked_at->toDateString()];
+    }
+
+    /**
      * The Travel Request whose travel it was paid for.
      *
      * @return BelongsTo<TravelRequest, $this>
@@ -101,5 +135,26 @@ class TravelExpense extends Model
     public function travelRequest(): BelongsTo
     {
         return $this->belongsTo(TravelRequest::class);
+    }
+
+    /**
+     * The Employee who approved the Travel Expense, while it is Approved or
+     * Locked.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'approved_by');
+    }
+
+    /**
+     * The Employee who locked the Travel Expense, once it is Locked.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function locker(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'locked_by');
     }
 }

@@ -11,6 +11,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\RolePermission;
 use App\Notifications\Invitation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
@@ -168,6 +169,12 @@ it('creates the starter Manager Role: Reports\' records, Assignments, Work Entri
         ->and($ben->widestScopeFor(Permission::ManageWorkEntries))->toBeNull()
         ->and($ben->widestScopeFor(Permission::ViewPay))->toBeNull()
         ->and($gate->allows(Permission::ManageProjects->value))->toBeFalse();
+});
+
+it('gives reopening and locking Travel Expenses to no starter Role but Admin', function () {
+    install(installOptions())->assertSuccessful();
+
+    expect(RolePermission::query()->whereIn('permission', [Permission::ReopenTravelExpenses, Permission::LockTravelExpenses])->exists())->toBeFalse();
 });
 
 it('refuses to run on an app that is already installed', function () {

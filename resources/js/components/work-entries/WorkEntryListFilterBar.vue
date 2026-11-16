@@ -16,7 +16,8 @@ import type {
 } from '@/types';
 
 /**
- * Filters for the Work Entries page: a Period, a week, a month or a custom
+ * Filters for the Work Entries page, and the Travel Expenses page, which
+ * lists Travel Expenses the same way: a Period, a week, a month or a custom
  * one, never after today; one Employee with Work Entries in it, each
  * offered with how many, or any Employee; a
  * Project they have Work Entries on, or any; and a state, or any. Shows what

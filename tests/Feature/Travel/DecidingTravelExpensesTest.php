@@ -216,17 +216,16 @@ it('lets the next Manager up answer once Cara\'s Manager has left, and Ben answe
     expect($second->refresh()->approved_by)->toBe($ada->id);
 });
 
-it('lets Ben open the receipt of Cara\'s expense while he can answer it, and nobody else but Cara', function () {
+it('lets Ben open the receipt of Cara\'s expense while he can answer it, and nobody else but Cara without a Permission that shows it', function () {
     $ben = managerBen();
     $berlin = carasBerlinTrip($ben);
     $expense = expenseOn($berlin);
-    $admin = Employee::factory()->startedLongAgo()->create();
-    $admin->roles()->attach(Role::factory()->admin()->create());
+    $colleague = Employee::factory()->startedLongAgo()->create();
 
     actingAs($ben)->get(route('travel-expenses.receipt.show', $expense))
         ->assertOk()
         ->assertStreamedContent('receipt');
-    foreach ([$admin, Employee::query()->findOrFail($ben->manager_id)] as $outsider) {
+    foreach ([$colleague, Employee::query()->findOrFail($ben->manager_id)] as $outsider) {
         actingAs($outsider)->get(route('travel-expenses.receipt.show', $expense))->assertForbidden();
     }
 

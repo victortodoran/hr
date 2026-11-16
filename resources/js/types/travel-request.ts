@@ -1,3 +1,5 @@
+import type { WorkEntryListFilters, WorkEntrySignOff } from './work-entry';
+
 /**
  * Where a Travel Request stands: Pending until decided, Approved or
  * Declined once decided, and Cancelled once withdrawn before its first day.
@@ -125,4 +127,32 @@ export type TravelExpensesToApprove = {
         /** Already shown in the company currency, such as "RON 1,990.00". */
         amount: string;
     }[];
+};
+
+/** The Travel Expenses page's filters, as on the Work Entries page. */
+export type TravelExpenseListFilters = Omit<WorkEntryListFilters, 'state'> & {
+    state: TravelExpenseState | null;
+};
+
+/**
+ * A Travel Expense on the Travel Expenses page, across Employees, with who
+ * approved and locked it, and whether the viewer may reopen or lock it.
+ */
+export type ListedTravelExpense = {
+    id: number;
+    paid_on: string;
+    employee: { id: number; name: string };
+    project: string;
+    destination: string;
+    category: TravelExpenseCategory;
+    description: string;
+    /** Already shown in the company currency, such as "RON 1,990.00". */
+    amount: string;
+    state: TravelExpenseState;
+    /** Who approved it and when; nobody for an Employee with no Manager, approved at once. */
+    approved: { by: string | null; on: string } | null;
+    locked: WorkEntrySignOff | null;
+    decline_reason: string | null;
+    can_reopen: boolean;
+    can_lock: boolean;
 };
