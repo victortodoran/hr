@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EmploymentStatus;
 use App\Enums\TimeOffState;
+use App\Enums\TravelRequestState;
 use App\Enums\WorkEntryState;
 use App\Models\Builders\EmployeeBuilder;
 use App\Models\Concerns\HasAccess;
@@ -330,15 +331,16 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * What is waiting for this Employee to decide: the Pending Work Entries
-     * and Pending Time Off of the Employees whose effective Manager they are,
-     * the same Employees they approve for.
+     * What is waiting for this Employee to decide: the Pending Work Entries,
+     * Time Off and Travel Requests of the Employees whose effective Manager
+     * they are, the same Employees they approve for. The reporting line is
+     * walked once, not once per count.
      *
-     * @return array{workEntries: int, timeOff: int}
+     * @return array{workEntries: int, timeOff: int, travelRequests: int}
      */
     public function waitingForDecision(): array
     {
-        return $this->waitingFor(self::query()->effectivelyManagedBy($this)->select('employees.id'));
+        return $this->waitingFor(self::query()->effectivelyManagedBy($this)->pluck('employees.id')->all());
     }
 
     /**
@@ -384,20 +386,25 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * The Pending Work Entries and Pending Time Off of the given Employees.
+     * The Pending Work Entries, Time Off and Travel Requests of the given
+     * Employees.
      *
-     * @param  EmployeeBuilder|array<int, int|string>  $decidedFor
-     * @return array{workEntries: int, timeOff: int}
+     * @param  array<int, int|string>  $decidedFor
+     * @return array{workEntries: int, timeOff: int, travelRequests: int}
      */
-    private function waitingFor(EmployeeBuilder|array $decidedFor): array
+    private function waitingFor(array $decidedFor): array
     {
         return [
             'workEntries' => WorkEntry::query()
                 ->where('state', WorkEntryState::Pending)
-                ->whereIn('assignment_id', Assignment::query()->select('id')->whereIn('employee_id', $decidedFor instanceof EmployeeBuilder ? clone $decidedFor : $decidedFor))
+                ->whereIn('assignment_id', Assignment::query()->select('id')->whereIn('employee_id', $decidedFor))
                 ->count(),
             'timeOff' => TimeOff::query()
                 ->where('state', TimeOffState::Pending)
+                ->whereIn('employee_id', $decidedFor)
+                ->count(),
+            'travelRequests' => TravelRequest::query()
+                ->where('state', TravelRequestState::Pending)
                 ->whereIn('employee_id', $decidedFor)
                 ->count(),
         ];

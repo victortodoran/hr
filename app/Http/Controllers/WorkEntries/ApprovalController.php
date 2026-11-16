@@ -4,6 +4,7 @@ namespace App\Http\Controllers\WorkEntries;
 
 use App\Enums\ApprovalsTab;
 use App\Enums\TimeOffState;
+use App\Enums\TravelRequestState;
 use App\Enums\WorkEntryState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\ApprovalFiltersRequest;
@@ -11,6 +12,7 @@ use App\Http\Requests\WorkEntries\SelectedWorkEntriesRequest;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\TimeOff;
+use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use App\Support\PageWithin;
 use Illuminate\Container\Attributes\CurrentUser;
@@ -28,14 +30,16 @@ use Inertia\Response;
  * Work Entries.
  * Reopening and locking happen on the Work Entries page. Time Off: the
  * Pending Time Off the viewer decides, answered by the
- * TimeOffApprovalController and TimeOffDeclineController.
+ * TimeOffApprovalController and TimeOffDeclineController. Travel Requests:
+ * the Pending Travel Requests the viewer decides, answered by the
+ * TravelRequestApprovalController and TravelRequestDeclineController.
  */
 class ApprovalController extends Controller
 {
     /**
-     * The open tab, Work Entries unless Time Off is asked for, with how many
-     * Work Entries and Time Off wait for the viewer's decision. Only the open
-     * tab's list is loaded.
+     * The open tab, Work Entries unless Time Off or Travel Requests are
+     * asked for, with how many Work Entries, Time Off and Travel Requests
+     * wait for the viewer's decision. Only the open tab's list is loaded.
      */
     public function index(#[CurrentUser] Employee $actor, ApprovalFiltersRequest $request): Response
     {
@@ -47,6 +51,7 @@ class ApprovalController extends Controller
             ...match ($tab) {
                 ApprovalsTab::WorkEntries => $this->workEntriesTab($actor, $request),
                 ApprovalsTab::TimeOff => ['toApprove' => $this->timeOffToApprove($actor)],
+                ApprovalsTab::TravelRequests => ['travelRequestsToApprove' => $this->travelRequestsToApprove($actor)],
             },
         ]);
     }
@@ -147,6 +152,36 @@ class ApprovalController extends Controller
                     'year' => $year,
                     'days' => $timeOff->employee->paidDaysLeftIn($year),
                 ], range($timeOff->first_date->year, $timeOff->last_date->year)),
+            ])
+            ->all();
+    }
+
+    /**
+     * The Travel Requests tab: the Pending Travel Requests of the Employees
+     * whose effective Manager the actor is, earliest first, each with its
+     * Assignment's Project and Client and the days it counts.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function travelRequestsToApprove(Employee $actor): array
+    {
+        return TravelRequest::query()
+            ->whereIn('employee_id', Employee::query()->effectivelyManagedBy($actor)->select('employees.id'))
+            ->where('state', TravelRequestState::Pending)
+            ->with(['employee:id,name', 'assignment.project.client:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+            ->orderBy('first_date')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (TravelRequest $travelRequest): array => [
+                'id' => $travelRequest->id,
+                'employee' => $travelRequest->employee->only('id', 'name'),
+                'project' => $travelRequest->assignment->project->name,
+                'client' => $travelRequest->assignment->project->client?->name,
+                'destination' => $travelRequest->destination,
+                'first_date' => $travelRequest->first_date->toDateString(),
+                'last_date' => $travelRequest->last_date->toDateString(),
+                'days' => $travelRequest->days(),
+                'purpose' => $travelRequest->purpose,
             ])
             ->all();
     }

@@ -1,17 +1,20 @@
 <?php
 
 use App\Enums\TimeOffState;
+use App\Enums\TravelRequestState;
 use App\Enums\WorkEntryState;
 use App\Http\Controllers\TimeOff\TimeOffApprovalController;
+use App\Http\Controllers\Travel\TravelRequestDeclineController;
 use App\Http\Controllers\WorkEntries\ApprovalController;
 use App\Models\TimeOff;
+use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Carbon\CarbonImmutable;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(ApprovalController::class, TimeOffApprovalController::class);
+covers(ApprovalController::class, TimeOffApprovalController::class, TravelRequestDeclineController::class);
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
@@ -69,4 +72,26 @@ it('keeps Work Entries ticked on one page when moving to the next, approving the
         ->assertNoJavaScriptErrors();
 
     expect(WorkEntry::query()->where('state', WorkEntryState::Approved)->count())->toBe(2);
+});
+
+it('lets a Manager decline a Travel Request from its tab with a reason', function () {
+    $ben = managerBen();
+    $cara = recorder(['manager_id' => $ben->id, 'name' => 'Cara']);
+    $travelRequest = TravelRequest::factory()->on(assignmentOf($cara))->create(['destination' => 'Berlin', 'first_date' => '2026-12-14', 'last_date' => '2026-12-16', 'purpose' => 'Relaunch go-live']);
+
+    actingAs($ben);
+
+    visit(route('approvals.index'))
+        ->click('internal:role=tab[name="Travel Requests"i]')
+        ->assertQueryStringHas('tab', 'travel-requests')
+        ->assertSee('Berlin')
+        ->assertSee('Relaunch go-live')
+        ->fill('decline_reason', 'The release is that week.')
+        ->click('Decline')
+        ->assertSee('Travel Request declined.')
+        ->assertQueryStringHas('tab', 'travel-requests')
+        ->assertSee('None is waiting')
+        ->assertNoJavaScriptErrors();
+
+    expect($travelRequest->refresh()->state)->toBe(TravelRequestState::Declined);
 });
