@@ -68,6 +68,7 @@
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
+            "npm run build",
             "npm run check",
             "@lint:callbacks",
             "npm run types:check",
@@ -81,7 +82,7 @@
             "@php artisan config:clear --ansi",
             "@lint:check",
             "@types:check",
-            "@php artisan test"
+            "@php artisan test --parallel"
         ],
         "test:readable": [
             "env -u CLAUDECODE -u AI_AGENT -u CLAUDE_CODE_ENTRYPOINT php artisan test --compact"
