@@ -112,7 +112,7 @@ function request(): void {
                     <Select
                         :model-value="form.assignment_id"
                         @update:model-value="
-                            form.assignment_id = String($event)
+                            form.assignment_id = $event ? String($event) : ''
                         "
                     >
                         <SelectTrigger id="travel-assignment" class="w-full">

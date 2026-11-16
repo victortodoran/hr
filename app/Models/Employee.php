@@ -312,8 +312,8 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Whether the Employee has Pending Work Entries or Pending Time Off,
-     * which their Manager is to decide.
+     * Whether the Employee has Pending Work Entries, Time Off or Travel
+     * Requests, which their Manager is to decide.
      */
     public function hasPendingDecisions(): bool
     {
