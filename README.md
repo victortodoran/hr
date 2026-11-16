@@ -24,26 +24,26 @@ You need PHP 8.4, Composer, Node.js with npm, and PostgreSQL. [Laravel Herd](htt
 
 2. Install the dependencies, create `.env`, generate the app key, run the migrations and build the frontend:
 
-   ```bash
-   composer setup
-   ```
+    ```bash
+    composer setup
+    ```
 
 3. Fill the database, choosing one of these:
 
-   ```bash
-   php artisan db:seed      # a demo company with sample data
-   php artisan hr:install   # or an empty company, set up by prompts
-   ```
+    ```bash
+    php artisan db:seed      # a demo company with sample data
+    php artisan hr:install   # or an empty company, set up by prompts
+    ```
 
-   In the demo company, sign in as `ana@acme.test` (Admin) with the password `password`. The seeder prints the other demo accounts.
+    In the demo company, sign in as `ana@acme.test` (Admin) with the password `password`. The seeder prints the other demo accounts.
 
 4. Start the app:
 
-   ```bash
-   composer dev
-   ```
+    ```bash
+    composer dev
+    ```
 
-   This runs the web server, the queue worker, the log viewer and Vite together. If you use Herd, the site is served at `http://hr.test` instead, and `npm run dev` is enough.
+    This runs the web server, the queue worker, the log viewer and Vite together. If you use Herd, the site is served at `http://hr.test` instead, and `npm run dev` is enough.
 
 ## Tests
 
