@@ -9,7 +9,10 @@ if ! base=$(git merge-base origin/main HEAD); then
     exit 1
 fi
 
-changed=$(git diff --diff-filter=MDRT --name-status "$base" HEAD -- database/migrations)
+if ! changed=$(git diff --diff-filter=MDRT --name-status "$base" HEAD -- database/migrations); then
+    echo 'lint:migrations could not diff against main.'
+    exit 2
+fi
 
 if [ -n "$changed" ]; then
     echo "$changed" | sed 's/^/Shipped migration changed (add a new one instead): /'

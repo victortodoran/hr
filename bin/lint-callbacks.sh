@@ -5,6 +5,10 @@
 set -uo pipefail
 
 found=$(grep -rnE '\b(map|each|filter|reject|every|contains|first|sortBy|groupBy|keyBy)\((intval|floatval|strval|boolval|trim|ltrim|rtrim|round|explode)\(\.\.\.\)' app)
+if [ $? -gt 1 ]; then
+    echo "lint:callbacks could not run its search."
+    exit 2
+fi
 
 if [ -n "$found" ]; then
     echo "$found"

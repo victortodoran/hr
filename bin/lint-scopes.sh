@@ -5,6 +5,10 @@
 set -uo pipefail
 
 models=$(grep -rlE 'Attributes.(\{[^}]*)?Scope([^A-Za-z]|$)|function scope[A-Z]' app/Models --exclude-dir=Builders)
+if [ $? -gt 1 ]; then
+    echo "lint:scopes could not run its search."
+    exit 2
+fi
 
 if [ -n "$models" ]; then
     echo "$models" | sed 's|^|Move its query scopes into its builder in app/Models/Builders: |'

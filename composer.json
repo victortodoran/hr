@@ -49,8 +49,8 @@
         "lint:migrations": "Fails when the branch changes a migration already on main; add a new migration instead.",
         "lint:folders": "Fails when a controller or form request sits directly in app/Http/Controllers or app/Http/Requests instead of an area folder.",
         "lint:scopes": "Fails when a model declares query scopes; reusable queries go in the model's builder in app/Models/Builders.",
-        "lint:builders": "Fails when a public builder method in app/Models/Builders doesn't apply its conditions through scoped().",
-        "test:failures": "Runs the tests (or the paths given) and prints one line per failure: test name and message."
+        "lint:builders": "Fails when a public builder method in app/Models/Builders doesn't start with return $this->scoped(...).",
+        "test:failures": "Runs the tests (or the paths given) and prints one line per failure or error: file:line, test name and message."
     },
     "scripts": {
         "setup": [
@@ -87,7 +87,7 @@
         "lint:migrations": "bin/lint-migrations.sh",
         "lint:folders": "bin/lint-folders.sh",
         "lint:scopes": "bin/lint-scopes.sh",
-        "lint:builders": "bin/lint-builders.sh",
+        "lint:builders": "@php bin/lint-builders.php",
         "types:check": [
             "phpstan analyse --memory-limit=1G"
         ],

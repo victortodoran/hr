@@ -7,6 +7,10 @@ set -uo pipefail
 stray=$(find app/Http/Controllers app/Http/Requests -maxdepth 1 -name '*.php' \
     ! -path app/Http/Controllers/Controller.php \
     ! -path app/Http/Controllers/HomeController.php)
+if [ $? -ne 0 ]; then
+    echo "lint:folders could not run its search."
+    exit 2
+fi
 
 if [ -n "$stray" ]; then
     echo "$stray" | sed 's/^/Move into an area folder (Employees, WorkEntries, TimeOff, ...): /'
