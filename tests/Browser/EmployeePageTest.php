@@ -78,4 +78,3 @@ it('drops an Assignment edit that was cancelled, so reopening shows what is save
         ->capacity->toBe(100)
         ->job_title->toBe('Lead Developer');
 });
-
