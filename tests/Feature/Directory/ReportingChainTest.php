@@ -25,7 +25,7 @@ function chainViewer(): Employee
     return employeeWith([Permission::ViewDirectory->value => null]);
 }
 
-it('shows an Employee\'s Reporting Chain: everyone above from the top, them, and those they are the Manager of', function () {
+it('shows an Employee\'s Reporting Chain: everyone above up to one with no Manager, them, and those they are the Manager of', function () {
     $top = Employee::factory()->create(['name' => 'Ada Top', 'department_id' => Department::factory()->create(['name' => 'Board'])->id]);
     Assignment::factory()->for($top)->internal()->create(['job_title' => 'CEO']);
     $ben = Employee::factory()->reportingTo($top)->create(['name' => 'Ben Manager', 'department_id' => Department::factory()->create(['name' => 'Product'])->id]);

@@ -11,7 +11,7 @@ return new class extends Migration
      * Time Off is one or more whole days an Employee asks to be away, from a
      * first to a last date, Paid or Unpaid. It is Pending, Approved, Declined
      * or Cancelled. Who decided it and when are kept for Approved and
-     * Declined Time Off (that of an Employee with no Manager is Approved with no one deciding),
+     * Declined Time Off (the top Employee's is Approved with no one deciding),
      * a Declined one always has a reason, and a Cancelled one records when it
      * was cancelled.
      */

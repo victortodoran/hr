@@ -34,7 +34,7 @@ use Illuminate\Support\Str;
  * Future Employee can sign in with the password "password"; the Future
  * Employee still has an invitation waiting. Invitations are not emailed.
  *
- *   Ana (top, Admin)
+ *   Ana (no Manager, Admin)
  *   ├── Ben (Senior Manager: Pay of his Reports)
  *   │   ├── Cara (Employee; Client work and a planned raise)
  *   │   ├── Dan (Future Employee, invitation pending)

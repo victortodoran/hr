@@ -64,7 +64,7 @@ it('offers an assignment manager the Projects still open to Assignments, by name
 });
 
 /*
- * Dana (top)
+ * Dana (no Manager)
  * ├── Ben ── Cara ── Dev
  * └── Eve
  */

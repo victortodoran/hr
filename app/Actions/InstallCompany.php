@@ -41,14 +41,13 @@ class InstallCompany
             $internalProject->is_internal = true;
             $internalProject->save();
 
-            $employee = new Employee([
+            $employee = Employee::query()->create([
                 'name' => $name,
                 'email' => $email,
                 'password' => Str::random(40), // @pest-mutate-ignore (an unusable placeholder until the invitation is accepted)
                 'department_id' => Department::query()->create(['name' => $department])->id,
                 'start_date' => today(),
             ]);
-            $employee->save();
             $employee->createInternalAssignment();
 
             $admin = $this->changeAccess->createAdminRole($employee, 'Admin');

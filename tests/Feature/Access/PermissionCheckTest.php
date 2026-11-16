@@ -57,7 +57,7 @@ it('uses the widest Scope across all of an Employee\'s Roles', function () {
 });
 
 /*
- * Dana (top)
+ * Dana (no Manager)
  * ├── Ben ── Cara ── Dev
  * └── Eve
  */

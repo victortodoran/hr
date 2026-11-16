@@ -169,7 +169,7 @@ it('links to an Employee\'s page from their Reporting Chain only when the viewer
     'own only' => [[Permission::ViewEmployeeRecords->value => Scope::Own, Permission::ViewAssignments->value => Scope::Own], 'directory'],
 ]);
 
-it('shows an Employee\'s Reporting Chain on their page to anyone who may open it, from the top down to those they are the Manager of', function () {
+it('shows an Employee\'s Reporting Chain on their page to anyone who may open it, from one with no Manager down to those they are the Manager of', function () {
     $top = Employee::factory()->create(['name' => 'Ada', 'department_id' => Department::factory()->create(['name' => 'Board'])->id]);
     $ana = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Own], ['name' => 'Ana', 'manager_id' => $top->id]);
     $cara = Employee::factory()->reportingTo($ana)->create(['name' => 'Cara', 'department_id' => Department::factory()->create(['name' => 'Design'])->id]);

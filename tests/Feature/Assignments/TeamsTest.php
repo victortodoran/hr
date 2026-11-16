@@ -58,7 +58,7 @@ it('refuses a Project\'s page to an Employee who can neither view nor manage Pro
 });
 
 /*
- * Dana (top)
+ * Dana (no Manager)
  * ├── Ben ── Cara ── Dev
  * └── Eve
  */
