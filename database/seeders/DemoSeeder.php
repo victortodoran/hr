@@ -35,12 +35,12 @@ use Illuminate\Support\Str;
  * actions the app uses, four weeks of Work Entries, Paid Days (none for
  * Ivan), Time Off and Travel Requests in every state, and Travel Expenses
  * with small generated PDF receipts, replacing any an earlier demo left
- * behind. Dates are relative to today, so the
- * Future and Former Employees stay that way, and the last two weeks of Work
- * Entries and the Time Off still to come are always Pending, waiting for
- * each Employee's Manager (Ben or Hana) to approve them. Everyone except the
- * Future Employee can sign in with the password "password"; the Future
- * Employee still has an invitation waiting. Invitations are not emailed.
+ * behind. Dates are relative to today, so the Future and Former Employees
+ * stay that way, and the last two weeks of Work Entries and the Time Off
+ * still to come are always Pending, waiting for each Employee's Manager (Ben
+ * or Hana) to approve them. Everyone except the Future Employee can sign in
+ * with the password "password"; the Future Employee still has an invitation
+ * waiting. Invitations are not emailed.
  *
  *   Ana (no Manager, Admin)
  *   ├── Ben (Senior Manager: Pay of his Reports)
