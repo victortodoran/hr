@@ -126,18 +126,26 @@ it('refuses a Reporting Chain to an Employee without view directory', function (
         ->assertForbidden();
 });
 
-it('reads the viewer\'s Roles and grants a bounded number of times however long the Reporting Chain is', function () {
-    $manager = Employee::factory()->top()->create();
-    foreach (range(1, 14) as $level) {
-        $manager = Employee::factory()->reportingTo($manager)->create();
-    }
+it('reads the viewer\'s Roles and grants as often for a Reporting Chain of 15 as for one of 3', function () {
     $viewer = employeeWith([Permission::ViewDirectory->value => null, Permission::ViewEmployeeRecords->value => Scope::Reports, Permission::ViewAssignments->value => Scope::Own]);
+    $accessReadsToOpen = function (int $length) use ($viewer): int {
+        $manager = Employee::factory()->top()->create();
+        foreach (range(2, $length) as $level) {
+            $manager = Employee::factory()->reportingTo($manager)->create();
+        }
 
-    DB::enableQueryLog();
-    actingAs($viewer)->get(route('directory.show', $manager))->assertOk();
-    $accessQueries = collect(DB::getQueryLog())
-        ->filter(fn (array $query): bool => str_contains($query['query'], 'employee_role') || str_contains($query['query'], 'role_permissions'))
-        ->count();
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        actingAs(Employee::query()->findOrFail($viewer->id))->get(route('directory.show', $manager))->assertOk();
 
-    expect($accessQueries)->toBeLessThanOrEqual(2);
+        return collect(DB::getQueryLog())
+            ->filter(fn (array $query): bool => str_contains($query['query'], '"roles"') || str_contains($query['query'], '"role_permissions"'))
+            ->count();
+    };
+
+    $forThree = $accessReadsToOpen(3);
+    Employee::query()->update(['is_top' => false]);
+
+    expect($accessReadsToOpen(15))->toBe($forThree)
+        ->and($forThree)->toBe(2);
 });

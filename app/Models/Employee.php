@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope as QueryScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -54,13 +55,6 @@ class Employee extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<EmployeeFactory> */
     use HasFactory, Notifiable;
-
-    /**
-     * The Employee's Roles and grants once read; see access().
-     *
-     * @var array{admin: bool, grants: Collection<int, RolePermission>}|null
-     */
-    private ?array $access = null;
 
     /**
      * A new Employee starts with no Paid Days, as the database does.
@@ -519,7 +513,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
                 ->all();
         }
 
-        return $this->access()['grants']
+        return $this->grantsHeld()
             ->pluck('permission')
             ->reject(fn (Permission $permission): bool => $permission->isScoped())
             ->map(fn (Permission $permission): string => $permission->value)
@@ -680,40 +674,38 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function holdsAdmin(): bool
     {
-        return $this->access()['admin'];
+        return $this->rolesWithGrants()->contains(fn (Role $role): bool => $role->is_admin);
     }
 
     /**
-     * Forget the Roles and grants read so far, so the next check reads them
+     * Forget the Roles and grants loaded so far, so the next check reads them
      * afresh: for when Roles or who holds them change while this Employee
-     * is in hand.
+     * is in hand. Refreshing the Employee does the same.
      */
     public function forgetAccess(): void
     {
-        $this->access = null;
+        $this->unsetRelation('roles');
     }
 
     /**
-     * Whether the Employee holds Admin, and every grant across their Roles,
-     * read once and then kept, as every Permission check needs them.
+     * The Employee's Roles with their grants, loaded once with the Employee
+     * and kept, as every Permission check needs them.
      *
-     * @return array{admin: bool, grants: Collection<int, RolePermission>}
+     * @return EloquentCollection<int, Role>
      */
-    private function access(): array
+    private function rolesWithGrants(): EloquentCollection
     {
-        if ($this->access === null) {
-            $roles = $this->roles()->get(['roles.id', 'roles.is_admin']);
-            $admin = $roles->contains(fn (Role $role): bool => $role->is_admin);
+        return $this->loadMissing('roles.permissions')->roles;
+    }
 
-            $this->access = [
-                'admin' => $admin,
-                'grants' => $admin || $roles->isEmpty()
-                    ? collect()
-                    : RolePermission::query()->whereIn('role_id', $roles->modelKeys())->get(),
-            ];
-        }
-
-        return $this->access;
+    /**
+     * Every grant across the Employee's Roles.
+     *
+     * @return Collection<int, RolePermission>
+     */
+    private function grantsHeld(): Collection
+    {
+        return $this->rolesWithGrants()->flatMap(fn (Role $role) => $role->permissions);
     }
 
     /**
@@ -732,7 +724,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
             ])]);
         }
 
-        return $this->access()['grants']
+        return $this->grantsHeld()
             ->filter(fn (RolePermission $grant): bool => $grant->permission === $permission)
             ->values();
     }

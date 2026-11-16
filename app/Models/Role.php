@@ -29,6 +29,17 @@ class Role extends Model
     use HasFactory;
 
     /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_admin' => 'boolean', // @pest-mutate-ignore (PostgreSQL already returns a boolean)
+            'is_given_to_new_employees' => 'boolean', // @pest-mutate-ignore (PostgreSQL already returns a boolean)
+        ];
+    }
+
+    /**
      * @return HasMany<RolePermission, $this>
      */
     public function permissions(): HasMany
