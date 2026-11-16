@@ -148,7 +148,7 @@ class EmployeeBuilder extends ModelBuilder
     public function notFormer(): static
     {
         return $this->scoped(function (): void {
-            $this->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today());
+            $this->where(fn (Builder $staying) => $staying->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today()));
         });
     }
 
