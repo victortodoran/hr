@@ -156,3 +156,17 @@ it('shows the total above the list, with Status in its own column, and keeps eve
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertNoJavaScriptErrors();
 });
+
+it('shows an Employee with Work Entries on only one Project on it, without offering any Project', function () {
+    $cara = Employee::factory()->create(['name' => 'Cara']);
+    WorkEntry::factory()->for(assignmentOf($cara, 'Relaunch'))->create(['date' => '2026-11-10']);
+
+    actingAs(employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]));
+
+    visit(route('work-entry-list.index'))
+        ->assertSeeIn('[aria-label="Project"]', 'Relaunch')
+        ->click('[aria-label="Project"]')
+        ->assertPresent('internal:role=option[name="Relaunch"s]')
+        ->assertNotPresent('internal:role=option[name="Any Project"s]')
+        ->assertNoJavaScriptErrors();
+});

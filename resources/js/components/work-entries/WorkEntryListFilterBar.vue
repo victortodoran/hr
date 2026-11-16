@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import {
     Select,
     SelectContent,
@@ -23,7 +24,9 @@ import type {
  * whenever one changes. Changing the Period or state keeps "Any Employee"
  * but otherwise lets the server pick the first Employee; changing anything
  * but the Project drops the Project. With nobody to choose, only the Period
- * and state are offered.
+ * and state are offered. An Employee with Work Entries on only one Project
+ * shows that Project, without "Any Project" to choose; both list the same
+ * Work Entries, so the filter itself stays as it was.
  */
 const props = defineProps<{
     filters: WorkEntryListFilters;
@@ -65,6 +68,13 @@ const anyEmployee = (): string | undefined =>
 function choosePeriod(period: Record<string, string>): void {
     emit('change', query({ period, employee: anyEmployee() }));
 }
+
+/** Whether the one Employee shown has Work Entries on just one Project. */
+const hasOnlyOneProject = computed(
+    () =>
+        typeof props.filters.employee === 'number' &&
+        props.projects.length === 1,
+);
 
 function chooseState(state: unknown): void {
     emit('change', query({ state: String(state), employee: anyEmployee() }));
@@ -113,14 +123,20 @@ function chooseProject(project: unknown): void {
                     </SelectContent>
                 </Select>
                 <Select
-                    :model-value="filters.project?.toString() ?? 'all'"
+                    :model-value="
+                        hasOnlyOneProject
+                            ? String(projects[0].id)
+                            : (filters.project?.toString() ?? 'all')
+                    "
                     @update:model-value="chooseProject"
                 >
                     <SelectTrigger class="w-48" aria-label="Project">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Any Project</SelectItem>
+                        <SelectItem v-if="!hasOnlyOneProject" value="all"
+                            >Any Project</SelectItem
+                        >
                         <SelectItem
                             v-for="choice in projects"
                             :key="choice.id"
