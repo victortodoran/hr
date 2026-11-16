@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import AssignmentController from '@/actions/App/Http/Controllers/AssignmentController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -41,12 +41,31 @@ const jobTitleLabel = isInternal
 const fieldId = (field: string): string =>
     `assignment-${field}-${props.assignment?.id ?? 'new'}`;
 
-const form = useForm({
-    project_id: '',
-    job_title: props.assignment?.job_title ?? '',
-    start_date: props.assignment?.start_date ?? '',
-    end_date: props.assignment?.end_date ?? '',
-    capacity: String(props.assignment?.capacity ?? ''),
+/**
+ * The form's fields as the Assignment stands now, or blank for a new one.
+ * Given to the form as a function, so each reset reads them afresh.
+ */
+function saved() {
+    return {
+        project_id: '',
+        job_title: props.assignment?.job_title ?? '',
+        start_date: props.assignment?.start_date ?? '',
+        end_date: props.assignment?.end_date ?? '',
+        capacity: String(props.assignment?.capacity ?? ''),
+    };
+}
+
+const form = useForm(saved);
+
+/**
+ * Each opening of the edit dialog starts from what is saved, dropping any
+ * cancelled edits and old errors. A new Assignment keeps what was typed,
+ * so closing by accident loses nothing, and nothing resets mid-save.
+ */
+watch(open, (isOpen) => {
+    if (isOpen && props.assignment && !form.processing) {
+        form.resetAndClearErrors();
+    }
 });
 
 function submit(): void {
