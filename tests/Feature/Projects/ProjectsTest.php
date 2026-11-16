@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\Permission;
+use App\Enums\Scope;
 use App\Http\Controllers\ProjectController;
 use App\Http\Requests\ProjectRequest;
+use App\Models\Assignment;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Models\Project;
@@ -208,4 +210,21 @@ it('refuses to change Projects to an Employee who can only view them', function 
     'create' => ['post', fn (Project $project): string => route('projects.store')],
     'edit' => ['patch', fn (Project $project): string => route('projects.update', $project)],
     'delete' => ['delete', fn (Project $project): string => route('projects.destroy', $project)],
+]);
+
+it('lists on a Project\'s team whoever the viewer may see the Assignments of, including through seeing their Pay', function (string $permission, bool $listed) {
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara']);
+    $relaunch = assignmentOf($cara)->project;
+    $viewer = employeeWith([Permission::ViewProjects->value => null, $permission => Scope::Everyone]);
+
+    expect($viewer->can('viewAny', [Assignment::class, $cara]))->toBe($listed);
+
+    actingAs($viewer)->get(route('projects.show', $relaunch))
+        ->assertInertia(fn (Assert $page) => $page->count('team', $listed ? 1 : 0));
+})->with([
+    'view assignments' => [Permission::ViewAssignments->value, true],
+    'manage assignments' => [Permission::ManageAssignments->value, true],
+    'view pay' => [Permission::ViewPay->value, true],
+    'manage pay' => [Permission::ManagePay->value, true],
+    'view time off' => [Permission::ViewTimeOff->value, false],
 ]);

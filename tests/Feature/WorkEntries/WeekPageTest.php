@@ -384,5 +384,21 @@ it('shows the Work Entries item in the navigation only to those holding a Work E
 })->with([
     'view own' => [[Permission::ViewWorkEntries->value => Scope::Own], true],
     'manage own' => [[Permission::ManageWorkEntries->value => Scope::Own], true],
+    'reopen for everyone' => [[Permission::ReopenWorkEntries->value => Scope::Everyone], true],
+    'lock' => [[Permission::LockWorkEntries->value => null], true],
+    'view only for Reports' => [[Permission::ViewWorkEntries->value => Scope::Reports], false],
     'neither' => [[Permission::ViewAssignments->value => Scope::Own], false],
+]);
+
+it('opens My Work Entries exactly when the navigation offers it', function (array $grants, bool $shown) {
+    $ben = employeeWith($grants);
+
+    $response = actingAs($ben)->get(route('work-entries.index'));
+
+    $response->assertStatus($shown ? 200 : 403);
+})->with([
+    'view own' => [[Permission::ViewWorkEntries->value => Scope::Own], true],
+    'reopen for everyone' => [[Permission::ReopenWorkEntries->value => Scope::Everyone], true],
+    'lock' => [[Permission::LockWorkEntries->value => null], true],
+    'view only for Reports' => [[Permission::ViewWorkEntries->value => Scope::Reports], false],
 ]);

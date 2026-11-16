@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\Permission;
-use App\Enums\Scope;
 use Carbon\CarbonInterface;
 use Database\Factories\AssignmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -125,23 +124,15 @@ class Assignment extends Model
     }
 
     /**
-     * Limit the query to the Assignments the Employee may see: those of the
-     * Employees covered by their view assignments Scope or their manage
-     * assignments Scope, matching AssignmentPolicy::viewAny().
+     * Limit the query to the Assignments the Employee may see, matching
+     * AssignmentPolicy::viewAny().
      *
      * @param  Builder<Assignment>  $query
      */
     #[QueryScope]
     protected function visibleTo(Builder $query, Employee $actor): void
     {
-        $scopes = collect([Permission::ViewAssignments, Permission::ManageAssignments])
-            ->map(fn (Permission $permission): ?Scope => $actor->widestScopeFor($permission))
-            ->filter();
-
-        $query->whereHas('employee', fn (Builder $employees) => $employees->where(function (Builder $covered) use ($scopes, $actor): void {
-            $covered->whereRaw('false');
-            $scopes->each(fn (Scope $scope) => $covered->orWhere(fn (Builder $employee) => $scope->limit($employee, $actor)));
-        }));
+        $query->whereHas('employee', fn (Builder $employees) => $actor->limitToReachOf($employees, Permission::seeingAssignments()));
     }
 
     /**

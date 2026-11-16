@@ -14,15 +14,12 @@ use App\Models\Employee;
 class AssignmentPolicy
 {
     /**
-     * Seeing an Employee's Assignments needs view assignments for them, or
-     * manage assignments, since managing them means seeing them. Pay belongs
-     * to Assignments (ADR 0002), so seeing their Pay also shows them.
+     * Seeing an Employee's Assignments needs one of the Permissions for
+     * seeing them (Permission::seeingAssignments()) to reach them.
      */
     public function viewAny(Employee $actor, Employee $employee): bool
     {
-        return $actor->can(Permission::ViewAssignments->value, $employee)
-            || $this->create($actor, $employee)
-            || $this->viewPay($actor, $employee);
+        return $actor->reachesThrough(Permission::seeingAssignments(), $employee);
     }
 
     /**

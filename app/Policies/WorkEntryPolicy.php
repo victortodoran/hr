@@ -14,16 +14,12 @@ use App\Models\WorkEntry;
 class WorkEntryPolicy
 {
     /**
-     * Seeing an Employee's Work Entries needs view, manage or reopen work
-     * entries for them, or lock work entries, which covers everyone: you can
-     * always see what you can act on.
+     * Seeing an Employee's Work Entries needs one of the Permissions for
+     * seeing them (Permission::seeingWorkEntries()) to reach them.
      */
     public function viewAny(Employee $actor, Employee $employee): bool
     {
-        return $actor->can(Permission::ViewWorkEntries->value, $employee)
-            || $actor->can(Permission::ManageWorkEntries->value, $employee)
-            || $actor->can(Permission::ReopenWorkEntries->value, $employee)
-            || $this->lock($actor);
+        return $actor->reachesThrough(Permission::seeingWorkEntries(), $employee);
     }
 
     /**
