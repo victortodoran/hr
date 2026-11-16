@@ -16,14 +16,15 @@ use Illuminate\Validation\Validator;
 class TimeOffRequest extends TimeOffPreviewRequest
 {
     /**
-     * Once the dates are valid on their own, check them against the
-     * Employee's period of work and other Time Off, then the Paid Days left.
+     * Once the dates are valid on their own and cover at most a year, check
+     * them against the Employee's period of work and other Time Off, then
+     * the Paid Days left.
      *
      * @return array<int, Closure(Validator): void>
      */
     public function after(): array
     {
-        return [function (Validator $validator): void {
+        return [...parent::after(), function (Validator $validator): void {
             if ($validator->errors()->isNotEmpty()) {
                 return;
             }

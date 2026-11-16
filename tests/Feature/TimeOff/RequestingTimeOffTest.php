@@ -283,16 +283,27 @@ it('needs signing in to see or request Time Off', function () {
     get(route('time-off.index'))->assertRedirect(route('login'));
 });
 
-it('accepts Time Off covering exactly a year and refuses one a day longer, as longer leave is several requests', function () {
+it('accepts Time Off covering exactly a year and refuses one a day longer, as longer leave is several requests', function (string $firstDate, string $lastYearDay, string $dayOver) {
     $cara = timeOffRequester();
 
-    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-14', 'last_date' => '2027-12-15', 'is_paid' => false]))
+    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => $firstDate, 'last_date' => $dayOver, 'is_paid' => false]))
         ->assertSessionHasErrors(['last_date' => 'The longest Time Off is a year. Request longer leave as several Time Off.']);
 
     expect(storedTimeOff($cara))->toBe([]);
 
-    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-14', 'last_date' => '2027-12-14', 'is_paid' => false]))
+    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => $firstDate, 'last_date' => $lastYearDay, 'is_paid' => false]))
         ->assertSessionHasNoErrors();
 
     expect(storedTimeOff($cara))->toHaveCount(1);
-});
+})->with([
+    'from 14 Dec' => ['2026-12-14', '2027-12-13', '2027-12-14'],
+    'from a leap day' => ['2028-02-29', '2029-02-27', '2029-02-28'],
+]);
+
+it('gives only the first date\'s error when it is missing or in the past, not the year limit too', function (string $firstDate, string $message) {
+    actingAs(timeOffRequester())->post(route('time-off.store'), timeOffForm(['first_date' => $firstDate, 'last_date' => '2028-06-01', 'is_paid' => false]))
+        ->assertOnlyInvalid(['first_date' => $message]);
+})->with([
+    'missing' => ['', 'The first date field is required.'],
+    'in the past' => ['2026-11-30', 'Time Off can\'t start in the past.'],
+]);
