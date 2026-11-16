@@ -103,6 +103,23 @@ const thisMonthsWorkEntries = computed(() =>
                             >{{ waitingForYou.timeOff }} Pending Time Off</Link
                         >
                     </Button>
+                    <Button
+                        v-if="waitingForYou.travelRequests > 0"
+                        variant="outline"
+                        as-child
+                    >
+                        <Link
+                            :href="
+                                approvals({ query: { tab: 'travel-requests' } })
+                            "
+                            >{{ waitingForYou.travelRequests }} Pending Travel
+                            {{
+                                waitingForYou.travelRequests === 1
+                                    ? 'Request'
+                                    : 'Requests'
+                            }}</Link
+                        >
+                    </Button>
                 </CardContent>
             </Card>
 

@@ -42,3 +42,21 @@ export type TravelAssignment = {
     start_date: string;
     end_date: string | null;
 };
+
+/**
+ * A Pending Travel Request of an Employee the viewer effectively manages,
+ * for them to approve or decline on the Approvals page.
+ */
+export type TravelRequestToApprove = {
+    id: number;
+    employee: { id: number; name: string };
+    project: string;
+    /** Empty for the Internal Assignment, whose Project has no Client. */
+    client: string | null;
+    destination: string;
+    first_date: string;
+    last_date: string;
+    /** Every day from the first to the last date, weekends included. */
+    days: number;
+    purpose: string;
+};

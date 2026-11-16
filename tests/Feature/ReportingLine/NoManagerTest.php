@@ -94,10 +94,10 @@ it('refuses removing an Employee\'s Manager while they have Pending Work Entries
     'a Pending Travel Request' => [fn (Employee $cara) => TravelRequest::factory()->on(assignmentOf($cara))->create()],
 ]);
 
-it('refuses a Leaving Date that would leave a Report with no Manager and Pending items, until they have a new Manager', function () {
+it('refuses a Leaving Date that would leave a Report with no Manager and Pending items, until they have a new Manager', function (Closure $pending) {
     $ana = Employee::factory()->startedLongAgo()->create(['name' => 'Ana Founder']);
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ana)->create(['name' => 'Cara Lane']);
-    TimeOff::factory()->for($cara)->create();
+    $pending($cara);
     $hr = employeeWhoManagesEmployees();
 
     actingAs($hr)->patch(route('employees.update', $ana), recordOf($ana, ['leaving_date' => '2026-12-31']))
@@ -107,7 +107,10 @@ it('refuses a Leaving Date that would leave a Report with no Manager and Pending
 
     actingAs($hr)->patch(route('employees.update', $ana), recordOf($ana, ['leaving_date' => '2026-12-31']))
         ->assertSessionHasNoErrors();
-});
+})->with([
+    'Pending Time Off' => [fn (Employee $cara) => TimeOff::factory()->for($cara)->create()],
+    'a Pending Travel Request' => [fn (Employee $cara) => TravelRequest::factory()->on(assignmentOf($cara))->create()],
+]);
 
 it('allows a Leaving Date when the next Manager up takes over the Reports', function () {
     $ana = Employee::factory()->startedLongAgo()->create();

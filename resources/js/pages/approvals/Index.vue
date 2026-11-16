@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import TimeOffTab from '@/components/approvals/TimeOffTab.vue';
+import TravelRequestsTab from '@/components/approvals/TravelRequestsTab.vue';
 import WorkEntriesTab from '@/components/approvals/WorkEntriesTab.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
@@ -14,6 +15,7 @@ import type {
     Paginated,
     ChoiceToApprove,
     TimeOffToApprove,
+    TravelRequestToApprove,
 } from '@/types';
 
 defineOptions({
@@ -24,7 +26,8 @@ defineOptions({
 
 /**
  * Only the open tab's props are sent: the Work Entries ones on the Work
- * Entries tab, `toApprove` on the Time Off tab.
+ * Entries tab, `toApprove` on the Time Off tab and `travelRequestsToApprove`
+ * on the Travel Requests tab.
  */
 defineProps<{
     tab: ApprovalsTab;
@@ -39,6 +42,8 @@ defineProps<{
     projects?: ChoiceToApprove[];
     /** Direct Reports' Pending Time Off. */
     toApprove?: TimeOffToApprove[];
+    /** Pending Travel Requests of the Employees the viewer manages. */
+    travelRequestsToApprove?: TravelRequestToApprove[];
 }>();
 
 function openTab(tab: string | number): void {
@@ -52,7 +57,7 @@ function openTab(tab: string | number): void {
     <PageContainer width="wide">
         <Heading
             title="Approvals"
-            description="Pending Work Entries and Time Off waiting for your decision"
+            description="Pending Work Entries, Time Off and Travel Requests waiting for your decision"
         />
 
         <Tabs :model-value="tab" @update:model-value="openTab">
@@ -67,6 +72,12 @@ function openTab(tab: string | number): void {
                     >Time Off
                     <span class="text-muted-foreground tabular-nums">{{
                         waiting.timeOff
+                    }}</span></TabsTrigger
+                >
+                <TabsTrigger value="travel-requests"
+                    >Travel Requests
+                    <span class="text-muted-foreground tabular-nums">{{
+                        waiting.travelRequests
                     }}</span></TabsTrigger
                 >
             </TabsList>
@@ -85,6 +96,12 @@ function openTab(tab: string | number): void {
                 <TimeOffTab
                     v-if="tab === 'time-off' && toApprove"
                     :to-approve="toApprove"
+                />
+            </TabsContent>
+            <TabsContent value="travel-requests" class="mt-4">
+                <TravelRequestsTab
+                    v-if="tab === 'travel-requests' && travelRequestsToApprove"
+                    :to-approve="travelRequestsToApprove"
                 />
             </TabsContent>
         </Tabs>

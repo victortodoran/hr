@@ -137,12 +137,16 @@ export type ListedWorkEntry = ApprovalEntry & {
 };
 
 /** The tabs of the Approvals page. */
-export type ApprovalsTab = 'work-entries' | 'time-off';
+export type ApprovalsTab = 'work-entries' | 'time-off' | 'travel-requests';
 
-/** How many Pending Work Entries and Time Off wait for the viewer's decision. */
+/**
+ * How many Pending Work Entries, Time Off and Travel Requests wait for the
+ * viewer's decision.
+ */
 export type ApprovalsWaiting = {
     workEntries: number;
     timeOff: number;
+    travelRequests: number;
 };
 
 /**

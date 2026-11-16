@@ -38,8 +38,8 @@ class ApprovalFiltersRequest extends FormRequest
     }
 
     /**
-     * The tab asked for: Time Off when asked for, Work Entries for anything
-     * else or no tab.
+     * The tab asked for: Time Off or Travel Requests when asked for, Work
+     * Entries for anything else or no tab.
      */
     public function tab(): ApprovalsTab
     {
