@@ -143,7 +143,7 @@ final class WorkEntryDays
                 'time_off' => $away === null ? null : ($away->is_paid ? 'paid' : 'unpaid'),
                 'nothing_logged' => $day->isWeekday() && $day->isBefore(today()) && $employed && $onDay->isEmpty() && $away === null,
                 'copy_from' => $canManage && ! $day->isAfter(today()) && $away === null && $countedOnDay->isEmpty()
-                    ? $copySources->last(fn (string $source): bool => $source < $date && $source >= $day->subDays(WorkEntry::COPY_LOOKBACK_DAYS)->toDateString())
+                    ? $copySources->last(fn (string $source): bool => $source < $date && $source >= WorkEntry::copyLookbackFrom($day)->toDateString())
                     : null,
             ];
         })->all();
@@ -160,9 +160,7 @@ final class WorkEntryDays
     private static function datesWithEntries(Employee $employee, Period $period, Collection $entries): SupportCollection
     {
         $before = $employee->workEntries()
-            ->counted()
-            ->whereDate('work_entries.date', '>=', $period->from->subDays(WorkEntry::COPY_LOOKBACK_DAYS))
-            ->whereDate('work_entries.date', '<', $period->from)
+            ->toCopyOnto($period->from)
             ->get(['work_entries.date']);
 
         return $before->toBase()

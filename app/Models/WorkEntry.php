@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\WorkEntryState;
 use App\Models\Builders\WorkEntryBuilder;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\WorkEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -61,6 +62,15 @@ class WorkEntry extends Model
      * for the latest day with any.
      */
     public const int COPY_LOOKBACK_DAYS = 7; // @pest-mutate-ignore (constants are evaluated before coverage starts; the look-back tests pin the value)
+
+    /**
+     * The first day copying Work Entries onto the day looks back to; the
+     * window runs from it up to the day before.
+     */
+    public static function copyLookbackFrom(CarbonImmutable $day): CarbonImmutable
+    {
+        return $day->subDays(self::COPY_LOOKBACK_DAYS);
+    }
 
     /**
      * Every Work Entry starts Pending.

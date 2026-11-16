@@ -7,6 +7,7 @@ use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\WorkEntry;
 use App\Support\Period;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -24,6 +25,19 @@ class WorkEntryBuilder extends ModelBuilder
     {
         return $this->scoped(function (): void {
             $this->where($this->qualifyColumn('state'), '!=', WorkEntryState::Declined);
+        });
+    }
+
+    /**
+     * Limit the query to the Work Entries that copying onto the day could
+     * take from: those whose hours count, in the look-back window before it.
+     */
+    public function toCopyOnto(CarbonImmutable $day): static
+    {
+        return $this->scoped(function () use ($day): void {
+            $this->counted()
+                ->whereDate($this->qualifyColumn('date'), '>=', WorkEntry::copyLookbackFrom($day))
+                ->whereDate($this->qualifyColumn('date'), '<', $day);
         });
     }
 
