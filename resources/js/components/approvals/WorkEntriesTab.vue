@@ -55,10 +55,10 @@ const {
     togglePage,
     selectAllMatching,
     clear,
-} = useBulkSelection(
-    () => props.entries.data,
-    () => props.matchingIds,
-);
+} = useBulkSelection(() => props.entries.data, {
+    prop: 'matchingIds',
+    ids: () => props.matchingIds,
+});
 
 function reloadList(query: Record<string, string>): void {
     clear();

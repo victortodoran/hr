@@ -64,6 +64,8 @@ it('keeps Work Entries ticked on one page when moving to the next, approving the
         ->assertSee('2 selected')
         ->click('Approve')
         ->assertSee('0 selected')
+        ->assertSee('Total of all 24 matching')
+        ->assertDontSee('None are waiting')
         ->assertNoJavaScriptErrors();
 
     expect(WorkEntry::query()->where('state', WorkEntryState::Approved)->count())->toBe(2);

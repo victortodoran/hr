@@ -65,6 +65,17 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
         ->where('projects', [['id' => $carasRelaunch->project_id, 'name' => 'Relaunch', 'pending' => 2]]));
 });
 
+it('shows the last page instead of an empty one when the page asked for is past the end, as after approving a later page', function () {
+    $ben = managerBen();
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03']);
+
+    actingAs($ben)->get(route('approvals.index', ['page' => 2]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('entries.current_page', 1)
+            ->has('entries.data', 1));
+});
+
 it('never lists the approver\'s own Work Entries, nor their Manager\'s', function () {
     $ben = managerBen();
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);

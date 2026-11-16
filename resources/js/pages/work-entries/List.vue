@@ -11,11 +11,11 @@ import SelectionBar from '@/components/SelectionBar.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useBulkSelection } from '@/composables/useBulkSelection';
 import { Label } from '@/components/ui/label';
 import LockDialog from '@/components/work-entries/LockDialog.vue';
 import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
 import WorkEntrySummary from '@/components/work-entries/WorkEntrySummary.vue';
+import { useBulkSelection } from '@/composables/useBulkSelection';
 import { formatDate, formatWeekdayAndDay } from '@/lib/dates';
 import { formatHours } from '@/lib/work-entries';
 import { index as week } from '@/routes/work-entries';
@@ -100,10 +100,10 @@ const {
     togglePage,
     selectAllMatching,
     clear,
-} = useBulkSelection(
-    () => selectableOnPage.value,
-    () => props.matchingIds,
-);
+} = useBulkSelection(() => selectableOnPage.value, {
+    prop: 'matchingIds',
+    ids: () => props.matchingIds,
+});
 
 /** Selecting every match is only useful when they are all Approved, the state the viewer can act on. */
 const canSelectAllMatching = computed(

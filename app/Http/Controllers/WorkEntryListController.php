@@ -8,6 +8,7 @@ use App\Http\Requests\WorkEntryListRequest;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\WorkEntry;
+use App\Support\PageWithin;
 use App\Support\Period;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
@@ -76,11 +77,10 @@ class WorkEntryListController extends Controller
             'today' => today()->toDateString(),
             'canReopen' => $actor->holds(Permission::ReopenWorkEntries),
             'canLock' => $canLock,
-            'entries' => (clone $matching)
+            'entries' => PageWithin::paginate((clone $matching)
                 ->with(['assignment.employee:id,name', 'assignment.project:id,name', 'approver:id,name', 'locker:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
                 ->orderBy('date')
-                ->orderBy('id')
-                ->paginate(25)
+                ->orderBy('id'), 25)
                 ->withQueryString()
                 ->through(fn (WorkEntry $entry): array => [
                     'id' => $entry->id,
