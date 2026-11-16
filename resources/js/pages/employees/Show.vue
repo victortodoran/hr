@@ -531,7 +531,8 @@ setLayoutProps({
                         :can-lock="workEntries.canLock"
                         :show-employee="false"
                         :empty-message="
-                            workEntries.projects.length > 0
+                            workEntries.filters.project ||
+                            workEntries.filters.state
                                 ? 'No Work Entries match these filters.'
                                 : `${employee.name}'s Work Entries appear here. There are none in this period.`
                         "

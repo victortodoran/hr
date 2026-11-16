@@ -46,7 +46,7 @@ export type EmployeeStanding = {
 
 /**
  * The tabs of an Employee's page: Overview (record and Reporting Chain),
- * Assignments & Pay, and Time Off (Paid Days and Time Off).
+ * Assignments & Pay, Work Entries, and Time Off (Paid Days and Time Off).
  */
 export type EmployeePageTab =
     | 'overview'

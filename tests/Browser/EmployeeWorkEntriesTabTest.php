@@ -69,3 +69,20 @@ it('shows an Employee their own Work Entries on My Page with a way to record hou
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertNoJavaScriptErrors();
 });
+
+it('keeps the selection when turning to the next page of Work Entries', function () {
+    $cara = Employee::factory()->create(['name' => 'Cara', 'manager_id' => Employee::factory()->top()->create()->id]);
+    $relaunch = assignmentOf($cara);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-02']);
+    WorkEntry::factory()->for($relaunch)->approved()->count(25)->create(['date' => '2026-11-03']);
+
+    actingAs(employeeWith([Permission::LockWorkEntries->value => null]));
+
+    visit(route('employees.show', ['employee' => $cara, 'tab' => 'work-entries']))
+        ->click('[aria-label="Select Cara\'s Work Entry on Nov 2, 2026"]')
+        ->assertSee('1 selected')
+        ->click('Next')
+        ->assertQueryStringHas('page', '2')
+        ->assertSee('1 selected')
+        ->assertNoJavaScriptErrors();
+});

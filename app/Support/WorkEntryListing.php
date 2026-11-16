@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Enums\Permission;
 use App\Enums\WorkEntryState;
 use App\Models\Employee;
 use App\Models\Project;
@@ -65,17 +64,19 @@ final readonly class WorkEntryListing
      */
     public function of(Builder $matching, bool $withDeciding = false): array
     {
-        $canLock = $this->viewer->holds(Permission::LockWorkEntries);
-        $reopenable = Employee::query()->reopenableBy($this->viewer)->pluck('id');
-        $decidable = $withDeciding ? Employee::query()->effectivelyManagedBy($this->viewer)->pluck('id') : null;
+        $canLock = $this->viewer->can('lock', WorkEntry::class);
+        $page = (clone $matching)
+            ->with(['assignment.employee:id,name', 'assignment.project:id,name', 'approver:id,name', 'locker:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+            ->orderBy('date')
+            ->orderBy('id')
+            ->paginate(25)
+            ->withQueryString();
+        $onPage = $page->getCollection()->pluck('assignment.employee_id')->unique()->values()->all();
+        $reopenable = Employee::query()->reopenableBy($this->viewer)->whereKey($onPage)->pluck('id');
+        $decidable = $withDeciding ? Employee::query()->effectivelyManagedBy($this->viewer)->whereKey($onPage)->pluck('id') : null;
 
         return [
-            'entries' => (clone $matching)
-                ->with(['assignment.employee:id,name', 'assignment.project:id,name', 'approver:id,name', 'locker:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
-                ->orderBy('date')
-                ->orderBy('id')
-                ->paginate(25)
-                ->withQueryString()
+            'entries' => $page
                 ->through(fn (WorkEntry $entry): array => [
                     'id' => $entry->id,
                     'date' => $entry->date->toDateString(),
