@@ -23,8 +23,10 @@ use Tests\TestCase;
 
 /*
  * Tests log to storage/logs/testing.log, which holds the real exception
- * behind a failing request. A run outside parallel workers starts it
- * empty, so it only ever holds the latest run and never grows unbounded.
+ * behind a failing request. Each run starts it empty, so it only ever holds
+ * the latest run and never grows unbounded: `composer test` empties it
+ * before its parallel workers start, and a run outside workers empties it
+ * here.
  */
 if (getenv('TEST_TOKEN') === false) {
     file_put_contents(__DIR__.'/../storage/logs/testing.log', '');
