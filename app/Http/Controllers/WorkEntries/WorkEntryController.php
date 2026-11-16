@@ -13,7 +13,7 @@ use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\WorkEntry;
 use App\Support\Period;
-use App\Support\WorkEntryCalendar;
+use App\Support\WorkEntryDays;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -57,7 +57,7 @@ class WorkEntryController extends Controller
 
         $canManage = $actor->can('create', [WorkEntry::class, $employee]);
         $canDelete = $actor->can(Permission::ManageWorkEntries->value, $employee);
-        $calendar = WorkEntryCalendar::of($employee, $period, $entries, $timeOff, $canManage, $canDelete);
+        $days = WorkEntryDays::of($employee, $period, $entries, $timeOff, $canManage, $canDelete);
 
         $tab = $request->tab();
 
@@ -73,8 +73,8 @@ class WorkEntryController extends Controller
             'canManage' => $canManage,
             'isOwn' => $employee->is($actor),
             ...match ($tab) {
-                WorkEntriesTab::List => ['days' => $calendar->days(), 'weeks' => $calendar->weeks()],
-                WorkEntriesTab::Calendar => ['calendar' => $calendar->calendar()],
+                WorkEntriesTab::List => ['days' => $days->days(), 'weeks' => $days->weeks()],
+                WorkEntriesTab::Calendar => ['calendar' => $days->calendar()],
             },
         ]);
     }

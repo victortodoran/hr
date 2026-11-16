@@ -11,11 +11,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 
 /**
- * An Employee's Work Entries in a Period laid out for the Work Entries
- * page: day by day for the List, by ISO week, and as the Calendar's weeks
- * of seven days.
+ * An Employee's Work Entries in a Period, day by day, as the Work Entries
+ * page shows them: the List tab's days and ISO weeks, and the Calendar
+ * tab's weeks of seven days.
  */
-final class WorkEntryCalendar
+final class WorkEntryDays
 {
     /**
      * @param  array<int, array{date: string, entries: array<int, array<string, mixed>>, hours: float|int, time_off: string|null, nothing_logged: bool, copy_from: string|null}>  $days
