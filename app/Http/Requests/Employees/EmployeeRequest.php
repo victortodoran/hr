@@ -6,6 +6,7 @@ use App\Enums\EmploymentStatus;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Rules\AssignmentsFit;
+use App\Rules\TravelRequestsFit;
 use App\Rules\WorkEntriesFit;
 use Carbon\CarbonImmutable;
 use Closure;
@@ -48,7 +49,7 @@ class EmployeeRequest extends FormRequest
             'start_date' => ['bail', 'required', 'date', AssignmentsFit::startOf($employee, ':name has an Assignment starting on :date, so their Start Date can\'t be later than that.'), WorkEntriesFit::startOf($employee?->workEntries(), __(':name has Work Entries from :date, so their Start Date can\'t be later than that.', ['name' => $employee?->name]))],
             'leaving_date' => match (true) {
                 $employee?->employmentStatus() === EmploymentStatus::Former => [Rule::in([$employee->leaving_date?->toDateString()])], // @pest-mutate-ignore (a Former Employee always has a Leaving Date)
-                default => ['bail', 'nullable', 'date', 'after_or_equal:start_date', AssignmentsFit::endOf($employee, ':name has an Assignment starting on :date, so their Leaving Date can\'t be earlier than that.'), WorkEntriesFit::endOf($employee?->workEntries(), __(':name has Work Entries up to :date, so their Leaving Date can\'t be earlier than that.', ['name' => $employee?->name])), $this->keepsSomeoneWhoCanManageRoles($employee)],
+                default => ['bail', 'nullable', 'date', 'after_or_equal:start_date', AssignmentsFit::endOf($employee, ':name has an Assignment starting on :date, so their Leaving Date can\'t be earlier than that.'), WorkEntriesFit::endOf($employee?->workEntries(), __(':name has Work Entries up to :date, so their Leaving Date can\'t be earlier than that.', ['name' => $employee?->name])), TravelRequestsFit::endOf($employee?->travelRequests(), ':name has a Travel Request on :project up to :date, so their Leaving Date can\'t be earlier than that.'), $this->keepsSomeoneWhoCanManageRoles($employee)],
             },
         ];
     }

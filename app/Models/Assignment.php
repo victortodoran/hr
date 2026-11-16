@@ -34,6 +34,7 @@ use Illuminate\Support\Carbon;
  * @property-read Project $project
  * @property-read Collection<int, PayEntry> $payEntries
  * @property-read Collection<int, WorkEntry> $workEntries
+ * @property-read Collection<int, TravelRequest> $travelRequests
  */
 #[Fillable(['project_id', 'job_title', 'start_date', 'end_date', 'capacity'])] // @pest-mutate-ignore (class attributes never show as covered)
 #[UseEloquentBuilder(AssignmentBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
@@ -89,6 +90,16 @@ class Assignment extends Model
     public function workEntries(): HasMany
     {
         return $this->hasMany(WorkEntry::class);
+    }
+
+    /**
+     * The Travel Requests made on the Assignment, in every state.
+     *
+     * @return HasMany<TravelRequest, $this>
+     */
+    public function travelRequests(): HasMany
+    {
+        return $this->hasMany(TravelRequest::class);
     }
 
     /**
