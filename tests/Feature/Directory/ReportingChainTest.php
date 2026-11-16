@@ -7,6 +7,7 @@ use App\Models\Assignment;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Support\ReportingChain;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -123,4 +124,20 @@ it('refuses a Reporting Chain to an Employee without view directory', function (
     actingAs(employeeWith([Permission::ManageDepartments->value => null]))
         ->get(route('directory.show', $top))
         ->assertForbidden();
+});
+
+it('reads the viewer\'s Roles and grants a bounded number of times however long the Reporting Chain is', function () {
+    $manager = Employee::factory()->top()->create();
+    foreach (range(1, 14) as $level) {
+        $manager = Employee::factory()->reportingTo($manager)->create();
+    }
+    $viewer = employeeWith([Permission::ViewDirectory->value => null, Permission::ViewEmployeeRecords->value => Scope::Reports, Permission::ViewAssignments->value => Scope::Own]);
+
+    DB::enableQueryLog();
+    actingAs($viewer)->get(route('directory.show', $manager))->assertOk();
+    $accessQueries = collect(DB::getQueryLog())
+        ->filter(fn (array $query): bool => str_contains($query['query'], 'employee_role') || str_contains($query['query'], 'role_permissions'))
+        ->count();
+
+    expect($accessQueries)->toBeLessThanOrEqual(2);
 });

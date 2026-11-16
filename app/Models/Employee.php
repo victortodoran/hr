@@ -56,6 +56,13 @@ class Employee extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable;
 
     /**
+     * The Employee's Roles and grants once read; see access().
+     *
+     * @var array{admin: bool, grants: Collection<int, RolePermission>}|null
+     */
+    private ?array $access = null;
+
+    /**
      * A new Employee starts with no Paid Days, as the database does.
      *
      * @var array<string, mixed>
@@ -512,13 +519,12 @@ class Employee extends Authenticatable implements MustVerifyEmail
                 ->all();
         }
 
-        return RolePermission::query()
-            ->whereIn('role_id', $this->roles()->select('roles.id'))
-            ->distinct()
-            ->orderBy('permission')
+        return $this->access()['grants']
             ->pluck('permission')
             ->reject(fn (Permission $permission): bool => $permission->isScoped())
             ->map(fn (Permission $permission): string => $permission->value)
+            ->unique()
+            ->sort()
             ->values()
             ->all();
     }
@@ -674,7 +680,40 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function holdsAdmin(): bool
     {
-        return $this->roles()->where('is_admin', true)->exists();
+        return $this->access()['admin'];
+    }
+
+    /**
+     * Forget the Roles and grants read so far, so the next check reads them
+     * afresh: for when Roles or who holds them change while this Employee
+     * is in hand.
+     */
+    public function forgetAccess(): void
+    {
+        $this->access = null;
+    }
+
+    /**
+     * Whether the Employee holds Admin, and every grant across their Roles,
+     * read once and then kept, as every Permission check needs them.
+     *
+     * @return array{admin: bool, grants: Collection<int, RolePermission>}
+     */
+    private function access(): array
+    {
+        if ($this->access === null) {
+            $roles = $this->roles()->get(['roles.id', 'roles.is_admin']);
+            $admin = $roles->contains(fn (Role $role): bool => $role->is_admin);
+
+            $this->access = [
+                'admin' => $admin,
+                'grants' => $admin || $roles->isEmpty()
+                    ? collect()
+                    : RolePermission::query()->whereIn('role_id', $roles->modelKeys())->get(),
+            ];
+        }
+
+        return $this->access;
     }
 
     /**
@@ -693,9 +732,8 @@ class Employee extends Authenticatable implements MustVerifyEmail
             ])]);
         }
 
-        return RolePermission::query()
-            ->whereIn('role_id', $this->roles()->select('roles.id'))
-            ->where('permission', $permission)
-            ->get();
+        return $this->access()['grants']
+            ->filter(fn (RolePermission $grant): bool => $grant->permission === $permission)
+            ->values();
     }
 }

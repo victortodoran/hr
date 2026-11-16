@@ -149,7 +149,7 @@ it('loads the directory in the same number of queries however many Employees it 
     $queriesToList = function () use ($viewer): int {
         DB::flushQueryLog();
         DB::enableQueryLog();
-        actingAs($viewer)->get(route('directory.index'))->assertOk();
+        actingAs(Employee::query()->findOrFail($viewer->id))->get(route('directory.index'))->assertOk();
 
         return count(DB::getQueryLog());
     };

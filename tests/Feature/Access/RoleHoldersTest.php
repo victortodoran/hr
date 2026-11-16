@@ -30,7 +30,7 @@ it('lets an Employee who manages Roles give a Role, and the widest Scope across 
         ->assertRedirect(route('roles.show', $payroll))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Payroll given to '.$ben->name.'.']);
 
-    expect($ben->can(Permission::ViewPay->value, $cara))->toBeTrue();
+    expect($ben->fresh()?->can(Permission::ViewPay->value, $cara))->toBeTrue();
 
     $entry = AccessLogEntry::query()->sole();
     expect($entry->change)->toBe(AccessChange::RoleGiven)
