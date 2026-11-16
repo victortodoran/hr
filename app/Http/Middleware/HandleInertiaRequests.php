@@ -30,7 +30,9 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Define the props that are shared by default.
+     * Define the props that are shared by default. The sidebar's Team,
+     * Approvals and count all come from one read of whom the Employee
+     * manages, made at most once per request.
      *
      * @see https://inertiajs.com/shared-data
      *
@@ -39,6 +41,12 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $employee = $request->user();
+        $asManager = null;
+        $asManagerOnce = function () use ($employee, &$asManager): array {
+            return $asManager ??= $employee instanceof Employee
+                ? $employee->asManager()
+                : ['managesAnyone' => false, 'hasDirectReports' => false, 'waiting' => 0];
+        };
 
         return [
             ...parent::share($request),
@@ -51,9 +59,9 @@ class HandleInertiaRequests extends Middleware
                     && ($employee->widestScopeFor(Permission::ViewEmployeeRecords)?->coversOthers() ?? false),
                 'canSeeWorkEntries' => fn (): bool => $employee instanceof Employee && $employee->canSeeWorkEntries(),
                 'canSeeWorkEntryList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', WorkEntry::class),
-                'canSeeTeam' => fn (): bool => $employee instanceof Employee && $employee->can('viewTeam', Employee::class),
-                'canSeeApprovals' => fn (): bool => $employee instanceof Employee && $employee->can('viewApprovals', WorkEntry::class),
-                'approvalsWaiting' => fn (): int => $employee instanceof Employee ? array_sum($employee->waitingForDecision()) : 0,
+                'canSeeTeam' => fn (): bool => $asManagerOnce()['hasDirectReports'],
+                'canSeeApprovals' => fn (): bool => $asManagerOnce()['managesAnyone'],
+                'approvalsWaiting' => fn (): int => $asManagerOnce()['waiting'],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

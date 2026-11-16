@@ -327,12 +327,40 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function waitingForDecision(): array
     {
-        $decidedFor = self::query()->effectivelyManagedBy($this)->select('employees.id');
+        return $this->waitingFor(self::query()->effectivelyManagedBy($this)->select('employees.id'));
+    }
 
+    /**
+     * What the sidebar shows of the Employee as a Manager, from one walk
+     * down the reporting line: whether they manage anyone (as
+     * managesAnyone()), whether they have Direct Reports (as
+     * hasDirectReports()), and how much is waiting for them to decide.
+     *
+     * @return array{managesAnyone: bool, hasDirectReports: bool, waiting: int}
+     */
+    public function asManager(): array
+    {
+        $managed = self::query()->effectivelyManagedBy($this)->get(['id', 'start_date', 'leaving_date']);
+
+        return [
+            'managesAnyone' => $managed->isNotEmpty(),
+            'hasDirectReports' => $managed->contains(fn (Employee $employee): bool => $employee->employmentStatus() !== EmploymentStatus::Former),
+            'waiting' => $managed->isEmpty() ? 0 : array_sum($this->waitingFor($managed->modelKeys())),
+        ];
+    }
+
+    /**
+     * The Pending Work Entries and Pending Time Off of the given Employees.
+     *
+     * @param  Builder<Employee>|array<int, int|string>  $decidedFor
+     * @return array{workEntries: int, timeOff: int}
+     */
+    private function waitingFor(Builder|array $decidedFor): array
+    {
         return [
             'workEntries' => WorkEntry::query()
                 ->where('state', WorkEntryState::Pending)
-                ->whereIn('assignment_id', Assignment::query()->select('id')->whereIn('employee_id', clone $decidedFor))
+                ->whereIn('assignment_id', Assignment::query()->select('id')->whereIn('employee_id', $decidedFor instanceof Builder ? clone $decidedFor : $decidedFor))
                 ->count(),
             'timeOff' => TimeOff::query()
                 ->where('state', TimeOffState::Pending)
@@ -561,17 +589,34 @@ class Employee extends Authenticatable implements MustVerifyEmail
     /**
      * Limit the query to the Employees whose effective Manager the given
      * Employee is: one level below them, Future and Former Employees
-     * included.
+     * included. It walks down from the Manager, passing below only those
+     * who have left, so it reads just their part of the reporting line; a
+     * Manager who has left is nobody's effective Manager. It matches
+     * withEffectiveManager(), which walks the same line up.
      *
      * @param  Builder<Employee>  $query
      */
     #[QueryScope]
     protected function effectivelyManagedBy(Builder $query, Employee $manager): void
     {
-        $query->whereIn('employees.id', self::query()
-            ->fromSub(self::query()->withEffectiveManager(), 'employees')
-            ->where('effective_manager_id', $manager->id)
-            ->select('id'));
+        $today = today()->toDateString();
+
+        $query->whereRaw(<<<'SQL'
+            employees.id IN (
+                WITH RECURSIVE down AS (
+                    SELECT reports.id, reports.leaving_date FROM employees AS reports
+                    WHERE reports.manager_id = ? AND EXISTS (
+                        SELECT 1 FROM employees AS managers
+                        WHERE managers.id = ? AND (managers.leaving_date IS NULL OR managers.leaving_date >= ?)
+                    )
+                    UNION
+                    SELECT reports.id, reports.leaving_date FROM employees AS reports
+                    JOIN down ON reports.manager_id = down.id
+                    WHERE down.leaving_date < ?
+                )
+                SELECT id FROM down
+            )
+            SQL, [$manager->id, $manager->id, $today, $today]);
     }
 
     /**

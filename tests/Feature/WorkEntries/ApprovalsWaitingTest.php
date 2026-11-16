@@ -4,6 +4,8 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -71,6 +73,26 @@ it('counts for the next Manager up once the Employee\'s Manager has left', funct
     assertApprovalsWaiting($ada, 2);
 });
 
+it('counts below several Managers in a row who have left, for the first one up who hasn\'t, and nothing for those who have left', function () {
+    ['ada' => $ada, 'ben' => $ben, 'cara' => $cara, 'dev' => $dev] = waitingTeam();
+    WorkEntry::factory()->for(assignmentOf($dev))->create(['date' => '2026-11-09']);
+    TimeOff::factory()->unpaid()->for($dev)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+    $ben->update(['leaving_date' => '2026-11-10']);
+    $cara->update(['leaving_date' => '2026-11-10']);
+
+    assertApprovalsWaiting($ada, 2);
+    expect($ben->waitingForDecision())->toBe(['workEntries' => 0, 'timeOff' => 0])
+        ->and($cara->waitingForDecision())->toBe(['workEntries' => 0, 'timeOff' => 0]);
+});
+
+it('keeps counting for a Manager on their Leaving Date', function () {
+    ['ben' => $ben, 'cara' => $cara] = waitingTeam();
+    TimeOff::factory()->unpaid()->for($cara)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+    $ben->update(['leaving_date' => '2026-11-11']);
+
+    assertApprovalsWaiting($ben, 1);
+});
+
 it('counts only Pending Work Entries and Pending Time Off', function () {
     ['ben' => $ben, 'cara' => $cara] = waitingTeam();
     $relaunch = assignmentOf($cara);
@@ -83,6 +105,23 @@ it('counts only Pending Work Entries and Pending Time Off', function () {
     TimeOff::factory()->unpaid()->for($cara)->cancelled()->create(['first_date' => '2026-12-17', 'last_date' => '2026-12-17']);
 
     assertApprovalsWaiting($ben, 2);
+});
+
+it('reads whom the Employee manages once per page for the sidebar\'s Team, Approvals and count', function () {
+    ['ben' => $ben, 'cara' => $cara] = waitingTeam();
+    TimeOff::factory()->unpaid()->for($cara)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+    $walks = 0;
+    DB::listen(function (QueryExecuted $query) use (&$walks): void {
+        $walks += str_contains($query->sql, 'WITH RECURSIVE down') ? 1 : 0;
+    });
+
+    actingAs($ben)->get(route('profile.edit'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('auth.canSeeTeam', true)
+            ->where('auth.canSeeApprovals', true)
+            ->where('auth.approvalsWaiting', 1));
+
+    expect($walks)->toBe(1);
 });
 
 it('counts nothing for a guest', function () {
