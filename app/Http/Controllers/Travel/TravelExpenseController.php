@@ -67,18 +67,24 @@ class TravelExpenseController extends Controller
         $receipt = $request->receipt();
         $newPath = $receipt === null ? null : $this->keep($receipt);
 
-        $changed = TravelExpense::query()
-            ->whereKey($travelExpense->id)
-            ->whereIn('state', TravelExpenseState::open())
-            ->update([
-                ...$request->travelExpense(),
-                'receipt_path' => $newPath ?? $travelExpense->receipt_path,
-                ...$this->newState($actor),
-                'declined_by' => null,
-                'declined_at' => null,
-                'decline_reason' => null,
-                'updated_at' => now(),
-            ]);
+        try {
+            $changed = TravelExpense::query()
+                ->whereKey($travelExpense->id)
+                ->whereIn('state', TravelExpenseState::open())
+                ->update([
+                    ...$request->travelExpense(),
+                    'receipt_path' => $newPath ?? $travelExpense->receipt_path,
+                    ...$this->newState($actor),
+                    'declined_by' => null,
+                    'declined_at' => null,
+                    'decline_reason' => null,
+                    'updated_at' => now(),
+                ]);
+        } catch (Throwable $failure) { // @pest-mutate-ignore (only reached when the database refuses the write)
+            $this->discard($newPath);
+
+            throw $failure;
+        }
 
         if ($changed === 0) { // @pest-mutate-ignore (only reached when the Travel Expense is approved between the policy check and this write)
             $this->discard($newPath);
