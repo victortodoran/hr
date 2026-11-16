@@ -59,3 +59,33 @@ it('offers one way into Time Off on Home when none is upcoming', function () {
         ->assertDontSee('Open Time Off')
         ->assertNoJavaScriptErrors();
 });
+
+it('shows an Employee their hours this year month by month on a phone, opening a month\'s Work Entries from its bar', function () {
+    $cara = recorder(['start_date' => '2026-09-14']);
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-09-14']);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-10-05', 'minutes' => 480]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'minutes' => 90]);
+
+    actingAs($cara);
+
+    visit(route('landing'))
+        ->resize(390, 844)
+        ->assertSee('Hours this year')
+        ->assertSeeIn('[data-test="hours-this-year"]', '9.5 h')
+        ->assertSee('1.5 h Pending')
+        ->assertCount('[data-test="month-of-hours"]', 3)
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('[aria-label="October 2026: 8 h"]')
+        ->assertQueryStringHas('month', '2026-10')
+        ->assertNoJavaScriptErrors();
+});
+
+it('tells an Employee with no hours this year that none are recorded yet', function () {
+    actingAs(recorder());
+
+    visit(route('landing'))
+        ->assertSee('Hours this year')
+        ->assertSee("You haven't recorded any hours this year.")
+        ->assertNotPresent('[data-test="month-of-hours"]')
+        ->assertNoJavaScriptErrors();
+});

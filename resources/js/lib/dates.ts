@@ -45,6 +45,15 @@ export function formatMonth(month: string): string {
 }
 
 /**
+ * A YYYY-MM month's short name, such as "Nov".
+ */
+export function formatShortMonth(month: string): string {
+    return new Date(`${month}-01T00:00:00`).toLocaleDateString(undefined, {
+        month: 'short',
+    });
+}
+
+/**
  * A day's short name and number, such as "Thu 12".
  */
 export function formatWeekdayAndDay(date: string): string {

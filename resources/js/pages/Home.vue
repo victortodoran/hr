@@ -6,6 +6,7 @@ import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
+import HoursThisYearCard from '@/components/work-entries/HoursThisYearCard.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -22,6 +23,7 @@ import { index as workEntries } from '@/routes/work-entries';
 import type {
     ApprovalsWaiting,
     HoursThisWeek,
+    HoursThisYear,
     PaidDaysLeft,
     TimeOffDetails,
 } from '@/types';
@@ -38,6 +40,8 @@ defineOptions({
 defineProps<{
     /** Null for the top Employee and anyone who can't see Work Entries. */
     hoursThisWeek: HoursThisWeek | null;
+    /** Null exactly when hoursThisWeek is. */
+    hoursThisYear: HoursThisYear | null;
     paidDaysLeft: PaidDaysLeft;
     /** The next Pending or Approved Time Off that hasn't ended. */
     nextTimeOff: TimeOffDetails | null;
@@ -54,7 +58,7 @@ defineProps<{
     <PageContainer width="wide">
         <Heading
             title="Home"
-            description="Your week and Time Off at a glance"
+            description="Your hours and Time Off at a glance"
         />
 
         <div class="grid gap-4 sm:grid-cols-2">
@@ -189,6 +193,12 @@ defineProps<{
                     >
                 </CardContent>
             </Card>
+
+            <HoursThisYearCard
+                v-if="hoursThisYear !== null"
+                :hours-this-year="hoursThisYear"
+                class="sm:col-span-2"
+            />
 
             <Card v-if="declinedAhead !== null" class="sm:col-span-2">
                 <CardHeader>
