@@ -138,7 +138,6 @@ const giveError = computed(
                     :form="RoleController.destroy.form(role.id)"
                     :title="`Delete ${role.name}?`"
                     description="Everyone who holds it loses what it allows."
-                    error-key="role"
                     :error-bag="`delete-role-${role.id}`"
                 >
                     <template #trigger>

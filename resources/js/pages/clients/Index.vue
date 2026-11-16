@@ -88,17 +88,7 @@ const columns: TableColumn[] = [
                         :form="ClientController.destroy.form(row)"
                         :title="`Delete ${row.name}?`"
                         description="Only a Client with no Projects can be deleted."
-                        error-key="client"
-                    >
-                        <template #trigger>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                class="text-destructive"
-                                >Delete</Button
-                            >
-                        </template>
-                    </ConfirmDeleteDialog>
+                    />
                 </div>
             </template>
             <template #empty>

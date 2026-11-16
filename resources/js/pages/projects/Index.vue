@@ -10,7 +10,6 @@ import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import ProjectForm from '@/components/projects/ProjectForm.vue';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/dates';
 import { index, show } from '@/routes/projects';
 import type { Choice, ProjectRecord, TableColumn } from '@/types';
@@ -89,17 +88,7 @@ const columns = computed<TableColumn[]>(() => [
                         :form="ProjectController.destroy.form(row.id)"
                         :title="`Delete ${row.name}?`"
                         description="This can't be undone."
-                        error-key="project"
-                    >
-                        <template #trigger>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                class="text-destructive"
-                                >Delete</Button
-                            >
-                        </template>
-                    </ConfirmDeleteDialog>
+                    />
                 </div>
             </template>
             <template #empty>

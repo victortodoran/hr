@@ -79,17 +79,7 @@ const columns: TableColumn[] = [
                         :form="DepartmentController.destroy.form(row)"
                         :title="`Delete ${row.name}?`"
                         description="Only a Department with no Employees can be deleted."
-                        error-key="department"
-                    >
-                        <template #trigger>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                class="text-destructive"
-                                >Delete</Button
-                            >
-                        </template>
-                    </ConfirmDeleteDialog>
+                    />
                 </div>
             </template>
             <template #empty>

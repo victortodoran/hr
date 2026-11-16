@@ -18,16 +18,15 @@ import type { RouteFormDefinition } from '@/wayfinder';
 
 /**
  * Asks before deleting something, the one such question across the app.
- * The `trigger` slot is the button that opens it; the dialog closes once
- * the delete succeeds, and shows the refusal under `errorKey` when it doesn't.
+ * The `trigger` slot is the button that opens it, a plain "Delete" unless
+ * given; the dialog closes once the delete succeeds, and shows the refusal
+ * when it doesn't.
  */
 defineProps<{
     /** Where the delete is sent, from a Wayfinder `.form()`. */
     form: RouteFormDefinition<'post'>;
     title: string;
     description: string;
-    /** The validation key a refusal comes back under, if one can. */
-    errorKey?: string;
     /** Keeps this dialog's errors apart when several share a page. */
     errorBag?: string;
 }>();
@@ -38,7 +37,11 @@ const open = ref(false);
 <template>
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
-            <slot name="trigger" />
+            <slot name="trigger">
+                <Button variant="ghost" size="sm" class="text-destructive"
+                    >Delete</Button
+                >
+            </slot>
         </DialogTrigger>
         <DialogContent>
             <Form
@@ -54,10 +57,7 @@ const open = ref(false);
                     <DialogDescription>{{ description }}</DialogDescription>
                 </DialogHeader>
 
-                <InputError
-                    v-if="errorKey"
-                    :message="(errors as Record<string, string>)[errorKey]"
-                />
+                <InputError :message="Object.values(errors).find(Boolean)" />
 
                 <DialogFooter class="gap-2">
                     <DialogClose as-child>
