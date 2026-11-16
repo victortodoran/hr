@@ -7,11 +7,14 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Rules\AssignmentsFit;
 use App\Rules\WorkEntriesFit;
+use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * An Employee's record, when adding or editing them.
@@ -43,7 +46,7 @@ class EmployeeRequest extends FormRequest
             'department_id' => ['required', 'integer', Rule::exists(Department::class, 'id')],
             'manager_id' => $employee?->is_top
                 ? ['prohibited']
-                : ['bail', 'required', 'integer', Rule::exists(Employee::class, 'id'), Rule::notIn([$employee?->id]), $this->noLoopUnder($employee)],
+                : ['bail', 'nullable', 'integer', Rule::exists(Employee::class, 'id'), Rule::notIn([$employee?->id]), $this->noLoopUnder($employee)],
             'start_date' => ['bail', 'required', 'date', AssignmentsFit::startOf($employee, ':name has an Assignment starting on :date, so their Start Date can\'t be later than that.'), WorkEntriesFit::startOf($employee?->workEntries(), __(':name has Work Entries from :date, so their Start Date can\'t be later than that.', ['name' => $employee?->name]))],
             'leaving_date' => match (true) {
                 $employee?->is_top === true => ['prohibited'], // @pest-mutate-ignore (adding has no Employee yet, and PHP reads a property of null as null)
@@ -64,6 +67,72 @@ class EmployeeRequest extends FormRequest
                 $fail(__('That would make a loop: the new Manager reports to this Employee.'));
             }
         };
+    }
+
+    /**
+     * Once the record is valid on its own, refuse a new Manager or Leaving
+     * Date that would leave someone with Pending Work Entries or Pending Time
+     * Off with no Manager to decide them: the Employee themselves, or one of
+     * their Reports, whose effective Manager may come through them.
+     *
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            $employee = $this->route('employee');
+
+            if ($validator->errors()->isNotEmpty() || ! $employee instanceof Employee) {
+                return;
+            }
+
+            $managerId = $this->filled('manager_id') ? $this->integer('manager_id') : null;
+            $leavingDate = $this->filled('leaving_date') ? $this->string('leaving_date')->value() : null;
+            $leavingChanges = $leavingDate !== $employee->leaving_date?->toDateString();
+
+            if ($managerId === $employee->manager_id && ! $leavingChanges) {
+                return;
+            }
+
+            $stranded = $this->strandedBy($employee, $managerId, $leavingDate);
+
+            if ($stranded?->is($employee)) {
+                $validator->errors()->add('manager_id', __(':name has Pending Work Entries or Time Off, which nobody could decide without a Manager. Decide them first.', ['name' => $employee->name]));
+            } elseif ($stranded !== null) {
+                $validator->errors()->add($leavingChanges ? 'leaving_date' : 'manager_id', __(':name would have no Manager to decide their Pending Work Entries or Time Off. Give them a new Manager first.', ['name' => $stranded->name]));
+            }
+        }];
+    }
+
+    /**
+     * Who, of the Employee and everyone below them, would be left with no
+     * Manager while they have Pending Work Entries or Pending Time Off, once
+     * the record is saved with this Manager and Leaving Date and, for a
+     * Leaving Date, once it has passed. The change is tried in a transaction
+     * that is always undone, so the reporting line is read exactly as the
+     * rest of the app reads it. The Employee comes first, then by name.
+     */
+    private function strandedBy(Employee $employee, ?int $managerId, ?string $leavingDate): ?Employee
+    {
+        $on = $leavingDate !== null && CarbonImmutable::parse($leavingDate)->gte(today())
+            ? CarbonImmutable::parse($leavingDate)->addDay()
+            : CarbonImmutable::today();
+
+        DB::beginTransaction();
+
+        try {
+            Employee::query()->whereKey($employee->id)->update(['manager_id' => $managerId, 'leaving_date' => $leavingDate]);
+            $affected = Employee::query()->reportsOf($employee)->pluck('employees.id')->push($employee->id);
+
+            return Employee::query()
+                ->fromSub(Employee::query()->whereKey($affected)->withPendingDecisions()->withEffectiveManager($on), 'employees')
+                ->whereNull('effective_manager_id')
+                ->orderByRaw('id = ? desc', [$employee->id])
+                ->orderBy('name')
+                ->first();
+        } finally {
+            DB::rollBack();
+        }
     }
 
     /**
@@ -102,7 +171,6 @@ class EmployeeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'manager_id.required' => __('Choose a Manager. Only the top Employee has none.'),
             'manager_id.prohibited' => __('The top Employee has no Manager.'),
             'manager_id.not_in' => __('An Employee cannot be their own Manager.'),
             'leaving_date.prohibited' => __('Name a new top Employee before the current one can leave.'),

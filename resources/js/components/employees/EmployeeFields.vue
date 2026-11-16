@@ -9,6 +9,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { noManager } from '@/lib/employees';
 import type { Choice, EmployeeRecord, ManagerChoice } from '@/types';
 
 defineProps<{
@@ -78,7 +79,9 @@ defineProps<{
                 :default-value="
                     employee?.manager_id
                         ? String(employee.manager_id)
-                        : undefined
+                        : employee
+                          ? noManager
+                          : undefined
                 "
                 required
             >
@@ -86,6 +89,7 @@ defineProps<{
                     <SelectValue placeholder="Choose a Manager" />
                 </SelectTrigger>
                 <SelectContent>
+                    <SelectItem :value="noManager">No Manager</SelectItem>
                     <SelectItem
                         v-for="manager in managers"
                         :key="manager.id"
@@ -101,6 +105,10 @@ defineProps<{
                     </SelectItem>
                 </SelectContent>
             </Select>
+            <p class="text-sm text-muted-foreground">
+                With no Manager, nobody decides for them: their Time Off is
+                Approved at once and they record no Work Entries.
+            </p>
             <InputError :message="errors.manager_id" />
         </div>
         <p v-else class="text-sm text-muted-foreground">

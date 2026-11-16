@@ -19,7 +19,7 @@ class AddEmployee
     /**
      * Every Role given is recorded in the Access Log against the actor.
      *
-     * @param  array{name: string, email: string, department_id: int, manager_id: int, start_date: Carbon|string, leaving_date?: Carbon|string|null}  $details
+     * @param  array{name: string, email: string, department_id: int, manager_id: int|null, start_date: Carbon|string, leaving_date?: Carbon|string|null}  $details
      */
     public function add(Employee $actor, array $details): Employee
     {

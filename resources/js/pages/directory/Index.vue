@@ -95,9 +95,7 @@ const searchDirectory = useDebounceFn(() => {
                     class="underline-offset-4 hover:underline"
                     >{{ row.manager.name }}</Link
                 >
-                <span v-else class="text-muted-foreground"
-                    >None (top Employee)</span
-                >
+                <span v-else class="text-muted-foreground">None</span>
             </template>
             <template #empty>
                 <EmptyState :icon="Users" :message="emptyMessage" />

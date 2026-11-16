@@ -16,7 +16,7 @@ beforeEach(function () {
 });
 
 it('previews the Paid Days chosen dates use and closes the dialog with a toast once requested', function () {
-    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'paid_days' => 20]);
+    $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara', 'paid_days' => 20]);
 
     actingAs($cara);
 

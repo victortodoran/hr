@@ -6,6 +6,7 @@ import Heading from '@/components/Heading.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { create } from '@/routes/employees';
 import type { Choice, ManagerChoice } from '@/types';
+import { withNoManagerAsEmpty } from '@/lib/employees';
 
 defineOptions({
     layout: {
@@ -30,6 +31,7 @@ defineProps<{
 
         <Form
             v-bind="EmployeeController.store.form()"
+            :transform="withNoManagerAsEmpty"
             class="grid gap-6"
             v-slot="{ errors, processing }"
         >

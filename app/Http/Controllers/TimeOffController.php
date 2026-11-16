@@ -44,14 +44,14 @@ class TimeOffController extends Controller
 
     /**
      * Request Time Off for the signed-in Employee. It is Pending until their
-     * Manager decides, except the top Employee's, which is Approved at once
-     * with nobody deciding.
+     * Manager decides, except for an Employee with no Manager, whose Time Off
+     * is Approved at once with nobody deciding.
      */
     public function store(TimeOffRequest $request, #[CurrentUser] Employee $actor): RedirectResponse
     {
         $timeOff = $actor->timeOff()->make($request->timeOff());
 
-        if ($actor->is_top) {
+        if ($actor->hasNoManager()) {
             $timeOff->forceFill(['state' => TimeOffState::Approved, 'decided_at' => now()]);
         }
 

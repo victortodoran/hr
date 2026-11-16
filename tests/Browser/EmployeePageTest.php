@@ -78,3 +78,19 @@ it('drops an Assignment edit that was cancelled, so reopening shows what is save
     expect($relaunch->capacity)->toBe(100)
         ->and($relaunch->job_title)->toBe('Lead Developer');
 });
+
+it('removes an Employee\'s Manager by choosing No Manager', function () {
+    $ana = Employee::factory()->create(['name' => 'Ana Founder']);
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ana)->create(['name' => 'Cara Lane']);
+
+    actingAs(employeeWhoManagesEmployees());
+
+    visit(route('employees.edit', $cara))
+        ->click('#manager_id')
+        ->click('[role="option"] >> text=No Manager')
+        ->click('Save')
+        ->assertSee('Employee updated.')
+        ->assertNoJavaScriptErrors();
+
+    expect($cara->refresh()->manager_id)->toBeNull();
+});

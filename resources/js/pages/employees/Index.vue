@@ -120,9 +120,7 @@ const searchEmployees = useDebounceFn(reloadList, 300);
             </template>
             <template #cell-manager="{ row }">
                 <span v-if="row.manager">{{ row.manager.name }}</span>
-                <span v-else class="text-muted-foreground"
-                    >None (top Employee)</span
-                >
+                <span v-else class="text-muted-foreground">None</span>
             </template>
             <template #empty>
                 <EmptyState

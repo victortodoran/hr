@@ -23,8 +23,8 @@ export type ChainMember = {
 };
 
 /**
- * An Employee's Reporting Chain: everyone above them from the top Employee
- * down, the Employee, and the Employees they are the Manager of.
+ * An Employee's Reporting Chain: everyone above them from the highest, who
+ * has no Manager, down, the Employee, and the Employees they are the Manager of.
  */
 export type ReportingChainView = {
     above: ChainMember[];

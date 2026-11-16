@@ -223,7 +223,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * The Employee they report to; only the top Employee has none.
+     * The Employee they report to, if any; any number of Employees have none.
      *
      * @return BelongsTo<Employee, $this>
      */
@@ -246,8 +246,8 @@ class Employee extends Authenticatable implements MustVerifyEmail
 
     /**
      * Everyone above the Employee in their Reporting Chain: their effective
-     * Manager, that Manager's effective Manager, and so on up to the top
-     * Employee, nearest first.
+     * Manager, that Manager's effective Manager, and so on up to an Employee
+     * with no Manager, nearest first.
      *
      * @return Collection<int, Employee>
      */
@@ -289,6 +289,26 @@ class Employee extends Authenticatable implements MustVerifyEmail
     public function hasDirectReports(): bool
     {
         return $this->managedEmployeesQuery()->exists();
+    }
+
+    /**
+     * Whether the Employee has no Manager: none is recorded, or every Manager
+     * up the chain has left. Nobody could decide for them, so they record
+     * no Work Entries and their Time Off is Approved as soon as requested.
+     */
+    public function hasNoManager(): bool
+    {
+        return $this->manager_id === null
+            || self::query()->withEffectiveManager()->whereKey($this->id)->value('effective_manager_id') === null;
+    }
+
+    /**
+     * Whether the Employee has Pending Work Entries or Pending Time Off,
+     * which their Manager is to decide.
+     */
+    public function hasPendingDecisions(): bool
+    {
+        return self::query()->whereKey($this->id)->withPendingDecisions()->exists();
     }
 
     /**
@@ -612,6 +632,20 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Limit the query to Employees with Pending Work Entries or Pending Time
+     * Off, which their Manager is to decide.
+     *
+     * @param  Builder<Employee>  $query
+     */
+    #[QueryScope]
+    protected function withPendingDecisions(Builder $query): void
+    {
+        $query->where(fn (Builder $pending) => $pending
+            ->whereHas('workEntries', fn (Builder $entries) => $entries->where('work_entries.state', WorkEntryState::Pending))
+            ->orWhereHas('timeOff', fn (Builder $timeOff) => $timeOff->where('state', TimeOffState::Pending)));
+    }
+
+    /**
      * Limit the query to Employees who are current today.
      *
      * @param  Builder<Employee>  $query
@@ -640,15 +674,18 @@ class Employee extends Authenticatable implements MustVerifyEmail
 
     /**
      * Add each Employee's effective_manager_id: walking up from their stored
-     * Manager, the first Employee who hasn't left. It is worked out when read,
-     * so nothing needs reassigning when a Manager leaves. The walk only climbs
-     * past Managers who have left, so it ends at the one row that's picked.
+     * Manager, the first Employee who hasn't left, today or on the given day.
+     * It is worked out when read, so nothing needs reassigning when a Manager
+     * leaves. The walk only climbs past Managers who have left, so it ends at
+     * the one row that's picked.
      *
      * @param  Builder<Employee>  $query
      */
     #[QueryScope]
-    protected function withEffectiveManager(Builder $query): void
+    protected function withEffectiveManager(Builder $query, ?CarbonInterface $on = null): void
     {
+        $day = ($on ?? today())->toDateString();
+
         if ($query->getQuery()->columns === null) {
             $query->select('employees.*');
         }
@@ -665,7 +702,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
                 )
                 SELECT id FROM up WHERE up.leaving_date IS NULL OR up.leaving_date >= ? LIMIT 1
             ) AS effective_manager_id
-            SQL, [today()->toDateString(), today()->toDateString()]);
+            SQL, [$day, $day]);
     }
 
     /**
