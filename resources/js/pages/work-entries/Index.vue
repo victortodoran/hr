@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router, setLayoutProps } from '@inertiajs/vue3';
 import { useLocalStorage } from '@vueuse/core';
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { computed, reactive } from 'vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,6 +13,7 @@ import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
 import WorkEntryCalendar from '@/components/work-entries/WorkEntryCalendar.vue';
 import WorkEntryList from '@/components/work-entries/WorkEntryList.vue';
 import WorkEntrySummary from '@/components/work-entries/WorkEntrySummary.vue';
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges';
 import { index } from '@/routes/work-entries';
 import type {
     Choice,
@@ -111,47 +112,14 @@ function markUnsaved(rowKey: string, isDirty: boolean): void {
 /** Whether Saturdays and Sundays are shown, remembered in this browser. */
 const showWeekends = useLocalStorage('work-entries.show-weekends', true);
 
-/** A visit to another week or page held back until leaving is confirmed. */
-const heldVisit = ref<URL | null>(null);
-
-let stopGuarding: (() => void) | null = null;
-
-onMounted(() => {
-    stopGuarding = router.on('before', (event) => {
-        const visit = event.detail.visit;
-
-        if (
-            visit.method !== 'get' ||
-            visit.prefetch ||
-            unsaved.size === 0 ||
-            heldVisit.value !== null
-        ) {
-            return;
-        }
-
-        heldVisit.value = visit.url;
-
-        return false;
-    });
-});
-
-onUnmounted(() => stopGuarding?.());
-
-function stayOnWeek(): void {
-    heldVisit.value = null;
-}
-
-function leaveWeek(): void {
-    const url = heldVisit.value;
-
-    if (url === null) {
-        return;
-    }
-
-    unsaved.clear();
-    heldVisit.value = null;
-    router.visit(url);
-}
+/**
+ * Asks before leaving with a Work Entry typed but not saved, whether for
+ * another week, another page, a reload or closing the tab.
+ */
+const guard = useUnsavedChanges(
+    computed(() => unsaved.size > 0),
+    () => unsaved.clear(),
+);
 </script>
 
 <template>
@@ -225,9 +193,9 @@ function leaveWeek(): void {
         />
 
         <UnsavedWorkEntryDialog
-            :open="heldVisit !== null"
-            @stay="stayOnWeek"
-            @leave="leaveWeek"
+            :open="guard.pending.value !== null"
+            @stay="guard.keep"
+            @leave="guard.discard"
         />
     </PageContainer>
 </template>
