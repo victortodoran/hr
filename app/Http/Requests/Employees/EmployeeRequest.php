@@ -95,9 +95,9 @@ class EmployeeRequest extends FormRequest
             $stranded = $this->strandedBy($employee, $managerId, $leavingDate);
 
             if ($stranded?->is($employee)) {
-                $validator->errors()->add('manager_id', __(':name has Pending Work Entries, Time Off or Travel Requests, which nobody could decide without a Manager. Decide them first.', ['name' => $employee->name]));
+                $validator->errors()->add('manager_id', __(':name has Pending Work Entries, Time Off, Travel Requests or Travel Expenses, which nobody could decide without a Manager. Decide them first.', ['name' => $employee->name]));
             } elseif ($stranded !== null) {
-                $validator->errors()->add($leavingChanges ? 'leaving_date' : 'manager_id', __(':name would have no Manager to decide their Pending Work Entries, Time Off or Travel Requests. Give them a new Manager first.', ['name' => $stranded->name]));
+                $validator->errors()->add($leavingChanges ? 'leaving_date' : 'manager_id', __(':name would have no Manager to decide their Pending Work Entries, Time Off, Travel Requests or Travel Expenses. Give them a new Manager first.', ['name' => $stranded->name]));
             }
         }];
     }

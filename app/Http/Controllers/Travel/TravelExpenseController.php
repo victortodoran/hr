@@ -8,12 +8,14 @@ use App\Http\Requests\Travel\TravelExpenseRequest;
 use App\Models\Employee;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
+use Carbon\CarbonInterface;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use LogicException;
+use Throwable;
 
 /**
  * Lets an Employee record, change and delete the Travel Expenses of their
@@ -31,16 +33,20 @@ class TravelExpenseController extends Controller
     {
         $receipt = $request->receipt() ?? throw new LogicException('Recording a Travel Expense always needs a receipt.'); // @pest-mutate-ignore (validation requires the receipt)
 
+        $receiptPath = $this->keep($receipt);
         $travelExpense = $travelRequest->travelExpenses()->make([
             ...$request->travelExpense(),
-            'receipt_path' => $this->keep($receipt),
+            'receipt_path' => $receiptPath,
         ]);
+        $travelExpense->forceFill($this->newState($actor));
 
-        if ($actor->hasNoManager()) {
-            $travelExpense->forceFill(['state' => TravelExpenseState::Approved, 'approved_at' => now()]);
+        try {
+            $travelExpense->save();
+        } catch (Throwable $failure) { // @pest-mutate-ignore (only reached when the database refuses the write)
+            $this->discard($receiptPath);
+
+            throw $failure;
         }
-
-        $travelExpense->save();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Expense added.')]);
 
@@ -50,11 +56,13 @@ class TravelExpenseController extends Controller
     /**
      * Correct a Travel Expense, replacing its receipt when a new one is
      * sent and deleting the old file. A Declined one goes back to Pending,
-     * without who declined it or why. The write only changes one still
+     * without who declined it or why, or is Approved at once for an
+     * Employee with no Manager, as when recording. The write only changes
+     * one still
      * Pending or Declined, so an approval made since the policy check is
      * never undone.
      */
-    public function update(TravelExpenseRequest $request, TravelExpense $travelExpense): RedirectResponse
+    public function update(TravelExpenseRequest $request, TravelExpense $travelExpense, #[CurrentUser] Employee $actor): RedirectResponse
     {
         $receipt = $request->receipt();
         $newPath = $receipt === null ? null : $this->keep($receipt);
@@ -65,7 +73,7 @@ class TravelExpenseController extends Controller
             ->update([
                 ...$request->travelExpense(),
                 'receipt_path' => $newPath ?? $travelExpense->receipt_path,
-                'state' => TravelExpenseState::Pending,
+                ...$this->newState($actor),
                 'declined_by' => null,
                 'declined_at' => null,
                 'decline_reason' => null,
@@ -87,16 +95,36 @@ class TravelExpenseController extends Controller
     }
 
     /**
-     * Delete a Travel Expense recorded by mistake, with its receipt.
+     * Delete a Travel Expense recorded by mistake, with its receipt. The
+     * delete only removes one still Pending or Declined, so an approval
+     * made since the policy check is never undone.
      */
     public function destroy(TravelExpense $travelExpense): RedirectResponse
     {
-        $travelExpense->delete();
+        $deleted = TravelExpense::query()
+            ->whereKey($travelExpense->id)
+            ->whereIn('state', TravelExpenseState::open())
+            ->delete();
+        abort_if($deleted === 0, 403); // @pest-mutate-ignore (only reached when the Travel Expense is approved between the policy check and this delete)
         $this->discard($travelExpense->receipt_path);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Expense deleted.')]);
 
         return to_route('travel-requests.index');
+    }
+
+    /**
+     * The state a recorded or changed Travel Expense takes: Pending for its
+     * Manager to decide, or Approved at once with nobody approving for an
+     * Employee with no Manager.
+     *
+     * @return array{state: TravelExpenseState, approved_at: CarbonInterface|null}
+     */
+    private function newState(Employee $actor): array
+    {
+        return $actor->hasNoManager()
+            ? ['state' => TravelExpenseState::Approved, 'approved_at' => now()]
+            : ['state' => TravelExpenseState::Pending, 'approved_at' => null];
     }
 
     /**

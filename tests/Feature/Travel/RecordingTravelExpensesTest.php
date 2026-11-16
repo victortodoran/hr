@@ -99,7 +99,7 @@ it('lets Cara record a 1,990 RON Accommodation expense with a PDF receipt on her
     Storage::disk(TravelExpense::RECEIPT_DISK)->assertExists($expense->receipt_path);
 });
 
-it('lists the expenses of a Travel Request that takes them, with their total, on the Travel page', function () {
+it('lists the expenses of a Travel Request that takes them, with the total of those not Declined, on the Travel page', function () {
     $cara = expenseRecorder();
     $berlin = berlinTrip($cara);
     $hotel = recordedExpense($berlin, 'declined', ['paid_on' => '2026-12-05', 'amount' => 199000, 'category' => TravelExpenseCategory::Accommodation, 'description' => 'Hotel', 'decline_reason' => 'Book through travel desk']);
@@ -111,7 +111,7 @@ it('lists the expenses of a Travel Request that takes them, with their total, on
             ->where('currency', ['code' => 'RON', 'decimals' => 2])
             ->where('travelRequests.0.expenses', null)
             ->where('travelRequests.1.id', $berlin->id)
-            ->where('travelRequests.1.expenses.total', "RON\u{a0}2,240.50")
+            ->where('travelRequests.1.expenses.total', "RON\u{a0}250.50")
             ->where('travelRequests.1.expenses.can_create', true)
             ->where('travelRequests.1.expenses.items', [
                 ['id' => $train->id, 'paid_on' => '2026-12-03', 'category' => 'transport', 'description' => 'Train', 'amount' => "RON\u{a0}250.50", 'amount_typed' => '250.50', 'state' => 'approved', 'decline_reason' => null, 'can_change' => false],
@@ -209,6 +209,20 @@ it('sends a Declined expense back to Pending without its reason when Cara change
     Storage::disk(TravelExpense::RECEIPT_DISK)->assertExists($expense->receipt_path);
 });
 
+it('approves a changed expense at once for an Employee who no longer has a Manager', function () {
+    $cara = expenseRecorder();
+    $expense = recordedExpense(berlinTrip($cara), 'declined');
+    $cara->update(['manager_id' => null]);
+
+    actingAs($cara)->put(route('travel-expenses.update', $expense), expenseForm(['receipt' => null]))
+        ->assertSessionHasNoErrors();
+
+    $expense->refresh();
+    expect($expense->state)->toBe(TravelExpenseState::Approved);
+    expect($expense->approved_at?->toDateTimeString())->toBe('2026-12-10 09:00:00');
+    expect($expense->decline_reason)->toBeNull();
+});
+
 it('keeps the receipt when a change sends no new one', function () {
     $cara = expenseRecorder();
     $expense = recordedExpense(berlinTrip($cara));
@@ -269,4 +283,13 @@ it('serves Cara her own receipt and refuses it to another Employee', function ()
 
     actingAs(Employee::factory()->startedLongAgo()->create())->get(route('travel-expenses.receipt.show', $expense))
         ->assertForbidden();
+});
+
+it('answers Not Found when a receipt\'s file is gone', function () {
+    $cara = expenseRecorder();
+    $expense = recordedExpense(berlinTrip($cara));
+    Storage::disk(TravelExpense::RECEIPT_DISK)->delete($expense->receipt_path);
+
+    actingAs($cara)->get(route('travel-expenses.receipt.show', $expense))
+        ->assertNotFound();
 });

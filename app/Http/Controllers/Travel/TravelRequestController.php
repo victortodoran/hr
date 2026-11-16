@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Travel;
 
+use App\Enums\TravelExpenseState;
 use App\Enums\TravelRequestState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Travel\TravelRequestRequest;
@@ -97,9 +98,9 @@ class TravelRequestController extends Controller
     }
 
     /**
-     * The Travel Expenses of a Travel Request that takes them, with their
-     * total in the company currency and whether the Employee may record
-     * more.
+     * The Travel Expenses of a Travel Request that takes them, with the
+     * total of those not Declined in the company currency, and whether the
+     * Employee may record more.
      *
      * @return array{items: array<int, array<string, mixed>>, total: string, can_create: bool}
      */
@@ -123,7 +124,9 @@ class TravelRequestController extends Controller
                     ];
                 })
                 ->all(),
-            'total' => $currency->format((int) $travelRequest->travelExpenses->sum('amount')),
+            'total' => $currency->format((int) $travelRequest->travelExpenses
+                ->reject(fn (TravelExpense $travelExpense): bool => $travelExpense->state === TravelExpenseState::Declined)
+                ->sum('amount')),
             'can_create' => $actor->can('create', [TravelExpense::class, $travelRequest]),
         ];
     }

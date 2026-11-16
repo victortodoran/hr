@@ -14,10 +14,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class TravelExpenseReceiptController extends Controller
 {
     /**
-     * Show the receipt in the browser.
+     * Show the receipt in the browser, or Not Found when its file is gone.
      */
     public function show(TravelExpense $travelExpense): StreamedResponse
     {
-        return Storage::disk(TravelExpense::RECEIPT_DISK)->response($travelExpense->receipt_path);
+        $disk = Storage::disk(TravelExpense::RECEIPT_DISK);
+        abort_unless($disk->exists($travelExpense->receipt_path), 404);
+
+        return $disk->response($travelExpense->receipt_path);
     }
 }

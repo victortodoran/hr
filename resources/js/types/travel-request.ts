@@ -63,7 +63,7 @@ export type TravelExpenseRecord = {
 /** The Travel Expenses of one Travel Request, with their total. */
 export type TravelExpenses = {
     items: TravelExpenseRecord[];
-    /** Already shown in the company currency. */
+    /** Of those not Declined, already shown in the company currency. */
     total: string;
     can_create: boolean;
 };
