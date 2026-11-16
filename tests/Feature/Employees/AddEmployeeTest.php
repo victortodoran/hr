@@ -59,7 +59,6 @@ it('adds an Employee and invites them to set a password', function () {
         ->and($cara->department_id)->toBe($details['department_id'])
         ->and($cara->manager_id)->toBe($details['manager_id'])
         ->and($cara->start_date->toDateString())->toBe('2026-12-01')
-        ->and($cara->is_top)->toBeFalse()
         ->and($cara->hasPendingInvitation())->toBeTrue();
 
     Notification::assertSentTo($cara, Invitation::class);

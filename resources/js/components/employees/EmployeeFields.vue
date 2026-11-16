@@ -72,7 +72,7 @@ defineProps<{
             <InputError :message="errors.department_id" />
         </div>
 
-        <div v-if="!employee?.is_top" class="grid gap-2">
+        <div class="grid gap-2">
             <Label for="manager_id">Manager</Label>
             <Select
                 name="manager_id"
@@ -111,9 +111,6 @@ defineProps<{
             </p>
             <InputError :message="errors.manager_id" />
         </div>
-        <p v-else class="text-sm text-muted-foreground">
-            This is the top Employee, so they have no Manager.
-        </p>
 
         <div class="grid gap-2">
             <Label for="start_date">Start Date</Label>
@@ -129,30 +126,22 @@ defineProps<{
 
         <div class="grid gap-2">
             <Label for="leaving_date">Leaving Date</Label>
-            <template v-if="employee?.is_top">
-                <p class="text-sm text-muted-foreground">
-                    Name a new top Employee before the current one can leave.
-                </p>
-            </template>
-            <template v-else>
-                <Input
-                    id="leaving_date"
-                    type="date"
-                    name="leaving_date"
-                    :default-value="employee?.leaving_date ?? undefined"
-                    :readonly="employee?.status === 'former'"
-                />
-                <p
-                    v-if="employee?.status === 'former'"
-                    class="text-sm text-muted-foreground"
-                >
-                    This Leaving Date has passed, so it can't be changed.
-                </p>
-                <p v-else class="text-sm text-muted-foreground">
-                    Optional. Their last working day; they can't sign in after
-                    it.
-                </p>
-            </template>
+            <Input
+                id="leaving_date"
+                type="date"
+                name="leaving_date"
+                :default-value="employee?.leaving_date ?? undefined"
+                :readonly="employee?.status === 'former'"
+            />
+            <p
+                v-if="employee?.status === 'former'"
+                class="text-sm text-muted-foreground"
+            >
+                This Leaving Date has passed, so it can't be changed.
+            </p>
+            <p v-else class="text-sm text-muted-foreground">
+                Optional. Their last working day; they can't sign in after it.
+            </p>
             <InputError :message="errors.leaving_date" />
         </div>
     </div>

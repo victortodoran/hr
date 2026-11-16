@@ -12,7 +12,7 @@ covers(EmployeeController::class);
 
 it('fits the Employees list on a phone without scrolling the page sideways', function () {
     $department = Department::factory()->create(['name' => 'Research and Development']);
-    $dana = Employee::factory()->top()->create(['name' => 'Dana Alexandrescu-Whitfield', 'department_id' => $department->id]);
+    $dana = Employee::factory()->create(['name' => 'Dana Alexandrescu-Whitfield', 'department_id' => $department->id]);
     Employee::factory()->count(3)->reportingTo($dana)->create(['department_id' => $department->id]);
 
     actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]));

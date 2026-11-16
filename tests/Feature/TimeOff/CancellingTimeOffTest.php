@@ -69,10 +69,10 @@ it('refuses cancelling Declined or already Cancelled Time Off', function (string
     expect($timeOff->refresh()->state)->toBe(TimeOffState::from($state));
 })->with(['declined', 'cancelled']);
 
-it('refuses cancelling someone else\'s Time Off, even as the top Employee', function () {
+it('refuses cancelling someone else\'s Time Off, even as an Employee with no Manager', function () {
     $timeOff = carasTimeOff();
 
-    actingAs(Employee::factory()->top()->create())->post(route('time-off.cancellation.store', $timeOff))->assertForbidden();
+    actingAs(Employee::factory()->create())->post(route('time-off.cancellation.store', $timeOff))->assertForbidden();
 
     expect($timeOff->refresh()->state)->toBe(TimeOffState::Pending);
 });

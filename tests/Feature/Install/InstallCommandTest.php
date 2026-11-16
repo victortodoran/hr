@@ -53,13 +53,12 @@ function installOptions(): array
 
 beforeEach(fn () => Notification::fake());
 
-it('sets up the company, first Department and top Employee', function () {
+it('sets up the company, first Department and first Employee, who has no Manager', function () {
     install(installOptions())->assertSuccessful();
 
     $dana = Employee::query()->where('email', 'dana@acme.test')->sole();
 
     expect($dana->name)->toBe('Dana Owner')
-        ->and($dana->is_top)->toBeTrue()
         ->and($dana->manager_id)->toBeNull()
         ->and($dana->start_date->isToday())->toBeTrue()
         ->and($dana->department?->name)->toBe('Operations')

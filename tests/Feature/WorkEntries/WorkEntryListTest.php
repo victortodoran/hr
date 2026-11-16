@@ -22,7 +22,7 @@ beforeEach(function () {
 });
 
 it('opens on the current month and the first Employee by name with Work Entries in it, read-only, for someone who may view everyone\'s', function () {
-    $ada = Employee::factory()->top()->create(['name' => 'Ada']);
+    $ada = Employee::factory()->create(['name' => 'Ada']);
     $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Dan', 'manager_id' => $ada->id]);
     $cara = Employee::factory()->reportingTo($ada)->create(['name' => 'Cara']);
     $bea = Employee::factory()->reportingTo($ada)->create(['name' => 'Bea']);
@@ -106,7 +106,7 @@ it('refuses a custom period that ends before it starts or is longer than three m
 });
 
 it('lists only a Manager\'s Reports for someone who may view their Reports\' Work Entries', function () {
-    $ada = Employee::factory()->top()->create(['name' => 'Ada']);
+    $ada = Employee::factory()->create(['name' => 'Ada']);
     $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Reports], ['name' => 'Ben', 'manager_id' => $ada->id]);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
     $dev = Employee::factory()->reportingTo($cara)->create(['name' => 'Dev']);

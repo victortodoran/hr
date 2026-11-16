@@ -207,7 +207,7 @@ it('lets an Employee record hours on their Internal Assignment', function () {
 });
 
 it('lets someone record hours for the Employees their manage work entries Scope covers', function (Scope $scope) {
-    $ben = employeeWith([Permission::ManageWorkEntries->value => $scope], ['manager_id' => Employee::factory()->top()->create()->id]);
+    $ben = employeeWith([Permission::ManageWorkEntries->value => $scope], ['manager_id' => Employee::factory()->create()->id]);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
     $relaunch = assignmentOf($cara);
 

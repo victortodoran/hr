@@ -144,7 +144,7 @@ class EmployeeController extends Controller
             ...($canManagePay && $currency !== null ? ['currency' => $currency->code] : []),
             'canEdit' => $actor->can('update', $employee),
             'standing' => $canViewRecord
-                ? ['status' => $employee->employmentStatus()->value, 'is_top' => $employee->is_top]
+                ? ['status' => $employee->employmentStatus()->value]
                 : null,
             ...match ($tab) {
                 EmployeePageTab::Overview => $this->overviewTab($actor, $employee, $canViewRecord),
@@ -172,9 +172,7 @@ class EmployeeController extends Controller
                 'start_date' => $employee->start_date->toDateString(),
                 'leaving_date' => $employee->leaving_date?->toDateString(),
                 'status' => $employee->employmentStatus()->value,
-                'is_top' => $employee->is_top,
                 'can_resend_invitation' => $actor->can('resendInvitation', $employee),
-                'can_become_top' => $actor->can('becomeTop', $employee),
             ],
             'reportsNeedingAManager' => $this->reportsNeedingAManager($employee),
             ...$this->choices($employee),

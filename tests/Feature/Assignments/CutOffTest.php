@@ -36,7 +36,7 @@ function projectChanging(Project $project, array $changes): array
 }
 
 /**
- * An Employee working since 2024, reporting to the top Employee.
+ * An Employee working since 2024, with a Manager.
  *
  * @param  array<string, mixed>  $attributes
  */
@@ -44,7 +44,7 @@ function staffMember(array $attributes = []): Employee
 {
     return Employee::factory()->create([
         'start_date' => '2024-01-01',
-        'manager_id' => Employee::query()->where('is_top', true)->value('id') ?? Employee::factory()->top()->create()->id,
+        'manager_id' => fn () => Employee::factory()->create()->id,
         ...$attributes,
     ]);
 }

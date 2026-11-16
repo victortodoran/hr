@@ -64,12 +64,12 @@ it('offers an assignment manager the Projects still open to Assignments, by name
 });
 
 /*
- * Dana (top)
+ * Dana (no Manager)
  * ├── Ben ── Cara ── Dev
  * └── Eve
  */
 it('lets Scope decide whose Assignments an Employee may see', function (Scope $scope, array $visible) {
-    $dana = Employee::factory()->top()->create();
+    $dana = Employee::factory()->create();
     $ben = employeeWith([Permission::ViewAssignments->value => $scope], ['manager_id' => $dana->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
     $people = [
@@ -91,7 +91,7 @@ it('lets Scope decide whose Assignments an Employee may see', function (Scope $s
 ]);
 
 it('lets an Employee who manages someone\'s Assignments see them too', function () {
-    $ben = employeeWith([Permission::ManageAssignments->value => Scope::Reports], ['manager_id' => Employee::factory()->top()->create()->id]);
+    $ben = employeeWith([Permission::ManageAssignments->value => Scope::Reports], ['manager_id' => Employee::factory()->create()->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
 
     actingAs($ben)->get(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
@@ -99,7 +99,7 @@ it('lets an Employee who manages someone\'s Assignments see them too', function 
 });
 
 it('shows Assignments read-only to an Employee who may see but not manage them', function () {
-    $ben = employeeWith([Permission::ViewAssignments->value => Scope::Everyone, Permission::ManageAssignments->value => Scope::Reports], ['manager_id' => Employee::factory()->top()->create()->id]);
+    $ben = employeeWith([Permission::ViewAssignments->value => Scope::Everyone, Permission::ManageAssignments->value => Scope::Reports], ['manager_id' => Employee::factory()->create()->id]);
     $eve = Employee::factory()->create();
 
     actingAs($ben)->get(route('employees.show', ['employee' => $eve, 'tab' => 'assignments']))
@@ -107,7 +107,7 @@ it('shows Assignments read-only to an Employee who may see but not manage them',
 });
 
 it('lets Scope decide whose Assignments an Employee may create and change', function (Scope $scope, array $allowed) {
-    $dana = Employee::factory()->top()->create(['start_date' => '2024-01-01']);
+    $dana = Employee::factory()->create(['start_date' => '2024-01-01']);
     $ben = employeeWith([Permission::ManageAssignments->value => $scope], ['manager_id' => $dana->id, 'start_date' => '2024-01-01']);
     $cara = Employee::factory()->reportingTo($ben)->create(['start_date' => '2024-01-01']);
     $people = [

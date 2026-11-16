@@ -58,14 +58,14 @@ it('refuses a Project\'s page to an Employee who can neither view nor manage Pro
 });
 
 /*
- * Dana (top)
+ * Dana (no Manager)
  * ├── Ben ── Cara ── Dev
  * └── Eve
  */
 it('shows on a Project\'s team and a Client\'s page only the Assignments the viewer\'s Scope covers', function (array $grants, array $visible) {
     $globex = Client::factory()->create();
     $project = Project::factory()->forClient($globex)->create(['start_date' => '2024-01-01']);
-    $dana = Employee::factory()->top()->create(['name' => 'Dana', 'start_date' => '2024-01-01']);
+    $dana = Employee::factory()->create(['name' => 'Dana', 'start_date' => '2024-01-01']);
     $ben = employeeWith([Permission::ViewProjects->value => null, Permission::ManageClients->value => null, ...$grants], ['name' => 'Ben', 'manager_id' => $dana->id, 'start_date' => '2024-01-01']);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara', 'start_date' => '2024-01-01']);
     Employee::factory()->reportingTo($cara)->create(['name' => 'Dev', 'start_date' => '2024-01-01']);

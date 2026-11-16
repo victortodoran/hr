@@ -99,7 +99,7 @@ it('shows Cara\'s Time Off to someone who manages her Paid Days', function () {
  * └── Eve
  */
 it('lets someone with the reports Scope see the Time Off of their Reports only', function () {
-    $dana = Employee::factory()->top()->create();
+    $dana = Employee::factory()->create();
     $ben = employeeWith([Permission::ViewTimeOff->value => Scope::Reports], ['manager_id' => $dana->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
     $people = [

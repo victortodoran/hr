@@ -44,12 +44,9 @@ class EmployeeRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(Employee::class)->ignore($employee?->id)],
             'department_id' => ['required', 'integer', Rule::exists(Department::class, 'id')],
-            'manager_id' => $employee?->is_top
-                ? ['prohibited']
-                : ['bail', 'nullable', 'integer', Rule::exists(Employee::class, 'id'), Rule::notIn([$employee?->id]), $this->noLoopUnder($employee)],
+            'manager_id' => ['bail', 'nullable', 'integer', Rule::exists(Employee::class, 'id'), Rule::notIn([$employee?->id]), $this->noLoopUnder($employee)],
             'start_date' => ['bail', 'required', 'date', AssignmentsFit::startOf($employee, ':name has an Assignment starting on :date, so their Start Date can\'t be later than that.'), WorkEntriesFit::startOf($employee?->workEntries(), __(':name has Work Entries from :date, so their Start Date can\'t be later than that.', ['name' => $employee?->name]))],
             'leaving_date' => match (true) {
-                $employee?->is_top === true => ['prohibited'], // @pest-mutate-ignore (adding has no Employee yet, and PHP reads a property of null as null)
                 $employee?->employmentStatus() === EmploymentStatus::Former => [Rule::in([$employee->leaving_date?->toDateString()])], // @pest-mutate-ignore (a Former Employee always has a Leaving Date)
                 default => ['bail', 'nullable', 'date', 'after_or_equal:start_date', AssignmentsFit::endOf($employee, ':name has an Assignment starting on :date, so their Leaving Date can\'t be earlier than that.'), WorkEntriesFit::endOf($employee?->workEntries(), __(':name has Work Entries up to :date, so their Leaving Date can\'t be earlier than that.', ['name' => $employee?->name])), $this->keepsSomeoneWhoCanManageRoles($employee)],
             },
@@ -171,9 +168,7 @@ class EmployeeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'manager_id.prohibited' => __('The top Employee has no Manager.'),
             'manager_id.not_in' => __('An Employee cannot be their own Manager.'),
-            'leaving_date.prohibited' => __('Name a new top Employee before the current one can leave.'),
             'leaving_date.in' => __('A Leaving Date that has passed can\'t be changed.'),
             'leaving_date.after_or_equal' => __('The Leaving Date must be on or after the Start Date.'),
         ];

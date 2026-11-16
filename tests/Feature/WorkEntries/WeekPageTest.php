@@ -281,7 +281,7 @@ it('offers the Employee\'s Assignments that run during the week', function () {
 });
 
 it('lets someone see the week of an Employee their Scope covers, as not their own, with Assignments to add to only when they may', function (array $grants, bool $canManage) {
-    $top = Employee::factory()->top()->create(['name' => 'Ada']);
+    $top = Employee::factory()->create(['name' => 'Ada']);
     $ben = employeeWith($grants, ['name' => 'Ben', 'manager_id' => $top->id]);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
     assignmentOf($cara);
@@ -299,7 +299,7 @@ it('lets someone see the week of an Employee their Scope covers, as not their ow
 ]);
 
 it('lets someone who may reopen or lock open the week of anyone that covers, read-only', function (array $grants) {
-    $top = Employee::factory()->top()->create(['name' => 'Ada']);
+    $top = Employee::factory()->create(['name' => 'Ada']);
     $ben = employeeWith($grants, ['name' => 'Ben', 'manager_id' => $top->id]);
 
     $response = actingAs($ben)->get(route('work-entries.index', ['employee' => $top->id]));
@@ -314,7 +314,7 @@ it('lets someone who may reopen or lock open the week of anyone that covers, rea
 ]);
 
 it("opens on the viewer's own week, even when they may see other Employees' weeks", function () {
-    $top = Employee::factory()->top()->create(['name' => 'Ada']);
+    $top = Employee::factory()->create(['name' => 'Ada']);
     $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Ben', 'manager_id' => $top->id]);
 
     $response = actingAs($ben)->get(route('work-entries.index'));

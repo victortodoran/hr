@@ -40,7 +40,6 @@ use Illuminate\Support\Str;
  * @property Carbon $start_date
  * @property Carbon|null $leaving_date
  * @property int|null $manager_id
- * @property bool $is_top
  * @property int $paid_days How many days of Paid Time Off they get each calendar year, the same number for every year
  * @property int|null $effective_manager_id Only on Employees queried with withEffectiveManager()
  * @property Carbon|null $email_verified_at
@@ -86,7 +85,6 @@ class Employee extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime', // @pest-mutate-ignore (only read through hasVerifiedEmail, which works uncast)
             'password' => 'hashed',
-            'is_top' => 'boolean', // @pest-mutate-ignore (PostgreSQL already returns a boolean)
             'start_date' => 'date',
             'leaving_date' => 'date',
         ];

@@ -3,11 +3,9 @@ import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 import EmployeeInvitationController from '@/actions/App/Http/Controllers/EmployeeInvitationController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
-import MakeTopEmployee from '@/components/employees/MakeTopEmployee.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
-import { Badge } from '@/components/ui/badge';
 import { edit, show } from '@/routes/employees';
 import type { Choice, EmployeeRecord, ManagerChoice } from '@/types';
 import { withNoManagerAsEmpty } from '@/lib/employees';
@@ -33,12 +31,7 @@ setLayoutProps({
     <div class="flex max-w-xl flex-col gap-8 p-4">
         <div class="flex items-start justify-between gap-4">
             <Heading :title="employee.name" description="Employee record" />
-            <div class="flex flex-col items-end gap-2">
-                <EmploymentStatusBadge :status="employee.status" />
-                <Badge v-if="employee.is_top" variant="secondary"
-                    >Top Employee</Badge
-                >
-            </div>
+            <EmploymentStatusBadge :status="employee.status" />
         </div>
 
         <div
@@ -57,8 +50,6 @@ setLayoutProps({
                 </li>
             </ul>
         </div>
-
-        <MakeTopEmployee v-if="employee.can_become_top" :employee="employee" />
 
         <div
             v-if="employee.can_resend_invitation"

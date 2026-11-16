@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
  * every level, so that walk must be able to use the index on manager_id.
  */
 it('lets the Reports query find each level by Manager through its index', function () {
-    $ada = Employee::factory()->top()->create();
+    $ada = Employee::factory()->create();
     Employee::factory()->reportingTo($ada)->create();
 
     $plan = DB::transaction(function () use ($ada): string {

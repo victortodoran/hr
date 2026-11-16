@@ -35,9 +35,7 @@ it('shows an Employee\'s record on the edit page, without themselves as a possib
                 'start_date' => '2025-03-01',
                 'leaving_date' => null,
                 'status' => 'current',
-                'is_top' => false,
                 'can_resend_invitation' => false,
-                'can_become_top' => false,
             ])
             ->where('managers', fn (Collection $managers): bool => $managers->pluck('id')->contains($ben->id)
                 && ! $managers->pluck('id')->contains($cara->id))
@@ -121,19 +119,21 @@ it('lets HR remove an Employee\'s Manager when nothing of theirs is Pending', fu
     expect($cara->refresh()->manager_id)->toBeNull();
 });
 
-it('saves the top Employee without a Manager, and refuses giving them one', function () {
-    $top = Employee::factory()->create(['is_top' => true]);
+it('saves an Employee with no Manager, and gives them one', function () {
+    $dana = Employee::factory()->create();
     $ben = Employee::factory()->create();
 
     actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $top), employeeRecordFields($top, ['name' => 'Dana Owner']))
+        ->patch(route('employees.update', $dana), employeeRecordFields($dana, ['name' => 'Dana Owner']))
         ->assertSessionHasNoErrors();
 
-    expect($top->refresh()->name)->toBe('Dana Owner');
+    expect($dana->refresh()->name)->toBe('Dana Owner');
 
     actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $top), employeeRecordFields($top, ['manager_id' => $ben->id]))
-        ->assertSessionHasErrors(['manager_id' => 'The top Employee has no Manager.']);
+        ->patch(route('employees.update', $dana), employeeRecordFields($dana, ['manager_id' => $ben->id]))
+        ->assertSessionHasNoErrors();
+
+    expect($dana->refresh()->manager_id)->toBe($ben->id);
 });
 
 it('resends the invitation to an Employee who has yet to set a password', function () {

@@ -25,8 +25,8 @@ function chainViewer(): Employee
     return employeeWith([Permission::ViewDirectory->value => null]);
 }
 
-it('shows an Employee\'s Reporting Chain: everyone above from the top, them, and those they are the Manager of', function () {
-    $top = Employee::factory()->top()->create(['name' => 'Ada Top', 'department_id' => Department::factory()->create(['name' => 'Board'])->id]);
+it('shows an Employee\'s Reporting Chain: everyone above up to one with no Manager, them, and those they are the Manager of', function () {
+    $top = Employee::factory()->create(['name' => 'Ada Top', 'department_id' => Department::factory()->create(['name' => 'Board'])->id]);
     Assignment::factory()->for($top)->internal()->create(['job_title' => 'CEO']);
     $ben = Employee::factory()->reportingTo($top)->create(['name' => 'Ben Manager', 'department_id' => Department::factory()->create(['name' => 'Product'])->id]);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara Report', 'department_id' => Department::factory()->create(['name' => 'Design'])->id]);
@@ -48,8 +48,8 @@ it('shows an Employee\'s Reporting Chain: everyone above from the top, them, and
         ->has('reportingChain.below', 2));
 });
 
-it('shows the top Employee with no one above, and an Employee who is no one\'s Manager with no one below', function () {
-    $top = Employee::factory()->top()->create();
+it('shows an Employee with no Manager with no one above, and an Employee who is no one\'s Manager with no one below', function () {
+    $top = Employee::factory()->create();
     $cara = Employee::factory()->reportingTo($top)->create();
 
     actingAs(chainViewer())->get(route('directory.show', $top))
@@ -61,7 +61,7 @@ it('shows the top Employee with no one above, and an Employee who is no one\'s M
 });
 
 it('skips Managers who have left, going straight to the next one up who hasn\'t', function () {
-    $top = Employee::factory()->top()->create();
+    $top = Employee::factory()->create();
     $gone = Employee::factory()->former()->reportingTo($top)->create();
     $ben = Employee::factory()->reportingTo($gone)->create();
     $alsoGone = Employee::factory()->former()->reportingTo($ben)->create();
@@ -75,7 +75,7 @@ it('skips Managers who have left, going straight to the next one up who hasn\'t'
 });
 
 it('lists below an Employee those whose Manager has left and who now report to them, plus Future Employees, but no Former ones', function () {
-    $ben = Employee::factory()->top()->create();
+    $ben = Employee::factory()->create();
     $gail = Employee::factory()->former()->reportingTo($ben)->create();
     $finn = Employee::factory()->reportingTo($gail)->create(['name' => 'Finn']);
     $dev = Employee::factory()->future()->reportingTo($ben)->create(['name' => 'Dev']);
@@ -90,7 +90,7 @@ it('lists below an Employee those whose Manager has left and who now report to t
 });
 
 it('shows a Future Employee\'s Reporting Chain', function () {
-    $top = Employee::factory()->top()->create();
+    $top = Employee::factory()->create();
     $newcomer = Employee::factory()->future()->reportingTo($top)->create();
 
     actingAs(chainViewer())->get(route('directory.show', $newcomer))
@@ -100,7 +100,7 @@ it('shows a Future Employee\'s Reporting Chain', function () {
 });
 
 it('links each member to their Employee page when the viewer may open it, and to their Directory page otherwise', function () {
-    $top = Employee::factory()->top()->create();
+    $top = Employee::factory()->create();
     $ben = employeeWith([Permission::ViewDirectory->value => null, Permission::ViewEmployeeRecords->value => Scope::Reports], ['manager_id' => $top->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
 
@@ -112,14 +112,14 @@ it('links each member to their Employee page when the viewer may open it, and to
 });
 
 it('has no Reporting Chain page for a Former Employee', function () {
-    $top = Employee::factory()->top()->create();
+    $top = Employee::factory()->create();
     $gone = Employee::factory()->former()->reportingTo($top)->create();
 
     actingAs(chainViewer())->get(route('directory.show', $gone))->assertNotFound();
 });
 
 it('refuses a Reporting Chain to an Employee without view directory', function () {
-    $top = Employee::factory()->top()->create();
+    $top = Employee::factory()->create();
 
     actingAs(employeeWith([Permission::ManageDepartments->value => null]))
         ->get(route('directory.show', $top))
@@ -129,7 +129,7 @@ it('refuses a Reporting Chain to an Employee without view directory', function (
 it('reads the viewer\'s Roles and grants as often for a Reporting Chain of 15 as for one of 3', function () {
     $viewer = employeeWith([Permission::ViewDirectory->value => null, Permission::ViewEmployeeRecords->value => Scope::Reports, Permission::ViewAssignments->value => Scope::Own]);
     $accessReadsToOpen = function (int $length) use ($viewer): int {
-        $manager = Employee::factory()->top()->create();
+        $manager = Employee::factory()->create();
         foreach (range(2, $length) as $level) {
             $manager = Employee::factory()->reportingTo($manager)->create();
         }
@@ -144,7 +144,6 @@ it('reads the viewer\'s Roles and grants as often for a Reporting Chain of 15 as
     };
 
     $forThree = $accessReadsToOpen(3);
-    Employee::query()->update(['is_top' => false]);
 
     expect($accessReadsToOpen(15))->toBe($forThree)
         ->and($forThree)->toBe(2);

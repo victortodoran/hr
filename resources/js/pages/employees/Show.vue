@@ -150,9 +150,6 @@ setLayoutProps({
                     <span>{{ employee.job_title ?? 'Employee' }}</span>
                     <template v-if="standing">
                         <EmploymentStatusBadge :status="standing.status" />
-                        <Badge v-if="standing.is_top" variant="secondary"
-                            >Top Employee</Badge
-                        >
                     </template>
                 </div>
             </div>

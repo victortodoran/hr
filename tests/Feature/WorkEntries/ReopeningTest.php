@@ -28,7 +28,7 @@ beforeEach(function () {
  */
 function reopener(?array $grants = null): Employee
 {
-    $ada = Employee::factory()->top()->create(['name' => 'Ada']);
+    $ada = Employee::factory()->create(['name' => 'Ada']);
 
     return employeeWith($grants ?? [Permission::ReopenWorkEntries->value => Scope::Reports], ['name' => 'Rae', 'manager_id' => $ada->id]);
 }
@@ -96,7 +96,7 @@ it('reopens only the selected Work Entries it may, and says how many it skipped'
 });
 
 it('neither offers nor lets a Manager with no reopen Role reopen their Direct Report\'s Work Entries', function () {
-    $ada = Employee::factory()->top()->create();
+    $ada = Employee::factory()->create();
     $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Reports], ['manager_id' => $ada->id]);
     $approved = WorkEntry::factory()->for(assignmentOf(Employee::factory()->reportingTo($ben)->create()))->approved()->create(['date' => '2026-11-10']);
 
@@ -123,7 +123,7 @@ it('reopens only for the Reports a reopen Scope of reports covers', function () 
 });
 
 it('never lets a reopen Role approve beyond the Employees one is the Manager of', function () {
-    $ada = Employee::factory()->top()->create();
+    $ada = Employee::factory()->create();
     $reopener = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone], ['manager_id' => $ada->id]);
     Employee::factory()->reportingTo($reopener)->create();
     $pending = WorkEntry::factory()->for(assignmentOf(Employee::factory()->reportingTo($ada)->create()))->create(['date' => '2026-11-10']);
