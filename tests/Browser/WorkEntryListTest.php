@@ -50,6 +50,27 @@ it('filters to Approved Work Entries, then reopens one and locks another', funct
         ->and($toLock->refresh()->state)->toBe(WorkEntryState::Locked);
 });
 
+it('keeps Work Entries ticked across pages, reopening them all and staying on a page that still has some', function () {
+    $finn = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone], ['name' => 'Finn']);
+    $relaunch = assignmentOf(Employee::factory()->create(['name' => 'Cara']));
+    collect(range(2, 13))->each(fn (int $day) => WorkEntry::factory()->count(3)->for($relaunch)->approved()->create(['date' => "2026-11-{$day}"]));
+
+    actingAs($finn);
+
+    visit(route('work-entry-list.index', ['state' => 'approved']))
+        ->click('[role="checkbox"][aria-label^="Select Cara"] >> nth=0')
+        ->click('Next')
+        ->assertSee('26–36 of 36')
+        ->click('[role="checkbox"][aria-label^="Select Cara"] >> nth=0')
+        ->assertSee('2 selected')
+        ->click('Reopen')
+        ->assertSee('2 Work Entries reopened.')
+        ->assertSee('26–34 of 34')
+        ->assertNoJavaScriptErrors();
+
+    expect(WorkEntry::query()->where('state', WorkEntryState::Pending)->count())->toBe(2);
+});
+
 it('steps back a month, picks a month from the picker, and returns to this month, one Employee at a time', function () {
     $finn = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Finn']);
     $cara = Employee::factory()->create(['name' => 'Cara']);

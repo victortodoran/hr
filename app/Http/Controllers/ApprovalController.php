@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\Project;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;
+use App\Support\PageWithin;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -97,11 +98,10 @@ class ApprovalController extends Controller
 
         return [
             'filters' => $filters,
-            'entries' => (clone $matching)
+            'entries' => PageWithin::paginate((clone $matching)
                 ->with(['assignment.employee:id,name', 'assignment.project:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
                 ->orderBy('date')
-                ->orderBy('id')
-                ->paginate(25)
+                ->orderBy('id'), 25)
                 ->withQueryString()
                 ->through(fn (WorkEntry $entry): array => [
                     'id' => $entry->id,
