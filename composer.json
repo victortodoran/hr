@@ -70,6 +70,7 @@
             "Composer\\Config::disableProcessTimeout",
             "npm run check",
             "@lint:callbacks",
+            "npm run build",
             "npm run types:check",
             "@test"
         ],
@@ -81,7 +82,8 @@
             "@php artisan config:clear --ansi",
             "@lint:check",
             "@types:check",
-            "@php artisan test"
+            "@php -r \"file_put_contents('storage/logs/testing.log', '');\"",
+            "@php artisan test --parallel"
         ],
         "test:readable": [
             "env -u CLAUDECODE -u AI_AGENT -u CLAUDE_CODE_ENTRYPOINT php artisan test --compact"

@@ -27,8 +27,8 @@ Point it at this doc for the rest.
 1. `git fetch origin && git checkout -b <branch> origin/main`.
 2. Implement the issue until every acceptance-criteria checkbox holds, following sibling files and `CODING_STANDARDS.md`.
    Check a migration that rewrites existing rows against a copy of the dev database, so `hr` stays usable from other branches: `createdb -T hr hr_scratch`, run with `DB_DATABASE=hr_scratch`, then `dropdb hr_scratch`.
-3. Write feature tests through HTTP and Inertia prop assertions. When a change is mostly UI (a page, dialog, tab or layout), also add or extend a browser test in `tests/Browser` that opens it and asserts no JavaScript errors; browser tests run against built assets, so run `npm run build` first.
-4. Run `npm run build` when routes or controllers changed, `vendor/bin/pint --dirty --format agent` after PHP edits, and `npm run check:fix` after JS or Vue edits.
+3. Write feature tests through HTTP and Inertia prop assertions. When a change is mostly UI (a page, dialog, tab or layout), also add or extend a browser test in `tests/Browser` that opens it and asserts no JavaScript errors; browser tests run against built assets, so run `npm run build` before running one on its own.
+4. Run `npm run build` when routes or controllers changed (`composer ci:check` also builds first), `vendor/bin/pint --dirty --format agent` after PHP edits, and `npm run check:fix` after JS or Vue edits.
 5. `composer ci:check` passes.
 6. When the demo should show the feature, update the DemoSeeder and its test.
 7. Commit in the repo's style: subject line, wrapped body saying what and why, `Closes #<n>`, then the attribution line.
