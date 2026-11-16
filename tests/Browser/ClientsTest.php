@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\Permission;
-use App\Http\Controllers\ClientController;
+use App\Http\Controllers\Projects\ClientController;
 use App\Models\Client;
 use App\Models\Project;
 

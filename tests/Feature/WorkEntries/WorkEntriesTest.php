@@ -2,8 +2,8 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\WorkEntryController;
-use App\Http\Requests\WorkEntryRequest;
+use App\Http\Controllers\WorkEntries\WorkEntryController;
+use App\Http\Requests\WorkEntries\WorkEntryRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\WorkEntry;

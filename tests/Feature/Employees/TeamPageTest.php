@@ -2,7 +2,7 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\TeamController;
+use App\Http\Controllers\Employees\TeamController;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Assignment;
 use App\Models\Department;

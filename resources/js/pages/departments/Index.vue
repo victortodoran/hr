@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import { Building2 } from '@lucide/vue';
-import DepartmentController from '@/actions/App/Http/Controllers/DepartmentController';
+import DepartmentController from '@/actions/App/Http/Controllers/Company/DepartmentController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';

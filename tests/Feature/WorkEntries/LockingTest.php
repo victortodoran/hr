@@ -3,11 +3,11 @@
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\WorkEntryState;
-use App\Http\Controllers\LockController;
-use App\Http\Controllers\WorkEntryListController;
-use App\Http\Requests\LockPreviewRequest;
-use App\Http\Requests\SelectedWorkEntriesRequest;
-use App\Http\Requests\WorkEntryFiltersRequest;
+use App\Http\Controllers\WorkEntries\LockController;
+use App\Http\Controllers\WorkEntries\WorkEntryListController;
+use App\Http\Requests\WorkEntries\LockPreviewRequest;
+use App\Http\Requests\WorkEntries\SelectedWorkEntriesRequest;
+use App\Http\Requests\WorkEntries\WorkEntryFiltersRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\WorkEntry;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
-import PayEntryController from '@/actions/App/Http/Controllers/PayEntryController';
+import PayEntryController from '@/actions/App/Http/Controllers/Assignments/PayEntryController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Badge } from '@/components/ui/badge';

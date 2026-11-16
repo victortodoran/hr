@@ -2,8 +2,8 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\DepartmentController;
-use App\Http\Requests\DepartmentRequest;
+use App\Http\Controllers\Company\DepartmentController;
+use App\Http\Requests\Company\DepartmentRequest;
 use App\Models\Department;
 use App\Models\Employee;
 use Inertia\Testing\AssertableInertia as Assert;

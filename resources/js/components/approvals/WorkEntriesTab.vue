@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { CheckCheck } from '@lucide/vue';
-import ApprovalController from '@/actions/App/Http/Controllers/ApprovalController';
+import ApprovalController from '@/actions/App/Http/Controllers/WorkEntries/ApprovalController';
 import ApprovalFilterBar from '@/components/approvals/ApprovalFilterBar.vue';
 import DeclineWorkEntriesDialog from '@/components/approvals/DeclineWorkEntriesDialog.vue';
 import DataTable from '@/components/DataTable.vue';

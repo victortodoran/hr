@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\Permission;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Requests\EmployeeRequest;
+use App\Http\Controllers\Employees\EmployeeController;
+use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Employee;
 use App\Policies\EmployeePolicy;
 use Illuminate\Support\Collection;

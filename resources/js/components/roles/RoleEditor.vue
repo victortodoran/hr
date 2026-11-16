@@ -2,7 +2,7 @@
 import { useForm } from '@inertiajs/vue3';
 import { Search, UserPlus, Users } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import RoleController from '@/actions/App/Http/Controllers/RoleController';
+import RoleController from '@/actions/App/Http/Controllers/Access/RoleController';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';

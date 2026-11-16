@@ -2,9 +2,9 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\WorkEntryListController;
-use App\Http\Requests\WorkEntryFiltersRequest;
-use App\Http\Requests\WorkEntryListRequest;
+use App\Http\Controllers\WorkEntries\WorkEntryListController;
+use App\Http\Requests\WorkEntries\WorkEntryFiltersRequest;
+use App\Http\Requests\WorkEntries\WorkEntryListRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\WorkEntry;

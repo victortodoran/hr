@@ -2,7 +2,7 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\WorkEntryController;
+use App\Http\Controllers\WorkEntries\WorkEntryController;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;

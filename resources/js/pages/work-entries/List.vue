@@ -2,7 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
 import { computed } from 'vue';
-import ReopeningController from '@/actions/App/Http/Controllers/ReopeningController';
+import ReopeningController from '@/actions/App/Http/Controllers/WorkEntries/ReopeningController';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';

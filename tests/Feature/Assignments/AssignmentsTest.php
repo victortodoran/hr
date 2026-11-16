@@ -2,8 +2,8 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\AssignmentController;
-use App\Http\Requests\AssignmentRequest;
+use App\Http\Controllers\Assignments\AssignmentController;
+use App\Http\Requests\Assignments\AssignmentRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Project;

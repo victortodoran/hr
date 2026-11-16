@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\TimeOffPreviewController;
-use App\Http\Requests\TimeOffPreviewRequest;
+use App\Http\Controllers\TimeOff\TimeOffPreviewController;
+use App\Http\Requests\TimeOff\TimeOffPreviewRequest;
 use App\Models\Employee;
 use App\Models\TimeOff;
 

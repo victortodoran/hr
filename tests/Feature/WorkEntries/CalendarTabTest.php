@@ -3,8 +3,8 @@
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\WorkEntriesTab;
-use App\Http\Controllers\WorkEntryController;
-use App\Http\Requests\WorkEntryPeriodRequest;
+use App\Http\Controllers\WorkEntries\WorkEntryController;
+use App\Http\Requests\WorkEntries\WorkEntryPeriodRequest;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Trash2 } from '@lucide/vue';
-import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
+import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntries/WorkEntryController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import { Button } from '@/components/ui/button';
 import type { WorkEntryRecord } from '@/types';

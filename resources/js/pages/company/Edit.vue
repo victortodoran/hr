@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import CompanySettingsController from '@/actions/App/Http/Controllers/CompanySettingsController';
+import CompanySettingsController from '@/actions/App/Http/Controllers/Company/CompanySettingsController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';

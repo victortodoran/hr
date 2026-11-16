@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\Permission;
-use App\Http\Controllers\DirectoryController;
+use App\Http\Controllers\Employees\DirectoryController;
 use App\Models\Assignment;
 use App\Models\Department;
 use App\Models\Employee;

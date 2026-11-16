@@ -1,10 +1,10 @@
 <?php
 
 use App\Enums\TimeOffState;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\TimeOffController;
-use App\Http\Controllers\WorkEntryController;
-use App\Http\Requests\EmployeeRequest;
+use App\Http\Controllers\Employees\EmployeeController;
+use App\Http\Controllers\TimeOff\TimeOffController;
+use App\Http\Controllers\WorkEntries\WorkEntryController;
+use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\TimeOff;

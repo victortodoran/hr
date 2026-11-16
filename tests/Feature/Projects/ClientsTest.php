@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\Permission;
-use App\Http\Controllers\ClientController;
-use App\Http\Requests\ClientRequest;
+use App\Http\Controllers\Projects\ClientController;
+use App\Http\Requests\Projects\ClientRequest;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Models\Project;

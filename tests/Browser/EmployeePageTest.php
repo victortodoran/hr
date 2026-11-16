@@ -3,7 +3,7 @@
 use App\Enums\PayKind;
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\Employees\EmployeeController;
 use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
 import { CalendarCheck } from '@lucide/vue';
-import TimeOffApprovalController from '@/actions/App/Http/Controllers/TimeOffApprovalController';
-import TimeOffDeclineController from '@/actions/App/Http/Controllers/TimeOffDeclineController';
+import TimeOffApprovalController from '@/actions/App/Http/Controllers/TimeOff/TimeOffApprovalController';
+import TimeOffDeclineController from '@/actions/App/Http/Controllers/TimeOff/TimeOffDeclineController';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';

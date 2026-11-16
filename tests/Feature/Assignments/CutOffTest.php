@@ -2,10 +2,10 @@
 
 use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\Permission;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\ProjectController;
-use App\Http\Requests\EmployeeRequest;
-use App\Http\Requests\ProjectRequest;
+use App\Http\Controllers\Employees\EmployeeController;
+use App\Http\Controllers\Projects\ProjectController;
+use App\Http\Requests\Employees\EmployeeRequest;
+use App\Http\Requests\Projects\ProjectRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Project;

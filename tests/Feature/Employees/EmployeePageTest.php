@@ -2,8 +2,8 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\DirectoryController;
-use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\Employees\DirectoryController;
+use App\Http\Controllers\Employees\EmployeeController;
 use App\Models\Assignment;
 use App\Models\CompanySettings;
 use App\Models\Department;

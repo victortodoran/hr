@@ -2,9 +2,9 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Requests\AssignmentRequest;
-use App\Http\Requests\EmployeeRequest;
-use App\Http\Requests\ProjectRequest;
+use App\Http\Requests\Assignments\AssignmentRequest;
+use App\Http\Requests\Employees\EmployeeRequest;
+use App\Http\Requests\Projects\ProjectRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\WorkEntry;
