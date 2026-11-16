@@ -27,7 +27,7 @@ defineProps<{
     <div class="flex max-w-xl flex-col gap-8 p-4">
         <Heading
             title="Company"
-            description="The company's name and the currency every Pay is recorded in"
+            description="The company's name and the currency every Pay and Travel Expense is recorded in"
         />
 
         <Form
@@ -61,8 +61,8 @@ defineProps<{
                 <p class="text-sm text-muted-foreground">
                     {{
                         isCurrencyLocked
-                            ? "Pay has been recorded in this currency, so it can't be changed."
-                            : 'A three-letter code, such as EUR. It can only be changed until Pay is recorded.'
+                            ? "Pay or Travel Expenses have been recorded in this currency, so it can't be changed."
+                            : 'A three-letter code, such as EUR. It can only be changed until Pay or Travel Expenses are recorded.'
                     }}
                 </p>
                 <InputError :message="errors.currency" />

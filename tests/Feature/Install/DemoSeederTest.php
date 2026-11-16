@@ -3,6 +3,7 @@
 use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Enums\TimeOffState;
+use App\Enums\TravelExpenseState;
 use App\Enums\TravelRequestState;
 use App\Enums\WorkEntryState;
 use App\Models\AccessLogEntry;
@@ -16,13 +17,17 @@ use App\Models\PayEntry;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\TimeOff;
+use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\post;
 use function Pest\Laravel\seed;
+
+beforeEach(fn () => Storage::fake(TravelExpense::RECEIPT_DISK));
 
 it('seeds a demo company with at least one of everything to try by hand', function () {
     seed(DemoSeeder::class);
@@ -81,6 +86,16 @@ it('gives Travel Requests in every state, on Client and Internal Assignments, sh
         ->and(TravelRequest::query()->whereHas('assignment', fn (AssignmentBuilder $assignments) => $assignments->notInternal())->exists())->toBeTrue()
         ->and($standing->every(fn (TravelRequest $travel): bool => $travel->employee->travelRequests()->standing()->overlapping($travel->first_date, $travel->last_date)->count() === 1
             && ! $travel->employee->timeOff()->standing()->overlapping($travel->first_date, $travel->last_date)->exists()))->toBeTrue();
+});
+
+it('gives Travel Expenses only on Travel Requests that take them, each with a PDF receipt on the receipt disk', function () {
+    seed(DemoSeeder::class);
+    $expenses = TravelExpense::query()->with('travelRequest')->get();
+
+    expect($expenses->pluck('state')->unique()->values()->all())->toEqualCanonicalizing([TravelExpenseState::Pending, TravelExpenseState::Approved, TravelExpenseState::Declined])
+        ->and($expenses->every(fn (TravelExpense $expense): bool => $expense->travelRequest->takesExpenses()
+            && ! $expense->paid_on->isFuture()
+            && str_starts_with((string) Storage::disk(TravelExpense::RECEIPT_DISK)->get($expense->receipt_path), '%PDF-')))->toBeTrue();
 });
 
 it('lets the demo Admin sign in with the demo password', function () {

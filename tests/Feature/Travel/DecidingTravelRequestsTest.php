@@ -7,6 +7,7 @@ use App\Http\Controllers\Travel\TravelRequestDeclineController;
 use App\Http\Controllers\WorkEntries\ApprovalController;
 use App\Http\Requests\Travel\TravelRequestDeclineRequest;
 use App\Models\Client;
+use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\Role;
 use App\Models\TravelRequest;
@@ -20,6 +21,7 @@ covers(ApprovalController::class, TravelRequestApprovalController::class, Travel
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
+    CompanySettings::factory()->create();
 });
 
 /**

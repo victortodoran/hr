@@ -5,6 +5,7 @@ use App\Http\Controllers\Travel\TravelRequestController;
 use App\Http\Requests\Travel\TravelRequestRequest;
 use App\Models\Assignment;
 use App\Models\Client;
+use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\TimeOff;
@@ -19,6 +20,7 @@ covers(TravelRequestController::class, TravelRequestRequest::class, TravelReques
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
+    CompanySettings::factory()->create();
 });
 
 /**
@@ -224,9 +226,9 @@ it('shows the Employee their own Travel Requests, latest first, and the Assignme
             ->component('travel-requests/Index')
             ->where('today', '2026-12-01')
             ->where('travelRequests', [
-                ['id' => $paris->id, 'project' => 'Internal', 'client' => null, 'destination' => 'Paris', 'first_date' => '2026-12-14', 'last_date' => '2026-12-14', 'days' => 1, 'purpose' => 'Conference', 'state' => 'declined', 'decided_by' => $paris->decider?->name, 'decline_reason' => 'Launch week', 'can_cancel' => false],
-                ['id' => $berlin->id, 'project' => 'Relaunch', 'client' => 'Globex', 'destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'days' => 3, 'purpose' => 'Relaunch workshop', 'state' => 'pending', 'decided_by' => null, 'decline_reason' => null, 'can_cancel' => true],
-                ['id' => $vienna->id, 'project' => 'Relaunch', 'client' => 'Globex', 'destination' => 'Vienna', 'first_date' => '2026-03-02', 'last_date' => '2026-03-06', 'days' => 5, 'purpose' => 'Kick-off', 'state' => 'approved', 'decided_by' => 'Ben', 'decline_reason' => null, 'can_cancel' => false],
+                ['id' => $paris->id, 'project' => 'Internal', 'client' => null, 'destination' => 'Paris', 'first_date' => '2026-12-14', 'last_date' => '2026-12-14', 'days' => 1, 'purpose' => 'Conference', 'state' => 'declined', 'decided_by' => $paris->decider?->name, 'decline_reason' => 'Launch week', 'can_cancel' => false, 'expenses' => null],
+                ['id' => $berlin->id, 'project' => 'Relaunch', 'client' => 'Globex', 'destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'days' => 3, 'purpose' => 'Relaunch workshop', 'state' => 'pending', 'decided_by' => null, 'decline_reason' => null, 'can_cancel' => true, 'expenses' => null],
+                ['id' => $vienna->id, 'project' => 'Relaunch', 'client' => 'Globex', 'destination' => 'Vienna', 'first_date' => '2026-03-02', 'last_date' => '2026-03-06', 'days' => 5, 'purpose' => 'Kick-off', 'state' => 'approved', 'decided_by' => 'Ben', 'decline_reason' => null, 'can_cancel' => false, 'expenses' => ['items' => [], 'total' => '€0.00', 'can_create' => true]],
             ])
             ->where('assignments', [
                 ['id' => $endsToday->id, 'project' => 'Archive Cleanup', 'client' => null, 'start_date' => '2026-11-02', 'end_date' => '2026-12-01'],
