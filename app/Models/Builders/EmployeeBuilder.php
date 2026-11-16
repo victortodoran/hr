@@ -6,6 +6,7 @@ use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\TimeOffState;
+use App\Enums\TravelExpenseState;
 use App\Enums\TravelRequestState;
 use App\Enums\WorkEntryState;
 use App\Models\Employee;
@@ -120,8 +121,8 @@ class EmployeeBuilder extends ModelBuilder
     }
 
     /**
-     * Limit the query to Employees with Pending Work Entries, Time Off or
-     * Travel Requests, which their Manager is to decide.
+     * Limit the query to Employees with Pending Work Entries, Time Off,
+     * Travel Requests or Travel Expenses, which their Manager is to decide.
      */
     public function withPendingDecisions(): static
     {
@@ -129,7 +130,8 @@ class EmployeeBuilder extends ModelBuilder
             $this->where(fn (Builder $pending) => $pending
                 ->whereHas('workEntries', fn (Builder $entries) => $entries->where('work_entries.state', WorkEntryState::Pending))
                 ->orWhereHas('timeOff', fn (Builder $timeOff) => $timeOff->where('state', TimeOffState::Pending))
-                ->orWhereHas('travelRequests', fn (Builder $travelRequests) => $travelRequests->where('state', TravelRequestState::Pending)));
+                ->orWhereHas('travelRequests', fn (Builder $travelRequests) => $travelRequests->where('state', TravelRequestState::Pending))
+                ->orWhereHas('travelRequests.travelExpenses', fn (Builder $expenses) => $expenses->where('travel_expenses.state', TravelExpenseState::Pending)));
         });
     }
 

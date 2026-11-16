@@ -3,6 +3,7 @@
 use App\Enums\TravelRequestState;
 use App\Http\Controllers\Travel\TravelRequestCancellationController;
 use App\Http\Controllers\Travel\TravelRequestController;
+use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\TravelRequest;
 
@@ -13,6 +14,7 @@ covers(TravelRequestController::class, TravelRequestCancellationController::clas
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
+    CompanySettings::factory()->create();
 });
 
 it('requests travel on an Assignment from the dialog, counting every day, then cancels it', function () {

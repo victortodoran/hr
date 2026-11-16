@@ -7,9 +7,11 @@ use App\Models\Builders\TravelRequestBuilder;
 use Database\Factories\TravelRequestFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -35,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property-read Employee $employee
  * @property-read Assignment $assignment
  * @property-read Employee|null $decider
+ * @property-read Collection<int, TravelExpense> $travelExpenses
  */
 #[Fillable(['assignment_id', 'destination', 'first_date', 'last_date', 'purpose'])] // @pest-mutate-ignore (class attributes never show as covered)
 #[UseEloquentBuilder(TravelRequestBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
@@ -88,6 +91,20 @@ class TravelRequest extends Model
     }
 
     /**
+     * Whether its Employee may record Travel Expenses on it (ADR 0007): it
+     * is Approved, or was Approved before it was Cancelled, so money already
+     * spent, such as a non-refundable flight, is still paid back. Approving
+     * records when, and cancelling keeps that, so a Cancelled one with a
+     * decision date was Approved first: one Cancelled while Pending has
+     * none, and a Declined one is never cancelled.
+     */
+    public function takesExpenses(): bool
+    {
+        return $this->state === TravelRequestState::Approved
+            || ($this->state === TravelRequestState::Cancelled && $this->decided_at !== null);
+    }
+
+    /**
      * @return BelongsTo<Employee, $this>
      */
     public function employee(): BelongsTo
@@ -116,5 +133,15 @@ class TravelRequest extends Model
     public function decider(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'decided_by');
+    }
+
+    /**
+     * The Travel Expenses its Employee recorded on it, in every state.
+     *
+     * @return HasMany<TravelExpense, $this>
+     */
+    public function travelExpenses(): HasMany
+    {
+        return $this->hasMany(TravelExpense::class);
     }
 }

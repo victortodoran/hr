@@ -8,6 +8,7 @@ use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\Project;
+use App\Models\TravelExpense;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -39,6 +40,13 @@ it('shows the currency as locked once any Pay exists', function () {
         ->assertInertia(fn (Assert $page) => $page->where('isCurrencyLocked', true));
 });
 
+it('shows the currency as locked once any Travel Expense exists', function () {
+    TravelExpense::factory()->create();
+
+    actingAs(companyManager())->get(route('company.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('isCurrencyLocked', true));
+});
+
 it('lets someone who manages the company rename it and change the currency while no Pay exists', function () {
     actingAs(companyManager())
         ->patch(route('company.update'), ['name' => 'Acme Software', 'currency' => 'usd'])
@@ -53,7 +61,7 @@ it('refuses to change the currency once any Pay exists, but still renames the co
 
     actingAs(companyManager())
         ->patch(route('company.update'), ['name' => 'Acme Software', 'currency' => 'USD'])
-        ->assertSessionHasErrors(['currency' => 'The currency can\'t be changed once any Pay has been recorded.']);
+        ->assertSessionHasErrors(['currency' => 'The currency can\'t be changed once any Pay or Travel Expense has been recorded.']);
 
     expect(CompanySettings::query()->sole()->only('name', 'currency'))->toBe(['name' => 'Acme', 'currency' => 'EUR']);
 

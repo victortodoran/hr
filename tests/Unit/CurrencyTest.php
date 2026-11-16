@@ -33,3 +33,12 @@ it('shows minor units as an amount in the currency', function (string $code, int
     'yen' => ['JPY', 5000, '¥5,000'],
     'dinar' => ['BHD', 1500, "BHD\u{a0}1.500"],
 ]);
+
+it('turns minor units back into an amount as people type it', function (string $code, int $minorUnits, string $amount) {
+    expect((new Currency($code))->toAmount($minorUnits))->toBe($amount);
+})->with([
+    'euro' => ['EUR', 199000, '1990.00'],
+    'cents' => ['EUR', 5, '0.05'],
+    'yen' => ['JPY', 5000, '5000'],
+    'dinar' => ['BHD', 1500, '1.500'],
+]);

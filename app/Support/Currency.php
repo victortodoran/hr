@@ -6,9 +6,10 @@ use Illuminate\Support\Number;
 use NumberFormatter;
 
 /**
- * The company currency (ADR 0003), which every Pay is recorded in. Amounts
- * are stored as whole minor units, such as cents, so they never lose
- * precision; how many decimals that is depends on the currency.
+ * The company currency (ADR 0003), which every Pay and Travel Expense is
+ * recorded in. Amounts are stored as whole minor units, such as cents, so
+ * they never lose precision; how many decimals that is depends on the
+ * currency.
  */
 final readonly class Currency
 {
@@ -34,6 +35,17 @@ final readonly class Currency
     public function toMinorUnits(string $amount): int
     {
         return (int) round((float) $amount * 10 ** $this->decimals()); // @pest-mutate-ignore (the int return type converts it anyway)
+    }
+
+    /**
+     * Minor units as people type them, such as "4500.50": the reverse of
+     * toMinorUnits, to fill a form with an amount already recorded.
+     */
+    public function toAmount(int $minorUnits): string
+    {
+        $decimals = $this->decimals();
+
+        return number_format($minorUnits / 10 ** $decimals, $decimals, '.', '');
     }
 
     /**

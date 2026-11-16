@@ -10,6 +10,8 @@ use App\Enums\PayKind;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\TimeOffState;
+use App\Enums\TravelExpenseCategory;
+use App\Enums\TravelExpenseState;
 use App\Enums\TravelRequestState;
 use App\Enums\WorkEntryState;
 use App\Models\Assignment;
@@ -18,9 +20,12 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\TravelExpense;
+use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -28,7 +33,8 @@ use Illuminate\Support\Str;
  * tried by hand. It installs the company the way hr:install does, then adds
  * Employees, Roles, Clients, Projects, Assignments and Pay through the same
  * actions the app uses, four weeks of Work Entries, Paid Days (none for
- * Ivan) and Time Off in every state. Dates are relative to today, so the
+ * Ivan), Time Off and Travel Requests in every state, and Travel Expenses
+ * with small generated PDF receipts. Dates are relative to today, so the
  * Future and Former Employees stay that way, and the last two weeks of Work
  * Entries and the Time Off still to come are always Pending, waiting for
  * each Employee's Manager (Ben or Hana) to approve them. Everyone except the
@@ -163,12 +169,17 @@ class DemoSeeder extends Seeder
         $this->timeOff($ivan, $thisMonday->addWeeks(2), 2, false, TimeOffState::Declined, $hana, 'Launch week for the Website Revamp. Could you take the week after?');
         $this->timeOff($ivan, $thisMonday->addWeeks(3)->addDays(4), 0, false);
 
-        $this->travelRequest($caraOnRelaunch, 'Berlin', $thisMonday->subWeeks(3)->addDay(), 2, 'Checkout API workshop with Globex', TravelRequestState::Approved, $ben);
+        $workshop = $this->travelRequest($caraOnRelaunch, 'Berlin', $thisMonday->subWeeks(3)->addDay(), 2, 'Checkout API workshop with Globex', TravelRequestState::Approved, $ben);
         $this->travelRequest($caraOnRelaunch, 'Berlin', $thisMonday->addWeeks(3)->addDay(), 2, 'Relaunch go-live with Globex');
         $this->travelRequest($caraOnRelaunch, 'Munich', $thisMonday->addWeeks(1)->addDays(2), 1, 'Relaunch demo, moved online', TravelRequestState::Cancelled);
         $this->travelRequest($liaOnRelaunch, 'Berlin', $thisMonday->addWeeks(1)->addDays(3), 3, 'Pairing on the cart with the Globex team');
         $this->travelRequest($ivanOnWebsite, 'Lisbon', $thisMonday->addWeek(), 1, 'Design conference', TravelRequestState::Declined, $hana, 'Launch prep that week. Could you watch the talks online?');
-        $this->travelRequest($ana->internalAssignment()->sole(), 'London', $thisMonday->addWeeks(6), 4, 'Meeting investors', TravelRequestState::Approved);
+        $investors = $this->travelRequest($ana->internalAssignment()->sole(), 'London', $thisMonday->addWeeks(6), 4, 'Meeting investors', TravelRequestState::Approved);
+
+        $this->travelExpense($workshop, $workshop->first_date, TravelExpenseCategory::Transport, 18900, 'Train to Berlin and back', TravelExpenseState::Approved, $ben);
+        $this->travelExpense($workshop, $workshop->last_date, TravelExpenseCategory::Accommodation, 39800, 'Hotel, two nights');
+        $this->travelExpense($workshop, $workshop->first_date->addDay(), TravelExpenseCategory::Meals, 14250, 'Team dinner with Globex', TravelExpenseState::Declined, $ben, 'Client dinners go through the company card. Could you add only your own meal?');
+        $this->travelExpense($investors, $today->subDays(3), TravelExpenseCategory::Transport, 32000, 'Flights to London, booked early', TravelExpenseState::Approved);
 
         $this->command?->info('Demo company seeded. Sign in as ana@acme.test (Admin), ben@acme.test, hana@acme.test, finn@acme.test, cara@acme.test, ivan@acme.test or lia@acme.test with the password "password".');
     }
@@ -341,7 +352,7 @@ class DemoSeeder extends Seeder
      * and Declined ones are decided by the decider, or by nobody for an
      * Employee with no Manager.
      */
-    private function travelRequest(Assignment $assignment, string $destination, CarbonInterface $first, int $daysAfter, string $purpose, TravelRequestState $state = TravelRequestState::Pending, ?Employee $decider = null, ?string $declineReason = null): void
+    private function travelRequest(Assignment $assignment, string $destination, CarbonInterface $first, int $daysAfter, string $purpose, TravelRequestState $state = TravelRequestState::Pending, ?Employee $decider = null, ?string $declineReason = null): TravelRequest
     {
         $travelRequest = $assignment->employee->travelRequests()->make([
             'assignment_id' => $assignment->id,
@@ -358,6 +369,69 @@ class DemoSeeder extends Seeder
             'decline_reason' => $declineReason,
             'cancelled_at' => $state === TravelRequestState::Cancelled ? now()->subDay() : null,
         ])->save();
+
+        return $travelRequest;
+    }
+
+    /**
+     * Add a Travel Expense of the given amount in cents on the Travel
+     * Request, with a one-page PDF receipt naming it, Pending unless given
+     * another state. Approved ones are approved by the decider, or by
+     * nobody for an Employee with no Manager; Declined ones are declined by
+     * the decider with the reason.
+     */
+    private function travelExpense(TravelRequest $travelRequest, CarbonInterface $paidOn, TravelExpenseCategory $category, int $amount, string $description, TravelExpenseState $state = TravelExpenseState::Pending, ?Employee $decider = null, ?string $declineReason = null): void
+    {
+        $receiptPath = TravelExpense::RECEIPT_FOLDER.'/'.Str::uuid()->toString().'.pdf';
+        Storage::disk(TravelExpense::RECEIPT_DISK)->put($receiptPath, $this->receiptPdf("Receipt: {$description}"));
+
+        $travelExpense = $travelRequest->travelExpenses()->make([
+            'paid_on' => $paidOn,
+            'amount' => $amount,
+            'category' => $category,
+            'description' => $description,
+            'receipt_path' => $receiptPath,
+        ]);
+
+        $travelExpense->forceFill([
+            'state' => $state,
+            'approved_by' => $state === TravelExpenseState::Approved ? $decider?->id : null,
+            'approved_at' => $state === TravelExpenseState::Approved ? now()->subDay() : null,
+            'declined_by' => $state === TravelExpenseState::Declined ? $decider?->id : null,
+            'declined_at' => $state === TravelExpenseState::Declined ? now()->subDay() : null,
+            'decline_reason' => $declineReason,
+        ])->save();
+    }
+
+    /**
+     * A minimal one-page PDF showing one line of text.
+     */
+    private function receiptPdf(string $line): string
+    {
+        $text = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $line);
+        $content = "BT /F1 14 Tf 40 760 Td ({$text}) Tj ET";
+        $objects = [
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+            '<< /Length '.strlen($content)." >>\nstream\n{$content}\nendstream",
+            '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+        ];
+
+        $pdf = "%PDF-1.4\n";
+        $offsets = [];
+        foreach ($objects as $index => $object) {
+            $offsets[] = strlen($pdf);
+            $pdf .= ($index + 1)." 0 obj\n{$object}\nendobj\n";
+        }
+
+        $xref = strlen($pdf);
+        $pdf .= 'xref'."\n0 ".(count($objects) + 1)."\n0000000000 65535 f \n";
+        foreach ($offsets as $offset) {
+            $pdf .= sprintf("%010d 00000 n \n", $offset);
+        }
+
+        return $pdf.'trailer << /Size '.(count($objects) + 1)." /Root 1 0 R >>\nstartxref\n{$xref}\n%EOF\n";
     }
 
     /**

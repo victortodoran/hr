@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * The installation's company (ADR 0003): its name and the single currency
- * every Pay is recorded in. There is at most one row.
+ * every Pay and Travel Expense is recorded in. There is at most one row.
  *
  * @property int $id
  * @property string $name
@@ -36,16 +36,16 @@ class CompanySettings extends Model
     }
 
     /**
-     * Whether the currency can no longer change, because Pay has been
-     * recorded in it.
+     * Whether the currency can no longer change, because Pay or Travel
+     * Expenses have been recorded in it.
      */
     public static function isCurrencyLocked(): bool
     {
-        return PayEntry::query()->exists();
+        return PayEntry::query()->exists() || TravelExpense::query()->exists();
     }
 
     /**
-     * The currency every Pay is recorded in. The company is installed
+     * The currency every Pay and Travel Expense is recorded in. The company is installed
      * before anyone can sign in, so its settings always exist by then.
      */
     public static function payCurrency(): Currency

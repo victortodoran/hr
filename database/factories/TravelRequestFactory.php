@@ -70,6 +70,20 @@ class TravelRequestFactory extends Factory
     }
 
     /**
+     * Approved by someone else two hours ago, then cancelled by the
+     * Employee an hour ago.
+     */
+    public function cancelledAfterApproval(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'state' => TravelRequestState::Cancelled,
+            'decided_by' => Employee::factory(),
+            'decided_at' => now()->subHours(2),
+            'cancelled_at' => now()->subHour(),
+        ]);
+    }
+
+    /**
      * Cancelled by the Employee an hour ago, while it was Pending.
      */
     public function cancelled(): static

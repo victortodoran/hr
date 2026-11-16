@@ -8,8 +8,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 /**
- * The company's name and currency. Every Pay is recorded in the currency
- * (ADR 0003), so it can't change once any Pay exists.
+ * The company's name and currency. Every Pay and Travel Expense is
+ * recorded in the currency (ADR 0003), so it can't change once any exists.
  */
 class CompanySettingsRequest extends FormRequest
 {
@@ -59,7 +59,7 @@ class CompanySettingsRequest extends FormRequest
                 }
 
                 if ($this->input('currency') !== CompanySettings::query()->sole()->currency && CompanySettings::isCurrencyLocked()) {
-                    $validator->errors()->add('currency', __('The currency can\'t be changed once any Pay has been recorded.'));
+                    $validator->errors()->add('currency', __('The currency can\'t be changed once any Pay or Travel Expense has been recorded.'));
                 }
             },
         ];

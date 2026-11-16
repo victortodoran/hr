@@ -2,6 +2,7 @@
 
 use App\Enums\TravelRequestState;
 use App\Http\Controllers\Travel\TravelRequestCancellationController;
+use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\TravelRequest;
 use App\Policies\TravelRequestPolicy;
@@ -14,6 +15,7 @@ covers(TravelRequestCancellationController::class, TravelRequestPolicy::class, T
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
+    CompanySettings::factory()->create();
 });
 
 /**

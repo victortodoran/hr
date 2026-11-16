@@ -9,12 +9,14 @@ import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import RequestTravelDialog from '@/components/travel-requests/RequestTravelDialog.vue';
+import TravelExpenseList from '@/components/travel-requests/TravelExpenseList.vue';
 import { formatDate } from '@/lib/dates';
 import { formatDays } from '@/lib/time-off';
 import { index } from '@/routes/travel-requests';
 import type {
     TableColumn,
     TravelAssignment,
+    TravelCurrency,
     TravelRequestRecord,
 } from '@/types';
 
@@ -26,6 +28,7 @@ defineOptions({
 
 defineProps<{
     today: string;
+    currency: TravelCurrency;
     travelRequests: TravelRequestRecord[];
     assignments: TravelAssignment[];
 }>();
@@ -42,7 +45,7 @@ const columns: TableColumn[] = [
     <PageContainer width="wide">
         <Heading
             title="Travel"
-            description="Ask to travel for work on one of your Assignments, and cancel it before it starts"
+            description="Ask to travel for work on one of your Assignments, cancel it before it starts, and add what you paid for it once approved"
         />
 
         <div class="flex justify-end">
@@ -81,6 +84,13 @@ const columns: TableColumn[] = [
                             ></span
                         >
                     </p>
+                    <TravelExpenseList
+                        v-if="row.expenses !== null"
+                        :today="today"
+                        :currency="currency"
+                        :travel-request-id="row.id"
+                        :expenses="row.expenses"
+                    />
                 </template>
                 <template #cell-state="{ row }">
                     <div class="flex items-center justify-end gap-2">

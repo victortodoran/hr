@@ -13,7 +13,7 @@ use Inertia\Response;
 
 /**
  * Lets those who manage the company change its name, and its currency until
- * any Pay is recorded in it.
+ * any Pay or Travel Expense is recorded in it.
  */
 class CompanySettingsController extends Controller
 {
