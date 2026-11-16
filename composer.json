@@ -70,11 +70,15 @@
             "Composer\\Config::disableProcessTimeout",
             "npm run check",
             "@lint:callbacks",
+            "@lint:migrations",
             "npm run build",
             "npm run types:check",
             "@test"
         ],
         "lint:callbacks": "! grep -rnE '\\b(map|each|filter|reject|every|contains|first|sortBy|groupBy|keyBy)\\((intval|floatval|strval|boolval|trim|ltrim|rtrim|round|explode)\\(\\.\\.\\.\\)' app",
+        "lint:migrations": [
+            "base=$(git merge-base origin/main HEAD) || { echo 'lint:migrations needs origin/main with shared history: run git fetch origin'; exit 1; }; ! git diff --diff-filter=MDRT --name-status \"$base\" HEAD -- database/migrations | sed 's/^/Shipped migration changed (add a new one instead): /' | grep ."
+        ],
         "types:check": [
             "phpstan analyse --memory-limit=1G"
         ],
@@ -109,6 +113,9 @@
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ],
+        "post-install-cmd": [
+            "git config core.hooksPath > /dev/null || git config core.hooksPath .githooks || true"
         ]
     },
     "extra": {
