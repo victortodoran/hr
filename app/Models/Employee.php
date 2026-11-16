@@ -286,7 +286,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function hasDirectReports(): bool
     {
-        return $this->managedEmployeesQuery()->exists();
+        return self::anyStaying($this->effectivelyManaged());
     }
 
     /**
@@ -315,7 +315,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function managesAnyone(): bool
     {
-        return self::query()->effectivelyManagedBy($this)->exists();
+        return $this->effectivelyManaged()->isNotEmpty();
     }
 
     /**
@@ -340,13 +340,36 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function asManager(): array
     {
-        $managed = self::query()->effectivelyManagedBy($this)->get(['id', 'start_date', 'leaving_date']);
+        $managed = $this->effectivelyManaged();
 
         return [
             'managesAnyone' => $managed->isNotEmpty(),
-            'hasDirectReports' => $managed->contains(fn (Employee $employee): bool => $employee->employmentStatus() !== EmploymentStatus::Former),
+            'hasDirectReports' => self::anyStaying($managed),
             'waiting' => $managed->isEmpty() ? 0 : array_sum($this->waitingFor($managed->modelKeys())),
         ];
+    }
+
+    /**
+     * The Employees whose effective Manager this Employee is, Former ones
+     * included, with just enough to tell whether they have left. One level
+     * below a Manager is few Employees, so they are read whole.
+     *
+     * @return EloquentCollection<int, Employee>
+     */
+    private function effectivelyManaged(): EloquentCollection
+    {
+        return self::query()->effectivelyManagedBy($this)->get(['id', 'start_date', 'leaving_date']);
+    }
+
+    /**
+     * Whether any of the given Employees hasn't left: Direct Reports count
+     * Future and current Employees, not Former ones.
+     *
+     * @param  EloquentCollection<int, Employee>  $managed
+     */
+    private static function anyStaying(EloquentCollection $managed): bool
+    {
+        return $managed->contains(fn (Employee $employee): bool => $employee->employmentStatus() !== EmploymentStatus::Former);
     }
 
     /**
@@ -592,7 +615,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
      * included. It walks down from the Manager, passing below only those
      * who have left, so it reads just their part of the reporting line; a
      * Manager who has left is nobody's effective Manager. It matches
-     * withEffectiveManager(), which walks the same line up.
+     * withEffectiveManager() for today, which walks the same line up.
      *
      * @param  Builder<Employee>  $query
      */

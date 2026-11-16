@@ -112,7 +112,7 @@ it('reads whom the Employee manages once per page for the sidebar\'s Team, Appro
     TimeOff::factory()->unpaid()->for($cara)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
     $walks = 0;
     DB::listen(function (QueryExecuted $query) use (&$walks): void {
-        $walks += str_contains($query->sql, 'WITH RECURSIVE down') ? 1 : 0;
+        $walks += str_contains($query->sql, 'WITH RECURSIVE') ? 1 : 0;
     });
 
     actingAs($ben)->get(route('profile.edit'))

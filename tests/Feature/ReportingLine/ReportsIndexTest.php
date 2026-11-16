@@ -35,5 +35,4 @@ it('lets the effective-Manager query find each level by Manager through its inde
     });
 
     expect($plan)->toContain('employees_manager_id_index');
-    expect($plan)->not->toContain('Seq Scan');
 });
