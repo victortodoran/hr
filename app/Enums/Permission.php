@@ -21,6 +21,7 @@ enum Permission: string
     case LockWorkEntries = 'lock-work-entries';
     case ViewTimeOff = 'view-time-off';
     case ManagePaidDays = 'manage-paid-days';
+    case ViewTravel = 'view-travel';
     case ReopenTravelExpenses = 'reopen-travel-expenses';
     case LockTravelExpenses = 'lock-travel-expenses';
     case ViewDirectory = 'view-directory';
@@ -52,7 +53,7 @@ enum Permission: string
             self::ViewPay, self::ManagePay => 'Pay',
             self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries, self::LockWorkEntries => 'Work entries',
             self::ViewTimeOff, self::ManagePaidDays => 'Time off',
-            self::ReopenTravelExpenses, self::LockTravelExpenses => 'Travel',
+            self::ViewTravel, self::ReopenTravelExpenses, self::LockTravelExpenses => 'Travel',
             self::ViewDirectory, self::ViewProjects, self::ManageProjects, self::ManageClients, self::ManageDepartments => 'Organization',
             self::ManageRoles, self::ManageCompany => 'Administration',
         };
@@ -75,6 +76,7 @@ enum Permission: string
             self::ReopenWorkEntries,
             self::ViewTimeOff,
             self::ManagePaidDays,
+            self::ViewTravel,
             self::ReopenTravelExpenses => true,
             default => false,
         };
@@ -122,9 +124,10 @@ enum Permission: string
 
     /**
      * The Permissions that let someone see an Employee's Travel Expenses
-     * and their receipts, besides the Employee and their effective Manager:
+     * and their receipts across Employees, on the Travel Expenses page:
      * you can always see what you can act on. Locking covers everyone. The
-     * one list the policy, the list and the flags use.
+     * one list the policy, the list and the flags use. View travel also
+     * shows them, on the Employee's page only, so it isn't among these.
      *
      * @return list<Permission>
      */

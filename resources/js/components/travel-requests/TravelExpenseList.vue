@@ -10,15 +10,16 @@ import TravelExpenseDialog from '@/components/travel-requests/TravelExpenseDialo
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/dates';
 import { travelExpenseCategories } from '@/lib/travel-expenses';
-import type { TableColumn, TravelCurrency, TravelExpenses } from '@/types';
+import type { TableColumn, TravelEditing, TravelExpenses } from '@/types';
 
 /**
  * The Travel Expenses of one Travel Request, with their total, adding one,
- * and changing or deleting each while it is Pending or Declined.
+ * and changing or deleting each while it is Pending or Declined, where
+ * `editing` is given and the flags allow. Without `editing` they are only to
+ * be seen, as on the Employee page.
  */
 defineProps<{
-    today: string;
-    currency: TravelCurrency;
+    editing?: TravelEditing;
     travelRequestId: number;
     expenses: TravelExpenses;
 }>();
@@ -41,9 +42,9 @@ const columns: TableColumn[] = [
                 >
             </h3>
             <TravelExpenseDialog
-                v-if="expenses.can_create"
-                :today="today"
-                :currency="currency"
+                v-if="editing && expenses.can_create"
+                :today="editing.today"
+                :currency="editing.currency"
                 :travel-request-id="travelRequestId"
             />
         </div>
@@ -82,10 +83,10 @@ const columns: TableColumn[] = [
             <template #cell-state="{ row }">
                 <div class="flex flex-wrap items-center justify-end gap-1">
                     <StatusBadge :state="row.state" />
-                    <template v-if="row.can_change">
+                    <template v-if="editing && row.can_change">
                         <TravelExpenseDialog
-                            :today="today"
-                            :currency="currency"
+                            :today="editing.today"
+                            :currency="editing.currency"
                             :travel-request-id="travelRequestId"
                             :expense="row"
                         >
@@ -104,7 +105,11 @@ const columns: TableColumn[] = [
             <template #empty>
                 <EmptyState
                     :icon="Receipt"
-                    message="Money you paid yourself for this travel appears here, each with its receipt."
+                    :message="
+                        editing
+                            ? 'Money you paid yourself for this travel appears here, each with its receipt.'
+                            : 'Money paid for this travel appears here, each with its receipt. None has been added yet.'
+                    "
                 />
             </template>
         </DataTable>

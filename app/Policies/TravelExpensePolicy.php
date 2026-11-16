@@ -20,13 +20,14 @@ class TravelExpensePolicy
     /**
      * Seeing a Travel Expense and its receipt: the Employee whose Travel
      * Expense it is, their effective Manager while they can answer it, and
-     * whoever one of the Permissions for seeing them
-     * (Permission::seeingTravelExpenses()) reaches the Employee for.
+     * whoever view travel or one of the Permissions for seeing Travel
+     * Expenses across Employees (Permission::seeingTravelExpenses())
+     * reaches the Employee for.
      */
     public function view(Employee $actor, TravelExpense $travelExpense): bool
     {
         return $travelExpense->travelRequest->employee_id === $actor->id
-            || $actor->reachesThrough(Permission::seeingTravelExpenses(), $travelExpense->travelRequest->employee)
+            || $actor->reachesThrough([Permission::ViewTravel, ...Permission::seeingTravelExpenses()], $travelExpense->travelRequest->employee)
             || $this->decide($actor, $travelExpense);
     }
 

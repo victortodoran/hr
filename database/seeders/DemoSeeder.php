@@ -92,6 +92,7 @@ class DemoSeeder extends Seeder
             Permission::ManageAssignments->value => Scope::Reports->value,
             Permission::ViewPay->value => Scope::Reports->value,
             Permission::ViewTimeOff->value => Scope::Reports->value,
+            Permission::ViewTravel->value => Scope::Reports->value,
             Permission::ViewProjects->value => null,
         ], givenToNewEmployees: false);
         $payroll = $this->changeAccess->createRole($ana, 'Payroll', [
