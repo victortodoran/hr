@@ -1,34 +1,30 @@
 <script setup lang="ts">
-import { Form } from '@inertiajs/vue3';
 import { Trash2 } from '@lucide/vue';
-import { ref } from 'vue';
 import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
-import SubmitButton from '@/components/SubmitButton.vue';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
 import type { WorkEntryRecord } from '@/types';
 
+/**
+ * Deletes a Work Entry from its icon button, through the app's one
+ * confirm-delete dialog; its three places share this trigger and wording.
+ */
 defineProps<{
     entry: WorkEntryRecord;
     /** The URL query asking for the Period shown, so deleting returns to it. */
     periodQuery: Record<string, string>;
 }>();
-
-const open = ref(false);
 </script>
 
 <template>
-    <Dialog v-model:open="open">
-        <DialogTrigger as-child>
+    <ConfirmDeleteDialog
+        :form="
+            WorkEntryController.destroy.form(entry.id, { query: periodQuery })
+        "
+        title="Delete this Work Entry?"
+        :description="`${entry.hours} h on ${entry.project} · ${entry.description}. This can't be undone.`"
+    >
+        <template #trigger>
             <Button
                 type="button"
                 variant="ghost"
@@ -37,38 +33,6 @@ const open = ref(false);
                 aria-label="Delete Work Entry"
                 ><Trash2
             /></Button>
-        </DialogTrigger>
-        <DialogContent>
-            <Form
-                v-bind="
-                    WorkEntryController.destroy.form(entry.id, {
-                        query: periodQuery,
-                    })
-                "
-                :options="{ preserveScroll: true }"
-                class="space-y-6"
-                @success="open = false"
-                v-slot="{ processing }"
-            >
-                <DialogHeader class="space-y-3">
-                    <DialogTitle>Delete this Work Entry?</DialogTitle>
-                    <DialogDescription>
-                        {{ entry.hours }} h on {{ entry.project }} ·
-                        {{ entry.description }}. This can't be undone.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <DialogFooter class="gap-2">
-                    <DialogClose as-child>
-                        <Button type="button" variant="secondary"
-                            >Cancel</Button
-                        >
-                    </DialogClose>
-                    <SubmitButton :processing="processing" variant="destructive"
-                        >Delete</SubmitButton
-                    >
-                </DialogFooter>
-            </Form>
-        </DialogContent>
-    </Dialog>
+        </template>
+    </ConfirmDeleteDialog>
 </template>

@@ -2,13 +2,15 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { FolderKanban } from '@lucide/vue';
 import { computed } from 'vue';
+import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
-import DeleteProject from '@/components/projects/DeleteProject.vue';
 import ProjectForm from '@/components/projects/ProjectForm.vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/dates';
 import { index, show } from '@/routes/projects';
 import type { Choice, ProjectRecord, TableColumn } from '@/types';
@@ -83,7 +85,21 @@ const columns = computed<TableColumn[]>(() => [
             <template #cell-actions="{ row }">
                 <div v-if="!row.is_internal" class="flex justify-end gap-2">
                     <ProjectForm :clients="clients" :project="row" />
-                    <DeleteProject :project="row" />
+                    <ConfirmDeleteDialog
+                        :form="ProjectController.destroy.form(row.id)"
+                        :title="`Delete ${row.name}?`"
+                        description="This can't be undone."
+                        error-key="project"
+                    >
+                        <template #trigger>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="text-destructive"
+                                >Delete</Button
+                            >
+                        </template>
+                    </ConfirmDeleteDialog>
                 </div>
             </template>
             <template #empty>

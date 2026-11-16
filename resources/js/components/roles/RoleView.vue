@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { Form, Link, useForm } from '@inertiajs/vue3';
-import { Info, Lock, Search, Users } from '@lucide/vue';
+import { Info, Lock, Search, Trash2, Users } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import RoleController from '@/actions/App/Http/Controllers/RoleController';
 import RoleHolderController from '@/actions/App/Http/Controllers/RoleHolderController';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
 import AddPeoplePopover from '@/components/roles/AddPeoplePopover.vue';
-import DeleteRole from '@/components/roles/DeleteRole.vue';
 import ScopeBadge from '@/components/roles/ScopeBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -132,7 +133,25 @@ const giveError = computed(
                         >Edit</Link
                     >
                 </Button>
-                <DeleteRole v-if="!role.is_admin" :role="role" />
+                <ConfirmDeleteDialog
+                    v-if="!role.is_admin"
+                    :form="RoleController.destroy.form(role.id)"
+                    :title="`Delete ${role.name}?`"
+                    description="Everyone who holds it loses what it allows."
+                    error-key="role"
+                    :error-bag="`delete-role-${role.id}`"
+                >
+                    <template #trigger>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="size-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            :aria-label="`Delete ${role.name}`"
+                        >
+                            <Trash2 class="size-4" aria-hidden="true" />
+                        </Button>
+                    </template>
+                </ConfirmDeleteDialog>
             </div>
         </div>
 
