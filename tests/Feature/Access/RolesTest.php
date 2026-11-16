@@ -54,27 +54,60 @@ it('shows an Employee who manages Roles every Role with its Permissions, Scopes 
         );
 });
 
-it('offers every Permission with the Scopes it can carry', function () {
+it('offers every Permission with the Scopes it can carry, in its group', function () {
     actingAs(roleManager())->get(route('roles.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('permissions', 19)
-            ->where('permissions.0', ['value' => 'view-employee-records', 'label' => 'View employee records', 'scopes' => ['own', 'reports', 'everyone']])
-            ->where('permissions.6', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scopes' => ['own', 'reports', 'everyone']])
-            ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scopes' => ['own', 'reports', 'everyone']])
-            ->where('permissions.8', ['value' => 'reopen-work-entries', 'label' => 'Reopen work entries', 'scopes' => ['reports', 'everyone']])
-            ->where('permissions.9', ['value' => 'lock-work-entries', 'label' => 'Lock work entries', 'scopes' => []])
-            ->where('permissions.10', ['value' => 'view-time-off', 'label' => 'View time off', 'scopes' => ['own', 'reports', 'everyone']])
-            ->where('permissions.11', ['value' => 'manage-paid-days', 'label' => 'Manage paid days', 'scopes' => ['own', 'reports', 'everyone']])
-            ->where('permissions.17', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => []])
+            ->where('permissions.0', ['value' => 'view-employee-records', 'label' => 'View employee records', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Employees'])
+            ->where('permissions.6', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Work entries'])
+            ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Work entries'])
+            ->where('permissions.8', ['value' => 'reopen-work-entries', 'label' => 'Reopen work entries', 'scopes' => ['reports', 'everyone'], 'group' => 'Work entries'])
+            ->where('permissions.9', ['value' => 'lock-work-entries', 'label' => 'Lock work entries', 'scopes' => [], 'group' => 'Work entries'])
+            ->where('permissions.10', ['value' => 'view-time-off', 'label' => 'View time off', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Time off'])
+            ->where('permissions.11', ['value' => 'manage-paid-days', 'label' => 'Manage paid days', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Time off'])
+            ->where('permissions.17', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => [], 'group' => 'Administration'])
             ->where('permissions', fn (Collection $permissions): bool => ! $permissions->contains('value', 'approve-work-entries'))
+            ->where('permissions', fn (Collection $permissions): bool => $permissions->pluck('group')->unique()->values()->all() === ['Employees', 'Assignments', 'Pay', 'Work entries', 'Time off', 'Organization', 'Administration'])
             ->etc(),
         );
 });
 
-it('refuses the Roles page to an Employee who does not manage Roles', function () {
+it('refuses every Roles page to an Employee who does not manage Roles', function (Closure $url) {
+    $role = Role::factory()->create();
+
     actingAs(employeeWith([Permission::ManageEmployees->value => null]))
-        ->get(route('roles.index'))
+        ->get($url($role))
         ->assertForbidden();
+})->with([
+    'the list' => [fn (Role $role) => route('roles.index')],
+    'one Role' => [fn (Role $role) => route('roles.show', $role)],
+    'a new Role' => [fn (Role $role) => route('roles.create')],
+    'editing a Role' => [fn (Role $role) => route('roles.edit', $role)],
+]);
+
+it('opens the Roles page on the first Role by name, or on the Role in the URL, to view, edit or create', function (Closure $url, string $mode, ?string $selected) {
+    $admin = roleManager('Role Managers');
+    $roles = [
+        'Auditor' => Role::factory()->create(['name' => 'Auditor']),
+        'Payroll' => Role::factory()->create(['name' => 'Payroll']),
+    ];
+
+    actingAs($admin)->get($url($roles))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('roles/Index')
+            ->where('mode', $mode)
+            ->where('selected', $selected === null ? null : $roles[$selected]->id)
+            ->etc(),
+        );
+})->with([
+    'the list' => [fn (array $roles) => route('roles.index'), 'view', 'Auditor'],
+    'one Role' => [fn (array $roles) => route('roles.show', $roles['Payroll']), 'view', 'Payroll'],
+    'editing a Role' => [fn (array $roles) => route('roles.edit', $roles['Payroll']), 'edit', 'Payroll'],
+    'a new Role' => [fn (array $roles) => route('roles.create'), 'create', null],
+]);
+
+it('answers a Role that does not exist with not found', function () {
+    actingAs(roleManager())->get('/roles/999999')->assertNotFound();
 });
 
 it('lets an Employee who manages Roles create one, choosing Permissions and Scopes', function () {
@@ -87,8 +120,8 @@ it('lets an Employee who manages Roles create one, choosing Permissions and Scop
             'permissions' => ['view-pay' => 'reports', 'view-projects' => null],
             'given_to_new_employees' => true,
         ])
-        ->assertRedirect(route('roles.index'))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Role created.']);
+        ->assertRedirect(route('roles.show', Role::query()->where('name', 'Senior Manager')->value('id')))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Senior Manager created']);
 
     $role = Role::query()->where('name', 'Senior Manager')->sole();
     expect($role->grants())->toBe(['view-pay' => 'reports', 'view-projects' => null])
@@ -147,7 +180,7 @@ it('lets an Employee who manages Roles rename a Role and change its Permissions,
             'permissions' => ['view-employee-records' => 'everyone', 'view-pay' => 'reports'],
             'given_to_new_employees' => true,
         ])
-        ->assertRedirect(route('roles.index'))
+        ->assertRedirect(route('roles.show', $manager))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Role saved.']);
 
     expect($manager->refresh()->name)->toBe('Team Lead')
@@ -255,7 +288,7 @@ it('refuses to delete the only Role that lets a current Employee manage Roles', 
         ->and(AccessLogEntry::query()->exists())->toBeFalse();
 });
 
-it('gives new Employees the Roles marked for them on the Role form, so another Role can take over from the starter one', function () {
+it('gives new Employees the Role marked for them on the Role form, so another Role can take over from the starter one', function () {
     $admin = roleManager();
     $admin->roles()->sole()->permissions()->create(['permission' => Permission::ManageEmployees, 'scope' => null]);
     $starter = Role::factory()->create(['name' => 'Employee', 'is_given_to_new_employees' => true]);
@@ -273,6 +306,95 @@ it('gives new Employees the Roles marked for them on the Role form, so another R
     ])->assertRedirect();
 
     expect(Employee::query()->where('email', 'cara@acme.test')->sole()->roles->pluck('name')->all())->toBe(['Staff']);
+});
+
+it('gives new Employees at most one Role: turning it on for a Role takes it off the previous one, logged, and turning it off leaves none', function (Closure $save) {
+    $admin = roleManager();
+    $starter = Role::factory()->create(['name' => 'Employee', 'is_given_to_new_employees' => true]);
+
+    $taker = $save($admin);
+
+    expect($starter->refresh()->is_given_to_new_employees)->toBeFalse()
+        ->and(Role::query()->where('is_given_to_new_employees', true)->pluck('id')->all())->toBe([$taker->id]);
+    $logged = AccessLogEntry::query()->where('role_id', $starter->id)->sole();
+    expect($logged->change)->toBe(AccessChange::RoleEdited)
+        ->and($logged->before)->toMatchArray(['given_to_new_employees' => true])
+        ->and($logged->after)->toMatchArray(['given_to_new_employees' => false]);
+
+    actingAs($admin)->patch(route('roles.update', $taker), ['name' => $taker->name, 'permissions' => [], 'given_to_new_employees' => false])->assertSessionHasNoErrors();
+
+    expect(Role::query()->where('is_given_to_new_employees', true)->exists())->toBeFalse();
+})->with([
+    'a new Role' => [function (Employee $admin): Role {
+        actingAs($admin)->post(route('roles.store'), ['name' => 'Staff', 'permissions' => [], 'given_to_new_employees' => true])->assertSessionHasNoErrors();
+
+        return Role::query()->where('name', 'Staff')->sole();
+    }],
+    'an edited Role' => [function (Employee $admin): Role {
+        $staff = Role::factory()->create(['name' => 'Staff']);
+        actingAs($admin)->patch(route('roles.update', $staff), ['name' => 'Staff', 'permissions' => [], 'given_to_new_employees' => true])->assertSessionHasNoErrors();
+
+        return $staff;
+    }],
+]);
+
+it('gives and takes a Role from the holders sent with it, logging each, when creating or editing it', function () {
+    $admin = roleManager();
+    $ben = Employee::factory()->create(['name' => 'Ben']);
+    $cara = Employee::factory()->create(['name' => 'Cara']);
+    $zoe = Employee::factory()->future()->create(['name' => 'Zoe']);
+    $leftWhileHolding = Employee::factory()->former()->create(['name' => 'Lea']);
+
+    actingAs($admin)->post(route('roles.store'), ['name' => 'Payroll', 'permissions' => [], 'given_to_new_employees' => false, 'holders' => [$ben->id, $cara->id]])
+        ->assertSessionHasNoErrors();
+    $payroll = Role::query()->where('name', 'Payroll')->sole();
+    $payroll->employees()->attach($leftWhileHolding);
+
+    expect(AccessLogEntry::query()->where('change', AccessChange::RoleGiven)->orderBy('employee_id')->pluck('employee_id')->all())->toBe([$ben->id, $cara->id]);
+
+    actingAs($admin)->patch(route('roles.update', $payroll), ['name' => 'Payroll', 'permissions' => [], 'given_to_new_employees' => false, 'holders' => [$ben->id, $zoe->id, $leftWhileHolding->id]])
+        ->assertSessionHasNoErrors();
+
+    expect($payroll->employees()->orderBy('name')->pluck('name')->all())->toBe(['Ben', 'Lea', 'Zoe'])
+        ->and(AccessLogEntry::query()->where('change', AccessChange::RoleTaken)->pluck('employee_id')->all())->toBe([$cara->id])
+        ->and(AccessLogEntry::query()->where('change', AccessChange::RoleGiven)->where('employee_id', $zoe->id)->exists())->toBeTrue();
+});
+
+it('leaves who holds a Role alone when no holders are sent with it', function () {
+    $admin = roleManager();
+    $payroll = Role::factory()->create(['name' => 'Payroll']);
+    $payroll->employees()->attach($ben = Employee::factory()->create());
+
+    actingAs($admin)->patch(route('roles.update', $payroll), ['name' => 'Payroll', 'permissions' => [], 'given_to_new_employees' => false])
+        ->assertSessionHasNoErrors();
+
+    expect($payroll->employees()->pluck('employees.id')->all())->toBe([$ben->id]);
+});
+
+it('refuses holders who have left or do not exist, saving nothing', function (Closure $holder) {
+    $admin = roleManager();
+    $payroll = Role::factory()->create(['name' => 'Payroll']);
+
+    actingAs($admin)->patch(route('roles.update', $payroll), ['name' => 'Pay Team', 'permissions' => [], 'given_to_new_employees' => false, 'holders' => [$holder()]])
+        ->assertSessionHasErrors('holders.0');
+
+    expect($payroll->refresh()->name)->toBe('Payroll')
+        ->and($payroll->employees()->exists())->toBeFalse();
+})->with([
+    'a Former Employee' => [fn () => Employee::factory()->former()->create()->id],
+    'nobody' => [fn () => 999999],
+]);
+
+it('saves nothing when the holders sent would leave nobody able to manage Roles', function () {
+    $admin = roleManager('Role Managers');
+    $roleManagers = $admin->roles()->sole();
+
+    actingAs($admin)->patch(route('roles.update', $roleManagers), ['name' => 'Renamed', 'permissions' => ['manage-roles' => null], 'given_to_new_employees' => false, 'holders' => []])
+        ->assertSessionHasErrors('role');
+
+    expect($roleManagers->refresh()->name)->toBe('Role Managers')
+        ->and($roleManagers->employees()->pluck('employees.id')->all())->toBe([$admin->id])
+        ->and(AccessLogEntry::query()->exists())->toBeFalse();
 });
 
 it('counts an Admin holder as able to manage Roles, so the last other Role that manages them can go', function () {

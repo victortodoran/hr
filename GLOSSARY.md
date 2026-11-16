@@ -141,7 +141,7 @@ _Avoid_: Withdrawn, revoked, deleted
 ### Access
 
 **Role**:
-A named, customizable set of Permissions, such as "Admin", "Manager" or "Employee". An Employee can hold several Roles.
+A named, customizable set of Permissions, such as "Admin", "Manager" or "Employee". An Employee can hold several Roles. At most one Role is given to every new Employee; giving another Role to new Employees takes that from the first.
 _Avoid_: Group, profile, user type
 
 **Admin**:

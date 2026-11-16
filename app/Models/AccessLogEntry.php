@@ -18,8 +18,8 @@ use Illuminate\Support\Carbon;
  * @property int|null $role_id
  * @property string $role_name
  * @property int|null $employee_id
- * @property array{name: string, permissions: array<string, string|null>, holders?: array<int, int>}|null $before
- * @property array{name: string, permissions: array<string, string|null>}|null $after
+ * @property array{name: string, permissions?: array<string, string|null>, admin?: true, given_to_new_employees: bool, holders?: array<int, int>}|null $before
+ * @property array{name: string, permissions?: array<string, string|null>, admin?: true, given_to_new_employees: bool}|null $after
  * @property Carbon|null $created_at
  */
 #[Fillable(['change', 'actor_id', 'role_id', 'role_name', 'employee_id', 'before', 'after'])] // @pest-mutate-ignore (class attributes never show as covered)

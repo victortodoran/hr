@@ -17,17 +17,20 @@ use Inertia\Inertia;
 class RoleHolderController extends Controller
 {
     /**
-     * Give the Role to an Employee who hasn't left and doesn't hold it yet.
+     * Give the Role to Employees who haven't left and don't hold it yet,
+     * all together.
      */
     public function store(#[CurrentUser] Employee $actor, GiveRoleRequest $request, Role $role, ChangeAccess $changeAccess): RedirectResponse
     {
-        $employee = $request->employee();
+        $employees = $request->employees();
 
-        $changeAccess->giveRole($actor, $role, $employee);
+        $changeAccess->giveRoleToEach($actor, $role, $employees);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __(':role given to :name.', ['role' => $role->name, 'name' => $employee->name])]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $employees->count() === 1
+            ? __(':role given to :name.', ['role' => $role->name, 'name' => $employees->sole()->name])
+            : __(':role given to :count people.', ['role' => $role->name, 'count' => $employees->count()])]);
 
-        return to_route('roles.index');
+        return to_route('roles.show', $role);
     }
 
     /**
@@ -41,6 +44,6 @@ class RoleHolderController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':role taken from :name.', ['role' => $role->name, 'name' => $employee->name])]);
 
-        return to_route('roles.index');
+        return to_route('roles.show', $role);
     }
 }

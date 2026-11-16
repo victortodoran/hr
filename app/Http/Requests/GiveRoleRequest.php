@@ -7,12 +7,12 @@ use App\Models\Employee;
 use App\Models\Role;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 /**
- * The Employee to give a Role to: someone who hasn't left and doesn't hold
- * the Role yet.
+ * The Employees to give a Role to, at least one: each someone who hasn't
+ * left and doesn't hold the Role yet.
  */
 class GiveRoleRequest extends FormRequest
 {
@@ -22,16 +22,19 @@ class GiveRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['bail', 'required', 'integer', Rule::exists(Employee::class, 'id'), $this->canBeGiven()],
+            'employee_ids' => ['required', 'array'],
+            'employee_ids.*' => ['bail', 'integer', 'distinct', $this->canBeGiven()],
         ];
     }
 
     /**
-     * The Employee being given the Role.
+     * The Employees being given the Role.
+     *
+     * @return Collection<int, Employee>
      */
-    public function employee(): Employee
+    public function employees(): Collection
     {
-        return Employee::query()->findOrFail($this->integer('employee_id'));
+        return Employee::query()->whereKey($this->array('employee_ids'))->orderBy('name')->get();
     }
 
     /**
@@ -39,20 +42,39 @@ class GiveRoleRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return ['employee_id' => __('Employee')];
+        return ['employee_ids.*' => __('Employee')];
     }
 
     /**
-     * Refuses an Employee who already holds the Role or has left.
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return ['employee_ids.required' => __('Choose someone to give the Role to.')];
+    }
+
+    /**
+     * Refuses an Employee who doesn't exist, already holds the Role or has
+     * left. The Employees sent and the Role's holders are each loaded once,
+     * however many are sent.
      */
     private function canBeGiven(): Closure
     {
-        return function (string $attribute, mixed $employeeId, Closure $fail): void {
+        /** @var Collection<int, Employee>|null $sent */
+        $sent = null;
+        /** @var array<int, int>|null $holding */
+        $holding = null;
+
+        return function (string $attribute, mixed $employeeId, Closure $fail) use (&$sent, &$holding): void {
             /** @var Role $role */
             $role = $this->route('role');
-            $employee = $this->employee();
+            $sent ??= Employee::query()->whereKey(array_filter($this->array('employee_ids'), fn (mixed $id): bool => filter_var($id, FILTER_VALIDATE_INT) !== false))->get()->keyBy('id');
+            $holding ??= $role->employees()->pluck('employees.id')->all();
+            $employee = $sent->get(intval($employeeId));
 
-            if ($role->employees()->whereKey($employee->id)->exists()) {
+            if ($employee === null) {
+                $fail(__('validation.exists', ['attribute' => __('Employee')]));
+            } elseif (in_array($employee->id, $holding, true)) {
                 $fail(__('They already hold this Role.'));
             } elseif ($employee->employmentStatus() === EmploymentStatus::Former) {
                 $fail(__('A Former Employee can\'t be given a Role.'));

@@ -27,4 +27,12 @@ export type PermissionChoice = {
     label: string;
     /** The Scopes it can be given with, narrowest first; none when company-wide. */
     scopes: Scope[];
+    /** The area it is about, such as "Work entries", in the Roles page's order. */
+    group: string;
 };
+
+/** An Employee a Role can be given to: one who hasn't left. */
+export type RoleCandidate = RoleHolder;
+
+/** What the Roles page's right column is doing with the selected Role. */
+export type RolesPageMode = 'view' | 'edit' | 'create';
