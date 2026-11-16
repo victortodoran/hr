@@ -1,0 +1,5 @@
+#!/bin/sh
+# Runs the checks CI runs before anything leaves this machine, so a failing
+# Pint, PHPStan or test run stops here instead of a CI round later.
+# Composer installs point git at this folder (core.hooksPath .githooks).
+exec composer ci:check

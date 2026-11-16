@@ -22,6 +22,13 @@ Point it at this doc for the rest.
 - Open the files the brief points to and their direct imports. Read the parent spec or the whole glossary only when the issue is unclear without them.
 - Read files in ranges when only part is needed.
 
+## Test gotchas
+
+- A request as a Former Employee is signed out, so Inertia assertions fail with "Not a valid Inertia response". Check what a Former Employee would get through the model instead.
+- Adding an Employee needs the Internal Project (`Project::factory()->internal()->create()`), or the request returns 404, and `Notification::fake()` for the invitation.
+- `actingAs($employee)` reuses that one model across every request in the test, so a value remembered on the Employee (a property or `once()`) carries stale data into the next request.
+- In Pest, chaining `->not` after another matcher fails PHPStan; start a second `expect()`.
+
 ## Steps
 
 1. `git fetch origin && git checkout -b <branch> origin/main`.
