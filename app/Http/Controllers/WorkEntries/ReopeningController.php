@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\WorkEntries;
 
+use App\Enums\Permission;
 use App\Enums\WorkEntryState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\SelectedWorkEntriesRequest;
@@ -30,7 +31,7 @@ class ReopeningController extends Controller
         $ids = $request->ids();
 
         $reopened = WorkEntry::query()
-            ->ofEmployees(Employee::query()->reopenableBy($actor))
+            ->ofEmployees(Employee::query()->reopenableBy($actor, Permission::ReopenWorkEntries))
             ->whereKey($ids)
             ->where('state', WorkEntryState::Approved)
             ->update(['state' => WorkEntryState::Pending, 'approved_by' => null, 'approved_at' => null]);

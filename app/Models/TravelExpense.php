@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\TravelExpenseCategory;
 use App\Enums\TravelExpenseState;
 use App\Models\Builders\TravelExpenseBuilder;
+use Carbon\CarbonInterface;
 use Database\Factories\TravelExpenseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
@@ -39,6 +40,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read TravelRequest $travelRequest
+ * @property-read Employee|null $approver
+ * @property-read Employee|null $locker
  */
 #[Fillable(['paid_on', 'amount', 'category', 'description', 'receipt_path'])] // @pest-mutate-ignore (class attributes never show as covered)
 #[UseEloquentBuilder(TravelExpenseBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
@@ -94,6 +97,40 @@ class TravelExpense extends Model
     }
 
     /**
+     * Who approved the Travel Expense and on which day, or null while it
+     * isn't Approved or Locked. Needs the approver loaded.
+     *
+     * @return array{by: string, on: string}|null
+     */
+    public function approval(): ?array
+    {
+        return self::signOff($this->approver, $this->approved_at);
+    }
+
+    /**
+     * Who locked the Travel Expense and on which day, or null until it is
+     * Locked. Needs the locker loaded.
+     *
+     * @return array{by: string, on: string}|null
+     */
+    public function lock(): ?array
+    {
+        return self::signOff($this->locker, $this->locked_at);
+    }
+
+    /**
+     * @return array{by: string, on: string}|null
+     */
+    private static function signOff(?Employee $employee, ?CarbonInterface $at): ?array
+    {
+        if ($employee === null || $at === null) { // @pest-mutate-ignore (who and when are always set together)
+            return null;
+        }
+
+        return ['by' => $employee->name, 'on' => $at->toDateString()];
+    }
+
+    /**
      * The Travel Request whose travel it was paid for.
      *
      * @return BelongsTo<TravelRequest, $this>
@@ -101,5 +138,26 @@ class TravelExpense extends Model
     public function travelRequest(): BelongsTo
     {
         return $this->belongsTo(TravelRequest::class);
+    }
+
+    /**
+     * The Employee who approved the Travel Expense, while it is Approved or
+     * Locked.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'approved_by');
+    }
+
+    /**
+     * The Employee who locked the Travel Expense, once it is Locked.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function locker(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'locked_by');
     }
 }

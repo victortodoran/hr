@@ -24,7 +24,10 @@ use App\Http\Controllers\TimeOff\TimeOffPreviewController;
 use App\Http\Controllers\Travel\TravelExpenseApprovalController;
 use App\Http\Controllers\Travel\TravelExpenseController;
 use App\Http\Controllers\Travel\TravelExpenseDeclineController;
+use App\Http\Controllers\Travel\TravelExpenseListController;
+use App\Http\Controllers\Travel\TravelExpenseLockController;
 use App\Http\Controllers\Travel\TravelExpenseReceiptController;
+use App\Http\Controllers\Travel\TravelExpenseReopeningController;
 use App\Http\Controllers\Travel\TravelRequestApprovalController;
 use App\Http\Controllers\Travel\TravelRequestCancellationController;
 use App\Http\Controllers\Travel\TravelRequestController;
@@ -113,6 +116,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('travel-requests/{travelRequest}/expenses', [TravelExpenseController::class, 'store'])->middleware('can:create,'.TravelExpense::class.',travelRequest')->name('travel-requests.expenses.store');
     Route::put('travel-expenses/{travelExpense}', [TravelExpenseController::class, 'update'])->middleware('can:update,travelExpense')->name('travel-expenses.update');
     Route::delete('travel-expenses/{travelExpense}', [TravelExpenseController::class, 'destroy'])->middleware('can:delete,travelExpense')->name('travel-expenses.destroy');
+    Route::get('travel-expenses', [TravelExpenseListController::class, 'index'])->middleware('can:viewList,'.TravelExpense::class)->name('travel-expense-list.index');
+    Route::post('travel-expenses/reopenings', [TravelExpenseReopeningController::class, 'store'])->middleware('can:reopen,'.TravelExpense::class)->name('travel-expenses.reopenings.store');
+    Route::post('travel-expenses/locks', [TravelExpenseLockController::class, 'store'])->middleware('can:lock,'.TravelExpense::class)->name('travel-expenses.locks.store');
     Route::get('travel-expenses/{travelExpense}/receipt', [TravelExpenseReceiptController::class, 'show'])->middleware('can:view,travelExpense')->name('travel-expenses.receipt.show');
     Route::middleware('can:decide,travelRequest')->group(function () {
         Route::post('travel-requests/{travelRequest}/approval', [TravelRequestApprovalController::class, 'store'])->name('travel-requests.approval.store');

@@ -46,7 +46,7 @@ it('shows an Employee who manages Roles every Role with its Permissions, Scopes 
 it('offers every Permission with the Scopes it can carry, in its group', function () {
     actingAs(employeeWhoManagesRoles())->get(route('roles.index'))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('permissions', 19)
+            ->has('permissions', 21)
             ->where('permissions.0', ['value' => 'view-employee-records', 'label' => 'View employee records', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Employees'])
             ->where('permissions.6', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Work entries'])
             ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Work entries'])
@@ -54,9 +54,11 @@ it('offers every Permission with the Scopes it can carry, in its group', functio
             ->where('permissions.9', ['value' => 'lock-work-entries', 'label' => 'Lock work entries', 'scopes' => [], 'group' => 'Work entries'])
             ->where('permissions.10', ['value' => 'view-time-off', 'label' => 'View time off', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Time off'])
             ->where('permissions.11', ['value' => 'manage-paid-days', 'label' => 'Manage paid days', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Time off'])
-            ->where('permissions.17', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => [], 'group' => 'Administration'])
+            ->where('permissions.12', ['value' => 'reopen-travel-expenses', 'label' => 'Reopen travel expenses', 'scopes' => ['reports', 'everyone'], 'group' => 'Travel'])
+            ->where('permissions.13', ['value' => 'lock-travel-expenses', 'label' => 'Lock travel expenses', 'scopes' => [], 'group' => 'Travel'])
+            ->where('permissions.19', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => [], 'group' => 'Administration'])
             ->where('permissions', fn (Collection $permissions): bool => ! $permissions->contains('value', 'approve-work-entries'))
-            ->where('permissions', fn (Collection $permissions): bool => $permissions->pluck('group')->unique()->values()->all() === ['Employees', 'Assignments', 'Pay', 'Work entries', 'Time off', 'Organization', 'Administration'])
+            ->where('permissions', fn (Collection $permissions): bool => $permissions->pluck('group')->unique()->values()->all() === ['Employees', 'Assignments', 'Pay', 'Work entries', 'Time off', 'Travel', 'Organization', 'Administration'])
             ->etc(),
         );
 });
@@ -144,6 +146,7 @@ it('rejects a Role whose name or Permissions are invalid', function (array $inpu
     'scoped Permission without a Scope' => [['permissions' => ['view-pay' => null]], 'permissions', 'Choose a Scope for View pay: own, reports or everyone.'],
     'scoped Permission with an unknown Scope' => [['permissions' => ['view-pay' => 'department']], 'permissions', 'Choose a Scope for View pay: own, reports or everyone.'],
     'reopen work entries for own' => [['permissions' => ['reopen-work-entries' => 'own']], 'permissions', 'Choose a Scope for Reopen work entries: reports or everyone.'],
+    'reopen travel expenses for own' => [['permissions' => ['reopen-travel-expenses' => 'own']], 'permissions', 'Choose a Scope for Reopen travel expenses: reports or everyone.'],
     'approve work entries, which only Managers do' => [['permissions' => ['approve-work-entries' => 'reports']], 'permissions', 'The HR system has no Permission called "approve-work-entries".'],
     'company-wide Permission with a Scope' => [['permissions' => ['manage-roles' => 'own']], 'permissions', 'Manage roles always applies company-wide, so it takes no Scope.'],
     'mark missing' => [['given_to_new_employees' => null], 'given_to_new_employees', 'The given to new employees field is required.'],

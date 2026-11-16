@@ -21,6 +21,8 @@ enum Permission: string
     case LockWorkEntries = 'lock-work-entries';
     case ViewTimeOff = 'view-time-off';
     case ManagePaidDays = 'manage-paid-days';
+    case ReopenTravelExpenses = 'reopen-travel-expenses';
+    case LockTravelExpenses = 'lock-travel-expenses';
     case ViewDirectory = 'view-directory';
     case ViewProjects = 'view-projects';
     case ManageProjects = 'manage-projects';
@@ -40,7 +42,7 @@ enum Permission: string
     /**
      * The area of the HR system the Permission is about, as the Roles page
      * groups them: Employees, Assignments, Pay, Work entries, Time off,
-     * Organization or Administration, in the Permissions' own order.
+     * Travel, Organization or Administration, in the Permissions' own order.
      */
     public function group(): string
     {
@@ -50,6 +52,7 @@ enum Permission: string
             self::ViewPay, self::ManagePay => 'Pay',
             self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries, self::LockWorkEntries => 'Work entries',
             self::ViewTimeOff, self::ManagePaidDays => 'Time off',
+            self::ReopenTravelExpenses, self::LockTravelExpenses => 'Travel',
             self::ViewDirectory, self::ViewProjects, self::ManageProjects, self::ManageClients, self::ManageDepartments => 'Organization',
             self::ManageRoles, self::ManageCompany => 'Administration',
         };
@@ -71,7 +74,8 @@ enum Permission: string
             self::ManageWorkEntries,
             self::ReopenWorkEntries,
             self::ViewTimeOff,
-            self::ManagePaidDays => true,
+            self::ManagePaidDays,
+            self::ReopenTravelExpenses => true,
             default => false,
         };
     }
@@ -79,13 +83,13 @@ enum Permission: string
     /**
      * The Scopes a Role can give this Permission with, narrowest first, or
      * none when it applies company-wide. No Employee may reopen their own
-     * Work Entries, so reopen can't be given for own.
+     * Work Entries or Travel Expenses, so reopen can't be given for own.
      *
      * @return list<Scope>
      */
     public function scopes(): array
     {
-        if ($this === self::ReopenWorkEntries) {
+        if ($this === self::ReopenWorkEntries || $this === self::ReopenTravelExpenses) {
             return [Scope::Reports, Scope::Everyone];
         }
 
@@ -114,5 +118,18 @@ enum Permission: string
     public static function seeingWorkEntries(): array
     {
         return [self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries, self::LockWorkEntries];
+    }
+
+    /**
+     * The Permissions that let someone see an Employee's Travel Expenses
+     * and their receipts, besides the Employee and their effective Manager:
+     * you can always see what you can act on. Locking covers everyone. The
+     * one list the policy, the list and the flags use.
+     *
+     * @return list<Permission>
+     */
+    public static function seeingTravelExpenses(): array
+    {
+        return [self::ReopenTravelExpenses, self::LockTravelExpenses];
     }
 }
