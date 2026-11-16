@@ -5,6 +5,7 @@ use App\Http\Controllers\TimeOff\TimeOffController;
 use App\Http\Requests\TimeOff\TimeOffRequest;
 use App\Models\Employee;
 use App\Models\TimeOff;
+use App\Models\TravelRequest;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -169,6 +170,30 @@ it('allows Time Off overlapping Declined or Cancelled Time Off, someone else\'s,
     actingAs($cara)->post(route('time-off.store'), timeOffForm())->assertSessionHasNoErrors();
 
     expect(storedTimeOff($cara))->toHaveCount(5);
+});
+
+it('refuses Time Off sharing a day with the Employee\'s own Pending or Approved Travel Request', function (string $state) {
+    $cara = timeOffRequester();
+    $factory = TravelRequest::factory()->on(assignmentOf($cara));
+    ($state === 'pending' ? $factory : $factory->approved())->create(['first_date' => '2026-12-12', 'last_date' => '2026-12-14']);
+
+    actingAs($cara)->post(route('time-off.store'), timeOffForm())
+        ->assertSessionHasErrors(['first_date' => 'You have a Travel Request from 12 Dec 2026 to 14 Dec 2026, so Time Off can\'t overlap it.']);
+
+    expect(storedTimeOff($cara))->toBe([]);
+})->with(['pending', 'approved']);
+
+it('allows Time Off over Declined or Cancelled Travel Requests, someone else\'s, or right next to one', function () {
+    $cara = timeOffRequester();
+    $relaunch = assignmentOf($cara);
+    TravelRequest::factory()->on($relaunch)->declined()->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+    TravelRequest::factory()->on($relaunch)->cancelled()->create(['first_date' => '2026-12-15', 'last_date' => '2026-12-15']);
+    TravelRequest::factory()->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+    TravelRequest::factory()->on($relaunch)->create(['first_date' => '2026-12-17', 'last_date' => '2026-12-18']);
+
+    actingAs($cara)->post(route('time-off.store'), timeOffForm())->assertSessionHasNoErrors();
+
+    expect(storedTimeOff($cara))->toHaveCount(1);
 });
 
 it('refuses Paid Time Off beyond the Paid Days left, counting Pending and Approved Paid Time Off', function () {

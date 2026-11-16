@@ -10,6 +10,7 @@ use App\Enums\PayKind;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\TimeOffState;
+use App\Enums\TravelRequestState;
 use App\Enums\WorkEntryState;
 use App\Models\Assignment;
 use App\Models\Client;
@@ -161,6 +162,13 @@ class DemoSeeder extends Seeder
         $this->timeOff($lia, $thisMonday->addWeeks(3), 1, false);
         $this->timeOff($ivan, $thisMonday->addWeeks(2), 2, false, TimeOffState::Declined, $hana, 'Launch week for the Website Revamp. Could you take the week after?');
         $this->timeOff($ivan, $thisMonday->addWeeks(3)->addDays(4), 0, false);
+
+        $this->travelRequest($caraOnRelaunch, 'Berlin', $thisMonday->subWeeks(3)->addDay(), 2, 'Checkout API workshop with Globex', TravelRequestState::Approved, $ben);
+        $this->travelRequest($caraOnRelaunch, 'Berlin', $thisMonday->addWeeks(3)->addDay(), 2, 'Relaunch go-live with Globex');
+        $this->travelRequest($caraOnRelaunch, 'Munich', $thisMonday->addWeeks(1)->addDays(2), 1, 'Relaunch demo, moved online', TravelRequestState::Cancelled);
+        $this->travelRequest($liaOnRelaunch, 'Berlin', $thisMonday->addWeeks(1)->addDays(3), 3, 'Pairing on the cart with the Globex team');
+        $this->travelRequest($ivanOnWebsite, 'Lisbon', $thisMonday->addWeek(), 1, 'Design conference', TravelRequestState::Declined, $hana, 'Launch prep that week. Could you watch the talks online?');
+        $this->travelRequest($ana->internalAssignment()->sole(), 'London', $thisMonday->addWeeks(6), 4, 'Meeting investors', TravelRequestState::Approved);
 
         $this->command?->info('Demo company seeded. Sign in as ana@acme.test (Admin), ben@acme.test, hana@acme.test, finn@acme.test, cara@acme.test, ivan@acme.test or lia@acme.test with the password "password".');
     }
@@ -324,6 +332,31 @@ class DemoSeeder extends Seeder
             'decided_at' => in_array($state, [TimeOffState::Approved, TimeOffState::Declined], true) ? now()->subDay() : null,
             'decline_reason' => $declineReason,
             'cancelled_at' => $state === TimeOffState::Cancelled ? now()->subDay() : null,
+        ])->save();
+    }
+
+    /**
+     * Add a Travel Request on the Assignment from a first date to the given
+     * number of days after it, Pending unless given another state. Approved
+     * and Declined ones are decided by the decider, or by nobody for an
+     * Employee with no Manager.
+     */
+    private function travelRequest(Assignment $assignment, string $destination, CarbonInterface $first, int $daysAfter, string $purpose, TravelRequestState $state = TravelRequestState::Pending, ?Employee $decider = null, ?string $declineReason = null): void
+    {
+        $travelRequest = $assignment->employee->travelRequests()->make([
+            'assignment_id' => $assignment->id,
+            'destination' => $destination,
+            'first_date' => $first,
+            'last_date' => $first->addDays($daysAfter),
+            'purpose' => $purpose,
+        ]);
+
+        $travelRequest->forceFill([
+            'state' => $state,
+            'decided_by' => $decider?->id,
+            'decided_at' => in_array($state, [TravelRequestState::Approved, TravelRequestState::Declined], true) ? now()->subDay() : null,
+            'decline_reason' => $declineReason,
+            'cancelled_at' => $state === TravelRequestState::Cancelled ? now()->subDay() : null,
         ])->save();
     }
 

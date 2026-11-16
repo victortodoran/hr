@@ -3,9 +3,11 @@
 use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Enums\TimeOffState;
+use App\Enums\TravelRequestState;
 use App\Enums\WorkEntryState;
 use App\Models\AccessLogEntry;
 use App\Models\Assignment;
+use App\Models\Builders\AssignmentBuilder;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Department;
@@ -14,6 +16,7 @@ use App\Models\PayEntry;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\TimeOff;
+use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\Notification;
@@ -66,6 +69,18 @@ it('gives most Employees Paid Days and one none, and Time Off in every state for
         ->and($pendingForBen->exists())->toBeTrue()
         ->and(Employee::query()->get()->every(fn (Employee $employee): bool => $employee->paidDaysLeftIn(today()->year) >= 0))->toBeTrue()
         ->and($ben->can(Permission::ViewTimeOff->value, $pendingForBen->firstOrFail()->employee))->toBeTrue();
+});
+
+it('gives Travel Requests in every state, on Client and Internal Assignments, sharing no day with other standing Travel Requests or Time Off', function () {
+    seed(DemoSeeder::class);
+    $standing = TravelRequest::query()->standing()->get();
+
+    expect(TravelRequest::query()->pluck('state')->unique()->values()->all())->toEqualCanonicalizing(TravelRequestState::cases())
+        ->and(TravelRequest::query()->where('state', TravelRequestState::Declined)->whereNull('decline_reason')->exists())->toBeFalse()
+        ->and(TravelRequest::query()->whereHas('assignment', fn (AssignmentBuilder $assignments) => $assignments->internal())->exists())->toBeTrue()
+        ->and(TravelRequest::query()->whereHas('assignment', fn (AssignmentBuilder $assignments) => $assignments->notInternal())->exists())->toBeTrue()
+        ->and($standing->every(fn (TravelRequest $travel): bool => $travel->employee->travelRequests()->standing()->overlapping($travel->first_date, $travel->last_date)->count() === 1
+            && ! $travel->employee->timeOff()->standing()->overlapping($travel->first_date, $travel->last_date)->exists()))->toBeTrue();
 });
 
 it('lets the demo Admin sign in with the demo password', function () {

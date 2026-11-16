@@ -130,6 +130,16 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * The Travel Requests the Employee has made, in every state.
+     *
+     * @return HasMany<TravelRequest, $this>
+     */
+    public function travelRequests(): HasMany
+    {
+        return $this->hasMany(TravelRequest::class);
+    }
+
+    /**
      * How many Paid Days the Employee has left in a year: their Paid Days,
      * which every year gets in full, minus the weekdays that year of their
      * Pending and Approved Paid Time Off. It is negative when their Paid Days

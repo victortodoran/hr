@@ -8,6 +8,7 @@ import {
     Building2,
     FolderKanban,
     House,
+    Plane,
     Landmark,
     Network,
     ShieldCheck,
@@ -39,6 +40,7 @@ import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import { index as team } from '@/routes/team';
 import { index as timeOff } from '@/routes/time-off';
+import { index as travelRequests } from '@/routes/travel-requests';
 import { index as workEntries } from '@/routes/work-entries';
 import { index as workEntryList } from '@/routes/work-entry-list';
 import type { NavItem } from '@/types';
@@ -62,6 +64,7 @@ const meItems = computed<NavItem[]>(() => [
         ? [{ title: 'My Work Entries', href: workEntries(), icon: Clock }]
         : []),
     { title: 'Time Off', href: timeOff(), icon: CalendarDays },
+    { title: 'Travel', href: travelRequests(), icon: Plane },
 ]);
 
 const manageItems = computed<NavItem[]>(() => [
