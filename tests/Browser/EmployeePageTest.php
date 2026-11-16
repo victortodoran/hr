@@ -74,7 +74,7 @@ it('drops an Assignment edit that was cancelled, so reopening shows what is save
         ->assertSee('Lead Developer')
         ->assertNoJavaScriptErrors();
 
-    expect($relaunch->refresh())
-        ->capacity->toBe(100)
-        ->job_title->toBe('Lead Developer');
+    $relaunch->refresh();
+    expect($relaunch->capacity)->toBe(100)
+        ->and($relaunch->job_title)->toBe('Lead Developer');
 });
