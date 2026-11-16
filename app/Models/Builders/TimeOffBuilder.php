@@ -5,23 +5,22 @@ namespace App\Models\Builders;
 use App\Enums\TimeOffState;
 use App\Models\TimeOff;
 use Carbon\CarbonInterface;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Every reusable query on Time Off.
  *
- * @extends Builder<TimeOff>
+ * @extends ModelBuilder<TimeOff>
  */
-class TimeOffBuilder extends Builder
+class TimeOffBuilder extends ModelBuilder
 {
     /**
      * Limit the query to Time Off that still stands: Pending or Approved.
      */
     public function standing(): static
     {
-        $this->whereIn('state', TimeOffState::standing());
-
-        return $this;
+        return $this->scoped(function (): void {
+            $this->whereIn('state', TimeOffState::standing());
+        });
     }
 
     /**
@@ -30,8 +29,8 @@ class TimeOffBuilder extends Builder
      */
     public function overlapping(CarbonInterface $first, CarbonInterface $last): static
     {
-        $this->whereDate('first_date', '<=', $last)->whereDate('last_date', '>=', $first);
-
-        return $this;
+        return $this->scoped(function () use ($first, $last): void {
+            $this->whereDate('first_date', '<=', $last)->whereDate('last_date', '>=', $first);
+        });
     }
 }

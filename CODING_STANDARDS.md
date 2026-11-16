@@ -10,7 +10,7 @@ When a diff changes a term's meaning in `GLOSSARY.md`, every use of that term mu
 
 List each piece of a diff that sits in the wrong layer.
 
-- A query reused across controllers, policies or actions is a method on the model's builder (`app/Models/Builders`); a one-off query stays where it is used.
+- A named query on a model (anything that would otherwise be a query scope) is a method on its builder in `app/Models/Builders`, even with one caller; a one-off chain of conditions stays where it is used, until a second place needs it.
 - A write that changes several models, or that more than one controller makes, is an Action (`app/Actions`).
 - Shaping models into page props stays in the controller; once it holds most of the controller, or another page needs the same shape, it moves to `app/Support` (see `PayHistory`, `ReportingChain`).
 - A form request sits in the area folder of the controller that uses it.

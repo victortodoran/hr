@@ -11,18 +11,18 @@ use Illuminate\Database\Eloquent\Builder;
 /**
  * Every reusable query on Assignments.
  *
- * @extends Builder<Assignment>
+ * @extends ModelBuilder<Assignment>
  */
-class AssignmentBuilder extends Builder
+class AssignmentBuilder extends ModelBuilder
 {
     /**
      * Limit the query to Internal Assignments.
      */
     public function internal(): static
     {
-        $this->whereRelation('project', 'is_internal', true);
-
-        return $this;
+        return $this->scoped(function (): void {
+            $this->whereRelation('project', 'is_internal', true);
+        });
     }
 
     /**
@@ -31,9 +31,9 @@ class AssignmentBuilder extends Builder
      */
     public function notInternal(): static
     {
-        $this->whereRelation('project', 'is_internal', false);
-
-        return $this;
+        return $this->scoped(function (): void {
+            $this->whereRelation('project', 'is_internal', false);
+        });
     }
 
     /**
@@ -42,9 +42,9 @@ class AssignmentBuilder extends Builder
      */
     public function visibleTo(Employee $actor): static
     {
-        $this->whereHas('employee', fn (Builder $employees) => $actor->limitToReachOf($employees, Permission::seeingAssignments()));
-
-        return $this;
+        return $this->scoped(function () use ($actor): void {
+            $this->whereHas('employee', fn (EmployeeBuilder $employees) => $actor->limitToReachOf($employees, Permission::seeingAssignments()));
+        });
     }
 
     /**
@@ -53,10 +53,10 @@ class AssignmentBuilder extends Builder
      */
     public function runningOn(CarbonInterface $day): static
     {
-        $this->whereDate('start_date', '<=', $day)
-            ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $day));
-
-        return $this;
+        return $this->scoped(function () use ($day): void {
+            $this->whereDate('start_date', '<=', $day)
+                ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $day));
+        });
     }
 
     /**
@@ -64,11 +64,11 @@ class AssignmentBuilder extends Builder
      */
     public function orderByEmployeeName(): static
     {
-        $this->orderBy(Employee::query()->select('name')->whereColumn('employees.id', 'assignments.employee_id'))
-            ->orderBy('employee_id')
-            ->orderBy('start_date')
-            ->orderBy('id');
-
-        return $this;
+        return $this->scoped(function (): void {
+            $this->orderBy(Employee::query()->select('name')->whereColumn('employees.id', 'assignments.employee_id'))
+                ->orderBy('employee_id')
+                ->orderBy('start_date')
+                ->orderBy('id');
+        });
     }
 }

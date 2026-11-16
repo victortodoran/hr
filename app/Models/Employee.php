@@ -377,15 +377,15 @@ class Employee extends Authenticatable implements MustVerifyEmail
     /**
      * The Pending Work Entries and Pending Time Off of the given Employees.
      *
-     * @param  Builder<Employee>|array<int, int|string>  $decidedFor
+     * @param  EmployeeBuilder|array<int, int|string>  $decidedFor
      * @return array{workEntries: int, timeOff: int}
      */
-    private function waitingFor(Builder|array $decidedFor): array
+    private function waitingFor(EmployeeBuilder|array $decidedFor): array
     {
         return [
             'workEntries' => WorkEntry::query()
                 ->where('state', WorkEntryState::Pending)
-                ->whereIn('assignment_id', Assignment::query()->select('id')->whereIn('employee_id', $decidedFor instanceof Builder ? clone $decidedFor : $decidedFor))
+                ->whereIn('assignment_id', Assignment::query()->select('id')->whereIn('employee_id', $decidedFor instanceof EmployeeBuilder ? clone $decidedFor : $decidedFor))
                 ->count(),
             'timeOff' => TimeOff::query()
                 ->where('state', TimeOffState::Pending)
@@ -397,10 +397,8 @@ class Employee extends Authenticatable implements MustVerifyEmail
     /**
      * The Employees whose effective Manager this Employee is, Former ones
      * left out.
-     *
-     * @return Builder<Employee>
      */
-    private function managedEmployeesQuery(): Builder
+    private function managedEmployeesQuery(): EmployeeBuilder
     {
         return self::query()
             ->effectivelyManagedBy($this)

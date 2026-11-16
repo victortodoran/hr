@@ -11,6 +11,7 @@ use App\Enums\Scope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Assignment;
+use App\Models\Builders\EmployeeBuilder;
 use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
@@ -52,8 +53,8 @@ class EmployeeController extends Controller
         $scope = $actor->widestScopeFor(Permission::ViewEmployeeRecords);
 
         $employees = Employee::query()
-            ->where(fn (Builder $query) => $scope->limit($query, $actor))
-            ->when($status, fn (Builder $query, EmploymentStatus $status) => $query->inEmploymentStatus($status))
+            ->where(fn (EmployeeBuilder $query) => $scope->limit($query, $actor))
+            ->when($status, fn (EmployeeBuilder $query, EmploymentStatus $status) => $query->inEmploymentStatus($status))
             ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
             ->withEffectiveManager()
             ->with(['department:id,name', 'effectiveManager:id,name'])

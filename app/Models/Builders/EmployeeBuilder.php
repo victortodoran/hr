@@ -14,9 +14,9 @@ use Illuminate\Database\Eloquent\Builder;
 /**
  * Every reusable query on Employees.
  *
- * @extends Builder<Employee>
+ * @extends ModelBuilder<Employee>
  */
-class EmployeeBuilder extends Builder
+class EmployeeBuilder extends ModelBuilder
 {
     /**
      * Limit the query to Employees who can manage Roles from now on: current
@@ -25,13 +25,13 @@ class EmployeeBuilder extends Builder
      */
     public function lastingRoleManagers(): static
     {
-        $this->whereDate('start_date', '<=', today())
-            ->whereNull('leaving_date')
-            ->whereHas('roles', fn (Builder $roles) => $roles
-                ->where('is_admin', true)
-                ->orWhereHas('permissions', fn (Builder $grants) => $grants->where('permission', Permission::ManageRoles)));
-
-        return $this;
+        return $this->scoped(function (): void {
+            $this->whereDate('start_date', '<=', today())
+                ->whereNull('leaving_date')
+                ->whereHas('roles', fn (Builder $roles) => $roles
+                    ->where('is_admin', true)
+                    ->orWhereHas('permissions', fn (Builder $grants) => $grants->where('permission', Permission::ManageRoles)));
+        });
     }
 
     /**
@@ -44,26 +44,26 @@ class EmployeeBuilder extends Builder
      */
     public function effectivelyManagedBy(Employee $manager): static
     {
-        $today = today()->toDateString();
+        return $this->scoped(function () use ($manager): void {
+            $today = today()->toDateString();
 
-        $this->whereRaw(<<<'SQL'
-            employees.id IN (
-                WITH RECURSIVE down AS (
-                    SELECT reports.id, reports.leaving_date FROM employees AS reports
-                    WHERE reports.manager_id = ? AND EXISTS (
-                        SELECT 1 FROM employees AS managers
-                        WHERE managers.id = ? AND (managers.leaving_date IS NULL OR managers.leaving_date >= ?)
+            $this->whereRaw(<<<'SQL'
+                employees.id IN (
+                    WITH RECURSIVE down AS (
+                        SELECT reports.id, reports.leaving_date FROM employees AS reports
+                        WHERE reports.manager_id = ? AND EXISTS (
+                            SELECT 1 FROM employees AS managers
+                            WHERE managers.id = ? AND (managers.leaving_date IS NULL OR managers.leaving_date >= ?)
+                        )
+                        UNION
+                        SELECT reports.id, reports.leaving_date FROM employees AS reports
+                        JOIN down ON reports.manager_id = down.id
+                        WHERE down.leaving_date < ?
                     )
-                    UNION
-                    SELECT reports.id, reports.leaving_date FROM employees AS reports
-                    JOIN down ON reports.manager_id = down.id
-                    WHERE down.leaving_date < ?
+                    SELECT id FROM down
                 )
-                SELECT id FROM down
-            )
-            SQL, [$manager->id, $manager->id, $today, $today]);
-
-        return $this;
+                SQL, [$manager->id, $manager->id, $today, $today]);
+        });
     }
 
     /**
@@ -72,18 +72,18 @@ class EmployeeBuilder extends Builder
      */
     public function reportsOf(Employee $manager): static
     {
-        $this->whereRaw(<<<'SQL'
-            employees.id IN (
-                WITH RECURSIVE below AS (
-                    SELECT id FROM employees WHERE manager_id = ?
-                    UNION
-                    SELECT employees.id FROM employees JOIN below ON employees.manager_id = below.id
+        return $this->scoped(function () use ($manager): void {
+            $this->whereRaw(<<<'SQL'
+                employees.id IN (
+                    WITH RECURSIVE below AS (
+                        SELECT id FROM employees WHERE manager_id = ?
+                        UNION
+                        SELECT employees.id FROM employees JOIN below ON employees.manager_id = below.id
+                    )
+                    SELECT id FROM below
                 )
-                SELECT id FROM below
-            )
-            SQL, [$manager->id]);
-
-        return $this;
+                SQL, [$manager->id]);
+        });
     }
 
     /**
@@ -93,18 +93,18 @@ class EmployeeBuilder extends Builder
      */
     public function reopenableBy(Employee $reopener): static
     {
-        $scope = $reopener->widestScopeFor(Permission::ReopenWorkEntries);
+        return $this->scoped(function () use ($reopener): void {
+            $scope = $reopener->widestScopeFor(Permission::ReopenWorkEntries);
 
-        if ($scope === null) {
-            $this->whereRaw('false');
+            if ($scope === null) {
+                $this->whereRaw('false');
 
-            return $this;
-        }
+                return;
+            }
 
-        $scope->limit($this, $reopener);
-        $this->whereKeyNot($reopener->id);
-
-        return $this;
+            $scope->limit($this, $reopener);
+            $this->whereKeyNot($reopener->id);
+        });
     }
 
     /**
@@ -113,9 +113,9 @@ class EmployeeBuilder extends Builder
      */
     public function withWorkEntriesVisibleTo(Employee $viewer): static
     {
-        $viewer->limitToReachOf($this, Permission::seeingWorkEntries());
-
-        return $this;
+        return $this->scoped(function () use ($viewer): void {
+            $viewer->limitToReachOf($this, Permission::seeingWorkEntries());
+        });
     }
 
     /**
@@ -124,11 +124,11 @@ class EmployeeBuilder extends Builder
      */
     public function withPendingDecisions(): static
     {
-        $this->where(fn (Builder $pending) => $pending
-            ->whereHas('workEntries', fn (Builder $entries) => $entries->where('work_entries.state', WorkEntryState::Pending))
-            ->orWhereHas('timeOff', fn (Builder $timeOff) => $timeOff->where('state', TimeOffState::Pending)));
-
-        return $this;
+        return $this->scoped(function (): void {
+            $this->where(fn (Builder $pending) => $pending
+                ->whereHas('workEntries', fn (Builder $entries) => $entries->where('work_entries.state', WorkEntryState::Pending))
+                ->orWhereHas('timeOff', fn (Builder $timeOff) => $timeOff->where('state', TimeOffState::Pending)));
+        });
     }
 
     /**
@@ -136,10 +136,10 @@ class EmployeeBuilder extends Builder
      */
     public function current(): static
     {
-        $this->whereDate('start_date', '<=', today())
-            ->where(fn (Builder $staying) => $staying->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today()));
-
-        return $this;
+        return $this->scoped(function (): void {
+            $this->whereDate('start_date', '<=', today())
+                ->where(fn (Builder $staying) => $staying->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', today()));
+        });
     }
 
     /**
@@ -147,13 +147,13 @@ class EmployeeBuilder extends Builder
      */
     public function inEmploymentStatus(EmploymentStatus $status): static
     {
-        match ($status) {
-            EmploymentStatus::Future => $this->whereDate('start_date', '>', today()),
-            EmploymentStatus::Current => $this->current(),
-            EmploymentStatus::Former => $this->whereDate('leaving_date', '<', today()),
-        };
-
-        return $this;
+        return $this->scoped(function () use ($status): void {
+            match ($status) {
+                EmploymentStatus::Future => $this->whereDate('start_date', '>', today()),
+                EmploymentStatus::Current => $this->current(),
+                EmploymentStatus::Former => $this->whereDate('leaving_date', '<', today()),
+            };
+        });
     }
 
     /**
@@ -165,26 +165,26 @@ class EmployeeBuilder extends Builder
      */
     public function withEffectiveManager(?CarbonInterface $on = null): static
     {
-        $day = ($on ?? today())->toDateString();
+        return $this->scoped(function () use ($on): void {
+            $day = ($on ?? today())->toDateString();
 
-        if ($this->getQuery()->columns === null) {
-            $this->select('employees.*');
-        }
+            if ($this->getQuery()->columns === null) {
+                $this->select('employees.*');
+            }
 
-        $this->selectRaw(<<<'SQL'
-            (
-                WITH RECURSIVE up AS (
-                    SELECT managers.id, managers.manager_id, managers.leaving_date
-                    FROM employees AS managers WHERE managers.id = employees.manager_id
-                    UNION ALL
-                    SELECT managers.id, managers.manager_id, managers.leaving_date
-                    FROM employees AS managers JOIN up ON managers.id = up.manager_id
-                    WHERE up.leaving_date < ?
-                )
-                SELECT id FROM up WHERE up.leaving_date IS NULL OR up.leaving_date >= ? LIMIT 1
-            ) AS effective_manager_id
-            SQL, [$day, $day]);
-
-        return $this;
+            $this->selectRaw(<<<'SQL'
+                (
+                    WITH RECURSIVE up AS (
+                        SELECT managers.id, managers.manager_id, managers.leaving_date
+                        FROM employees AS managers WHERE managers.id = employees.manager_id
+                        UNION ALL
+                        SELECT managers.id, managers.manager_id, managers.leaving_date
+                        FROM employees AS managers JOIN up ON managers.id = up.manager_id
+                        WHERE up.leaving_date < ?
+                    )
+                    SELECT id FROM up WHERE up.leaving_date IS NULL OR up.leaving_date >= ? LIMIT 1
+                ) AS effective_manager_id
+                SQL, [$day, $day]);
+        });
     }
 }
