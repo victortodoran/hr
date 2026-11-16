@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Enums\EmploymentStatus;
 use App\Models\Assignment;
-use App\Models\Department;
 use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\Project;
@@ -15,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * The Employee page's tabs, each as the props it renders: Overview,
  * Assignments & Pay and Time Off. Each tab is only built when it is open.
+ * The Overview's Reports needing a new Manager are shown on the edit form
+ * too.
  */
 final class EmployeePage
 {
@@ -39,7 +40,7 @@ final class EmployeePage
      * a currency is given, and the Projects they can be put on, to those
      * who may manage their Assignments.
      *
-     * @return array{assignments: array<int, array<string, mixed>>, projects: array<int, array<string, mixed>>}
+     * @return array{assignments: array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, has_ended: bool, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>, projects: array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>}
      */
     public static function assignmentsTab(Employee $employee, ?Currency $currency, bool $canManage): array
     {
