@@ -73,7 +73,56 @@ it('shows a Manager what waits for them, matching the Approvals badge', function
         );
 });
 
-it('leaves hours this week out for the top Employee, who records no Work Entries', function () {
+it('shows an Employee their hours for each month this year up to this one, leaving out Declined ones and last year\'s, with how many are Pending', function () {
+    $cara = recorder(['manager_id' => Employee::factory()->create()->id, 'start_date' => '2024-03-04']);
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2025-12-01']);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2025-12-31', 'minutes' => 600]);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-01-05', 'minutes' => 480]);
+    WorkEntry::factory()->for($relaunch)->approved()->locked()->create(['date' => '2026-01-30', 'minutes' => 240]);
+    WorkEntry::factory()->for($relaunch)->declined()->create(['date' => '2026-03-02', 'minutes' => 300]);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-02', 'minutes' => 360]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'minutes' => 90]);
+
+    $empty = fn (string $month): array => ['month' => $month, 'hours' => 0, 'pending' => 0];
+
+    actingAs($cara)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('hoursThisYear', [
+                'year' => 2026,
+                'hours' => 19.5,
+                'pending' => 1.5,
+                'months' => [
+                    ['month' => '2026-01', 'hours' => 12, 'pending' => 0],
+                    $empty('2026-02'),
+                    $empty('2026-03'),
+                    $empty('2026-04'),
+                    $empty('2026-05'),
+                    $empty('2026-06'),
+                    $empty('2026-07'),
+                    $empty('2026-08'),
+                    $empty('2026-09'),
+                    $empty('2026-10'),
+                    ['month' => '2026-11', 'hours' => 7.5, 'pending' => 1.5],
+                ],
+            ]),
+        );
+});
+
+it('starts an Employee\'s months this year at the month of their Start Date when they started this year', function () {
+    $cara = recorder(['manager_id' => Employee::factory()->create()->id, 'start_date' => '2026-09-14']);
+    WorkEntry::factory()->for(assignmentOf($cara, 'Relaunch', ['start_date' => '2026-09-14']))->create(['date' => '2026-09-15', 'minutes' => 120]);
+
+    actingAs($cara)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('hoursThisYear.months', [
+                ['month' => '2026-09', 'hours' => 2, 'pending' => 2],
+                ['month' => '2026-10', 'hours' => 0, 'pending' => 0],
+                ['month' => '2026-11', 'hours' => 0, 'pending' => 0],
+            ]),
+        );
+});
+
+it('leaves hours this week and this year out for the top Employee, who records no Work Entries', function () {
     $ana = recorder(['is_top' => true]);
     TimeOff::factory()->for($ana)->approved()->create(['first_date' => '2026-11-11', 'last_date' => '2026-11-11']);
 
@@ -81,19 +130,21 @@ it('leaves hours this week out for the top Employee, who records no Work Entries
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
             ->where('hoursThisWeek', null)
+            ->where('hoursThisYear', null)
             ->where('paidDaysLeft', ['year' => 2026, 'days' => -1])
             ->where('nextTimeOff.first_date', '2026-11-11')
             ->where('waitingForYou', null),
         );
 });
 
-it('leaves hours this week out for an Employee who can\'t see their Work Entries', function () {
+it('leaves hours this week and this year out for an Employee who can\'t see their Work Entries', function () {
     $cara = employeeWith([Permission::ViewDirectory->value => null]);
 
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
             ->where('hoursThisWeek', null)
+            ->where('hoursThisYear', null)
             ->where('paidDaysLeft', ['year' => 2026, 'days' => 0]),
         );
 });
