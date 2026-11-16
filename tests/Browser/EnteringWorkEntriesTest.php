@@ -159,3 +159,18 @@ it('forgets unsaved changes to a Work Entry deleted while open', function () {
 
     expect($entry->fresh())->toBeNull();
 });
+
+it('asks before reloading or closing the tab only while a Work Entry is typed but not saved', function () {
+    $cara = recorder();
+    assignmentOf($cara);
+    $askedBeforeUnloading = "(() => { const unloading = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(unloading); return unloading.defaultPrevented; })()";
+
+    actingAs($cara);
+
+    visit(route('work-entries.index'))
+        ->assertScript($askedBeforeUnloading, false)
+        ->click('[data-date="2026-11-09"] [data-test="add-row"]')
+        ->fill('#work-entry-description-2026-11-09', 'Reviewing the API')
+        ->assertScript($askedBeforeUnloading, true)
+        ->assertNoJavaScriptErrors();
+});

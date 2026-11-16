@@ -6,9 +6,9 @@ import RoleController from '@/actions/App/Http/Controllers/RoleController';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
-import DiscardChangesDialog from '@/components/roles/DiscardChangesDialog.vue';
 import ScopeControl from '@/components/roles/ScopeControl.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
+import UnsavedChangesDialog from '@/components/UnsavedChangesDialog.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -618,7 +618,7 @@ const discardDescription = computed(() =>
             </div>
         </div>
 
-        <DiscardChangesDialog
+        <UnsavedChangesDialog
             :open="guard.pending.value !== null"
             :title="discardTitle"
             :description="discardDescription"

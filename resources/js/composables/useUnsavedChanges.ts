@@ -10,7 +10,11 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
  * only GET visits leave. Reloading or closing the tab gets the browser's own prompt.
  * Browsers don't let pages stop the back button within the app.
  */
-export function useUnsavedChanges(dirty: Ref<boolean>): {
+export function useUnsavedChanges(
+    dirty: Ref<boolean>,
+    /** Called as the page gives up its changes, before it leaves. */
+    onDiscard?: () => void,
+): {
     pending: Ref<string | null>;
     leave: (url: string) => void;
     discard: () => void;
@@ -57,6 +61,7 @@ export function useUnsavedChanges(dirty: Ref<boolean>): {
         pending.value = null;
 
         if (url !== null) {
+            onDiscard?.();
             leaving = true;
             router.visit(url, {
                 onFinish: () => {

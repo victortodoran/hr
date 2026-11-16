@@ -11,20 +11,28 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button';
 
 /**
- * Asks whether to leave and lose unsaved changes. "Keep editing" is focused
- * first, so the safe choice is the easy one; it, Escape and closing the
- * dialog all keep editing. "Discard" only discards, leaving the dialog to
- * close as the page leaves.
+ * Asks whether to give up unsaved changes, the one such question across the
+ * app. The keep button ("Keep editing" unless told otherwise) is focused
+ * first, so the safe choice is the easy one; it and Escape both keep. The
+ * discard button only discards, leaving the page to close the dialog as it
+ * leaves or moves on.
  */
-defineProps<{
-    open: boolean;
-    title: string;
-    description: string;
-}>();
+withDefaults(
+    defineProps<{
+        open: boolean;
+        title: string;
+        description: string;
+        keepLabel?: string;
+        discardLabel?: string;
+    }>(),
+    { keepLabel: 'Keep editing', discardLabel: 'Discard' },
+);
 
 const emit = defineEmits<{
     keep: [];
     discard: [];
+    /** The dialog closed and is about to put focus back where it came from; preventing it keeps focus where the page puts it. */
+    closeAutoFocus: [event: Event];
 }>();
 </script>
 
@@ -36,6 +44,7 @@ const emit = defineEmits<{
         <AlertDialogPortal>
             <AlertDialogOverlay class="fixed inset-0 z-50 bg-black/50" />
             <AlertDialogContent
+                @close-auto-focus="emit('closeAutoFocus', $event)"
                 class="fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg sm:max-w-md"
             >
                 <AlertDialogTitle class="text-lg font-semibold">{{
@@ -48,13 +57,13 @@ const emit = defineEmits<{
                     <AlertDialogCancel
                         :class="buttonVariants({ variant: 'secondary' })"
                         class="min-h-11"
-                        >Keep editing</AlertDialogCancel
+                        >{{ keepLabel }}</AlertDialogCancel
                     >
                     <Button
                         variant="destructive"
                         class="min-h-11"
                         @click="emit('discard')"
-                        >Discard</Button
+                        >{{ discardLabel }}</Button
                     >
                 </div>
             </AlertDialogContent>

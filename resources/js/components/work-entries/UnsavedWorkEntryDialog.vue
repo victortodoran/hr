@@ -1,16 +1,9 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import UnsavedChangesDialog from '@/components/UnsavedChangesDialog.vue';
 
 /**
- * Asks before typing in a Work Entry that isn't saved yet is given up.
+ * Asks before typing in a Work Entry that isn't saved yet is given up,
+ * through the app's one unsaved-changes dialog.
  */
 defineProps<{
     open: boolean;
@@ -27,20 +20,14 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <Dialog :open="open" @update:open="(isOpen) => !isOpen && emit('stay')">
-        <DialogContent @close-auto-focus="emit('closeAutoFocus', $event)">
-            <DialogHeader>
-                <DialogTitle>Leave without saving?</DialogTitle>
-                <DialogDescription>
-                    You have an unsaved Work Entry. Leave anyway?
-                </DialogDescription>
-            </DialogHeader>
-            <DialogFooter class="gap-2">
-                <Button variant="secondary" @click="emit('stay')">Stay</Button>
-                <Button variant="destructive" @click="emit('leave')"
-                    >Leave</Button
-                >
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+    <UnsavedChangesDialog
+        :open="open"
+        title="Leave without saving?"
+        description="You have an unsaved Work Entry. Leave anyway?"
+        keep-label="Stay"
+        discard-label="Leave"
+        @keep="emit('stay')"
+        @discard="emit('leave')"
+        @close-auto-focus="emit('closeAutoFocus', $event)"
+    />
 </template>
