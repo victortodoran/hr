@@ -3,9 +3,9 @@
 use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\AssignmentController;
-use App\Http\Requests\AssignmentRequest;
-use App\Http\Requests\EmployeeRequest;
+use App\Http\Controllers\Assignments\AssignmentController;
+use App\Http\Requests\Assignments\AssignmentRequest;
+use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Rules\AssignmentsFit;

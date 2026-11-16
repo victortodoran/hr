@@ -2,7 +2,7 @@
 import { useForm } from '@inertiajs/vue3';
 import { X } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
-import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntryController';
+import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntries/WorkEntryController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';

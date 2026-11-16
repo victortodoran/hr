@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\WorkEntryController;
+use App\Http\Controllers\WorkEntries\WorkEntryController;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;
 

@@ -2,9 +2,9 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\EmployeeInvitationController;
-use App\Http\Requests\EmployeeRequest;
+use App\Http\Controllers\Employees\EmployeeController;
+use App\Http\Controllers\Employees\EmployeeInvitationController;
+use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Notifications\Invitation;

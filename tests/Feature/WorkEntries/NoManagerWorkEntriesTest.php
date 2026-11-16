@@ -2,7 +2,7 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\WorkEntryController;
+use App\Http\Controllers\WorkEntries\WorkEntryController;
 use App\Models\WorkEntry;
 use App\Policies\WorkEntryPolicy;
 use Inertia\Testing\AssertableInertia as Assert;

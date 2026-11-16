@@ -2,8 +2,8 @@
 
 use App\Enums\TimeOffState;
 use App\Enums\WorkEntryState;
-use App\Http\Controllers\ApprovalController;
-use App\Http\Controllers\TimeOffApprovalController;
+use App\Http\Controllers\TimeOff\TimeOffApprovalController;
+use App\Http\Controllers\WorkEntries\ApprovalController;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use Carbon\CarbonImmutable;

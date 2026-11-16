@@ -71,6 +71,7 @@
             "npm run check",
             "@lint:callbacks",
             "@lint:migrations",
+            "@lint:folders",
             "npm run build",
             "npm run types:check",
             "@test"
@@ -79,6 +80,7 @@
         "lint:migrations": [
             "base=$(git merge-base origin/main HEAD) || { echo 'lint:migrations needs origin/main with shared history: run git fetch origin'; exit 1; }; ! git diff --diff-filter=MDRT --name-status \"$base\" HEAD -- database/migrations | sed 's/^/Shipped migration changed (add a new one instead): /' | grep ."
         ],
+        "lint:folders": "! find app/Http/Controllers app/Http/Requests -maxdepth 1 -name '*.php' ! -path app/Http/Controllers/Controller.php ! -path app/Http/Controllers/HomeController.php | sed 's/^/Move into an area folder (Employees, WorkEntries, TimeOff, ...): /' | grep .",
         "types:check": [
             "phpstan analyse --memory-limit=1G"
         ],

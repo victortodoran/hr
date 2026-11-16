@@ -2,8 +2,8 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\TimeOffController;
+use App\Http\Controllers\Employees\EmployeeController;
+use App\Http\Controllers\TimeOff\TimeOffController;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Policies\EmployeePolicy;

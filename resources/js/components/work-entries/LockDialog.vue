@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { router, useHttp } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import LockController from '@/actions/App/Http/Controllers/LockController';
+import LockController from '@/actions/App/Http/Controllers/WorkEntries/LockController';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import {

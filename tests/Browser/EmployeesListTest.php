@@ -2,7 +2,7 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\Employees\EmployeeController;
 use App\Models\Department;
 use App\Models\Employee;
 

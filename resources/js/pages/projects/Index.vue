@@ -2,7 +2,7 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { FolderKanban } from '@lucide/vue';
 import { computed } from 'vue';
-import ProjectController from '@/actions/App/Http/Controllers/ProjectController';
+import ProjectController from '@/actions/App/Http/Controllers/Projects/ProjectController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';

@@ -3,9 +3,9 @@
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\WorkEntryState;
-use App\Http\Controllers\ApprovalController;
-use App\Http\Requests\ApprovalFiltersRequest;
-use App\Http\Requests\SelectedWorkEntriesRequest;
+use App\Http\Controllers\WorkEntries\ApprovalController;
+use App\Http\Requests\WorkEntries\ApprovalFiltersRequest;
+use App\Http\Requests\WorkEntries\SelectedWorkEntriesRequest;
 use App\Models\Employee;
 use App\Models\WorkEntry;
 use App\Policies\WorkEntryPolicy;

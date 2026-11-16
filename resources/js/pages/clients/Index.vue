@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { Briefcase } from '@lucide/vue';
-import ClientController from '@/actions/App/Http/Controllers/ClientController';
+import ClientController from '@/actions/App/Http/Controllers/Projects/ClientController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
-import AssignmentController from '@/actions/App/Http/Controllers/AssignmentController';
+import AssignmentController from '@/actions/App/Http/Controllers/Assignments/AssignmentController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';

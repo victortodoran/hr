@@ -2,8 +2,8 @@
 import { Form, Link, useForm } from '@inertiajs/vue3';
 import { Info, Lock, Search, Trash2, Users } from '@lucide/vue';
 import { computed, ref } from 'vue';
-import RoleController from '@/actions/App/Http/Controllers/RoleController';
-import RoleHolderController from '@/actions/App/Http/Controllers/RoleHolderController';
+import RoleController from '@/actions/App/Http/Controllers/Access/RoleController';
+import RoleHolderController from '@/actions/App/Http/Controllers/Access/RoleHolderController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';

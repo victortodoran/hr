@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\WorkEntryState;
-use App\Http\Controllers\WorkEntryController;
-use App\Http\Controllers\WorkEntryDeclineController;
+use App\Http\Controllers\WorkEntries\WorkEntryController;
+use App\Http\Controllers\WorkEntries\WorkEntryDeclineController;
 use App\Models\Employee;
 use App\Models\WorkEntry;
 

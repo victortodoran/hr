@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\TimeOffState;
-use App\Http\Controllers\TimeOffController;
-use App\Http\Controllers\TimeOffPreviewController;
+use App\Http\Controllers\TimeOff\TimeOffController;
+use App\Http\Controllers\TimeOff\TimeOffPreviewController;
 use App\Models\Employee;
 use App\Models\TimeOff;
 

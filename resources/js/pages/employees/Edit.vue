@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
-import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
-import EmployeeInvitationController from '@/actions/App/Http/Controllers/EmployeeInvitationController';
+import EmployeeController from '@/actions/App/Http/Controllers/Employees/EmployeeController';
+import EmployeeInvitationController from '@/actions/App/Http/Controllers/Employees/EmployeeInvitationController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';

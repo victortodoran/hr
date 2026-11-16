@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\TimeOffState;
-use App\Http\Controllers\TimeOffController;
-use App\Http\Requests\TimeOffRequest;
+use App\Http\Controllers\TimeOff\TimeOffController;
+use App\Http\Requests\TimeOff\TimeOffRequest;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use Inertia\Testing\AssertableInertia as Assert;

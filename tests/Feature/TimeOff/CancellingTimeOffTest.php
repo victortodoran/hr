@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\TimeOffState;
-use App\Http\Controllers\TimeOffCancellationController;
+use App\Http\Controllers\TimeOff\TimeOffCancellationController;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Policies\TimeOffPolicy;

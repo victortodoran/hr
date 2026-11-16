@@ -3,10 +3,10 @@
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\WorkEntryState;
-use App\Http\Controllers\LockController;
-use App\Http\Controllers\ReopeningController;
-use App\Http\Controllers\WorkEntryController;
-use App\Http\Controllers\WorkEntryListController;
+use App\Http\Controllers\WorkEntries\LockController;
+use App\Http\Controllers\WorkEntries\ReopeningController;
+use App\Http\Controllers\WorkEntries\WorkEntryController;
+use App\Http\Controllers\WorkEntries\WorkEntryListController;
 use App\Models\Employee;
 use App\Models\WorkEntry;
 

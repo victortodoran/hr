@@ -1,12 +1,12 @@
 <?php
 
 use App\Enums\TimeOffState;
-use App\Http\Controllers\ApprovalController;
-use App\Http\Controllers\TimeOffApprovalController;
-use App\Http\Controllers\TimeOffController;
-use App\Http\Controllers\TimeOffDeclineController;
-use App\Http\Requests\TimeOffApprovalRequest;
-use App\Http\Requests\TimeOffDeclineRequest;
+use App\Http\Controllers\TimeOff\TimeOffApprovalController;
+use App\Http\Controllers\TimeOff\TimeOffController;
+use App\Http\Controllers\TimeOff\TimeOffDeclineController;
+use App\Http\Controllers\WorkEntries\ApprovalController;
+use App\Http\Requests\TimeOff\TimeOffApprovalRequest;
+use App\Http\Requests\TimeOff\TimeOffDeclineRequest;
 use App\Models\Employee;
 use App\Models\Role;
 use App\Models\TimeOff;

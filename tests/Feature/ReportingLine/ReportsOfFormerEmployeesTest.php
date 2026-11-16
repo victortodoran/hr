@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\Employees\EmployeeController;
 use App\Models\Employee;
 use Inertia\Testing\AssertableInertia as Assert;
 

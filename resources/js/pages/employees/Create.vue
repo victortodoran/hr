@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
+import EmployeeController from '@/actions/App/Http/Controllers/Employees/EmployeeController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import Heading from '@/components/Heading.vue';
 import SubmitButton from '@/components/SubmitButton.vue';

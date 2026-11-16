@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Requests\Auth\AcceptInvitationRequest;
-use App\Http\Requests\EmployeeRequest;
+use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Project;

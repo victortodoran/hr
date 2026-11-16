@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Requests\EmployeeRequest;
+use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Employee;
 
 use function Pest\Laravel\actingAs;

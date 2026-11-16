@@ -3,9 +3,9 @@
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\WorkEntryState;
-use App\Http\Controllers\ApprovalController;
-use App\Http\Controllers\ReopeningController;
-use App\Http\Controllers\WorkEntryListController;
+use App\Http\Controllers\WorkEntries\ApprovalController;
+use App\Http\Controllers\WorkEntries\ReopeningController;
+use App\Http\Controllers\WorkEntries\WorkEntryListController;
 use App\Models\Employee;
 use App\Models\WorkEntry;
 use App\Policies\WorkEntryPolicy;

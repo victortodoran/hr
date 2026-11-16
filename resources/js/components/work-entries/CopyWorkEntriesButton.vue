@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import { Copy } from '@lucide/vue';
-import WorkEntryCopyController from '@/actions/App/Http/Controllers/WorkEntryCopyController';
+import WorkEntryCopyController from '@/actions/App/Http/Controllers/WorkEntries/WorkEntryCopyController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { formatWeekdayAndDay } from '@/lib/dates';

@@ -2,9 +2,9 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\WorkEntryController;
-use App\Http\Controllers\WorkEntryCopyController;
-use App\Http\Requests\CopyWorkEntriesRequest;
+use App\Http\Controllers\WorkEntries\WorkEntryController;
+use App\Http\Controllers\WorkEntries\WorkEntryCopyController;
+use App\Http\Requests\WorkEntries\CopyWorkEntriesRequest;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Models\WorkEntry;

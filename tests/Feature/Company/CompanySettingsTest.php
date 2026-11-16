@@ -2,8 +2,8 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\CompanySettingsController;
-use App\Http\Requests\CompanySettingsRequest;
+use App\Http\Controllers\Company\CompanySettingsController;
+use App\Http\Requests\Company\CompanySettingsRequest;
 use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;

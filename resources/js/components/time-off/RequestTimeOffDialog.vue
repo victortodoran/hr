@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useForm, useHttp } from '@inertiajs/vue3';
 import { onBeforeUnmount, ref, watch } from 'vue';
-import TimeOffController from '@/actions/App/Http/Controllers/TimeOffController';
-import TimeOffPreviewController from '@/actions/App/Http/Controllers/TimeOffPreviewController';
+import TimeOffController from '@/actions/App/Http/Controllers/TimeOff/TimeOffController';
+import TimeOffPreviewController from '@/actions/App/Http/Controllers/TimeOff/TimeOffPreviewController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';

@@ -2,9 +2,9 @@
 
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\PaidDaysController;
-use App\Http\Requests\PaidDaysRequest;
+use App\Http\Controllers\Employees\EmployeeController;
+use App\Http\Controllers\TimeOff\PaidDaysController;
+use App\Http\Requests\TimeOff\PaidDaysRequest;
 use App\Models\Employee;
 use App\Models\Role;
 use App\Models\TimeOff;

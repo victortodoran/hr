@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import PaidDaysController from '@/actions/App/Http/Controllers/PaidDaysController';
+import PaidDaysController from '@/actions/App/Http/Controllers/TimeOff/PaidDaysController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Input } from '@/components/ui/input';
