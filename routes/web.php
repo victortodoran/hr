@@ -21,6 +21,8 @@ use App\Http\Controllers\TimeOff\TimeOffCancellationController;
 use App\Http\Controllers\TimeOff\TimeOffController;
 use App\Http\Controllers\TimeOff\TimeOffDeclineController;
 use App\Http\Controllers\TimeOff\TimeOffPreviewController;
+use App\Http\Controllers\Travel\TravelRequestCancellationController;
+use App\Http\Controllers\Travel\TravelRequestController;
 use App\Http\Controllers\WorkEntries\ApprovalController;
 use App\Http\Controllers\WorkEntries\LockController;
 use App\Http\Controllers\WorkEntries\ReopeningController;
@@ -95,6 +97,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('time-off/{timeOff}/approval', [TimeOffApprovalController::class, 'store'])->name('time-off.approval.store');
         Route::post('time-off/{timeOff}/decline', [TimeOffDeclineController::class, 'store'])->name('time-off.decline.store');
     });
+
+    Route::get('travel-requests', [TravelRequestController::class, 'index'])->name('travel-requests.index');
+    Route::post('travel-requests', [TravelRequestController::class, 'store'])->name('travel-requests.store');
+    Route::post('travel-requests/{travelRequest}/cancellation', [TravelRequestCancellationController::class, 'store'])->middleware('can:cancel,travelRequest')->name('travel-requests.cancellation.store');
 
     Route::middleware('can:'.Permission::ViewDirectory->value)->group(function () {
         Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');

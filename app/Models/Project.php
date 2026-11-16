@@ -98,6 +98,16 @@ class Project extends Model
     }
 
     /**
+     * The Travel Requests made on the Project's Assignments, in every state.
+     *
+     * @return HasManyThrough<TravelRequest, Assignment, $this>
+     */
+    public function travelRequests(): HasManyThrough
+    {
+        return $this->hasManyThrough(TravelRequest::class, Assignment::class);
+    }
+
+    /**
      * Why an Assignment over the period wouldn't fit the Project's dates, by
      * the field to blame; empty when it fits. A null end means the
      * Assignment is open-ended. The Internal Project has no dates, so

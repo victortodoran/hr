@@ -8,6 +8,7 @@ use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\TimeOff;
+use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use App\Policies\WorkEntryPolicy;
 use Illuminate\Support\Facades\Notification;
@@ -72,13 +73,13 @@ it('keeps the Time Off of an Employee with a Manager Pending', function () {
     expect(TimeOff::query()->where('employee_id', $cara->id)->sole()->state)->toBe(TimeOffState::Pending);
 });
 
-it('refuses removing an Employee\'s Manager while they have Pending Work Entries or Pending Time Off, and allows it once decided', function (Closure $pending) {
+it('refuses removing an Employee\'s Manager while they have Pending Work Entries, Time Off or Travel Requests, and allows it once decided', function (Closure $pending) {
     $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara Lane']);
     $item = $pending($cara);
 
     actingAs(employeeWhoManagesEmployees())
         ->patch(route('employees.update', $cara), recordOf($cara, ['manager_id' => null]))
-        ->assertSessionHasErrors(['manager_id' => 'Cara Lane has Pending Work Entries or Time Off, which nobody could decide without a Manager. Decide them first.']);
+        ->assertSessionHasErrors(['manager_id' => 'Cara Lane has Pending Work Entries, Time Off or Travel Requests, which nobody could decide without a Manager. Decide them first.']);
 
     $item->delete();
 
@@ -90,6 +91,7 @@ it('refuses removing an Employee\'s Manager while they have Pending Work Entries
 })->with([
     'Pending Work Entries' => [fn (Employee $cara) => WorkEntry::factory()->for(assignmentOf($cara))->create()],
     'Pending Time Off' => [fn (Employee $cara) => TimeOff::factory()->for($cara)->create()],
+    'a Pending Travel Request' => [fn (Employee $cara) => TravelRequest::factory()->on(assignmentOf($cara))->create()],
 ]);
 
 it('refuses a Leaving Date that would leave a Report with no Manager and Pending items, until they have a new Manager', function () {
@@ -99,7 +101,7 @@ it('refuses a Leaving Date that would leave a Report with no Manager and Pending
     $hr = employeeWhoManagesEmployees();
 
     actingAs($hr)->patch(route('employees.update', $ana), recordOf($ana, ['leaving_date' => '2026-12-31']))
-        ->assertSessionHasErrors(['leaving_date' => 'Cara Lane would have no Manager to decide their Pending Work Entries or Time Off. Give them a new Manager first.']);
+        ->assertSessionHasErrors(['leaving_date' => 'Cara Lane would have no Manager to decide their Pending Work Entries, Time Off or Travel Requests. Give them a new Manager first.']);
 
     $cara->update(['manager_id' => Employee::factory()->create()->id]);
 
@@ -124,7 +126,7 @@ it('refuses removing the Manager of a Former Employee when a Report\'s Pending i
     TimeOff::factory()->for($cara)->create();
 
     actingAs(employeeWhoManagesEmployees())->patch(route('employees.update', $ben), recordOf($ben, ['manager_id' => null]))
-        ->assertSessionHasErrors(['manager_id' => 'Cara Lane would have no Manager to decide their Pending Work Entries or Time Off. Give them a new Manager first.']);
+        ->assertSessionHasErrors(['manager_id' => 'Cara Lane would have no Manager to decide their Pending Work Entries, Time Off or Travel Requests. Give them a new Manager first.']);
 });
 
 it('refuses a new Manager who has left with nobody above, while the Employee has Pending items', function () {
@@ -133,7 +135,7 @@ it('refuses a new Manager who has left with nobody above, while the Employee has
     $gone = Employee::factory()->former()->create();
 
     actingAs(employeeWhoManagesEmployees())->patch(route('employees.update', $cara), recordOf($cara, ['manager_id' => $gone->id]))
-        ->assertSessionHasErrors(['manager_id' => 'Cara Lane has Pending Work Entries or Time Off, which nobody could decide without a Manager. Decide them first.']);
+        ->assertSessionHasErrors(['manager_id' => 'Cara Lane has Pending Work Entries, Time Off or Travel Requests, which nobody could decide without a Manager. Decide them first.']);
 });
 
 it('refuses a Leaving Date after that of the last Manager above, which would leave a Report with nobody', function () {
@@ -143,7 +145,7 @@ it('refuses a Leaving Date after that of the last Manager above, which would lea
     TimeOff::factory()->for($cara)->create();
 
     actingAs(employeeWhoManagesEmployees())->patch(route('employees.update', $ben), recordOf($ben, ['leaving_date' => '2026-12-31']))
-        ->assertSessionHasErrors(['leaving_date' => 'Cara Lane would have no Manager to decide their Pending Work Entries or Time Off. Give them a new Manager first.']);
+        ->assertSessionHasErrors(['leaving_date' => 'Cara Lane would have no Manager to decide their Pending Work Entries, Time Off or Travel Requests. Give them a new Manager first.']);
 });
 
 it('saves other changes to an Employee whose Leaving Date was accepted before a Report had Pending items', function () {

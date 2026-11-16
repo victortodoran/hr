@@ -6,6 +6,7 @@ use App\Enums\EmploymentStatus;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Rules\AssignmentsFit;
+use App\Rules\TravelRequestsFit;
 use App\Rules\WorkEntriesFit;
 use Carbon\CarbonImmutable;
 use Closure;
@@ -48,7 +49,7 @@ class EmployeeRequest extends FormRequest
             'start_date' => ['bail', 'required', 'date', AssignmentsFit::startOf($employee, ':name has an Assignment starting on :date, so their Start Date can\'t be later than that.'), WorkEntriesFit::startOf($employee?->workEntries(), __(':name has Work Entries from :date, so their Start Date can\'t be later than that.', ['name' => $employee?->name]))],
             'leaving_date' => match (true) {
                 $employee?->employmentStatus() === EmploymentStatus::Former => [Rule::in([$employee->leaving_date?->toDateString()])], // @pest-mutate-ignore (a Former Employee always has a Leaving Date)
-                default => ['bail', 'nullable', 'date', 'after_or_equal:start_date', AssignmentsFit::endOf($employee, ':name has an Assignment starting on :date, so their Leaving Date can\'t be earlier than that.'), WorkEntriesFit::endOf($employee?->workEntries(), __(':name has Work Entries up to :date, so their Leaving Date can\'t be earlier than that.', ['name' => $employee?->name])), $this->keepsSomeoneWhoCanManageRoles($employee)],
+                default => ['bail', 'nullable', 'date', 'after_or_equal:start_date', AssignmentsFit::endOf($employee, ':name has an Assignment starting on :date, so their Leaving Date can\'t be earlier than that.'), WorkEntriesFit::endOf($employee?->workEntries(), __(':name has Work Entries up to :date, so their Leaving Date can\'t be earlier than that.', ['name' => $employee?->name])), TravelRequestsFit::endOf($employee?->travelRequests(), ':name has a Travel Request on :project up to :date, so their Leaving Date can\'t be earlier than that.'), $this->keepsSomeoneWhoCanManageRoles($employee)],
             },
         ];
     }
@@ -94,17 +95,17 @@ class EmployeeRequest extends FormRequest
             $stranded = $this->strandedBy($employee, $managerId, $leavingDate);
 
             if ($stranded?->is($employee)) {
-                $validator->errors()->add('manager_id', __(':name has Pending Work Entries or Time Off, which nobody could decide without a Manager. Decide them first.', ['name' => $employee->name]));
+                $validator->errors()->add('manager_id', __(':name has Pending Work Entries, Time Off or Travel Requests, which nobody could decide without a Manager. Decide them first.', ['name' => $employee->name]));
             } elseif ($stranded !== null) {
-                $validator->errors()->add($leavingChanges ? 'leaving_date' : 'manager_id', __(':name would have no Manager to decide their Pending Work Entries or Time Off. Give them a new Manager first.', ['name' => $stranded->name]));
+                $validator->errors()->add($leavingChanges ? 'leaving_date' : 'manager_id', __(':name would have no Manager to decide their Pending Work Entries, Time Off or Travel Requests. Give them a new Manager first.', ['name' => $stranded->name]));
             }
         }];
     }
 
     /**
      * Who, of the Employee and everyone below them, would be left with no
-     * Manager while they have Pending Work Entries or Pending Time Off, once
-     * the record is saved with this Manager and Leaving Date and, for a
+     * Manager while they have Pending Work Entries, Time Off or Travel
+     * Requests, once the record is saved with this Manager and Leaving Date and, for a
      * Leaving Date, once it has passed. The change is tried in a transaction
      * that is always undone, so the reporting line is read exactly as the
      * rest of the app reads it. The Employee comes first, then by name.

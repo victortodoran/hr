@@ -23,13 +23,13 @@ An Employee who has left the company. Their records are kept, but they can no lo
 _Avoid_: Leaver, ex-employee, deleted user, inactive user
 
 **Leaving Date**:
-The last day an Employee works for the company. From the next day on, they are a Former Employee. An Employee can't be given a Leaving Date while it would leave one of their Reports with no Manager and with Pending Work Entries or Pending Time Off.
+The last day an Employee works for the company. From the next day on, they are a Former Employee. An Employee can't be given a Leaving Date while it would leave one of their Reports with no Manager and with Pending Work Entries, Time Off, Travel Requests or Travel Expenses.
 _Avoid_: End date, termination date, exit date
 
 ### Reporting line
 
 **Manager**:
-The one Employee that another Employee reports to directly. An Employee has at most one Manager; any number of Employees have none, such as a CEO or co-founders. An Employee with no Manager records no Work Entries, since nobody could approve them, and their Time Off is Approved as soon as they request it. An Employee's Manager can't be removed while they have Pending Work Entries or Pending Time Off, which nobody could then decide.
+The one Employee that another Employee reports to directly. An Employee has at most one Manager; any number of Employees have none, such as a CEO or co-founders. An Employee with no Manager records no Work Entries, since nobody could approve them, and their Time Off is Approved as soon as they request it. An Employee's Manager can't be removed while they have Pending Work Entries, Time Off, Travel Requests or Travel Expenses, which nobody could then decide.
 _Avoid_: Boss, supervisor, line manager, team lead
 
 **Report**:
@@ -97,19 +97,19 @@ A record of how many hours an Employee worked on one Assignment on one date, wit
 _Avoid_: Booking, time entry, timesheet, timesheet item, time log, worked hours
 
 **Pending**:
-The state of a Work Entry that has not been approved or Declined yet, or whose approval was withdrawn. A Pending Work Entry can still be changed or deleted.
+The state of a Work Entry or Travel Expense that has not been approved or Declined yet, or whose approval was withdrawn. A Pending one can still be changed or deleted.
 _Avoid_: Draft, open, submitted, unapproved
 
 **Approved**:
-The state of a Work Entry whose hours have been accepted as correct. It cannot be changed or deleted, but it can be Reopened so it can be corrected and then approved again. Several Work Entries can be approved at once, but each is approved in its own right. Only the Employee's Manager approves their Work Entries (while that Manager has left, the next Manager up who hasn't), even after the Employee has left. No Role can grant approving, and no Employee can approve their own Work Entries.
+The state of a Work Entry whose hours, or a Travel Expense whose amount, have been accepted as correct. It cannot be changed or deleted, but it can be Reopened so it can be corrected and then approved again. Several can be approved at once, but each is approved in its own right. Only the Employee's Manager approves their Work Entries and Travel Expenses (while that Manager has left, the next Manager up who hasn't), even after the Employee has left. No Role can grant approving, and no Employee can approve their own.
 _Avoid_: Signed off, confirmed, validated, accepted
 
 **Reopen**:
-To send an Approved Work Entry back to Pending, withdrawing its approval so it can be corrected. Only someone whose Role grants reopening for that Employee can reopen it; being the Employee's Manager is not enough on its own. No Employee can reopen their own Work Entries.
+To send an Approved Work Entry or Travel Expense back to Pending, withdrawing its approval so it can be corrected. Only someone whose Role grants reopening for that Employee can reopen it; being the Employee's Manager is not enough on its own. No Employee can reopen their own.
 _Avoid_: Unlock, unapprove, reject, revert
 
 **Locked**:
-The final state of an Approved Work Entry, closed for good, for example because it has been invoiced to a Client or paid. A Locked Work Entry can never be changed, deleted or sent back to Pending.
+The final state of an Approved Work Entry or Travel Expense, closed for good, for example because it has been invoiced to a Client, or paid or paid back to the Employee. A Locked one can never be changed, deleted or sent back to Pending.
 _Avoid_: Invoiced, closed, final, frozen, archived
 
 ### Time Off
@@ -131,12 +131,26 @@ How many days of Paid Time Off an Employee gets each calendar year, as in "Cara 
 _Avoid_: Allowance, entitlement, balance, holiday days, PTO days
 
 **Declined**:
-The state of Time Off or a Work Entry the Employee's Manager has refused (while that Manager has left, the next Manager up who hasn't), always with a reason the Employee can see. No Role can grant declining, and no Employee can decline their own. Declined Time Off uses no Paid Days and is kept on record; the Employee can request other dates instead. Only a Pending Work Entry can be declined, several at once with one reason; its hours count nowhere, and the Employee can change it, which sends it back to Pending without the reason, or delete it.
+The state of Time Off, a Work Entry or a Travel Request the Employee's Manager has refused (while that Manager has left, the next Manager up who hasn't), always with a reason the Employee can see. No Role can grant declining, and no Employee can decline their own. Declined Time Off uses no Paid Days and is kept on record; the Employee can request other dates instead. Only a Pending Work Entry or Travel Expense can be declined, several at once with one reason; it counts nowhere, and the Employee can change it, which sends it back to Pending without the reason, or delete it. A Declined Travel Request can have no Travel Expenses.
 _Avoid_: Rejected, denied, refused
 
 **Cancelled**:
-The state of Time Off the Employee withdrew, whether Pending or Approved, before its first day. It uses no Paid Days. Once Time Off has started, it can no longer be cancelled or changed.
+The state of Time Off or a Travel Request the Employee withdrew, whether Pending or Approved, before its first day. Cancelled Time Off uses no Paid Days. Once Time Off or a Travel Request has started, it can no longer be cancelled or changed; to change its dates, the Employee cancels it and asks again.
 _Avoid_: Withdrawn, revoked, deleted
+
+### Travel
+
+**Travel Request**:
+An Employee asking to travel for work on one of their Assignments, with a destination, a first and a last date and a purpose, as in "Cara made a Travel Request to go to Berlin from 3 to 5 Dec for the Relaunch workshop". Travel for the company itself uses the Internal Assignment. Every day from the first to the last date counts, weekends included, and all of them must fall within the Assignment's dates. An Employee's Travel Request can't share a day with their other Pending or Approved Travel Requests, or with their Pending or Approved Time Off. Every Employee makes their own Travel Requests, and nobody makes one for someone else. It is Pending until the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't), and the Travel Request of an Employee with no Manager is Approved as soon as they make it. It carries no estimate of what the travel will cost. Only an Approved Travel Request can have Travel Expenses, and they stay claimable if it is later Cancelled.
+_Avoid_: Trip, business trip, travel, journey
+
+**Travel Expense**:
+Money an Employee paid themselves for the travel of one of their Approved Travel Requests, which the company pays back to them, as in "Cara paid 1,990 RON for the Berlin hotel". It has the amount in the company's currency, the date it was paid (any day up to today), a Travel Expense Category, a description and the receipt, which is always required. What the company paid for directly is not a Travel Expense. Every Employee records their own, and nobody records one for someone else. Like a Work Entry, each Travel Expense is Pending, Approved, Declined or Locked on its own: the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't), it can be Reopened, and it is Locked once the Employee has been paid back. The Travel Expenses of an Employee with no Manager are Approved as soon as they record them.
+_Avoid_: Expense, expense claim, cost, receipt, reimbursement, per diem
+
+**Travel Expense Category**:
+The kind of spending a Travel Expense is, from a fixed list the HR system defines: Transport, Accommodation, Meals or Other. Companies can't add their own.
+_Avoid_: Expense type, cost type, category
 
 ### Access
 
@@ -157,5 +171,5 @@ The permanent record of every change to access: a Role being created, edited or 
 _Avoid_: Audit trail, history, activity log, permission log
 
 **Scope**:
-Which Employees a Permission about Employees (their records, Assignments, Pay, Work Entries, Time Off or Paid Days) applies to. Permissions about anything else, such as Projects, Clients or Roles, have no Scope and always apply company-wide. The Scopes are **own** (only the Employee themselves), **reports** (the Employees who report to them) or **everyone**.
+Which Employees a Permission about Employees (their records, Assignments, Pay, Work Entries, Time Off, Paid Days, Travel Requests or Travel Expenses) applies to. Permissions about anything else, such as Projects, Clients or Roles, have no Scope and always apply company-wide. The Scopes are **own** (only the Employee themselves), **reports** (the Employees who report to them) or **everyone**.
 _Avoid_: Reach, level, visibility

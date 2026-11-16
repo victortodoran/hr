@@ -1,7 +1,8 @@
 /**
  * Every state the status badge can show. Pending, Approved and Locked are Work
- * Entry states; Pending, Approved, Declined and Cancelled are Time Off states;
- * Upcoming is a Future Employee, who hasn't started yet.
+ * Entry states; Pending, Approved, Declined and Cancelled are Time Off and
+ * Travel Request states; Upcoming is a Future Employee, who hasn't started
+ * yet.
  */
 export type StatusBadgeState =
     | 'pending'
