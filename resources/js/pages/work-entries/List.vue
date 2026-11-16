@@ -9,6 +9,7 @@ import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -100,6 +101,8 @@ const {
     togglePage,
     selectAllMatching,
     clear,
+    submit,
+    processing,
 } = useBulkSelection(() => selectableOnPage.value, {
     prop: 'matchingIds',
     ids: () => props.matchingIds,
@@ -114,14 +117,7 @@ const canSelectAllMatching = computed(
 );
 
 function reopen(): void {
-    router.post(
-        ReopeningController.store.url(),
-        { ids: selected.value },
-        {
-            preserveScroll: true,
-            onSuccess: clear,
-        },
-    );
+    submit(ReopeningController.store.url());
 }
 
 /**
@@ -192,12 +188,14 @@ function signOffs(entry: ListedWorkEntry): string {
                         :filters="filters"
                         @locked="clear"
                     />
-                    <Button
+                    <SubmitButton
                         v-if="canReopen"
                         variant="outline"
+                        :processing="processing"
+                        type="button"
                         :disabled="selected.length === 0"
                         @click="reopen"
-                        >Reopen</Button
+                        >Reopen</SubmitButton
                     >
                 </template>
             </SelectionBar>

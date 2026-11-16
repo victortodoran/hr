@@ -12,12 +12,14 @@ defineProps<{
     variant?: ButtonVariants['variant'];
     size?: ButtonVariants['size'];
     disabled?: boolean;
+    /** "button" when it runs a click handler outside any form. */
+    type?: 'submit' | 'button';
 }>();
 </script>
 
 <template>
     <Button
-        type="submit"
+        :type="type ?? 'submit'"
         :variant="variant"
         :size="size"
         :disabled="processing || disabled"

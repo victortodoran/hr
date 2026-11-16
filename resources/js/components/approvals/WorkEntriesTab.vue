@@ -8,6 +8,7 @@ import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Pagination from '@/components/Pagination.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useBulkSelection } from '@/composables/useBulkSelection';
@@ -55,6 +56,8 @@ const {
     togglePage,
     selectAllMatching,
     clear,
+    processing,
+    submit,
 } = useBulkSelection(() => props.entries.data, {
     prop: 'matchingIds',
     ids: () => props.matchingIds,
@@ -70,14 +73,7 @@ function reloadList(query: Record<string, string>): void {
 }
 
 function approve(): void {
-    router.post(
-        ApprovalController.store.url(),
-        { ids: selected.value },
-        {
-            preserveScroll: true,
-            onSuccess: clear,
-        },
-    );
+    submit(ApprovalController.store.url());
 }
 </script>
 
@@ -99,8 +95,12 @@ function approve(): void {
         >
             <template #actions>
                 <DeclineWorkEntriesDialog :ids="selected" @declined="clear" />
-                <Button :disabled="selected.length === 0" @click="approve"
-                    >Approve</Button
+                <SubmitButton
+                    :processing="processing"
+                    type="button"
+                    :disabled="selected.length === 0"
+                    @click="approve"
+                    >Approve</SubmitButton
                 >
             </template>
         </SelectionBar>

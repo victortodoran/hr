@@ -7,6 +7,8 @@ import { computed, ref } from 'vue';
  * whole page, or every match (reloaded as an optional page prop listing
  * their IDs), and clear them. Pair it with pagination links that preserve
  * state, or a page change remounts the list and drops the selection.
+ * `submit` sends a bulk action for the selected rows, once at a time, and
+ * then unticks the rows it sent.
  */
 export function useBulkSelection(
     /** The rows on the current page that may be selected. */
@@ -21,6 +23,8 @@ export function useBulkSelection(
     togglePage: (checked: boolean) => void;
     selectAllMatching: () => void;
     clear: () => void;
+    processing: Ref<boolean>;
+    submit: (url: string, onSuccess?: () => void) => void;
 } {
     const selected = ref<number[]>([]);
     const selectedSet = computed(() => new Set(selected.value));
@@ -64,6 +68,33 @@ export function useBulkSelection(
         selected.value = [];
     }
 
+    /** Whether a bulk action is on its way, so it can't be sent twice. */
+    const processing = ref(false);
+
+    function submit(url: string, onSuccess?: () => void): void {
+        if (processing.value) {
+            return;
+        }
+
+        const ids = [...selected.value];
+        const sent = new Set(ids);
+        processing.value = true;
+        router.post(
+            url,
+            { ids },
+            {
+                preserveScroll: true,
+                onFinish: () => (processing.value = false),
+                onSuccess: () => {
+                    selected.value = selected.value.filter(
+                        (id) => !sent.has(id),
+                    );
+                    onSuccess?.();
+                },
+            },
+        );
+    }
+
     return {
         selected,
         isPageSelected,
@@ -72,5 +103,7 @@ export function useBulkSelection(
         togglePage,
         selectAllMatching,
         clear,
+        processing,
+        submit,
     };
 }
