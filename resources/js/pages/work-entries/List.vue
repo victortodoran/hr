@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import LockDialog from '@/components/work-entries/LockDialog.vue';
+import WorkEntryExportMenu from '@/components/work-entries/WorkEntryExportMenu.vue';
 import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
 import WorkEntrySummary from '@/components/work-entries/WorkEntrySummary.vue';
 import { useBulkSelection } from '@/composables/useBulkSelection';
@@ -149,14 +150,20 @@ function signOffs(entry: ListedWorkEntry): string {
     <Head title="Work Entries" />
 
     <PageContainer width="wide">
-        <Heading
-            title="Work Entries"
-            :description="
-                canSelect
-                    ? 'Hours across Employees, to check, reopen and lock'
-                    : 'Hours across Employees'
-            "
-        />
+        <div class="flex items-start justify-between gap-4">
+            <Heading
+                title="Work Entries"
+                :description="
+                    canSelect
+                        ? 'Hours across Employees, to check, reopen and lock'
+                        : 'Hours across Employees'
+                "
+            />
+            <WorkEntryExportMenu
+                :filters="filters"
+                :disabled="entries.total === 0"
+            />
+        </div>
 
         <WorkEntryListFilterBar
             :filters="filters"

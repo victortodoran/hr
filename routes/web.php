@@ -38,6 +38,7 @@ use App\Http\Controllers\WorkEntries\ReopeningController;
 use App\Http\Controllers\WorkEntries\WorkEntryController;
 use App\Http\Controllers\WorkEntries\WorkEntryCopyController;
 use App\Http\Controllers\WorkEntries\WorkEntryDeclineController;
+use App\Http\Controllers\WorkEntries\WorkEntryExportController;
 use App\Http\Controllers\WorkEntries\WorkEntryListController;
 use App\Models\Assignment;
 use App\Models\Employee;
@@ -93,6 +94,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('approvals/travel-expenses/declines', [TravelExpenseDeclineController::class, 'store'])->name('approvals.travel-expenses.declines.store');
     });
     Route::get('work-entries/all', [WorkEntryListController::class, 'index'])->middleware('can:viewList,'.WorkEntry::class)->name('work-entry-list.index');
+    Route::get('work-entries/export', [WorkEntryExportController::class, 'show'])->middleware('can:viewList,'.WorkEntry::class)->name('work-entry-exports.show');
     Route::post('reopenings', [ReopeningController::class, 'store'])->middleware('can:reopen,'.WorkEntry::class)->name('reopenings.store');
     Route::middleware('can:lock,'.WorkEntry::class)->group(function () {
         Route::get('locks/create', [LockController::class, 'create'])->name('locks.create');
