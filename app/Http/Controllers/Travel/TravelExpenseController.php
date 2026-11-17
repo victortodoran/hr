@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Travel;
 use App\Enums\TravelExpenseState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Travel\TravelExpenseRequest;
+use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
+use App\Support\TravelHistory;
 use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Container\Attributes\CurrentUser;
@@ -15,15 +17,47 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Inertia\Response;
 use LogicException;
 use Throwable;
 
 /**
  * Lets an Employee record, change and delete the Travel Expenses of their
- * own Travel Requests, each with its receipt.
+ * own Travel Requests, each with its receipt, on forms of their own that
+ * lead back to the Travel Request's page.
  */
 class TravelExpenseController extends Controller
 {
+    /**
+     * Show the form for recording a Travel Expense on the Travel Request,
+     * named at its top, with the company currency and today, the latest
+     * date one can be paid on.
+     */
+    public function create(TravelRequest $travelRequest): Response
+    {
+        return Inertia::render('travel-expenses/Create', $this->formProps($travelRequest));
+    }
+
+    /**
+     * Show the form for changing a Travel Expense, filled in as it would be
+     * typed; its receipt is kept unless a new file is chosen.
+     */
+    public function edit(TravelRequest $travelRequest, TravelExpense $travelExpense): Response
+    {
+        $currency = CompanySettings::payCurrency();
+
+        return Inertia::render('travel-expenses/Edit', [
+            ...$this->formProps($travelRequest),
+            'travelExpense' => [
+                'id' => $travelExpense->id,
+                'paid_on' => $travelExpense->paid_on->toDateString(),
+                'category' => $travelExpense->category->value,
+                'amount' => $currency->toAmount($travelExpense->amount),
+                'description' => $travelExpense->description,
+            ],
+        ]);
+    }
+
     /**
      * Record a Travel Expense on the Travel Request, keeping its receipt on
      * the private disk. It is Pending until the Employee's Manager decides,
@@ -45,7 +79,7 @@ class TravelExpenseController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Expense added.')]);
 
-        return to_route('travel-requests.index');
+        return to_route('travel-requests.show', $travelRequest);
     }
 
     /**
@@ -86,7 +120,7 @@ class TravelExpenseController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Expense changed.')]);
 
-        return to_route('travel-requests.index');
+        return to_route('travel-requests.show', $travelExpense->travel_request_id);
     }
 
     /**
@@ -105,7 +139,24 @@ class TravelExpenseController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Expense deleted.')]);
 
-        return to_route('travel-requests.index');
+        return to_route('travel-requests.show', $travelExpense->travel_request_id);
+    }
+
+    /**
+     * What both Travel Expense forms carry: the Travel Request it is on,
+     * the company currency, and today.
+     *
+     * @return array{travelRequest: array{id: int, destination: string, first_date: string, last_date: string}, currency: array{code: string, decimals: int}, today: string}
+     */
+    private function formProps(TravelRequest $travelRequest): array
+    {
+        $currency = CompanySettings::payCurrency();
+
+        return [
+            'travelRequest' => TravelHistory::summary($travelRequest),
+            'currency' => ['code' => $currency->code, 'decimals' => $currency->decimals()],
+            'today' => today()->toDateString(),
+        ];
     }
 
     /**

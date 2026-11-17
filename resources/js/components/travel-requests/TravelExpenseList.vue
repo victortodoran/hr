@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
 import { Receipt } from '@lucide/vue';
 import TravelExpenseController from '@/actions/App/Http/Controllers/Travel/TravelExpenseController';
 import TravelExpenseReceiptController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReceiptController';
@@ -6,20 +7,18 @@ import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
-import TravelExpenseDialog from '@/components/travel-requests/TravelExpenseDialog.vue';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/dates';
 import { travelExpenseCategories } from '@/lib/travel-expenses';
-import type { TableColumn, TravelEditing, TravelExpenses } from '@/types';
+import { create, edit } from '@/routes/travel-requests/expenses';
+import type { TableColumn, TravelExpenses } from '@/types';
 
 /**
- * The Travel Expenses of one Travel Request, with their total, adding one,
- * and changing or deleting each while it is Pending or Declined, where
- * `editing` is given and the flags allow. Without `editing` they are only to
- * be seen, as on the Employee page.
+ * The Travel Expenses of one Travel Request on its page, with their total,
+ * "Add expense" beside it, and Edit and Delete on each while the flags
+ * allow, which they only do for the Employee themselves.
  */
 defineProps<{
-    editing?: TravelEditing;
     travelRequestId: number;
     expenses: TravelExpenses;
 }>();
@@ -33,20 +32,17 @@ const columns: TableColumn[] = [
 </script>
 
 <template>
-    <div class="mt-3 space-y-2">
+    <section class="flex flex-col gap-3">
         <div class="flex items-center justify-between gap-2">
-            <h3 class="text-sm font-medium">
+            <h2 class="text-base font-medium">
                 Expenses
                 <span class="font-normal text-muted-foreground"
                     >· {{ expenses.total }}</span
                 >
-            </h3>
-            <TravelExpenseDialog
-                v-if="editing && expenses.can_create"
-                :today="editing.today"
-                :currency="editing.currency"
-                :travel-request-id="travelRequestId"
-            />
+            </h2>
+            <Button v-if="expenses.can_create" variant="outline" as-child>
+                <Link :href="create(travelRequestId)">Add expense</Link>
+            </Button>
         </div>
         <DataTable :columns="columns" :rows="expenses.items">
             <template #cell-expense="{ row }">
@@ -54,10 +50,10 @@ const columns: TableColumn[] = [
                     <span class="font-medium">{{
                         travelExpenseCategories[row.category]
                     }}</span>
-                    <span class="text-muted-foreground sm:hidden">
-                        · {{ formatDate(row.paid_on) }}</span
-                    >
-                    <span class="block">{{ row.description }}</span>
+                    · {{ row.description }}
+                    <span class="block text-muted-foreground sm:hidden">{{
+                        formatDate(row.paid_on)
+                    }}</span>
                     <a
                         :href="TravelExpenseReceiptController.show.url(row.id)"
                         target="_blank"
@@ -83,17 +79,18 @@ const columns: TableColumn[] = [
             <template #cell-state="{ row }">
                 <div class="flex flex-wrap items-center justify-end gap-1">
                     <StatusBadge :state="row.state" />
-                    <template v-if="editing && row.can_change">
-                        <TravelExpenseDialog
-                            :today="editing.today"
-                            :currency="editing.currency"
-                            :travel-request-id="travelRequestId"
-                            :expense="row"
-                        >
-                            <template #trigger>
-                                <Button variant="ghost" size="sm">Edit</Button>
-                            </template>
-                        </TravelExpenseDialog>
+                    <template v-if="row.can_change">
+                        <Button variant="ghost" size="sm" as-child>
+                            <Link
+                                :href="
+                                    edit({
+                                        travelRequest: travelRequestId,
+                                        travelExpense: row.id,
+                                    })
+                                "
+                                >Edit</Link
+                            >
+                        </Button>
                         <ConfirmDeleteDialog
                             :form="TravelExpenseController.destroy.form(row.id)"
                             title="Delete this expense?"
@@ -105,13 +102,9 @@ const columns: TableColumn[] = [
             <template #empty>
                 <EmptyState
                     :icon="Receipt"
-                    :message="
-                        editing
-                            ? 'Money you paid yourself for this travel appears here, each with its receipt.'
-                            : 'Money paid for this travel appears here, each with its receipt. None has been added yet.'
-                    "
+                    message="Money paid for this travel appears here, each with its receipt. None has been added yet."
                 />
             </template>
         </DataTable>
-    </div>
+    </section>
 </template>

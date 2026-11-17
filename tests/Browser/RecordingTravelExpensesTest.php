@@ -25,7 +25,7 @@ beforeEach(function () {
     Storage::fake(TravelExpense::RECEIPT_DISK);
 });
 
-it('adds an expense with its receipt to an Approved Travel Request from the dialog', function () {
+it('adds an expense with its receipt to an Approved Travel Request from its page, landing back there', function () {
     $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
     $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
     $receipt = tempnam(sys_get_temp_dir(), 'receipt').'.pdf';
@@ -34,20 +34,24 @@ it('adds an expense with its receipt to an Approved Travel Request from the dial
     actingAs($cara);
 
     visit(route('travel-requests.index'))
-        ->assertSee('Money you paid yourself for this travel appears here')
+        ->click('Berlin')
+        ->assertPathIs("/travel-requests/{$berlin->id}")
+        ->assertSee('Money paid for this travel appears here')
         ->click('Add expense')
-        ->assertVisible('internal:role=dialog')
-        ->fill("#travel-expense-new-{$berlin->id}-paid-on", '2026-12-05')
-        ->fill("#travel-expense-new-{$berlin->id}-amount", '1990')
-        ->click("#travel-expense-new-{$berlin->id}-category")
+        ->assertPathIs("/travel-requests/{$berlin->id}/expenses/create")
+        ->assertSee('Berlin')
+        ->fill('#travel-expense-paid-on', '2026-12-05')
+        ->fill('#travel-expense-amount', '1990')
+        ->click('#travel-expense-category')
         ->click('[role="option"] >> text=Accommodation')
-        ->fill("#travel-expense-new-{$berlin->id}-description", 'Hotel, three nights')
-        ->attach("#travel-expense-new-{$berlin->id}-receipt", $receipt)
-        ->click('internal:role=dialog >> button[type="submit"]')
+        ->fill('#travel-expense-description', 'Hotel, three nights')
+        ->attach('#travel-expense-receipt', $receipt)
+        ->click('button[type="submit"]')
         ->assertSee('Travel Expense added.')
-        ->assertMissing('internal:role=dialog')
+        ->assertPathIs("/travel-requests/{$berlin->id}")
         ->assertSee('Hotel, three nights')
-        ->assertSee('Receipt')
+        ->assertSeeLink('Receipt')
+        ->assertSeeLink('Edit')
         ->assertNoJavaScriptErrors();
 
     $expense = TravelExpense::query()->sole();

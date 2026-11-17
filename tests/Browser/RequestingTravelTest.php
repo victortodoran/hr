@@ -17,18 +17,19 @@ beforeEach(function () {
     CompanySettings::factory()->create();
 });
 
-it('requests travel on an Assignment from the dialog, counting every day, then cancels it', function () {
+it('requests travel on an Assignment from its own page, counting every day, then opens it from Upcoming and cancels it', function () {
     $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
     assignmentOf($cara);
 
     actingAs($cara);
 
     visit(route('travel-requests.index'))
-        ->assertSee('You haven\'t made any yet.')
+        ->assertSee('You have none coming up.')
         ->click('Request travel')
-        ->assertVisible('internal:role=dialog')
+        ->assertPathIs('/travel-requests/create')
         ->click('#travel-assignment')
         ->click('[role="option"] >> text=Relaunch')
+        ->assertSee('Runs')
         ->fill('#travel-destination', 'Berlin')
         ->fill('#travel-first-date', '2026-12-03')
         ->fill('#travel-last-date', '2026-12-05')
@@ -36,14 +37,47 @@ it('requests travel on an Assignment from the dialog, counting every day, then c
         ->assertSee('3 days')
         ->click('Request')
         ->assertSee('Travel Request made.')
-        ->assertMissing('internal:role=dialog')
-        ->assertSee('Berlin')
-        ->click('Cancel')
+        ->assertPathIs('/travel-requests')
+        ->assertSeeIn('section:has(h2:text-is("Upcoming"))', 'Berlin')
+        ->click('Berlin')
+        ->assertSee('Relaunch workshop')
+        ->assertSeeLink('Travel')
+        ->click('Cancel travel')
+        ->assertSee('Cancel this Travel Request?')
+        ->click('internal:role=dialog >> internal:role=button[name="Cancel travel"s]')
         ->assertSee('Travel Request cancelled.')
+        ->assertDontSee('Cancel this Travel Request?')
         ->assertNoJavaScriptErrors();
 
     $travelRequest = TravelRequest::query()->sole();
     expect($travelRequest->destination)->toBe('Berlin');
     expect($travelRequest->first_date->toDateString())->toBe('2026-12-03');
     expect($travelRequest->state)->toBe(TravelRequestState::Cancelled);
+});
+
+it('leaves the request travel page for the Travel list without making a Travel Request', function () {
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara']);
+    assignmentOf($cara);
+
+    actingAs($cara);
+
+    visit(route('travel-requests.create'))
+        ->click('Cancel')
+        ->assertPathIs('/travel-requests')
+        ->assertNoJavaScriptErrors();
+
+    expect(TravelRequest::query()->exists())->toBeFalse();
+});
+
+it('stacks each Travel Request row on a phone without scrolling sideways', function () {
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara']);
+    TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+
+    actingAs($cara);
+
+    visit(route('travel-requests.index'))
+        ->resize(390, 844)
+        ->assertSee('Berlin')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->assertNoJavaScriptErrors();
 });

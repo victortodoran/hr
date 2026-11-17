@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
-import RequestTravelDialog from '@/components/travel-requests/RequestTravelDialog.vue';
 import TravelRequestList from '@/components/travel-requests/TravelRequestList.vue';
-import { index } from '@/routes/travel-requests';
-import type {
-    TravelAssignment,
-    TravelCurrency,
-    TravelRequestRecord,
-} from '@/types';
+import { Button } from '@/components/ui/button';
+import { create, index } from '@/routes/travel-requests';
+import type { TravelHistory } from '@/types';
 
 defineOptions({
     layout: {
@@ -18,10 +14,7 @@ defineOptions({
 });
 
 defineProps<{
-    today: string;
-    currency: TravelCurrency;
-    travelRequests: TravelRequestRecord[];
-    assignments: TravelAssignment[];
+    travelRequests: TravelHistory;
 }>();
 </script>
 
@@ -29,22 +22,23 @@ defineProps<{
     <Head title="Travel" />
 
     <PageContainer width="wide">
-        <Heading
-            title="Travel"
-            description="Ask to travel for work on one of your Assignments, cancel it before it starts, and add what you paid for it once approved"
-        />
-
-        <div class="flex justify-end">
-            <RequestTravelDialog :today="today" :assignments="assignments" />
+        <div class="flex items-start justify-between gap-4">
+            <Heading
+                title="Travel"
+                description="Your travel for work and what you paid for it"
+            />
+            <Button as-child>
+                <Link :href="create()">Request travel</Link>
+            </Button>
         </div>
 
-        <section class="space-y-2">
-            <h2 class="text-sm font-medium">Your Travel Requests</h2>
-            <TravelRequestList
-                :travel-requests="travelRequests"
-                :editing="{ today, currency }"
-                empty-message="Your Travel Requests appear here. You haven't made any yet."
-            />
-        </section>
+        <TravelRequestList
+            :travel-requests="travelRequests"
+            :empty-messages="{
+                upcoming:
+                    'Travel you ask for appears here until its last day. You have none coming up.',
+                past: 'Travel that has ended, was declined or was cancelled appears here.',
+            }"
+        />
     </PageContainer>
 </template>

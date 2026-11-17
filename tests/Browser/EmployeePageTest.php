@@ -4,6 +4,7 @@ use App\Enums\PayKind;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Http\Controllers\Employees\EmployeeController;
+use App\Http\Controllers\Travel\TravelRequestController;
 use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;
@@ -13,13 +14,13 @@ use App\Models\TravelRequest;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(EmployeeController::class);
+covers(EmployeeController::class, TravelRequestController::class);
 
 beforeEach(function () {
     travelTo('2026-11-13 09:00');
 });
 
-it('opens every tab of an Employee\'s page, keeping the header, leading Time Off with the Paid Days left, listing travel with its expenses, and shows each Assignment\'s Pay on a phone', function () {
+it('opens every tab of an Employee\'s page, keeping the header, leading Time Off with the Paid Days left, listing travel that opens a Travel Request page with its expenses, and shows each Assignment\'s Pay on a phone', function () {
     CompanySettings::factory()->create();
     $ana = Employee::factory()->create(['name' => 'Ana Popescu']);
     $cara = Employee::factory()->reportingTo($ana)->create(['name' => 'Cara Lane']);
@@ -50,9 +51,13 @@ it('opens every tab of an Employee\'s page, keeping the header, leading Time Off
         ->assertSee('Current Employee')
         ->assertSeeIn('[data-test="paid-days-left"]', 'Paid Days left in 2026')
         ->click('internal:role=tab[name="Travel"s]')
-        ->assertSee('Berlin')
+        ->assertSee('Past')
+        ->click('Berlin')
+        ->assertPathIs('/travel-requests/'.$berlin->id)
         ->assertSee('Hotel, two nights')
         ->assertSeeLink('Receipt')
+        ->assertSeeLink('Cara Lane')
+        ->assertDontSee('Add expense')
         ->assertNoJavaScriptErrors();
 
     visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))

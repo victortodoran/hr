@@ -111,9 +111,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::get('travel-requests', [TravelRequestController::class, 'index'])->name('travel-requests.index');
+    Route::get('travel-requests/create', [TravelRequestController::class, 'create'])->name('travel-requests.create');
     Route::post('travel-requests', [TravelRequestController::class, 'store'])->name('travel-requests.store');
+    Route::get('travel-requests/{travelRequest}', [TravelRequestController::class, 'show'])->middleware('can:view,travelRequest')->name('travel-requests.show');
     Route::post('travel-requests/{travelRequest}/cancellation', [TravelRequestCancellationController::class, 'store'])->middleware('can:cancel,travelRequest')->name('travel-requests.cancellation.store');
+    Route::get('travel-requests/{travelRequest}/expenses/create', [TravelExpenseController::class, 'create'])->middleware('can:create,'.TravelExpense::class.',travelRequest')->name('travel-requests.expenses.create');
     Route::post('travel-requests/{travelRequest}/expenses', [TravelExpenseController::class, 'store'])->middleware('can:create,'.TravelExpense::class.',travelRequest')->name('travel-requests.expenses.store');
+    Route::get('travel-requests/{travelRequest}/expenses/{travelExpense}/edit', [TravelExpenseController::class, 'edit'])->middleware('can:update,travelExpense')->scopeBindings()->name('travel-requests.expenses.edit');
     Route::put('travel-expenses/{travelExpense}', [TravelExpenseController::class, 'update'])->middleware('can:update,travelExpense')->name('travel-expenses.update');
     Route::delete('travel-expenses/{travelExpense}', [TravelExpenseController::class, 'destroy'])->middleware('can:delete,travelExpense')->name('travel-expenses.destroy');
     Route::get('travel-expenses', [TravelExpenseListController::class, 'index'])->middleware('can:viewList,'.TravelExpense::class)->name('travel-expense-list.index');

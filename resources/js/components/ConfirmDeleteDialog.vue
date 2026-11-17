@@ -17,19 +17,27 @@ import {
 import type { RouteFormDefinition } from '@/wayfinder';
 
 /**
- * Asks before deleting something, the one such question across the app.
- * The `trigger` slot is the button that opens it, a plain "Delete" unless
- * given; the dialog closes once the delete succeeds, and shows the refusal
- * when it doesn't.
+ * Asks before deleting something, the one such question across the app,
+ * also used before withdrawing something for good, such as cancelling a
+ * Travel Request. The `trigger` slot is the button that opens it, a plain
+ * "Delete" unless given; the dialog closes once the request succeeds, and
+ * shows the refusal when it doesn't.
  */
-defineProps<{
-    /** Where the delete is sent, from a Wayfinder `.form()`. */
-    form: RouteFormDefinition<'post'>;
-    title: string;
-    description: string;
-    /** Keeps this dialog's errors apart when several share a page. */
-    errorBag?: string;
-}>();
+withDefaults(
+    defineProps<{
+        /** Where the delete is sent, from a Wayfinder `.form()`. */
+        form: RouteFormDefinition<'post'>;
+        title: string;
+        description: string;
+        /** Keeps this dialog's errors apart when several share a page. */
+        errorBag?: string;
+        /** The button that goes ahead. */
+        confirmLabel?: string;
+        /** The button that closes the dialog without going ahead. */
+        dismissLabel?: string;
+    }>(),
+    { errorBag: undefined, confirmLabel: 'Delete', dismissLabel: 'Cancel' },
+);
 
 const open = ref(false);
 </script>
@@ -61,12 +69,14 @@ const open = ref(false);
 
                 <DialogFooter class="gap-2">
                     <DialogClose as-child>
-                        <Button type="button" variant="secondary"
-                            >Cancel</Button
-                        >
+                        <Button type="button" variant="secondary">{{
+                            dismissLabel
+                        }}</Button>
                     </DialogClose>
-                    <SubmitButton :processing="processing" variant="destructive"
-                        >Delete</SubmitButton
+                    <SubmitButton
+                        :processing="processing"
+                        variant="destructive"
+                        >{{ confirmLabel }}</SubmitButton
                     >
                 </DialogFooter>
             </Form>

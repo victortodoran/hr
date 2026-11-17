@@ -169,7 +169,7 @@ it('shows when an expense of an Employee with no Manager was approved and locked
 
     actingAs($ada)->put(route('travel-expenses.update', $approved), [
         'paid_on' => '2026-12-04', 'amount' => '25', 'category' => 'meals', 'description' => 'Lunch, corrected',
-    ])->assertRedirect(route('travel-requests.index'));
+    ])->assertRedirect(route('travel-requests.show', $approved->travel_request_id));
 
     expect($approved->refresh()->state)->toBe(TravelExpenseState::Approved);
 });

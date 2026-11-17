@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\Permission;
 use App\Enums\TravelRequestState;
 use App\Models\Employee;
 use App\Models\TravelRequest;
@@ -14,6 +15,21 @@ use App\Models\TravelRequest;
  */
 class TravelRequestPolicy
 {
+    /**
+     * Seeing a Travel Request on its own page, as Travel Expenses are seen
+     * (TravelExpensePolicy::view): the Employee whose Travel Request it is,
+     * whoever view travel or one of the Permissions for seeing Travel
+     * Expenses across Employees (Permission::seeingTravelExpenses())
+     * reaches the Employee for, and their effective Manager while they can
+     * decide it.
+     */
+    public function view(Employee $actor, TravelRequest $travelRequest): bool
+    {
+        return $travelRequest->employee_id === $actor->id
+            || $actor->reachesThrough([Permission::ViewTravel, ...Permission::seeingTravelExpenses()], $travelRequest->employee)
+            || Employee::query()->effectivelyManagedBy($actor)->whereKey($travelRequest->employee_id)->exists();
+    }
+
     /**
      * Only the Employee whose Travel Request it is may cancel it, and only
      * while it is Pending or Approved and hasn't started yet.
