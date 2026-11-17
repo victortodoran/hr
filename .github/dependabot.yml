@@ -28,6 +28,13 @@ updates:
     cooldown:
       default-days: 5
     groups:
+      # A vite-plus bump fails CI until the `vite` alias in package.json devDependencies is moved to the
+      # same vite-plus-core version, because Dependabot can't update npm aliases. On its PR: bump the alias,
+      # run `npm install`, and commit package.json and package-lock.json. Its own group keeps that red PR
+      # from holding back the other npm updates.
+      vite-plus:
+        patterns:
+          - "vite-plus"
       npm-minor-and-patch:
         update-types:
           - "minor"
