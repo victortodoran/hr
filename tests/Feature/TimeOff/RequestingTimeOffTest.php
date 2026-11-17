@@ -311,6 +311,16 @@ it('opens the form for requesting Time Off on its own page, with today as the ea
             ->where('today', '2026-12-01'));
 });
 
+it('returns a refused request to its form page, keeping the error for the field', function () {
+    $cara = timeOffRequester(['paid_days' => 1]);
+
+    actingAs($cara)->from(route('time-off.create'))->post(route('time-off.store'), timeOffForm())
+        ->assertRedirect(route('time-off.create'))
+        ->assertSessionHasErrors('is_paid');
+
+    expect(TimeOff::query()->count())->toBe(0);
+});
+
 it('needs signing in to see or request Time Off', function () {
     get(route('time-off.index'))->assertRedirect(route('login'));
     get(route('time-off.create'))->assertRedirect(route('login'));

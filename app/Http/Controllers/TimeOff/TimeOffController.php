@@ -14,8 +14,8 @@ use Inertia\Response;
 
 /**
  * The Time Off page: the signed-in Employee's own Time Off and Paid Days
- * left, and requesting Time Off on a page of its own. Managers answer their Direct Reports'
- * Time Off on the Approvals page.
+ * left, and requesting Time Off on a page of its own. Managers answer
+ * their Direct Reports' Time Off on the Approvals page.
  */
 class TimeOffController extends Controller
 {
