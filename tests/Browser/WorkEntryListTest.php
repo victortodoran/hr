@@ -6,6 +6,7 @@ use App\Enums\WorkEntryState;
 use App\Http\Controllers\WorkEntries\LockController;
 use App\Http\Controllers\WorkEntries\ReopeningController;
 use App\Http\Controllers\WorkEntries\WorkEntryController;
+use App\Http\Controllers\WorkEntries\WorkEntryExportController;
 use App\Http\Controllers\WorkEntries\WorkEntryListController;
 use App\Models\Employee;
 use App\Models\WorkEntry;
@@ -13,7 +14,7 @@ use App\Models\WorkEntry;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(WorkEntryListController::class, ReopeningController::class, LockController::class, WorkEntryController::class);
+covers(WorkEntryListController::class, ReopeningController::class, LockController::class, WorkEntryController::class, WorkEntryExportController::class);
 
 beforeEach(function () {
     travelTo('2026-11-13 09:00');
@@ -189,5 +190,29 @@ it('shows an Employee with Work Entries on only one Project on it, without offer
         ->click('[aria-label="Project"]')
         ->assertPresent('internal:role=option[name="Relaunch"s]')
         ->assertNotPresent('internal:role=option[name="Any Project"s]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('offers the filtered Work Entries as a CSV or Excel file', function () {
+    $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Dan']);
+    $cara = Employee::factory()->create(['name' => 'Cara']);
+    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10', 'description' => 'Writing specs']);
+
+    actingAs($dan);
+
+    visit(route('work-entry-list.index'))
+        ->assertSee('Writing specs')
+        ->click('Export')
+        ->assertAttributeContains('internal:role=menuitem[name="CSV"s]', 'href', "/work-entries/export?month=2026-11&employee={$cara->id}&format=csv")
+        ->assertAttributeContains('internal:role=menuitem[name="Excel"s]', 'href', "/work-entries/export?month=2026-11&employee={$cara->id}&format=xlsx")
+        ->assertNoJavaScriptErrors();
+});
+
+it('disables Export when no Work Entries match', function () {
+    actingAs(employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]));
+
+    visit(route('work-entry-list.index'))
+        ->assertSee('No Work Entries in this period.')
+        ->assertButtonDisabled('Export')
         ->assertNoJavaScriptErrors();
 });
