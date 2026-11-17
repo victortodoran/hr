@@ -27,7 +27,7 @@ class TravelRequestPolicy
     {
         return $travelRequest->employee_id === $actor->id
             || $actor->reachesThrough([Permission::ViewTravel, ...Permission::seeingTravelExpenses()], $travelRequest->employee)
-            || Employee::query()->effectivelyManagedBy($actor)->whereKey($travelRequest->employee_id)->exists();
+            || $this->decide($actor, $travelRequest);
     }
 
     /**

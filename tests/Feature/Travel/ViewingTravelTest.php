@@ -196,20 +196,28 @@ it('shows the Employee their own Travel Request page, with what they may do and 
         ->assertOk();
 });
 
-it('shows a Travel Request page, with nothing to do, to the Employee\'s effective Manager and to someone who may reopen Travel Expenses', function () {
+it('shows a Pending Travel Request\'s page, with nothing to do, to the Employee\'s effective Manager, who may decide it, and refuses them one already decided', function () {
     $mona = Employee::factory()->create();
     $cara = Employee::factory()->reportingTo($mona)->create();
-    $rome = carasTravel($cara)['rome'];
-    $reopener = employeeWith([Permission::ReopenTravelExpenses->value => Scope::Everyone]);
+    $travel = carasTravel($cara);
 
-    foreach ([$mona, $reopener] as $viewer) {
-        actingAs($viewer)->get(route('travel-requests.show', $rome))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('isOwn', false)
-                ->where('travelRequest.can_cancel', false)
-                ->where('travelRequest.expenses.can_create', false));
-    }
+    actingAs($mona)->get(route('travel-requests.show', $travel['vienna']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('isOwn', false)
+            ->where('travelRequest.can_cancel', false));
+    actingAs($mona)->get(route('travel-requests.show', $travel['rome']))->assertForbidden();
+});
+
+it('shows a Travel Request page, with nothing to do, to someone who may reopen Travel Expenses', function () {
+    $rome = carasTravel(Employee::factory()->create())['rome'];
+
+    actingAs(employeeWith([Permission::ReopenTravelExpenses->value => Scope::Everyone]))->get(route('travel-requests.show', $rome))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('isOwn', false)
+            ->where('travelRequest.can_cancel', false)
+            ->where('travelRequest.expenses.can_create', false));
 });
 
 it('refuses Ana with view travel for her Reports the page, Travel Request pages and receipts of someone who isn\'t her Report', function () {

@@ -25,7 +25,7 @@ import type { RouteFormDefinition } from '@/wayfinder';
  */
 withDefaults(
     defineProps<{
-        /** Where the delete is sent, from a Wayfinder `.form()`. */
+        /** Where the delete, or other request asked about, is sent, from a Wayfinder `.form()`. */
         form: RouteFormDefinition<'post'>;
         title: string;
         description: string;

@@ -9,6 +9,7 @@ use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
+use App\Support\Currency;
 use App\Support\TravelHistory;
 use Carbon\CarbonInterface;
 use Closure;
@@ -35,7 +36,7 @@ class TravelExpenseController extends Controller
      */
     public function create(TravelRequest $travelRequest): Response
     {
-        return Inertia::render('travel-expenses/Create', $this->formProps($travelRequest));
+        return Inertia::render('travel-expenses/Create', $this->formProps($travelRequest, CompanySettings::payCurrency()));
     }
 
     /**
@@ -47,7 +48,7 @@ class TravelExpenseController extends Controller
         $currency = CompanySettings::payCurrency();
 
         return Inertia::render('travel-expenses/Edit', [
-            ...$this->formProps($travelRequest),
+            ...$this->formProps($travelRequest, $currency),
             'travelExpense' => [
                 'id' => $travelExpense->id,
                 'paid_on' => $travelExpense->paid_on->toDateString(),
@@ -148,10 +149,8 @@ class TravelExpenseController extends Controller
      *
      * @return array{travelRequest: array{id: int, destination: string, first_date: string, last_date: string}, currency: array{code: string, decimals: int}, today: string}
      */
-    private function formProps(TravelRequest $travelRequest): array
+    private function formProps(TravelRequest $travelRequest, Currency $currency): array
     {
-        $currency = CompanySettings::payCurrency();
-
         return [
             'travelRequest' => TravelHistory::summary($travelRequest),
             'currency' => ['code' => $currency->code, 'decimals' => $currency->decimals()],
