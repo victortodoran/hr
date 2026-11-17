@@ -37,14 +37,14 @@ class WorkEntrySpreadsheet
         return response()->streamDownload(function () use ($entries, $format): void {
             $writer = $format->writer();
             $writer->openToFile('php://output');
-            $writer->addRow(Row::fromValues(self::HEADERS));
+            $writer->addRow(Row::fromValuesWithStyle(self::HEADERS, (new Style)->withFontBold(true)));
 
             foreach ($entries->lazy(500) as $entry) {
                 $writer->addRow(new Row(self::cells($entry, $format)));
             }
 
             $writer->close();
-        }, $name);
+        }, $name, ['Content-Type' => $format->contentType()]);
     }
 
     /**
@@ -87,13 +87,13 @@ class WorkEntrySpreadsheet
 
     /**
      * Text as text. Excel keeps it so; in a CSV file, text starting like a
-     * formula (=, +, -, @, a tab or a carriage return) gets a leading
-     * apostrophe, so a description such as "=HYPERLINK(...)" doesn't run
+     * formula (=, +, - or @, or their full-width forms, even after spaces, or
+     * a tab or a carriage return) gets a leading apostrophe, so a description such as "=HYPERLINK(...)" doesn't run
      * when the file is opened in a spreadsheet.
      */
     private static function text(string $text, SpreadsheetFormat $format): Cell
     {
-        if ($format === SpreadsheetFormat::Csv && preg_match('/^[=+\-@\t\r]/', $text) === 1) {
+        if ($format === SpreadsheetFormat::Csv && preg_match('/^\s*[=+\-@\x{FF1D}\x{FF0B}\x{FF0D}\x{FF20}]|^[\t\r]/u', $text) === 1) {
             $text = "'".$text;
         }
 

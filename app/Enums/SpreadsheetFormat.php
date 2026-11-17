@@ -25,4 +25,15 @@ enum SpreadsheetFormat: string
             self::Xlsx => new XlsxWriter,
         };
     }
+
+    /**
+     * The file's media type, sent with the download.
+     */
+    public function contentType(): string
+    {
+        return match ($this) {
+            self::Csv => 'text/csv; charset=UTF-8',
+            self::Xlsx => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        };
+    }
 }

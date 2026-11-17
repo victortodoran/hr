@@ -29,6 +29,6 @@ class WorkEntryExportRequest extends WorkEntryListRequest
      */
     public function spreadsheetFormat(): SpreadsheetFormat
     {
-        return $this->enum('format', SpreadsheetFormat::class) ?? SpreadsheetFormat::Csv; // @pest-mutate-ignore (validation requires a known format)
+        return SpreadsheetFormat::from($this->string('format')->value());
     }
 }

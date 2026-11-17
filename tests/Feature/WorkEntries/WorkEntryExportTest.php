@@ -85,7 +85,7 @@ it('downloads the matching Work Entries as a CSV file, one row each with every c
 
     $response = actingAs($dan)->get(route('work-entry-exports.show', ['month' => '2026-11', 'employee' => 'all', 'format' => 'csv']));
 
-    $response->assertOk()->assertDownload('work-entries-2026-11-01-to-2026-11-30.csv');
+    $response->assertOk()->assertDownload('work-entries-2026-11-01-to-2026-11-30.csv')->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     expect(csvRows($response))->toBe([
         ['Date', 'Employee', 'Project', 'Client', 'Hours', 'Description', 'State', 'Approved by', 'Approved on', 'Locked by', 'Locked on', 'Declined by', 'Declined on', 'Decline reason'],
         ['2026-11-03', 'Cara', 'Relaunch', 'Acme', '7.5', 'Reviewing the API', 'Locked', 'Dan', '2026-11-11', 'Dan', '2026-11-11', '', '', ''],
@@ -134,7 +134,7 @@ it('downloads the same rows as an Excel file, with real dates and numbers', func
 
     $response = actingAs($dan)->get(route('work-entry-exports.show', ['month' => '2026-11', 'employee' => 'all', 'format' => 'xlsx']));
 
-    $response->assertOk()->assertDownload('work-entries-2026-11-01-to-2026-11-30.xlsx');
+    $response->assertOk()->assertDownload('work-entries-2026-11-01-to-2026-11-30.xlsx')->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     $rows = xlsxRows($response);
     expect($rows[0])->toBe(['Date', 'Employee', 'Project', 'Client', 'Hours', 'Description', 'State', 'Approved by', 'Approved on', 'Locked by', 'Locked on', 'Declined by', 'Declined on', 'Decline reason'])
         ->and($rows[1][0])->toBeInstanceOf(DateTimeImmutable::class)
@@ -146,13 +146,13 @@ it('downloads the same rows as an Excel file, with real dates and numbers', func
 it('keeps text that looks like a formula from running when the CSV file is opened', function () {
     $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
     $relaunch = assignmentOf(Employee::factory()->create(['name' => 'Cara']), 'Relaunch');
-    foreach (['=HYPERLINK("http://evil.test")', '+1', '-1', '@SUM(A1)', 'Fixed -1 bug'] as $day => $description) {
+    foreach (['=HYPERLINK("http://evil.test")', '+1', '-1', '@SUM(A1)', '  =1+1', '＝1+1', 'Fixed -1 bug'] as $day => $description) {
         WorkEntry::factory()->for($relaunch)->create(['date' => sprintf('2026-11-%02d', $day + 3), 'description' => $description]);
     }
 
     $rows = csvRows(actingAs($dan)->get(route('work-entry-exports.show', ['month' => '2026-11', 'employee' => 'all', 'format' => 'csv'])));
 
-    expect(array_column(array_slice($rows, 1), 5))->toBe(["'=HYPERLINK(\"http://evil.test\")", "'+1", "'-1", "'@SUM(A1)", 'Fixed -1 bug']);
+    expect(array_column(array_slice($rows, 1), 5))->toBe(["'=HYPERLINK(\"http://evil.test\")", "'+1", "'-1", "'@SUM(A1)", "'  =1+1", "'＝1+1", 'Fixed -1 bug']);
 });
 
 it('refuses someone who only sees their own Work Entries, and a missing Employee or unknown format', function () {
