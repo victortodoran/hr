@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\Permission;
+use App\Enums\Scope;
 use App\Enums\TravelRequestState;
 use App\Http\Controllers\Travel\TravelRequestCancellationController;
 use App\Models\CompanySettings;
@@ -34,7 +36,7 @@ it('lets an Employee cancel their Pending or Approved Travel Request before its 
     travelTo('2026-12-02 23:00');
 
     actingAs($travelRequest->employee)->post(route('travel-requests.cancellation.store', $travelRequest))
-        ->assertRedirect(route('travel-requests.index'))
+        ->assertRedirect(route('travel-requests.show', $travelRequest))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Travel Request cancelled.']);
 
     $travelRequest->refresh();
@@ -43,15 +45,21 @@ it('lets an Employee cancel their Pending or Approved Travel Request before its 
     expect($travelRequest->first_date->toDateString())->toBe('2026-12-03');
 })->with(['pending' => null, 'approved' => 'approved']);
 
-it('offers cancelling only while it is allowed', function () {
+it('offers cancelling on the Travel Request\'s page only while it is allowed, and only to the Employee', function () {
     $travelRequest = carasTravelRequest();
+    $viewer = employeeWith([Permission::ViewTravel->value => Scope::Everyone]);
+
+    actingAs($travelRequest->employee)->get(route('travel-requests.show', $travelRequest))
+        ->assertInertia(fn (Assert $page) => $page->where('travelRequest.can_cancel', true));
+    actingAs($viewer)->get(route('travel-requests.show', $travelRequest))
+        ->assertInertia(fn (Assert $page) => $page->where('travelRequest.can_cancel', false));
 
     actingAs($travelRequest->employee)->post(route('travel-requests.cancellation.store', $travelRequest));
 
-    actingAs($travelRequest->employee)->get(route('travel-requests.index'))
+    actingAs($travelRequest->employee)->get(route('travel-requests.show', $travelRequest))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('travelRequests.0.state', 'cancelled')
-            ->where('travelRequests.0.can_cancel', false));
+            ->where('travelRequest.state', 'cancelled')
+            ->where('travelRequest.can_cancel', false));
 });
 
 it('refuses cancelling a Travel Request from its first date on', function (string $today) {

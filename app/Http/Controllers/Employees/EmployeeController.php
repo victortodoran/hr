@@ -100,8 +100,8 @@ class EmployeeController extends Controller
      * Manager when they have left, and their Reporting Chain unless they have
      * left. Assignments & Pay: their Assignments, with Pay for viewers allowed
      * to see it. Time Off: their Paid Days to set, and their Time Off with
-     * this year's Paid Days left. Travel: their Travel Requests with their
-     * Travel Expenses, for viewers view travel reaches them with. Only the
+     * this year's Paid Days left. Travel: their Travel Requests, Upcoming
+     * and Past, for viewers view travel reaches them with. Only the
      * open tab's data is loaded, apart from the Employee's employment
      * status, which the header shows on every tab to viewers who may see
      * their record; an unknown or forbidden tab opens Overview.

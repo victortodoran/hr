@@ -66,10 +66,10 @@ final class EmployeePage
     }
 
     /**
-     * The Travel tab: the Employee's Travel Requests with their Travel
-     * Expenses, only to be seen.
+     * The Travel tab: the Employee's Travel Requests, Upcoming and Past,
+     * as summary rows that open each Travel Request's page.
      *
-     * @return array{travelRequests: array<int, array<string, mixed>>}
+     * @return array{travelRequests: array{upcoming: array<int, array<string, mixed>>, past: array<int, array<string, mixed>>}}
      */
     public static function travelTab(Employee $employee): array
     {

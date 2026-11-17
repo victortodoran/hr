@@ -17,6 +17,16 @@ export function formatPeriod(start: string, end: string | null): string {
 }
 
 /**
+ * The days from a first to a last date as people read them, such as
+ * "3 Dec 2026 – 5 Dec 2026", or one date when they are the same.
+ */
+export function formatDateRange(first: string, last: string): string {
+    return first === last
+        ? formatDate(first)
+        : `${formatDate(first)} – ${formatDate(last)}`;
+}
+
+/**
  * Today in the viewer's time zone, as a YYYY-MM-DD date.
  */
 export function today(): string {

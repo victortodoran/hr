@@ -32,7 +32,7 @@ import type {
     OpenProject,
     PayEntryRecord,
     ReportingChainView,
-    TravelRequestRecord,
+    TravelHistory,
 } from '@/types';
 
 /**
@@ -66,7 +66,7 @@ const props = withDefaults(
         /** Null unless the viewer may see the Employee's Time Off. */
         timeOff?: EmployeeTimeOff | null;
         /** Only to be seen: nothing on them can be done from here. */
-        travelRequests?: TravelRequestRecord[];
+        travelRequests?: TravelHistory;
     }>(),
     { reportsNeedingAManager: () => [], projects: () => [] },
 );
@@ -517,7 +517,10 @@ setLayoutProps({
                 <EmployeePageSection v-if="travelRequests" title="Travel">
                     <TravelRequestList
                         :travel-requests="travelRequests"
-                        :empty-message="`${employee.name}'s Travel Requests appear here. They haven't made any yet.`"
+                        :empty-messages="{
+                            upcoming: `${employee.name}'s travel appears here until its last day. They have none coming up.`,
+                            past: `${employee.name}'s travel that has ended, was declined or was cancelled appears here.`,
+                        }"
                     />
                 </EmployeePageSection>
             </TabsContent>

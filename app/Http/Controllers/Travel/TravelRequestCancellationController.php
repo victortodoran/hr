@@ -23,6 +23,6 @@ class TravelRequestCancellationController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Request cancelled.')]);
 
-        return to_route('travel-requests.index');
+        return to_route('travel-requests.show', $travelRequest);
     }
 }

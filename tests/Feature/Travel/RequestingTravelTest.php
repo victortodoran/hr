@@ -80,7 +80,11 @@ it('lets an Employee request travel on their Assignment, which starts Pending an
     expect($travelRequest->decided_at)->toBeNull();
 
     actingAs($cara)->get(route('travel-requests.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('travelRequests.0.days', 3));
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('travelRequests.upcoming.0.id', $travelRequest->id)
+            ->where('travelRequests.upcoming.0.state', 'pending'));
+    actingAs($cara)->get(route('travel-requests.show', $travelRequest))
+        ->assertInertia(fn (Assert $page) => $page->where('travelRequest.days', 3));
 });
 
 it('counts weekends: Sat 12 to Sun 13 Dec is 2 days and is accepted', function () {
@@ -111,6 +115,11 @@ it('approves the Travel Request of an Employee with no Manager at once, with nob
     expect($travelRequest->state)->toBe(TravelRequestState::Approved);
     expect($travelRequest->decided_by)->toBeNull();
     expect($travelRequest->decided_at)->toEqual(now());
+
+    actingAs($ana)->get(route('travel-requests.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('travelRequests.upcoming.0.id', $travelRequest->id)
+            ->where('travelRequests.upcoming.0.state', 'approved'));
 });
 
 it('refuses a Travel Request with missing or invalid fields, in the past or with the last date before the first', function (array $input, string $field, string $message) {
@@ -207,7 +216,7 @@ it('allows travel over Declined or Cancelled Travel Requests and Time Off, someo
     expect(storedTravelRequests($cara))->toHaveCount(4);
 });
 
-it('shows the Employee their own Travel Requests, latest first, and the Assignments they can still travel on', function () {
+it('opens the form for requesting travel with today and the Assignments the Employee can still travel on, with their dates', function () {
     $cara = traveller();
     $globex = Client::factory()->create(['name' => 'Globex']);
     $relaunch = Assignment::factory()->for($cara)->for(Project::factory()->forClient($globex)->create(['name' => 'Relaunch', 'start_date' => '2026-01-05']))
@@ -216,20 +225,13 @@ it('shows the Employee their own Travel Requests, latest first, and the Assignme
     $internal = Assignment::factory()->internal()->for($cara)->create();
     assignmentOf($cara, 'Data Audit', ['start_date' => '2026-02-02', 'end_date' => '2026-11-30']);
     $endsToday = assignmentOf($cara, 'Archive Cleanup', ['start_date' => '2026-11-02', 'end_date' => '2026-12-01']);
-    $berlin = TravelRequest::factory()->on($relaunch)->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'purpose' => 'Relaunch workshop']);
-    $paris = TravelRequest::factory()->on($internal)->declined()->create(['destination' => 'Paris', 'first_date' => '2026-12-14', 'last_date' => '2026-12-14', 'purpose' => 'Conference', 'decline_reason' => 'Launch week']);
-    $vienna = TravelRequest::factory()->on($relaunch)->approved(Employee::factory()->create(['name' => 'Ben']))->create(['destination' => 'Vienna', 'first_date' => '2026-03-02', 'last_date' => '2026-03-06', 'purpose' => 'Kick-off']);
-    TravelRequest::factory()->create();
+    assignmentOf(Employee::factory()->create(), 'Someone Else\'s');
 
-    actingAs($cara)->get(route('travel-requests.index'))
+    actingAs($cara)->get(route('travel-requests.create'))
+        ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('travel-requests/Index')
+            ->component('travel-requests/Create')
             ->where('today', '2026-12-01')
-            ->where('travelRequests', [
-                ['id' => $paris->id, 'project' => 'Internal', 'client' => null, 'destination' => 'Paris', 'first_date' => '2026-12-14', 'last_date' => '2026-12-14', 'days' => 1, 'purpose' => 'Conference', 'state' => 'declined', 'decided_by' => $paris->decider?->name, 'decline_reason' => 'Launch week', 'can_cancel' => false, 'expenses' => null],
-                ['id' => $berlin->id, 'project' => 'Relaunch', 'client' => 'Globex', 'destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'days' => 3, 'purpose' => 'Relaunch workshop', 'state' => 'pending', 'decided_by' => null, 'decline_reason' => null, 'can_cancel' => true, 'expenses' => null],
-                ['id' => $vienna->id, 'project' => 'Relaunch', 'client' => 'Globex', 'destination' => 'Vienna', 'first_date' => '2026-03-02', 'last_date' => '2026-03-06', 'days' => 5, 'purpose' => 'Kick-off', 'state' => 'approved', 'decided_by' => 'Ben', 'decline_reason' => null, 'can_cancel' => false, 'expenses' => ['items' => [], 'total' => '€0.00', 'can_create' => true]],
-            ])
             ->where('assignments', [
                 ['id' => $endsToday->id, 'project' => 'Archive Cleanup', 'client' => null, 'start_date' => '2026-11-02', 'end_date' => '2026-12-01'],
                 ['id' => $internal->id, 'project' => 'Internal', 'client' => null, 'start_date' => '2025-01-06', 'end_date' => null],
@@ -239,4 +241,5 @@ it('shows the Employee their own Travel Requests, latest first, and the Assignme
 
 it('needs signing in to see or request travel', function () {
     get(route('travel-requests.index'))->assertRedirect(route('login'));
+    get(route('travel-requests.create'))->assertRedirect(route('login'));
 });

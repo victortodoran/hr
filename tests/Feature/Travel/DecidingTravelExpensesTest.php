@@ -88,10 +88,10 @@ it('lets Ben approve Cara\'s flight and hotel together and decline her taxi with
     expect($taxi->decline_reason)->toBe('The taxi isn\'t on the receipt.');
     expect($taxi->approved_by)->toBeNull();
 
-    actingAs($berlin->employee)->get(route('travel-requests.index'))
+    actingAs($berlin->employee)->get(route('travel-requests.show', $berlin))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('travelRequests.0.expenses.items.2.state', 'declined')
-            ->where('travelRequests.0.expenses.items.2.decline_reason', 'The taxi isn\'t on the receipt.'));
+            ->where('travelRequest.expenses.items.2.state', 'declined')
+            ->where('travelRequest.expenses.items.2.decline_reason', 'The taxi isn\'t on the receipt.'));
 });
 
 it('refuses answering Cara\'s expenses to anyone but her Manager, even with the Admin Role', function (string $route, array $form) {

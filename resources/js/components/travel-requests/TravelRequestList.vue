@@ -1,92 +1,99 @@
 <script setup lang="ts">
-import { Form } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import { Plane } from '@lucide/vue';
-import TravelRequestCancellationController from '@/actions/App/Http/Controllers/Travel/TravelRequestCancellationController';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
-import SubmitButton from '@/components/SubmitButton.vue';
-import TravelExpenseList from '@/components/travel-requests/TravelExpenseList.vue';
-import { formatDate } from '@/lib/dates';
-import { formatDays } from '@/lib/time-off';
-import type { TableColumn, TravelEditing, TravelRequestRecord } from '@/types';
+import { formatDateRange } from '@/lib/dates';
+import { show } from '@/routes/travel-requests';
+import type { TableColumn, TravelHistory } from '@/types';
 
 /**
- * An Employee's Travel Requests, each with its Travel Expenses, cancelling
- * it and recording or changing its Travel Expenses where `editing` is given
- * and its flags allow. Without `editing` the list is only to be seen, as on
- * the Employee page.
+ * An Employee's Travel Requests under Upcoming and Past, one short row
+ * each that opens the Travel Request's page. On a phone each row stacks
+ * into two lines: destination and dates, then Client, expenses and state.
  */
 defineProps<{
-    travelRequests: TravelRequestRecord[];
-    /** What the empty state says. */
-    emptyMessage: string;
-    editing?: TravelEditing;
+    travelRequests: TravelHistory;
+    /** What each section's empty state says. */
+    emptyMessages: { upcoming: string; past: string };
 }>();
 
 const columns: TableColumn[] = [
     { key: 'travel', label: 'Travel Request' },
-    { key: 'state', label: 'State', align: 'end' },
+    { key: 'client', label: 'Client', minor: true },
+    { key: 'expenses', label: 'Expenses', align: 'end', minor: true },
+    { key: 'state', label: 'State', align: 'end', minor: true },
 ];
+
+const sections = [
+    { key: 'upcoming', title: 'Upcoming' },
+    { key: 'past', title: 'Past' },
+] as const;
 </script>
 
 <template>
-    <DataTable :columns="columns" :rows="travelRequests">
-        <template #cell-travel="{ row }">
-            <p>
-                <span class="font-medium">{{ row.destination }}</span>
-                <span class="text-muted-foreground">
-                    · {{ formatDate(row.first_date) }} –
-                    {{ formatDate(row.last_date) }} ·
-                    {{ formatDays(row.days) }}</span
-                >
-                <span class="block text-muted-foreground"
-                    >{{ row.project
-                    }}<template v-if="row.client">
-                        · {{ row.client }}</template
-                    ></span
-                >
-                <span class="block">{{ row.purpose }}</span>
-                <span
-                    v-if="row.decided_by !== null"
-                    class="block text-muted-foreground"
-                    >{{ row.state === 'declined' ? 'Declined' : 'Approved' }} by
-                    {{ row.decided_by
-                    }}<template v-if="row.decline_reason !== null"
-                        >: “{{ row.decline_reason }}”</template
-                    ></span
-                >
-            </p>
-            <TravelExpenseList
-                v-if="row.expenses !== null"
-                :editing="editing"
-                :travel-request-id="row.id"
-                :expenses="row.expenses"
-            />
-        </template>
-        <template #cell-state="{ row }">
-            <div class="flex items-center justify-end gap-2">
-                <StatusBadge :state="row.state" />
-                <Form
-                    v-if="row.can_cancel"
-                    v-bind="
-                        TravelRequestCancellationController.store.form(row.id)
-                    "
-                    :options="{ preserveScroll: true }"
-                    v-slot="{ processing }"
-                >
-                    <SubmitButton
-                        :processing="processing"
-                        variant="ghost"
-                        size="sm"
-                        class="text-destructive"
-                        >Cancel</SubmitButton
+    <div class="flex flex-col gap-8">
+        <section
+            v-for="section in sections"
+            :key="section.key"
+            class="flex flex-col gap-2"
+        >
+            <h2 class="text-sm font-medium">{{ section.title }}</h2>
+            <DataTable :columns="columns" :rows="travelRequests[section.key]">
+                <template #cell-travel="{ row }">
+                    <p>
+                        <Link
+                            :href="show(row.id)"
+                            class="font-medium underline-offset-4 hover:underline"
+                            >{{ row.destination }}</Link
+                        >
+                        <span class="text-muted-foreground">
+                            ·
+                            {{
+                                formatDateRange(row.first_date, row.last_date)
+                            }}</span
+                        >
+                    </p>
+                    <div
+                        class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground sm:hidden"
                     >
-                </Form>
-            </div>
-        </template>
-        <template #empty>
-            <EmptyState :icon="Plane" :message="emptyMessage" />
-        </template>
-    </DataTable>
+                        <span v-if="row.client">{{ row.client }} ·</span>
+                        <span class="tabular-nums"
+                            >{{ row.expense_total ?? '—'
+                            }}<span
+                                v-if="row.declined_expenses > 0"
+                                class="text-destructive"
+                            >
+                                · {{ row.declined_expenses }} declined</span
+                            ></span
+                        >
+                        <StatusBadge :state="row.state" />
+                    </div>
+                </template>
+                <template #cell-client="{ row }">
+                    {{ row.client ?? '—' }}
+                </template>
+                <template #cell-expenses="{ row }">
+                    <span class="whitespace-nowrap tabular-nums">{{
+                        row.expense_total ?? '—'
+                    }}</span>
+                    <span
+                        v-if="row.declined_expenses > 0"
+                        class="block whitespace-nowrap text-destructive"
+                        >· {{ row.declined_expenses }} declined</span
+                    >
+                </template>
+                <template #cell-state="{ row }">
+                    <StatusBadge :state="row.state" />
+                </template>
+                <template #empty>
+                    <EmptyState
+                        :icon="Plane"
+                        :message="emptyMessages[section.key]"
+                    />
+                </template>
+            </DataTable>
+        </section>
+    </div>
 </template>

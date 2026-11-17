@@ -155,9 +155,13 @@ it('shows the Employee who declined their Travel Request and why', function () {
 
     actingAs($travelRequest->employee)->get(route('travel-requests.index'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('travelRequests.0.state', 'declined')
-            ->where('travelRequests.0.decided_by', 'Ben')
-            ->where('travelRequests.0.decline_reason', 'The release is that week.'));
+            ->where('travelRequests.past.0.id', $travelRequest->id)
+            ->where('travelRequests.past.0.state', 'declined'));
+    actingAs($travelRequest->employee)->get(route('travel-requests.show', $travelRequest))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('travelRequest.state', 'declined')
+            ->where('travelRequest.decided_by', 'Ben')
+            ->where('travelRequest.decline_reason', 'The release is that week.'));
 });
 
 it('lists the Pending Travel Requests of the Employees the Manager effectively manages on the Approvals Travel Requests tab, earliest first', function () {

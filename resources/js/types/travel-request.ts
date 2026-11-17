@@ -11,9 +11,50 @@ export type TravelRequestState =
     | 'cancelled';
 
 /**
- * One of an Employee's Travel Requests, with the Project and Client of its
- * Assignment and whether the viewer may still cancel it: only the Employee
- * themselves on the Travel page, never on the Employee page.
+ * One row of an Employee's list of travel, opening the Travel Request's
+ * own page.
+ */
+export type TravelRequestSummary = {
+    id: number;
+    destination: string;
+    first_date: string;
+    last_date: string;
+    /** Empty for the Internal Assignment, whose Project has no Client. */
+    client: string | null;
+    state: TravelRequestState;
+    /**
+     * The total of its Travel Expenses not Declined, already shown in the
+     * company currency; none for a Travel Request that doesn't take them.
+     */
+    expense_total: string | null;
+    /** How many of its Travel Expenses are Declined. */
+    declined_expenses: number;
+};
+
+/**
+ * An Employee's Travel Requests, split as the Travel page shows them.
+ * Upcoming: Pending or Approved, not ended yet, soonest first. Past: every
+ * other, newest first.
+ */
+export type TravelHistory = {
+    upcoming: TravelRequestSummary[];
+    past: TravelRequestSummary[];
+};
+
+/**
+ * What names a Travel Request at the top of a Travel Expense's form.
+ */
+export type TravelRequestName = {
+    id: number;
+    destination: string;
+    first_date: string;
+    last_date: string;
+};
+
+/**
+ * One Travel Request in full, as its own page shows it, with the Project
+ * and Client of its Assignment and whether the viewer may still cancel it:
+ * only ever the Employee themselves.
  */
 export type TravelRequestRecord = {
     id: number;
@@ -54,12 +95,10 @@ export type TravelExpenseRecord = {
     description: string;
     /** Already shown in the company currency, such as "RON 1,990.00". */
     amount: string;
-    /** As people type it, such as "1990.00", to fill the change form. */
-    amount_typed: string;
     state: TravelExpenseState;
     /** Why it was declined; only a Declined Travel Expense has one. */
     decline_reason: string | null;
-    /** Whether it can still be changed or deleted: Pending or Declined. */
+    /** Whether the viewer may change or delete it: only the Employee, while Pending or Declined. */
     can_change: boolean;
 };
 
@@ -71,14 +110,14 @@ export type TravelExpenses = {
     can_create: boolean;
 };
 
-/**
- * What recording and changing Travel Expenses needs: today, for the latest
- * date one can be paid on, and the company currency. Only the Travel page
- * passes it; without it a list of travel is only to be seen.
- */
-export type TravelEditing = {
-    today: string;
-    currency: TravelCurrency;
+/** A Travel Expense as its change form is filled in. */
+export type TravelExpenseTyped = {
+    id: number;
+    paid_on: string;
+    category: TravelExpenseCategory;
+    /** As people type it, such as "1990.00". */
+    amount: string;
+    description: string;
 };
 
 /** The company currency every Travel Expense is recorded in. */
