@@ -104,6 +104,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('work-entries/{workEntry}', [WorkEntryController::class, 'destroy'])->middleware('can:delete,workEntry')->name('work-entries.destroy');
 
     Route::get('time-off', [TimeOffController::class, 'index'])->name('time-off.index');
+    Route::get('time-off/create', [TimeOffController::class, 'create'])->name('time-off.create');
     Route::get('time-off/preview', [TimeOffPreviewController::class, 'show'])->name('time-off.preview');
     Route::post('time-off', [TimeOffController::class, 'store'])->name('time-off.store');
     Route::post('time-off/{timeOff}/cancellation', [TimeOffCancellationController::class, 'store'])->middleware('can:cancel,timeOff')->name('time-off.cancellation.store');

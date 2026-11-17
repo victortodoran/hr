@@ -274,7 +274,6 @@ it('shows the Employee their own Time Off, latest first, and the Paid Days left 
         ->assertInertia(fn (Assert $page) => $page
             ->component('time-off/Index')
             ->where('year', 2026)
-            ->where('today', '2026-12-01')
             ->where('paidDaysLeft', 11)
             ->where('timeOff', [
                 ['id' => $newYear->id, 'first_date' => '2026-12-28', 'last_date' => '2027-01-08', 'days' => 10, 'is_paid' => true, 'state' => 'pending', 'decided_by' => null, 'decline_reason' => null, 'can_cancel' => true],
@@ -304,8 +303,17 @@ it('refuses Paid Time Off while Paid Days left are negative, but still takes Unp
     expect(storedTimeOff($cara))->toHaveCount(2);
 });
 
+it('opens the form for requesting Time Off on its own page, with today as the earliest first date', function () {
+    actingAs(timeOffRequester())->get(route('time-off.create'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('time-off/Create')
+            ->where('today', '2026-12-01'));
+});
+
 it('needs signing in to see or request Time Off', function () {
     get(route('time-off.index'))->assertRedirect(route('login'));
+    get(route('time-off.create'))->assertRedirect(route('login'));
 });
 
 it('accepts Time Off covering exactly a year and refuses one a day longer, as longer leave is several requests', function (string $firstDate, string $lastYearDay, string $dayOver) {

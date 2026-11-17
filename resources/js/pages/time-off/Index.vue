@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import { CalendarDays } from '@lucide/vue';
 import TimeOffCancellationController from '@/actions/App/Http/Controllers/TimeOff/TimeOffCancellationController';
 import DataTable from '@/components/DataTable.vue';
@@ -8,9 +8,9 @@ import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
-import RequestTimeOffDialog from '@/components/time-off/RequestTimeOffDialog.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
-import { index } from '@/routes/time-off';
+import { Button } from '@/components/ui/button';
+import { create, index } from '@/routes/time-off';
 import type { TableColumn, TimeOffRecord } from '@/types';
 
 defineOptions({
@@ -21,7 +21,6 @@ defineOptions({
 
 defineProps<{
     year: number;
-    today: string;
     /** Paid Days minus Pending and Approved Paid Time Off this year. */
     paidDaysLeft: number;
     timeOff: TimeOffRecord[];
@@ -53,7 +52,9 @@ const columns: TableColumn[] = [
                     >Paid Days left in {{ year }}</span
                 >
             </p>
-            <RequestTimeOffDialog :today="today" />
+            <Button as-child>
+                <Link :href="create()">Request Time Off</Link>
+            </Button>
         </div>
 
         <section class="space-y-2">

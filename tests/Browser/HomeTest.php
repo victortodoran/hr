@@ -59,6 +59,8 @@ it('offers one way into Time Off on Home when none is upcoming', function () {
         ->assertSee('You have no upcoming Time Off.')
         ->assertSee('Request Time Off')
         ->assertDontSee('Open Time Off')
+        ->click('Request Time Off')
+        ->assertPathIs('/time-off/create')
         ->assertNoJavaScriptErrors();
 });
 

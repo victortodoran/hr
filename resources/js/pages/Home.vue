@@ -19,7 +19,7 @@ import {
 import { formatHours } from '@/lib/work-entries';
 import { landing } from '@/routes';
 import { index as approvals } from '@/routes/approvals';
-import { index as timeOff } from '@/routes/time-off';
+import { create as requestTimeOff, index as timeOff } from '@/routes/time-off';
 import { index as workEntries } from '@/routes/work-entries';
 import type {
     ApprovalsWaiting,
@@ -215,7 +215,7 @@ const thisMonthsWorkEntries = computed(() =>
                         variant="outline"
                         as-child
                     >
-                        <Link :href="timeOff()">Request Time Off</Link>
+                        <Link :href="requestTimeOff()">Request Time Off</Link>
                     </Button>
                     <Link
                         v-else
