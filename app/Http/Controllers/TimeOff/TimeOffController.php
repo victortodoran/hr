@@ -14,8 +14,8 @@ use Inertia\Response;
 
 /**
  * The Time Off page: the signed-in Employee's own Time Off and Paid Days
- * left, and requesting Time Off. Managers answer their Direct Reports'
- * Time Off on the Approvals page.
+ * left, and requesting Time Off on a page of its own. Managers answer
+ * their Direct Reports' Time Off on the Approvals page.
  */
 class TimeOffController extends Controller
 {
@@ -28,7 +28,6 @@ class TimeOffController extends Controller
     {
         return Inertia::render('time-off/Index', [
             'year' => today()->year,
-            'today' => today()->toDateString(),
             'paidDaysLeft' => $actor->paidDaysLeftIn(today()->year),
             'timeOff' => $actor->timeOff()
                 ->with('decider:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
@@ -40,6 +39,17 @@ class TimeOffController extends Controller
                     'can_cancel' => $actor->can('cancel', $timeOff),
                 ])
                 ->all(),
+        ]);
+    }
+
+    /**
+     * Show the form for requesting Time Off, with today, the earliest first
+     * date.
+     */
+    public function create(): Response
+    {
+        return Inertia::render('time-off/Create', [
+            'today' => today()->toDateString(),
         ]);
     }
 
