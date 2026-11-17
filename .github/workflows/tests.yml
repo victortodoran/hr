@@ -94,7 +94,7 @@ jobs:
       - name: Audit dependencies
         run: |
           composer audit
-          npm audit --audit-level=high
+          bin/npm-audit.sh
 
       - name: Run CI Checks
         run: composer ci:check
