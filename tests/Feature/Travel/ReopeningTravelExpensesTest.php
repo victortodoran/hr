@@ -91,9 +91,13 @@ it('lets Rae reopen her Report\'s Approved expense, withdrawing its approval, an
     $own = reopenableExpenseOf($rae);
 
     actingAs($rae)->from(route('travel-requests.show', $report->travel_request_id))
-        ->post(route('travel-expenses.reopenings.store'), ['ids' => [$report->id, $outsider->id, $own->id]])
+        ->post(route('travel-requests.expenses.reopenings.store', $report->travel_request_id), ['ids' => [$report->id]])
         ->assertRedirect(route('travel-requests.show', $report->travel_request_id))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Travel Expense reopened, 2 skipped.']);
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Travel Expense reopened.']);
+    foreach ([$outsider, $own] as $skipped) {
+        actingAs($rae)->post(route('travel-requests.expenses.reopenings.store', $skipped->travel_request_id), ['ids' => [$skipped->id]])
+            ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Travel Expenses reopened, 1 skipped.']);
+    }
 
     $report->refresh();
     expect($report->state)->toBe(TravelExpenseState::Pending);
@@ -103,12 +107,26 @@ it('lets Rae reopen her Report\'s Approved expense, withdrawing its approval, an
     expect($own->refresh()->state)->toBe(TravelExpenseState::Approved);
 });
 
+it('reopens only expenses of the Travel Request it is sent for', function () {
+    $rae = travelReopener();
+    $cara = Employee::factory()->reportingTo($rae)->create();
+    $berlin = reopenableExpenseOf($cara);
+    $paris = TravelExpense::factory()->for(TravelRequest::factory()->on(assignmentOf($cara, 'Atlas'))->approved()->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-15']))
+        ->approved()->create(['paid_on' => '2026-12-09']);
+
+    actingAs($rae)->post(route('travel-requests.expenses.reopenings.store', $berlin->travel_request_id), ['ids' => [$berlin->id, $paris->id]])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Travel Expense reopened, 1 skipped.']);
+
+    expect($berlin->refresh()->state)->toBe(TravelExpenseState::Pending);
+    expect($paris->refresh()->state)->toBe(TravelExpenseState::Approved);
+});
+
 it('leaves a reopened expense for its Employee to change and their Manager to approve again', function () {
     $rae = travelReopener();
     $cara = Employee::factory()->reportingTo($rae)->create();
     $expense = reopenableExpenseOf($cara);
 
-    actingAs($rae)->post(route('travel-expenses.reopenings.store'), ['ids' => [$expense->id]]);
+    actingAs($rae)->post(route('travel-requests.expenses.reopenings.store', $expense->travel_request_id), ['ids' => [$expense->id]]);
     $expense->refresh();
 
     expect($cara->can('update', $expense))->toBeTrue();
@@ -123,7 +141,7 @@ it('skips expenses that aren\'t Approved', function (string $state) {
     $rae = travelReopener();
     $expense = reopenableExpenseOf(Employee::factory()->reportingTo($rae)->create(), $state);
 
-    actingAs($rae)->post(route('travel-expenses.reopenings.store'), ['ids' => [$expense->id]])
+    actingAs($rae)->post(route('travel-requests.expenses.reopenings.store', $expense->travel_request_id), ['ids' => [$expense->id]])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Travel Expenses reopened, 1 skipped.']);
 
     expect($expense->refresh()->state->value)->toBe($state);
@@ -133,7 +151,7 @@ it('refuses reopening to a Manager without the Permission, even for their Report
     $ben = managerBen();
     $expense = reopenableExpenseOf(Employee::factory()->reportingTo($ben)->create());
 
-    actingAs($ben)->post(route('travel-expenses.reopenings.store'), ['ids' => [$expense->id]])->assertForbidden();
+    actingAs($ben)->post(route('travel-requests.expenses.reopenings.store', $expense->travel_request_id), ['ids' => [$expense->id]])->assertForbidden();
 
     expect($expense->refresh()->state)->toBe(TravelExpenseState::Approved);
 });
@@ -154,7 +172,7 @@ it('lets an expense of an Employee with no Manager be reopened for them to corre
 
     actingAs($rae)->get(route('travel-requests.show', $approved->travel_request_id))
         ->assertInertia(fn (Assert $page) => $page->where('travelRequest.expenses.items.0.can_reopen', true));
-    actingAs($rae)->post(route('travel-expenses.reopenings.store'), ['ids' => [$approved->id]])
+    actingAs($rae)->post(route('travel-requests.expenses.reopenings.store', $approved->travel_request_id), ['ids' => [$approved->id]])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Travel Expense reopened.']);
     expect($approved->refresh()->state)->toBe(TravelExpenseState::Pending);
 

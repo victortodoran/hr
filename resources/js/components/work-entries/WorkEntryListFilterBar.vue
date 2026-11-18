@@ -19,9 +19,9 @@ import type {
  * Filters for the Work Entries page, and the Travel Requests page, which
  * lists Travel Requests the same way: a Period, a week, a month or a custom
  * one, never after today unless `allowFuture` is set; one Employee with
- * Work Entries in it, each offered with how many, or any Employee; a
- * Project they have Work Entries on, or any; and a state, or any, from
- * `states` when given. Shows what
+ * Work Entries (or Travel Requests) in it, each offered with how many, or
+ * any Employee; a Project they have them on, or any; and a state, or any,
+ * from `states` when given. Shows what
  * the server resolved, and emits the query string to reload the list with
  * whenever one changes. Changing the Period or state keeps "Any Employee"
  * but otherwise lets the server pick the first Employee; changing anything

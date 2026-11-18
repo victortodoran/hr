@@ -116,10 +116,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('travel-requests/{travelRequest}/cancellation', [TravelRequestCancellationController::class, 'store'])->middleware('can:cancel,travelRequest')->name('travel-requests.cancellation.store');
     Route::get('travel-requests/{travelRequest}/expenses/create', [TravelExpenseController::class, 'create'])->middleware('can:create,'.TravelExpense::class.',travelRequest')->name('travel-requests.expenses.create');
     Route::post('travel-requests/{travelRequest}/expenses', [TravelExpenseController::class, 'store'])->middleware('can:create,'.TravelExpense::class.',travelRequest')->name('travel-requests.expenses.store');
+    Route::post('travel-requests/{travelRequest}/expenses/reopenings', [TravelExpenseReopeningController::class, 'store'])->middleware('can:reopen,'.TravelExpense::class)->name('travel-requests.expenses.reopenings.store');
     Route::get('travel-requests/{travelRequest}/expenses/{travelExpense}/edit', [TravelExpenseController::class, 'edit'])->middleware('can:update,travelExpense')->scopeBindings()->name('travel-requests.expenses.edit');
     Route::put('travel-expenses/{travelExpense}', [TravelExpenseController::class, 'update'])->middleware('can:update,travelExpense')->name('travel-expenses.update');
     Route::delete('travel-expenses/{travelExpense}', [TravelExpenseController::class, 'destroy'])->middleware('can:delete,travelExpense')->name('travel-expenses.destroy');
-    Route::post('travel-expenses/reopenings', [TravelExpenseReopeningController::class, 'store'])->middleware('can:reopen,'.TravelExpense::class)->name('travel-expenses.reopenings.store');
     Route::get('travel-expenses/{travelExpense}/receipt', [TravelExpenseReceiptController::class, 'show'])->middleware('can:view,travelExpense')->name('travel-expenses.receipt.show');
     Route::middleware('can:decide,travelRequest')->group(function () {
         Route::post('travel-requests/{travelRequest}/approval', [TravelRequestApprovalController::class, 'store'])->name('travel-requests.approval.store');

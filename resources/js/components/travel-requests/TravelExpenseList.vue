@@ -40,7 +40,7 @@ const { selected, isSelected, toggle, clear, processing, submit } =
     useBulkSelection(() => reopenable.value);
 
 function reopen(): void {
-    submit(TravelExpenseReopeningController.store.url());
+    submit(TravelExpenseReopeningController.store.url(props.travelRequestId));
 }
 
 const columns = computed<TableColumn[]>(() => [
