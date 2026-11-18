@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Performance;
 
+use App\Actions\CommentOnGoal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\GoalCommentRequest;
 use App\Models\Employee;
@@ -19,11 +20,14 @@ use Inertia\Inertia;
 class GoalCommentController extends Controller
 {
     /**
-     * Write a Comment on the Goal and lead back to the Goal's page.
+     * Write a Comment on the Goal and lead back to the Goal's page. One
+     * whose Performance Evaluation was Completed since the policy check
+     * is refused, never written.
      */
-    public function store(GoalCommentRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): RedirectResponse
+    public function store(GoalCommentRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor, CommentOnGoal $commentOnGoal): RedirectResponse
     {
-        $goal->comments()->create(['author_id' => $actor->id, 'body' => $request->body()]);
+        $written = $commentOnGoal->comment($goal, $actor, $request->body());
+        abort_if(! $written, 403); // @pest-mutate-ignore (only reached when the Performance Evaluation is Completed between the policy check and this write)
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Comment added.')]);
 

@@ -22,7 +22,9 @@ class GoalProgressController extends Controller
     public function __construct(private readonly ChangeGoalProgress $changeGoalProgress) {}
 
     /**
-     * Change the Goal's Progress.
+     * Change the Goal's Progress. One whose Performance Evaluation was
+     * Completed since the policy check is refused with a 403 by
+     * ChangeGoalProgress, never changed.
      */
     public function update(GoalProgressRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): RedirectResponse
     {
