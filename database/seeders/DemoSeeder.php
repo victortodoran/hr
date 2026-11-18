@@ -42,6 +42,7 @@ use Illuminate\Support\Str;
  * receipts, replacing any an earlier demo left behind, and this year's
  * Open Performance Evaluations with Goals for Ben, Cara, Lia and Ivan,
  * their Progress changed over the last two months, a few of them At Risk,
+ * and short threads of Comments from both sides on a few,
  * Completed ones for last year for Ben, Cara and Ivan,
  * leaving Hana's and Finn's for Ana to start. Dates are relative
  * to today, so the Future and Former Employees stay that way, and the last two weeks of Work Entries and the Time Off
@@ -212,17 +213,27 @@ class DemoSeeder extends Seeder
 
         $this->performanceEvaluation($ben, [
             ['Grow two Tech Leads', 'Cara and Lia each run a Relaunch stream on their own by the end of the year.', [[Progress::OnTrack, $ben]]],
-            ['Ship the Relaunch', 'Go live with Globex on the date agreed, with no rollback.', [[Progress::OnTrack, $ben], [Progress::AtRisk, $ana]]],
+            ['Ship the Relaunch', 'Go live with Globex on the date agreed, with no rollback.', [[Progress::OnTrack, $ben], [Progress::AtRisk, $ana]], [
+                [$ana, 'Globex moved the go-live a week earlier. Can we still make it?'],
+                [$ben, 'Only if the cart work lands this sprint. I\'ve marked it At Risk until then.'],
+            ]],
             ['Hire a QA Engineer', 'Fill the role Eve left, with the new hire onboarded.', [[Progress::OnTrack, $ben], [Progress::Done, $ben]]],
             ['Cut review time', 'Pull requests wait under a day for their first review.', []],
         ]);
         $this->performanceEvaluation($cara, [
-            ['Lead the Checkout API', 'Own its design and delivery, and present it at the Globex workshop.', [[Progress::OnTrack, $cara], [Progress::AtRisk, $ben]]],
+            ['Lead the Checkout API', 'Own its design and delivery, and present it at the Globex workshop.', [[Progress::OnTrack, $cara], [Progress::AtRisk, $ben]], [
+                [$cara, 'The API design is signed off by Globex.'],
+                [$ben, 'Nice. Auth is late though, let\'s talk Friday.'],
+                [$cara, 'Friday works. I\'ll bring a plan B for the token service.'],
+            ]],
             ['Mentor Lia', 'Pair with Lia weekly until she reviews pull requests on her own.', [[Progress::OnTrack, $cara]]],
             ['Cut payment errors', 'Bring failed payments below one in a thousand.', []],
         ]);
         $this->performanceEvaluation($lia, [
-            ['Own the cart', 'Take the cart from design to release on the Relaunch.', [[Progress::OnTrack, $lia]]],
+            ['Own the cart', 'Take the cart from design to release on the Relaunch.', [[Progress::OnTrack, $lia]], [
+                [$ben, 'How is the cart going?'],
+                [$lia, 'Designs are done, building the checkout step next.'],
+            ]],
             ['Review code', 'Review at least two pull requests a week.', [[Progress::OnTrack, $ben], [Progress::Done, $lia]]],
         ]);
         $this->performanceEvaluation($ivan, [
@@ -490,12 +501,13 @@ class DemoSeeder extends Seeder
 
     /**
      * Start the Employee's Performance Evaluation for this year, Open, with
-     * the Goals given as title, description and the changes to their
-     * Progress, each as the Progress and who changed it. The Goals were
-     * given up to two months ago, never before this year, and their
-     * changes are spread evenly from then to today.
+     * the Goals given as title, description, the changes to their
+     * Progress, each as the Progress and who changed it, and optionally
+     * their Comments, each as who wrote it and what. The Goals were given
+     * up to two months ago, never before this year, and their changes and
+     * Comments are spread evenly from then to today.
      *
-     * @param  array<int, array{string, string, array<int, array{Progress, Employee}>}>  $goals
+     * @param  array<int, array{0: string, 1: string, 2: array<int, array{Progress, Employee}>, 3?: array<int, array{Employee, string}>}>  $goals
      */
     private function performanceEvaluation(Employee $employee, array $goals): void
     {
@@ -503,13 +515,21 @@ class DemoSeeder extends Seeder
         $givenAt = today()->subMonths(2)->max(today()->startOfYear())->setTime(9, 0);
         $days = (int) $givenAt->diffInDays(today());
 
-        foreach ($goals as [$title, $description, $changes]) {
+        foreach ($goals as $given) {
+            [$title, $description, $changes] = $given;
+            $comments = $given[3] ?? [];
             $goal = $evaluation->goals()->create(['title' => $title, 'description' => $description]);
             $goal->forceFill(['created_at' => $givenAt])->save();
 
             foreach ($changes as $position => [$progress, $changedBy]) {
                 $this->changeGoalProgress->change($goal, $progress, $changedBy)
                     ?->forceFill(['created_at' => $givenAt->addDays(intdiv($days * ($position + 1), count($changes) + 1))->addHours($position + 1)])
+                    ->save();
+            }
+
+            foreach ($comments as $position => [$author, $body]) {
+                $goal->comments()->create(['author_id' => $author->id, 'body' => $body])
+                    ->forceFill(['created_at' => $givenAt->addDays(intdiv($days * ($position + 1), count($comments) + 1))->addMinutes(30 * ($position + 1))])
                     ->save();
             }
         }

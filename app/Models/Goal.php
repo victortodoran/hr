@@ -28,6 +28,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read PerformanceEvaluation $performanceEvaluation
  * @property-read Collection<int, ProgressChange> $progressChanges
+ * @property-read Collection<int, Comment> $comments
+ * @property-read int|null $comments_count
  */
 #[Fillable(['title', 'description'])] // @pest-mutate-ignore (class attributes never show as covered)
 class Goal extends Model
@@ -73,5 +75,15 @@ class Goal extends Model
     public function progressChanges(): HasMany
     {
         return $this->hasMany(ProgressChange::class)->latest('id');
+    }
+
+    /**
+     * The Comments written on it, oldest first.
+     *
+     * @return HasMany<Comment, $this>
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class)->orderBy('id');
     }
 }

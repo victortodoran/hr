@@ -15,7 +15,7 @@ use App\Models\PerformanceEvaluation;
  * Completes it: no Role grants that, and
  * since nobody is their own effective Manager, nobody sets their own.
  * The Employee and their effective Manager both change its Goals'
- * Progress while it is Open.
+ * Progress and write Comments on them while it is Open.
  */
 class PerformanceEvaluationPolicy
 {
@@ -78,9 +78,17 @@ class PerformanceEvaluationPolicy
      */
     public function changeProgress(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
-        return $performanceEvaluation->state->isEditable()
-            && ($performanceEvaluation->employee_id === $actor->id
-                || $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee));
+        return $this->takesPartWhileOpen($actor, $performanceEvaluation);
+    }
+
+    /**
+     * Writing Comments on its Goals: the Employee whose Evaluation it is
+     * and their effective Manager, only while it is Open. No Role grants
+     * it, so readers read the thread without writing in it.
+     */
+    public function comment(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
+    {
+        return $this->takesPartWhileOpen($actor, $performanceEvaluation);
     }
 
     /**
@@ -105,6 +113,17 @@ class PerformanceEvaluationPolicy
         return $performanceEvaluation->isCompleted()
             && $performanceEvaluation->employee_id !== $actor->id
             && $actor->reachesThrough([Permission::ReopenPerformanceEvaluations], $performanceEvaluation->employee);
+    }
+
+    /**
+     * Whether it is Open and the actor is its Employee or their effective
+     * Manager, the two who keep its Goals' Progress and Comments.
+     */
+    private function takesPartWhileOpen(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
+    {
+        return $performanceEvaluation->state->isEditable()
+            && ($performanceEvaluation->employee_id === $actor->id
+                || $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee));
     }
 
     /**

@@ -43,6 +43,7 @@ import {
     show as showGoal,
 } from '@/routes/performance-evaluations/goals';
 import type {
+    AssessedGoal,
     BreadcrumbItem,
     Outcome,
     PerformanceEvaluationRecord,
@@ -105,6 +106,18 @@ function saveAssessment(): void {
             ),
             { preserveScroll: true },
         );
+}
+
+/** What removing a Goal takes with it, counting its Comments when it has any. */
+function removalWarning(goal: AssessedGoal): string {
+    const warning =
+        'The Goal is removed from this Performance Evaluation for good, with its Progress history.';
+
+    if (goal.comments_count === 0) {
+        return warning;
+    }
+
+    return `${warning} Its ${goal.comments_count} ${goal.comments_count === 1 ? 'Comment is' : 'Comments are'} removed with it.`;
 }
 
 /** Whether the question before Completing is showing. */
@@ -271,7 +284,7 @@ setLayoutProps({
                                 })
                             "
                             :title="`Remove “${row.title}”?`"
-                            description="The Goal is removed from this Performance Evaluation for good."
+                            :description="removalWarning(row)"
                             confirm-label="Remove Goal"
                             :error-bag="`goal-${row.id}`"
                         >

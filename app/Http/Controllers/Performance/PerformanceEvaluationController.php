@@ -97,10 +97,11 @@ class PerformanceEvaluationController extends Controller
                 'year' => $performanceEvaluation->year,
                 'state' => $performanceEvaluation->state->value,
                 'employee' => $performanceEvaluation->employee->only('id', 'name'),
-                'goals' => $performanceEvaluation->goals
+                'goals' => $performanceEvaluation->goals()->withCount('comments')->get()
                     ->map(fn (Goal $goal): array => [
                         ...$goal->only('id', 'title', 'description'),
                         'progress' => $goal->progress->value,
+                        'comments_count' => $goal->comments_count,
                         'outcome' => $seesOutcomes ? $goal->outcome?->value : null,
                     ])
                     ->all(),
