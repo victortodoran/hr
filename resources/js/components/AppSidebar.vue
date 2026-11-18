@@ -53,15 +53,11 @@ const auth = computed(() => page.props.auth);
 
 const meItems = computed<NavItem[]>(() => [
     { title: 'Home', href: landing(), icon: House },
-    ...(auth.value.canSeeOwnPage
-        ? [
-              {
-                  title: 'My Page',
-                  href: employeePage(auth.value.employee.id),
-                  icon: UserRound,
-              },
-          ]
-        : []),
+    {
+        title: 'My Page',
+        href: employeePage(auth.value.employee.id),
+        icon: UserRound,
+    },
     ...(auth.value.canSeeWorkEntries
         ? [{ title: 'My Work Entries', href: workEntries(), icon: Clock }]
         : []),

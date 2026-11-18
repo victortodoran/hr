@@ -102,16 +102,17 @@ it('lets someone with the reports Scope see the Time Off of their Reports only',
     $dana = Employee::factory()->create();
     $ben = employeeWith([Permission::ViewTimeOff->value => Scope::Reports], ['manager_id' => $dana->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
-    $people = [
+    $others = [
         'Dana' => $dana,
-        'Ben' => $ben,
         'Cara' => $cara,
         'Dev' => Employee::factory()->reportingTo($cara)->create(),
         'Eve' => Employee::factory()->reportingTo($dana)->create(),
     ];
 
-    foreach ($people as $name => $employee) {
+    foreach ($others as $name => $employee) {
         actingAs($ben)->get(route('employees.show', $employee))
             ->assertStatus(in_array($name, ['Cara', 'Dev'], true) ? 200 : 403);
     }
+    actingAs($ben)->get(route('employees.show', $ben))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('tabs', ['overview']));
 });

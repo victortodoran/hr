@@ -68,26 +68,27 @@ it('offers an assignment manager the Projects still open to Assignments, by name
  * ├── Ben ── Cara ── Dev
  * └── Eve
  */
-it('lets Scope decide whose Assignments an Employee may see', function (Scope $scope, array $visible) {
+it('lets Scope decide whose Assignments an Employee may see', function (Scope $scope, array $visible, string $ownTab) {
     $dana = Employee::factory()->create();
     $ben = employeeWith([Permission::ViewAssignments->value => $scope], ['manager_id' => $dana->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
-    $people = [
+    $others = [
         'Dana' => $dana,
-        'Ben' => $ben,
         'Cara' => $cara,
         'Dev' => Employee::factory()->reportingTo($cara)->create(),
         'Eve' => Employee::factory()->reportingTo($dana)->create(),
     ];
 
-    foreach ($people as $name => $employee) {
+    foreach ($others as $name => $employee) {
         actingAs($ben)->get(route('employees.show', ['employee' => $employee, 'tab' => 'assignments']))
             ->assertStatus(in_array($name, $visible, true) ? 200 : 403);
     }
+    actingAs($ben)->get(route('employees.show', ['employee' => $ben, 'tab' => 'assignments']))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('tab', $ownTab));
 })->with([
-    'own' => [Scope::Own, ['Ben']],
-    'reports' => [Scope::Reports, ['Cara', 'Dev']],
-    'everyone' => [Scope::Everyone, ['Dana', 'Ben', 'Cara', 'Dev', 'Eve']],
+    'own' => [Scope::Own, [], 'assignments'],
+    'reports' => [Scope::Reports, ['Cara', 'Dev'], 'overview'],
+    'everyone' => [Scope::Everyone, ['Dana', 'Cara', 'Dev', 'Eve'], 'assignments'],
 ]);
 
 it('lets an Employee who manages someone\'s Assignments see them too', function () {

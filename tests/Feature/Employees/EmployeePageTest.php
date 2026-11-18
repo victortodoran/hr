@@ -70,31 +70,53 @@ it('refuses an Employee\'s page to a viewer who may see none of their record, As
         ->assertForbidden();
 });
 
+it('always opens My Page to an Employee with no Roles, with their Reporting Chain but not their record, and still refuses them anyone else\'s page', function () {
+    $top = Employee::factory()->create(['name' => 'Ada']);
+    $ana = Employee::factory()->create(['name' => 'Ana', 'manager_id' => $top->id]);
+    Assignment::factory()->internal()->for($ana)->create(['job_title' => 'Accountant']);
+    $cara = Employee::factory()->reportingTo($ana)->create(['name' => 'Cara']);
+
+    actingAs($ana)->get(route('employees.show', ['employee' => $ana, 'tab' => 'time-off']))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('employee', ['id' => $ana->id, 'name' => 'Ana', 'job_title' => 'Accountant'])
+            ->where('tabs', ['overview'])
+            ->where('tab', 'overview')
+            ->where('record', null)
+            ->where('standing', null)
+            ->where('reportingChain.above.0.name', 'Ada')
+            ->where('reportingChain.employee.link', 'employee')
+            ->where('reportingChain.below.0.name', 'Cara'),
+        );
+    actingAs($ana)->get(route('employees.show', $cara))->assertForbidden();
+    actingAs($ana)->get(route('employees.show', $top))->assertForbidden();
+});
+
 /*
  * Dana (top)
  * ├── Ben ── Cara ── Dev
  * └── Eve
  */
-it('lets Scope decide whose record an Employee may see', function (Scope $scope, array $visible) {
+it('lets Scope decide whose record an Employee may see', function (Scope $scope, array $visible, bool $seesOwnRecord) {
     $dana = Employee::factory()->create();
     $ben = employeeWith([Permission::ViewEmployeeRecords->value => $scope], ['manager_id' => $dana->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
-    $people = [
+    $others = [
         'Dana' => $dana,
-        'Ben' => $ben,
         'Cara' => $cara,
         'Dev' => Employee::factory()->reportingTo($cara)->create(),
         'Eve' => Employee::factory()->reportingTo($dana)->create(),
     ];
 
-    foreach ($people as $name => $employee) {
+    foreach ($others as $name => $employee) {
         actingAs($ben)->get(route('employees.show', $employee))
             ->assertStatus(in_array($name, $visible, true) ? 200 : 403);
     }
+    actingAs($ben)->get(route('employees.show', $ben))->assertOk()
+        ->assertInertia(fn (Assert $page) => $seesOwnRecord ? $page->has('record.email') : $page->where('record', null));
 })->with([
-    'own' => [Scope::Own, ['Ben']],
-    'reports' => [Scope::Reports, ['Cara', 'Dev']],
-    'everyone' => [Scope::Everyone, ['Dana', 'Ben', 'Cara', 'Dev', 'Eve']],
+    'own' => [Scope::Own, [], true],
+    'reports' => [Scope::Reports, ['Cara', 'Dev'], false],
+    'everyone' => [Scope::Everyone, ['Dana', 'Cara', 'Dev', 'Eve'], true],
 ]);
 
 it('shows a Manager their Report\'s record and Assignments but no Pay', function () {

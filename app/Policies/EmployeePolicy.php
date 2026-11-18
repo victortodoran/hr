@@ -23,13 +23,16 @@ class EmployeePolicy
     }
 
     /**
-     * Opening an Employee's page needs something on it the viewer may see:
-     * their record, their Assignments (which seeing their Pay also
-     * allows), their Time Off and Paid Days, or their travel.
+     * Every Employee may always open their own page, My Page, whatever their
+     * Roles, as it always shows their Reporting Chain. Opening anyone else's
+     * needs something on it the viewer may see: their record, their
+     * Assignments (which seeing their Pay also allows), their Time Off and
+     * Paid Days, or their travel.
      */
     public function view(Employee $actor, Employee $employee): bool
     {
-        return $actor->can(Permission::ViewEmployeeRecords->value, $employee)
+        return $actor->is($employee)
+            || $actor->can(Permission::ViewEmployeeRecords->value, $employee)
             || $actor->can('viewAny', [Assignment::class, $employee])
             || $this->viewTimeOffAndPaidDays($actor, $employee)
             || $actor->can(Permission::ViewTravel->value, $employee);

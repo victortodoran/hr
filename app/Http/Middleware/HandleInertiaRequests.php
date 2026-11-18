@@ -55,7 +55,6 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'employee' => $employee,
                 'can' => fn (): array => $employee instanceof Employee ? $employee->companyWidePermissions() : [],
-                'canSeeOwnPage' => fn (): bool => $employee instanceof Employee && $employee->can('view', $employee),
                 'canListEmployees' => fn (): bool => $employee instanceof Employee
                     && ($employee->widestScopeFor(Permission::ViewEmployeeRecords)?->coversOthers() ?? false),
                 'canSeeWorkEntries' => fn (): bool => $employee instanceof Employee && $employee->canSeeWorkEntries(),
