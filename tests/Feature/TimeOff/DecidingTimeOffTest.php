@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\ApproveTimeOff;
+use App\Actions\DeclineTimeOff;
 use App\Enums\TimeOffState;
 use App\Http\Controllers\TimeOff\TimeOffApprovalController;
 use App\Http\Controllers\TimeOff\TimeOffController;
@@ -16,7 +18,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(ApprovalController::class, TimeOffApprovalController::class, TimeOffController::class, TimeOffApprovalRequest::class, TimeOffDeclineController::class, TimeOffDeclineRequest::class, TimeOffPolicy::class, TimeOff::class);
+covers(ApproveTimeOff::class, DeclineTimeOff::class, ApprovalController::class, TimeOffApprovalController::class, TimeOffController::class, TimeOffApprovalRequest::class, TimeOffDeclineController::class, TimeOffDeclineRequest::class, TimeOffPolicy::class, TimeOff::class);
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
@@ -132,6 +134,30 @@ it('refuses answering Time Off that isn\'t Pending', function (string $state, st
 
     expect($timeOff->refresh()->state)->toBe(TimeOffState::from($state));
 })->with(['approved', 'declined', 'cancelled'])->with('answers');
+
+it('leaves Time Off as it is when it stops being Pending between the policy check and the approval', function () {
+    $ben = managerBen();
+    $timeOff = pendingTimeOffOf($ben);
+    TimeOff::query()->whereKey($timeOff->id)->update(['state' => TimeOffState::Cancelled, 'cancelled_at' => now()]);
+
+    expect(app(ApproveTimeOff::class)->approve($ben, $timeOff))->toBeFalse();
+
+    $timeOff->refresh();
+    expect($timeOff->state)->toBe(TimeOffState::Cancelled);
+    expect($timeOff->decided_by)->toBeNull();
+});
+
+it('leaves Time Off as it is when it stops being Pending between the policy check and the decline', function () {
+    $ben = managerBen();
+    $timeOff = pendingTimeOffOf($ben);
+    TimeOff::query()->whereKey($timeOff->id)->update(['state' => TimeOffState::Approved, 'decided_by' => $ben->id, 'decided_at' => now()]);
+
+    expect(app(DeclineTimeOff::class)->decline($ben, $timeOff, 'The release is that week.'))->toBeFalse();
+
+    $timeOff->refresh();
+    expect($timeOff->state)->toBe(TimeOffState::Approved);
+    expect($timeOff->decline_reason)->toBeNull();
+});
 
 it('lets the Manager answer Pending Time Off whose first date has passed', function (string $route, array $form) {
     $ben = managerBen();

@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CancelTimeOff;
 use App\Enums\TimeOffState;
 use App\Http\Controllers\TimeOff\TimeOffCancellationController;
 use App\Models\Employee;
@@ -9,7 +10,7 @@ use App\Policies\TimeOffPolicy;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(TimeOffCancellationController::class, TimeOffPolicy::class, TimeOff::class);
+covers(CancelTimeOff::class, TimeOffCancellationController::class, TimeOffPolicy::class, TimeOff::class);
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
@@ -63,4 +64,15 @@ it('refuses cancelling someone else\'s Time Off, even as an Employee with no Man
     actingAs(Employee::factory()->create())->post(route('time-off.cancellation.store', $timeOff))->assertForbidden();
 
     expect($timeOff->refresh()->state)->toBe(TimeOffState::Pending);
+});
+
+it('leaves Time Off as it is when it stops being cancellable between the policy check and the cancellation', function () {
+    $timeOff = carasTimeOff();
+    TimeOff::query()->whereKey($timeOff->id)->update(['state' => TimeOffState::Declined, 'decided_by' => Employee::factory()->create()->id, 'decided_at' => now(), 'decline_reason' => 'The release is that week.']);
+
+    expect(app(CancelTimeOff::class)->cancel($timeOff))->toBeFalse();
+
+    $timeOff->refresh();
+    expect($timeOff->state)->toBe(TimeOffState::Declined);
+    expect($timeOff->cancelled_at)->toBeNull();
 });
