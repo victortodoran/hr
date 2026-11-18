@@ -25,7 +25,7 @@ beforeEach(function () {
     Storage::fake(TravelExpense::RECEIPT_DISK);
 });
 
-it('adds an expense with its receipt to an Approved Travel Request from its page, landing back there', function () {
+it('opens an Approved Travel Request from its Expenses button and adds an expense with its receipt there, landing back on its page', function () {
     $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
     $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
     $receipt = tempnam(sys_get_temp_dir(), 'receipt').'.pdf';
@@ -34,7 +34,7 @@ it('adds an expense with its receipt to an Approved Travel Request from its page
     actingAs($cara);
 
     visit(route('travel-requests.index'))
-        ->click('Berlin')
+        ->click('internal:role=link[name="Expenses · none"s]')
         ->assertPathIs("/travel-requests/{$berlin->id}")
         ->assertSee('Money paid for this travel appears here')
         ->click('Add expense')

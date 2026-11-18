@@ -27,6 +27,8 @@ export type TravelRequestSummary = {
      * company currency; none for a Travel Request that doesn't take them.
      */
     expense_total: string | null;
+    /** How many of its Travel Expenses count towards that total. */
+    counted_expenses: number;
     /** How many of its Travel Expenses are Declined. */
     declined_expenses: number;
 };
