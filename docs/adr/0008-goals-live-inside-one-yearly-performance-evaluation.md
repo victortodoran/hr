@@ -1,0 +1,3 @@
+# Goals live inside one yearly Performance Evaluation, with no company-wide round
+
+Each Employee has at most one Performance Evaluation per calendar year, and every Goal belongs to exactly one of them. We considered Goals that stand on their own with due dates, looked back on by a separate yearly assessment, but tying each Goal to one year keeps "which Goals count for 2027" unambiguous and gives the Manager one place to set and later assess them. The Manager starts each Evaluation themselves rather than HR launching a company-wide round, because that round would need deadlines, reminders and handling for Employees who join, leave or change Manager mid-round, and nothing asked for it yet. Don't add stand-alone Goals or a company-wide round without revisiting this.

@@ -29,7 +29,7 @@ _Avoid_: End date, termination date, exit date
 ### Reporting line
 
 **Manager**:
-The one Employee that another Employee reports to directly. An Employee has at most one Manager; any number of Employees have none, such as a CEO or co-founders. An Employee with no Manager records no Work Entries, since nobody could approve them, and their Time Off is Approved as soon as they request it. An Employee's Manager can't be removed while they have Pending Work Entries, Time Off, Travel Requests or Travel Expenses, which nobody could then decide.
+The one Employee that another Employee reports to directly. An Employee has at most one Manager; any number of Employees have none, such as a CEO or co-founders. An Employee with no Manager records no Work Entries, since nobody could approve them, and their Time Off is Approved as soon as they request it. An Employee's Manager can't be removed while they have Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or an Open Performance Evaluation, which nobody could then decide.
 _Avoid_: Boss, supervisor, line manager, team lead
 
 **Report**:
@@ -105,7 +105,7 @@ The state of a Work Entry whose hours, or a Travel Expense whose amount, have be
 _Avoid_: Signed off, confirmed, validated, accepted
 
 **Reopen**:
-To send an Approved Work Entry or Travel Expense back to Pending, withdrawing its approval so it can be corrected. Only someone whose Role grants reopening for that Employee can reopen it; being the Employee's Manager is not enough on its own. No Employee can reopen their own.
+To send an Approved Work Entry or Travel Expense back to Pending, withdrawing its approval so it can be corrected, or a Completed Performance Evaluation back to Open. Only someone whose Role grants reopening for that Employee can reopen it; being the Employee's Manager is not enough on its own. No Employee can reopen their own.
 _Avoid_: Unlock, unapprove, reject, revert
 
 **Locked**:
@@ -152,6 +152,28 @@ _Avoid_: Expense, expense claim, cost, receipt, reimbursement, per diem
 The kind of spending a Travel Expense is, from a fixed list the HR system defines: Transport, Accommodation, Meals or Other. Companies can't add their own.
 _Avoid_: Expense type, cost type, category
 
+### Performance
+
+**Performance Evaluation**:
+The yearly look at how one Employee did over one calendar year, holding the Goals they were given for it, as in "Cara's 2027 Performance Evaluation". An Employee has at most one per year, and only an Employee with a Manager has one. The Employee's Manager starts it whenever they choose (while that Manager has left, the next Manager up who hasn't); there is no company-wide round that starts them all. It belongs to the Employee, not to the Manager, so a new Manager takes over the same one. It is Open until the Manager Completes it, with no deadline, and is kept after the Employee leaves.
+_Avoid_: Review, performance review, appraisal, assessment, evaluation cycle
+
+**Goal**:
+Something an Employee's Manager asks them to achieve during the year of one Performance Evaluation, with a title and a description, as in "Ben gave Cara the Goal of leading the Relaunch API work". Every Goal belongs to exactly one Performance Evaluation and to no Assignment or Project. Only the Employee's Manager gives, changes or removes Goals (while that Manager has left, the next Manager up who hasn't), and only while the Performance Evaluation is Open. No Role can grant it, and no Employee sets their own. The Employee sees their Goals as soon as they are given.
+_Avoid_: Objective, OKR, KPI, target
+
+**Outcome**:
+How well a Goal, or a Performance Evaluation as a whole, was achieved, from a fixed list the HR system defines: Not Met, Partly Met, Met or Exceeded. Companies can't add their own. The Manager gives one to every Goal and one to the Performance Evaluation, with a written summary, before Completing it. The Employee sees them only once it is Completed.
+_Avoid_: Rating, score, grade, result
+
+**Open**:
+The state of a Performance Evaluation that has not been Completed yet, or that was Reopened. Its Goals can still be given, changed or removed, and its Outcomes are not yet shown to the Employee.
+_Avoid_: Draft, in progress, active
+
+**Completed**:
+The state of a Performance Evaluation whose Manager has given every Goal and the whole an Outcome and closed it. It cannot be changed, but someone whose Role grants it can Reopen it, which sends it back to Open.
+_Avoid_: Closed, finalised, signed off, submitted
+
 ### Access
 
 **Role**:
@@ -171,5 +193,5 @@ The permanent record of every change to access: a Role being created, edited or 
 _Avoid_: Audit trail, history, activity log, permission log
 
 **Scope**:
-Which Employees a Permission about Employees (their records, Assignments, Pay, Work Entries, Time Off, Paid Days, Travel Requests or Travel Expenses) applies to. Permissions about anything else, such as Projects, Clients or Roles, have no Scope and always apply company-wide. The Scopes are **own** (only the Employee themselves), **reports** (the Employees who report to them) or **everyone**.
+Which Employees a Permission about Employees (their records, Assignments, Pay, Work Entries, Time Off, Paid Days, Travel Requests, Travel Expenses or Performance Evaluations) applies to. Permissions about anything else, such as Projects, Clients or Roles, have no Scope and always apply company-wide. The Scopes are **own** (only the Employee themselves), **reports** (the Employees who report to them) or **everyone**.
 _Avoid_: Reach, level, visibility
