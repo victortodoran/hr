@@ -8,7 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Writing a Comment on a Goal: plain text, required.
  */
-class CommentRequest extends FormRequest
+class GoalCommentRequest extends FormRequest
 {
     /**
      * @return array<string, ValidationRule|array<mixed>|string>

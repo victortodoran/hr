@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Performance;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Performance\CommentRequest;
+use App\Http\Requests\Performance\GoalCommentRequest;
 use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
@@ -21,7 +21,7 @@ class GoalCommentController extends Controller
     /**
      * Write a Comment on the Goal and lead back to the Goal's page.
      */
-    public function store(CommentRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): RedirectResponse
+    public function store(GoalCommentRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): RedirectResponse
     {
         $goal->comments()->create(['author_id' => $actor->id, 'body' => $request->body()]);
 

@@ -198,7 +198,7 @@ setLayoutProps({
                         }}</span>
                         · {{ formatDateTime(comment.written_at) }}
                     </p>
-                    <p class="whitespace-pre-line">{{ comment.body }}</p>
+                    <p>{{ comment.body }}</p>
                 </li>
             </ol>
             <EmptyState

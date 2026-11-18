@@ -9,7 +9,7 @@ use App\Enums\Scope;
 use App\Http\Controllers\Performance\GoalCommentController;
 use App\Http\Controllers\Performance\GoalController;
 use App\Http\Controllers\Performance\PerformanceEvaluationController;
-use App\Http\Requests\Performance\CommentRequest;
+use App\Http\Requests\Performance\GoalCommentRequest;
 use App\Models\Comment;
 use App\Models\Employee;
 use App\Models\Goal;
@@ -22,7 +22,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(GoalCommentController::class, GoalController::class, CommentRequest::class, PerformanceEvaluationController::class, PerformanceEvaluationPolicy::class, Comment::class, Goal::class);
+covers(GoalCommentController::class, GoalController::class, GoalCommentRequest::class, PerformanceEvaluationController::class, PerformanceEvaluationPolicy::class, Comment::class, Goal::class);
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
