@@ -78,19 +78,17 @@ it('declines only Pending Work Entries of the decliner\'s Direct Reports, never 
     $pending = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     $own = WorkEntry::factory()->for(assignmentOf($ben))->create(['date' => '2026-11-10']);
     $approved = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
-    $locked = WorkEntry::factory()->for($relaunch)->locked()->create(['date' => '2026-11-10']);
     $below = WorkEntry::factory()->for(assignmentOf(Employee::factory()->reportingTo($cara)->create()))->create(['date' => '2026-11-10']);
 
     $response = actingAs($ben)->post(route('approvals.declines.store'), [
-        'ids' => [$pending->id, $pending->id, $own->id, $approved->id, $locked->id, $below->id],
+        'ids' => [$pending->id, $pending->id, $own->id, $approved->id, $below->id],
         'decline_reason' => 'Wrong Project',
     ]);
 
-    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry declined, 4 skipped.']);
+    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry declined, 3 skipped.']);
     expect($pending->refresh()->state)->toBe(WorkEntryState::Declined)
         ->and($own->refresh()->state)->toBe(WorkEntryState::Pending)
         ->and($approved->refresh()->state)->toBe(WorkEntryState::Approved)
-        ->and($locked->refresh()->state)->toBe(WorkEntryState::Locked)
         ->and($below->refresh()->state)->toBe(WorkEntryState::Pending);
 });
 

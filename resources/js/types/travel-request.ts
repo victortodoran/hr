@@ -1,4 +1,4 @@
-import type { WorkEntryListFilters, WorkEntrySignOff } from './work-entry';
+import type { WorkEntryListFilters } from './work-entry';
 
 /**
  * Where a Travel Request stands: Pending until decided, Approved or
@@ -31,8 +31,8 @@ export type TravelRequestSummary = {
      */
     entered_total: string | null;
     /**
-     * The total of its Approved and Locked Travel Expenses, already shown in
-     * the company currency; none for a Travel Request that doesn't take them.
+     * The total of its Approved Travel Expenses, already shown in the
+     * company currency; none for a Travel Request that doesn't take them.
      */
     approved_total: string | null;
     /** How many of its Travel Expenses are Declined. */
@@ -93,7 +93,7 @@ export type TravelExpenseCategory =
     | 'other';
 
 /** Where a Travel Expense stands, like a Work Entry. */
-export type TravelExpenseState = 'pending' | 'approved' | 'declined' | 'locked';
+export type TravelExpenseState = 'pending' | 'approved' | 'declined';
 
 /** One Travel Expense of an Employee, with its receipt. */
 export type TravelExpenseRecord = {
@@ -194,7 +194,7 @@ export type TravelExpenseListFilters = Omit<WorkEntryListFilters, 'state'> & {
 
 /**
  * A Travel Expense on the Travel Expenses page, across Employees, with who
- * approved and locked it, and whether the viewer may reopen or lock it.
+ * approved it, and whether the viewer may reopen it.
  */
 export type ListedTravelExpense = {
     id: number;
@@ -209,8 +209,6 @@ export type ListedTravelExpense = {
     state: TravelExpenseState;
     /** Who approved it and when; nobody for an Employee with no Manager, approved at once. */
     approved: { by: string | null; on: string } | null;
-    locked: WorkEntrySignOff | null;
     decline_reason: string | null;
     can_reopen: boolean;
-    can_lock: boolean;
 };

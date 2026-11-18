@@ -79,7 +79,7 @@ it('downloads the matching Work Entries as a CSV file, one row each with every c
     $relaunch = assignmentOf($cara, 'Relaunch');
     $relaunch->project->client()->associate(Client::factory()->create(['name' => 'Acme']))->save();
     $internal = assignmentOf($cara, 'Internal');
-    WorkEntry::factory()->for($relaunch)->approved($dan)->locked($dan)->create(['date' => '2026-11-03', 'minutes' => 450, 'description' => 'Reviewing the API']);
+    WorkEntry::factory()->for($relaunch)->approved($dan)->create(['date' => '2026-11-03', 'minutes' => 450, 'description' => 'Reviewing the API']);
     WorkEntry::factory()->for($relaunch)->declined($dan, 'Wrong Project')->create(['date' => '2026-11-04', 'minutes' => 60, 'description' => 'Standup']);
     WorkEntry::factory()->for($internal)->create(['date' => '2026-11-05', 'minutes' => 180, 'description' => 'Onboarding']);
 
@@ -87,10 +87,10 @@ it('downloads the matching Work Entries as a CSV file, one row each with every c
 
     $response->assertOk()->assertDownload('work-entries-2026-11-01-to-2026-11-30.csv')->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     expect(csvRows($response))->toBe([
-        ['Date', 'Employee', 'Project', 'Client', 'Hours', 'Description', 'State', 'Approved by', 'Approved on', 'Locked by', 'Locked on', 'Declined by', 'Declined on', 'Decline reason'],
-        ['2026-11-03', 'Cara', 'Relaunch', 'Acme', '7.5', 'Reviewing the API', 'Locked', 'Dan', '2026-11-11', 'Dan', '2026-11-11', '', '', ''],
-        ['2026-11-04', 'Cara', 'Relaunch', 'Acme', '1', 'Standup', 'Declined', '', '', '', '', 'Dan', '2026-11-11', 'Wrong Project'],
-        ['2026-11-05', 'Cara', 'Internal', '', '3', 'Onboarding', 'Pending', '', '', '', '', '', '', ''],
+        ['Date', 'Employee', 'Project', 'Client', 'Hours', 'Description', 'State', 'Approved by', 'Approved on', 'Declined by', 'Declined on', 'Decline reason'],
+        ['2026-11-03', 'Cara', 'Relaunch', 'Acme', '7.5', 'Reviewing the API', 'Approved', 'Dan', '2026-11-11', '', '', ''],
+        ['2026-11-04', 'Cara', 'Relaunch', 'Acme', '1', 'Standup', 'Declined', '', '', 'Dan', '2026-11-11', 'Wrong Project'],
+        ['2026-11-05', 'Cara', 'Internal', '', '3', 'Onboarding', 'Pending', '', '', '', '', ''],
     ]);
 });
 
@@ -136,7 +136,7 @@ it('downloads the same rows as an Excel file, with real dates and numbers', func
 
     $response->assertOk()->assertDownload('work-entries-2026-11-01-to-2026-11-30.xlsx')->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     $rows = xlsxRows($response);
-    expect($rows[0])->toBe(['Date', 'Employee', 'Project', 'Client', 'Hours', 'Description', 'State', 'Approved by', 'Approved on', 'Locked by', 'Locked on', 'Declined by', 'Declined on', 'Decline reason'])
+    expect($rows[0])->toBe(['Date', 'Employee', 'Project', 'Client', 'Hours', 'Description', 'State', 'Approved by', 'Approved on', 'Declined by', 'Declined on', 'Decline reason'])
         ->and($rows[1][0])->toBeInstanceOf(DateTimeImmutable::class)
         ->and($rows[1][0]->format('Y-m-d'))->toBe('2026-11-03')
         ->and(array_slice($rows[1], 1, 7))->toBe(['Cara', 'Relaunch', '', 7.5, '=1+1', 'Approved', 'Dan'])

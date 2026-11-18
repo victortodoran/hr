@@ -18,12 +18,10 @@ enum Permission: string
     case ViewWorkEntries = 'view-work-entries';
     case ManageWorkEntries = 'manage-work-entries';
     case ReopenWorkEntries = 'reopen-work-entries';
-    case LockWorkEntries = 'lock-work-entries';
     case ViewTimeOff = 'view-time-off';
     case ManagePaidDays = 'manage-paid-days';
     case ViewTravel = 'view-travel';
     case ReopenTravelExpenses = 'reopen-travel-expenses';
-    case LockTravelExpenses = 'lock-travel-expenses';
     case ViewDirectory = 'view-directory';
     case ViewProjects = 'view-projects';
     case ManageProjects = 'manage-projects';
@@ -51,9 +49,9 @@ enum Permission: string
             self::ViewEmployeeRecords, self::ManageEmployees => 'Employees',
             self::ViewAssignments, self::ManageAssignments => 'Assignments',
             self::ViewPay, self::ManagePay => 'Pay',
-            self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries, self::LockWorkEntries => 'Work entries',
+            self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries => 'Work entries',
             self::ViewTimeOff, self::ManagePaidDays => 'Time off',
-            self::ViewTravel, self::ReopenTravelExpenses, self::LockTravelExpenses => 'Travel',
+            self::ViewTravel, self::ReopenTravelExpenses => 'Travel',
             self::ViewDirectory, self::ViewProjects, self::ManageProjects, self::ManageClients, self::ManageDepartments => 'Organization',
             self::ManageRoles, self::ManageCompany => 'Administration',
         };
@@ -112,27 +110,27 @@ enum Permission: string
 
     /**
      * The Permissions that let someone see an Employee's Work Entries: you
-     * can always see what you can act on. Locking covers everyone. The one
-     * list the policy, the lists and the flags use.
+     * can always see what you can act on. The one list the policy, the
+     * lists and the flags use.
      *
      * @return list<Permission>
      */
     public static function seeingWorkEntries(): array
     {
-        return [self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries, self::LockWorkEntries];
+        return [self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries];
     }
 
     /**
      * The Permissions that let someone see an Employee's Travel Expenses
      * and their receipts across Employees, on the Travel Expenses page:
-     * you can always see what you can act on. Locking covers everyone. The
-     * one list the policy, the list and the flags use. View travel also
-     * shows them, on the Employee's page only, so it isn't among these.
+     * you can always see what you can act on. The one list the policy, the
+     * list and the flags use. View travel also shows them, on the
+     * Employee's page only, so it isn't among these.
      *
      * @return list<Permission>
      */
     public static function seeingTravelExpenses(): array
     {
-        return [self::ReopenTravelExpenses, self::LockTravelExpenses];
+        return [self::ReopenTravelExpenses];
     }
 }

@@ -20,11 +20,10 @@ use Inertia\Response;
 /**
  * The Travel Expenses page: Travel Expenses of the Employees the viewer may
  * see, one Period and one Employee at a time, or every Employee at once,
- * with reopening and locking many of them at once, as the Work Entries page
- * does for hours. Who is listed comes from the viewer's reopen Scope, or
- * everyone for someone who can lock. Reopening is done by the
- * TravelExpenseReopeningController and locking by the
- * TravelExpenseLockController; approving happens on the Approvals page.
+ * with reopening many of them at once, as the Work Entries page does for
+ * hours. Who is listed comes from the viewer's reopen Scope. Reopening is
+ * done by the TravelExpenseReopeningController; approving happens on the
+ * Approvals page.
  */
 class TravelExpenseListController extends Controller
 {
@@ -42,7 +41,6 @@ class TravelExpenseListController extends Controller
     public function index(#[CurrentUser] Employee $actor, TravelExpenseListRequest $request): Response
     {
         $currency = CompanySettings::payCurrency();
-        $canLock = $actor->can('lock', TravelExpense::class);
         $requested = $request->filters();
         $visible = fn (): EmployeeBuilder => Employee::query()->withTravelExpensesVisibleTo($actor);
         $inPeriod = fn (TravelExpenseBuilder $expenses): TravelExpenseBuilder => $expenses->filteredBy(['period' => $requested['period'], 'state' => $requested['state']]);
@@ -80,9 +78,8 @@ class TravelExpenseListController extends Controller
             'filters' => $filters,
             'today' => today()->toDateString(),
             'canReopen' => $actor->holds(Permission::ReopenTravelExpenses),
-            'canLock' => $canLock,
             'expenses' => PageWithin::paginate((clone $matching)
-                ->with(['travelRequest.employee:id,name', 'travelRequest.assignment.project:id,name', 'approver:id,name', 'locker:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+                ->with(['travelRequest.employee:id,name', 'travelRequest.assignment.project:id,name', 'approver:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
                 ->orderBy('paid_on')
                 ->orderBy('id'), 25)
                 ->withQueryString()
@@ -97,10 +94,8 @@ class TravelExpenseListController extends Controller
                     'amount' => $currency->format($expense->amount),
                     'state' => $expense->state->value,
                     'approved' => $expense->approval(),
-                    'locked' => $expense->lock(),
                     'decline_reason' => $expense->decline_reason,
                     'can_reopen' => $expense->state === TravelExpenseState::Approved && $reopenable->contains($expense->travelRequest->employee_id),
-                    'can_lock' => $expense->state === TravelExpenseState::Approved && $canLock,
                 ]),
             'total' => $currency->format((int) (clone $matching)->where('travel_expenses.state', '!=', TravelExpenseState::Declined)->sum('amount')),
             'matchingIds' => Inertia::optional(fn (): array => (clone $matching)->orderBy('id')->pluck('id')->all()),

@@ -19,8 +19,9 @@ use Illuminate\Support\Carbon;
 /**
  * How long an Employee worked on one of their Assignments on one date, and
  * what they did. It always falls within the Assignment's dates and never
- * on a day still to come. It starts Pending, can be Approved, and can then
- * be Locked for good; a Pending one can instead be Declined, with a reason.
+ * on a day still to come. It starts Pending and can be Approved, which it
+ * stays until Reopened (ADR 0005); a Pending one can instead be Declined,
+ * with a reason.
  *
  * @property int $id
  * @property int $assignment_id
@@ -30,8 +31,6 @@ use Illuminate\Support\Carbon;
  * @property WorkEntryState $state
  * @property int|null $approved_by
  * @property Carbon|null $approved_at
- * @property int|null $locked_by
- * @property Carbon|null $locked_at
  * @property int|null $declined_by
  * @property Carbon|null $declined_at
  * @property string|null $decline_reason
@@ -41,7 +40,6 @@ use Illuminate\Support\Carbon;
  * @property-read Assignment $assignment
  * @property-read Employee $employee
  * @property-read Employee|null $approver
- * @property-read Employee|null $locker
  * @property-read Employee|null $decliner
  */
 #[Fillable(['assignment_id', 'date', 'minutes', 'description'])] // @pest-mutate-ignore (class attributes never show as covered)
@@ -102,7 +100,6 @@ class WorkEntry extends Model
             'date' => 'date',
             'state' => WorkEntryState::class,
             'approved_at' => 'datetime',
-            'locked_at' => 'datetime',
             'declined_at' => 'datetime',
         ];
     }
@@ -178,17 +175,6 @@ class WorkEntry extends Model
     }
 
     /**
-     * Who locked the Work Entry and on which day, or null until it is
-     * Locked. Needs the locker loaded.
-     *
-     * @return array{by: string, on: string}|null
-     */
-    public function lock(): ?array
-    {
-        return self::signOff($this->locker, $this->locked_at);
-    }
-
-    /**
      * @return array{by: string, on: string}|null
      */
     private static function signOff(?Employee $employee, ?CarbonInterface $at): ?array
@@ -201,24 +187,13 @@ class WorkEntry extends Model
     }
 
     /**
-     * The Employee who approved the Work Entry, while it is Approved or
-     * Locked.
+     * The Employee who approved the Work Entry, while it is Approved.
      *
      * @return BelongsTo<Employee, $this>
      */
     public function approver(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'approved_by');
-    }
-
-    /**
-     * The Employee who locked the Work Entry, once it is Locked.
-     *
-     * @return BelongsTo<Employee, $this>
-     */
-    public function locker(): BelongsTo
-    {
-        return $this->belongsTo(Employee::class, 'locked_by');
     }
 
     /**

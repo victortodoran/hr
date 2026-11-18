@@ -22,7 +22,7 @@ final class TravelHistory
      * Past holds every other, newest first, Declined and Cancelled ones with
      * dates still ahead included. Each row says whether it takes Travel
      * Expenses and, when it does, the total of those entered that aren't
-     * Declined and the total of those Approved or Locked. It also carries how
+     * Declined and the total of those Approved. It also carries how
      * many are Declined.
      *
      * @return array{upcoming: array<int, array{id: int, destination: string, first_date: string, last_date: string, client: string|null, state: string, takes_expenses: bool, entered_total: string|null, approved_total: string|null, declined_expenses: int}>, past: array<int, array{id: int, destination: string, first_date: string, last_date: string, client: string|null, state: string, takes_expenses: bool, entered_total: string|null, approved_total: string|null, declined_expenses: int}>}
@@ -32,7 +32,7 @@ final class TravelHistory
         $travelRequests = $employee->travelRequests()
             ->with('assignment.project.client:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
             ->withSum(['travelExpenses as entered_amount' => fn (Builder $expenses) => $expenses->where('state', '!=', TravelExpenseState::Declined)], 'amount')
-            ->withSum(['travelExpenses as approved_amount' => fn (Builder $expenses) => $expenses->whereIn('state', TravelExpenseState::accepted())], 'amount')
+            ->withSum(['travelExpenses as approved_amount' => fn (Builder $expenses) => $expenses->where('state', TravelExpenseState::Approved)], 'amount')
             ->withCount(['travelExpenses as declined_expenses' => fn (Builder $expenses) => $expenses->where('state', TravelExpenseState::Declined)])
             ->orderBy('first_date')
             ->orderBy('id')

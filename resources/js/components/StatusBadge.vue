@@ -6,8 +6,8 @@ import type { StatusBadgeState } from '@/types';
 
 /**
  * Shows a state in its status colour: Pending amber, Approved green, Declined
- * red, Locked and Cancelled grey, Upcoming blue. The label defaults to the state's name; pass
- * slot content to word it differently.
+ * red, Cancelled grey, Upcoming blue. The label defaults to the state's
+ * name; pass slot content to word it differently.
  */
 const props = defineProps<{
     state: StatusBadgeState;

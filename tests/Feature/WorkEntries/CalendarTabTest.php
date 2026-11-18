@@ -25,7 +25,7 @@ it('shows a month as ISO weeks, Monday to Sunday, each day as the List has it, l
     $acme = assignmentOf($cara, 'Acme');
     $review = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-03', 'minutes' => 180, 'description' => 'Review']);
     $specs = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-03', 'minutes' => 90, 'description' => 'Specs']);
-    $release = WorkEntry::factory()->for($relaunch)->approved()->locked()->create(['date' => '2026-11-03', 'minutes' => 30, 'description' => 'Release']);
+    $release = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-03', 'minutes' => 30, 'description' => 'Release']);
     $meeting = WorkEntry::factory()->for($acme)->create(['date' => '2026-11-03', 'minutes' => 150, 'description' => 'Team meeting']);
     $late = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-30', 'minutes' => 60, 'description' => 'Late fix']);
 
@@ -51,7 +51,7 @@ it('shows a month as ISO weeks, Monday to Sunday, each day as the List has it, l
         ->where('calendar.1.days.1.entries', [
             $entry($review, 'Relaunch', 3, 'pending'),
             $entry($specs, 'Relaunch', 1.5, 'approved'),
-            $entry($release, 'Relaunch', 0.5, 'locked'),
+            $entry($release, 'Relaunch', 0.5, 'approved'),
             $entry($meeting, 'Acme', 2.5, 'pending'),
         ])
         ->where('calendar.1.days.0.nothing_logged', true)

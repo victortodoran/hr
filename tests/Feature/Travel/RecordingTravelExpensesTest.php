@@ -157,14 +157,13 @@ it('opens the form for changing an expense filled in as it would be typed', func
             ->where('travelExpense', ['id' => $expense->id, 'paid_on' => '2026-12-04', 'category' => 'transport', 'amount' => '250.50', 'description' => 'Train']));
 });
 
-it('refuses the form for changing an expense once Approved or Locked, someone else\'s, or under another Travel Request', function () {
+it('refuses the form for changing an expense once Approved, someone else\'s, or under another Travel Request', function () {
     $cara = expenseRecorder();
     $berlin = berlinTrip($cara);
     $mona = Employee::query()->where('name', 'Mona')->sole();
     $other = TravelRequest::factory()->on(assignmentOf($cara, 'Mobile App'))->approved()->create(['first_date' => '2026-12-07', 'last_date' => '2026-12-07']);
 
     actingAs($cara)->get(route('travel-requests.expenses.edit', [$berlin, recordedExpense($berlin, 'approved')]))->assertForbidden();
-    actingAs($cara)->get(route('travel-requests.expenses.edit', [$berlin, recordedExpense($berlin, 'locked')]))->assertForbidden();
     actingAs($mona)->get(route('travel-requests.expenses.edit', [$berlin, $pending = recordedExpense($berlin)]))->assertForbidden();
     actingAs($cara)->get(route('travel-requests.expenses.edit', [$other, $pending]))->assertNotFound();
 });
@@ -297,16 +296,16 @@ it('lets Cara delete her Pending expense, with its receipt', function () {
     Storage::disk(TravelExpense::RECEIPT_DISK)->assertMissing($expense->receipt_path);
 });
 
-it('refuses changing or deleting an expense once it is Approved or Locked', function (string $state) {
+it('refuses changing or deleting an expense once it is Approved', function () {
     $cara = expenseRecorder();
-    $expense = recordedExpense(berlinTrip($cara), $state);
+    $expense = recordedExpense(berlinTrip($cara), 'approved');
 
     actingAs($cara)->put(route('travel-expenses.update', $expense), expenseForm(['amount' => '1']))->assertForbidden();
     actingAs($cara)->delete(route('travel-expenses.destroy', $expense))->assertForbidden();
 
     expect($expense->fresh()?->amount)->toBe($expense->amount);
     Storage::disk(TravelExpense::RECEIPT_DISK)->assertExists($expense->receipt_path);
-})->with(['approved', 'locked']);
+});
 
 it('refuses recording, changing or deleting an expense on someone else\'s Travel Request', function () {
     $cara = expenseRecorder();

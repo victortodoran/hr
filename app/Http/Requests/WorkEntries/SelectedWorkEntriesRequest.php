@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * The Work Entries selected on the Approvals page, by ID, for approving,
- * reopening or locking them all at once.
+ * reopening them all at once.
  */
 class SelectedWorkEntriesRequest extends FormRequest
 {

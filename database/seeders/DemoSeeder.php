@@ -155,10 +155,10 @@ class DemoSeeder extends Seeder
         $ivanOnWebsite = $this->assign($ivan, $website, 'Designer', 50, $today->subMonths(6), $today->addMonths(4), [['hourly', 3000, null]]);
         $this->assign($dan, $mobileApp, 'Developer', 100, $today->addMonths(2), null, []);
 
-        $this->recordWeeks($caraOnRelaunch, 5, ['Reviewing pull requests', 'Checkout API', 'Sprint planning', 'Fixing payment bugs'], $ben, $finn);
+        $this->recordWeeks($caraOnRelaunch, 5, ['Reviewing pull requests', 'Checkout API', 'Sprint planning', 'Fixing payment bugs'], $ben);
         $this->decline($caraOnRelaunch, today()->startOfWeek(CarbonInterface::MONDAY)->subWeek(), $ben, 'Sprint planning goes on Internal, not Relaunch');
-        $this->recordWeeks($liaOnRelaunch, 6, ['Product listing page', 'Unit tests for the cart', 'Pairing with Cara'], $ben, $finn);
-        $this->recordWeeks($ivanOnWebsite, 4, ['Homepage mock-ups', 'Design review with Hana', 'Icon set'], $hana, $finn);
+        $this->recordWeeks($liaOnRelaunch, 6, ['Product listing page', 'Unit tests for the cart', 'Pairing with Cara'], $ben);
+        $this->recordWeeks($ivanOnWebsite, 4, ['Homepage mock-ups', 'Design review with Hana', 'Icon set'], $hana);
 
         foreach ([$ana, $ben, $hana, $finn, $cara, $eve, $lia, $dan] as $employee) {
             $this->paidDays($employee, $employee->manager_id === null ? 25 : 20);
@@ -268,13 +268,12 @@ class DemoSeeder extends Seeder
 
     /**
      * Record hours on the Assignment for every weekday of the last four
-     * weeks, up to today. This week and last are Pending. The week before was
-     * Approved by the approver the following Monday, and the one before that
-     * was also Locked by the locker a week later.
+     * weeks, up to today. This week and last are Pending. The two weeks
+     * before were Approved by the approver the following Monday.
      *
      * @param  list<string>  $descriptions  What was done, taken in turn
      */
-    private function recordWeeks(Assignment $assignment, int $hoursPerDay, array $descriptions, Employee $approver, Employee $locker): void
+    private function recordWeeks(Assignment $assignment, int $hoursPerDay, array $descriptions, Employee $approver): void
     {
         $thisMonday = today()->startOfWeek(CarbonInterface::MONDAY);
 
@@ -297,11 +296,9 @@ class DemoSeeder extends Seeder
 
                 if ($weeksAgo >= 2) {
                     $workEntry->forceFill([
-                        'state' => $weeksAgo === 3 ? WorkEntryState::Locked : WorkEntryState::Approved,
+                        'state' => WorkEntryState::Approved,
                         'approved_by' => $approver->id,
                         'approved_at' => $monday->addWeek()->setTime(10, 0),
-                        'locked_by' => $weeksAgo === 3 ? $locker->id : null,
-                        'locked_at' => $weeksAgo === 3 ? $monday->addWeeks(2)->setTime(11, 0) : null,
                     ])->save();
                 }
             }
@@ -358,15 +355,15 @@ class DemoSeeder extends Seeder
      * page looks the way it would after months of use: a dozen trips
      * behind him and a handful ahead, on Relaunch and his Internal
      * Assignment, in every state, with Travel Expenses in every state on
-     * those that take them. The oldest are Locked, paid back and locked by
-     * Ana; the latest still wait for her. None shares a day with his Time
-     * Off, four weeks from this Monday.
+     * those that take them. The older ones are Approved; the latest still
+     * wait for her. None shares a day with his Time Off, four weeks from
+     * this Monday.
      */
     private function bensTravel(Assignment $relaunch, Assignment $internal, Employee $ana, CarbonInterface $thisMonday, CarbonInterface $today): void
     {
         $approvedTrip = TravelRequestState::Approved;
         [$transport, $accommodation, $meals, $other] = [TravelExpenseCategory::Transport, TravelExpenseCategory::Accommodation, TravelExpenseCategory::Meals, TravelExpenseCategory::Other];
-        [$pendingExpense, $approvedExpense, $declinedExpense, $lockedExpense] = [TravelExpenseState::Pending, TravelExpenseState::Approved, TravelExpenseState::Declined, TravelExpenseState::Locked];
+        [$pendingExpense, $approvedExpense, $declinedExpense] = [TravelExpenseState::Pending, TravelExpenseState::Approved, TravelExpenseState::Declined];
 
         /**
          * Each trip: Assignment, destination, first date, days after it,
@@ -378,24 +375,24 @@ class DemoSeeder extends Seeder
          */
         $trips = [
             [$relaunch, 'Berlin', $thisMonday->subWeeks(48)->addDay(), 2, 'Relaunch kickoff with Globex', $approvedTrip, true, null, [
-                [0, $transport, 24500, 'Train to Berlin and back', $lockedExpense, null],
-                [2, $accommodation, 61200, 'Hotel, two nights', $lockedExpense, null],
-                [1, $meals, 8900, 'Dinner on the road', $lockedExpense, null],
+                [0, $transport, 24500, 'Train to Berlin and back', $approvedExpense, null],
+                [2, $accommodation, 61200, 'Hotel, two nights', $approvedExpense, null],
+                [1, $meals, 8900, 'Dinner on the road', $approvedExpense, null],
             ]],
             [$internal, 'Munich', $thisMonday->subWeeks(43)->addDays(2), 1, 'Engineering hiring day', $approvedTrip, true, null, [
-                [0, $transport, 15800, 'Train to Munich and back', $lockedExpense, null],
-                [1, $meals, 4200, 'Lunch between interviews', $lockedExpense, null],
+                [0, $transport, 15800, 'Train to Munich and back', $approvedExpense, null],
+                [1, $meals, 4200, 'Lunch between interviews', $approvedExpense, null],
             ]],
             [$internal, 'London', $thisMonday->subWeeks(39), 3, 'Engineering leadership offsite', $approvedTrip, true, null, [
-                [0, $transport, 41000, 'Flights to London and back', $lockedExpense, null],
-                [3, $accommodation, 96000, 'Hotel, three nights', $lockedExpense, null],
-                [1, $other, 12000, 'Offsite venue, my share', $lockedExpense, null],
+                [0, $transport, 41000, 'Flights to London and back', $approvedExpense, null],
+                [3, $accommodation, 96000, 'Hotel, three nights', $approvedExpense, null],
+                [1, $other, 12000, 'Offsite venue, my share', $approvedExpense, null],
                 [2, $meals, 6500, 'Team dinner at the offsite', $declinedExpense, 'The offsite dinner was paid for by the company.'],
             ]],
             [$relaunch, 'Berlin', $thisMonday->subWeeks(35)->addDay(), 2, 'Relaunch roadmap review', TravelRequestState::Declined, true, 'We can do the roadmap review over video this time.', []],
             [$internal, 'Amsterdam', $thisMonday->subWeeks(31)->addDays(2), 2, 'Engineering conference', $approvedTrip, true, null, [
-                [0, $other, 89000, 'Conference ticket', $lockedExpense, null],
-                [0, $transport, 32000, 'Flights to Amsterdam and back', $lockedExpense, null],
+                [0, $other, 89000, 'Conference ticket', $approvedExpense, null],
+                [0, $transport, 32000, 'Flights to Amsterdam and back', $approvedExpense, null],
                 [2, $accommodation, 54000, 'Hotel, two nights', $approvedExpense, null],
             ]],
             [$relaunch, 'Berlin', $thisMonday->subWeeks(27)->addDay(), 1, 'Sprint review with Globex', TravelRequestState::Cancelled, false, null, []],
@@ -444,7 +441,7 @@ class DemoSeeder extends Seeder
             $travelRequest = $this->travelRequest($assignment, $destination, $first, $daysAfter, $purpose, $state, $isDecided ? $ana : null, $declineReason);
 
             foreach ($expenses as [$paidOn, $category, $amount, $description, $expenseState, $expenseDeclineReason]) {
-                $this->travelExpense($travelRequest, is_int($paidOn) ? $first->addDays($paidOn) : $paidOn, $category, $amount, $description, $expenseState, $ana, $expenseDeclineReason, $ana);
+                $this->travelExpense($travelRequest, is_int($paidOn) ? $first->addDays($paidOn) : $paidOn, $category, $amount, $description, $expenseState, $ana, $expenseDeclineReason);
             }
         }
     }
@@ -480,12 +477,11 @@ class DemoSeeder extends Seeder
     /**
      * Add a Travel Expense of the given amount in cents on the Travel
      * Request, with a one-page PDF receipt naming it, Pending unless given
-     * another state. Approved and Locked ones are approved by the decider,
-     * or by nobody for an Employee with no Manager, and Locked ones are
-     * then locked by the locker; Declined ones are declined by the decider
-     * with the reason.
+     * another state. Approved ones are approved by the decider, or by
+     * nobody for an Employee with no Manager; Declined ones are declined by
+     * the decider with the reason.
      */
-    private function travelExpense(TravelRequest $travelRequest, CarbonInterface $paidOn, TravelExpenseCategory $category, int $amount, string $description, TravelExpenseState $state = TravelExpenseState::Pending, ?Employee $decider = null, ?string $declineReason = null, ?Employee $locker = null): void
+    private function travelExpense(TravelRequest $travelRequest, CarbonInterface $paidOn, TravelExpenseCategory $category, int $amount, string $description, TravelExpenseState $state = TravelExpenseState::Pending, ?Employee $decider = null, ?string $declineReason = null): void
     {
         $receiptPath = TravelExpense::RECEIPT_FOLDER.'/'.Str::uuid()->toString().'.pdf';
         Storage::disk(TravelExpense::RECEIPT_DISK)->put($receiptPath, $this->receiptPdf("Receipt: {$description}"));
@@ -500,10 +496,8 @@ class DemoSeeder extends Seeder
 
         $travelExpense->forceFill([
             'state' => $state,
-            'approved_by' => in_array($state, TravelExpenseState::accepted(), true) ? $decider?->id : null,
-            'approved_at' => in_array($state, TravelExpenseState::accepted(), true) ? now()->subDay() : null,
-            'locked_by' => $state === TravelExpenseState::Locked ? $locker?->id : null,
-            'locked_at' => $state === TravelExpenseState::Locked ? now()->subHours(12) : null,
+            'approved_by' => $state === TravelExpenseState::Approved ? $decider?->id : null,
+            'approved_at' => $state === TravelExpenseState::Approved ? now()->subDay() : null,
             'declined_by' => $state === TravelExpenseState::Declined ? $decider?->id : null,
             'declined_at' => $state === TravelExpenseState::Declined ? now()->subDay() : null,
             'decline_reason' => $declineReason,

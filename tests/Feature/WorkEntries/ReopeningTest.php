@@ -49,10 +49,9 @@ it('lists everyone a reopen Scope covers, offering to reopen their Approved Work
         ->component('work-entries/List')
         ->where('filters', ['period' => ['mode' => 'month', 'from' => '2026-11-01', 'to' => '2026-11-30', 'query' => ['month' => '2026-11']], 'employee' => 'all', 'project' => null, 'state' => 'approved'])
         ->where('canReopen', true)
-        ->where('canLock', false)
         ->where('entries.data', [
-            ['id' => $approved->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'API', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'locked' => null, 'declined' => null, 'can_reopen' => true, 'can_lock' => false],
-            ['id' => $own->id, 'date' => '2026-11-10', 'employee' => ['id' => $rae->id, 'name' => 'Rae'], 'project' => 'Archive', 'hours' => $own->hours, 'description' => $own->description, 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-11'], 'locked' => null, 'declined' => null, 'can_reopen' => false, 'can_lock' => false],
+            ['id' => $approved->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'API', 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-10'], 'declined' => null, 'can_reopen' => true],
+            ['id' => $own->id, 'date' => '2026-11-10', 'employee' => ['id' => $rae->id, 'name' => 'Rae'], 'project' => 'Archive', 'hours' => $own->hours, 'description' => $own->description, 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-11-11'], 'declined' => null, 'can_reopen' => false],
         ])
         ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'count' => 1], ['id' => $rae->id, 'name' => 'Rae', 'count' => 1]]));
 });
@@ -84,15 +83,13 @@ it('reopens only the selected Work Entries it may, and says how many it skipped'
     $approved = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
     $own = WorkEntry::factory()->for(assignmentOf($rae))->approved()->create(['date' => '2026-11-10']);
     $pending = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
-    $locked = WorkEntry::factory()->for($relaunch)->locked()->create(['date' => '2026-11-10']);
 
-    $response = actingAs($rae)->post(route('reopenings.store'), ['ids' => [$approved->id, $approved->id, $own->id, $pending->id, $locked->id]]);
+    $response = actingAs($rae)->post(route('reopenings.store'), ['ids' => [$approved->id, $approved->id, $own->id, $pending->id]]);
 
-    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry reopened, 3 skipped.']);
+    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry reopened, 2 skipped.']);
     expect($approved->refresh()->state)->toBe(WorkEntryState::Pending)
         ->and($own->refresh()->state)->toBe(WorkEntryState::Approved)
-        ->and($pending->refresh()->state)->toBe(WorkEntryState::Pending)
-        ->and($locked->refresh()->state)->toBe(WorkEntryState::Locked);
+        ->and($pending->refresh()->state)->toBe(WorkEntryState::Pending);
 });
 
 it('neither offers nor lets a Manager with no reopen Role reopen their Direct Report\'s Work Entries', function () {

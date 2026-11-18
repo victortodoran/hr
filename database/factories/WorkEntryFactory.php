@@ -42,21 +42,6 @@ class WorkEntryFactory extends Factory
     }
 
     /**
-     * Approved (by someone else unless already approved), then Locked by
-     * someone else.
-     */
-    public function locked(?Employee $locker = null): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'approved_by' => $attributes['approved_by'] ?? Employee::factory(),
-            'approved_at' => $attributes['approved_at'] ?? now()->subHour(),
-            'state' => WorkEntryState::Locked,
-            'locked_by' => $locker ?? Employee::factory(),
-            'locked_at' => now(),
-        ]);
-    }
-
-    /**
      * Declined by someone else an hour ago, with a reason.
      */
     public function declined(?Employee $decliner = null, string $reason = 'Not on this Project'): static

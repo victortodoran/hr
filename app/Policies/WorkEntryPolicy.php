@@ -46,7 +46,7 @@ class WorkEntryPolicy
     /**
      * Changing a Work Entry needs what recording it does, and only a Pending
      * or Declined one can be changed: an Approved one must be reopened
-     * first, and a Locked one never can be.
+     * first.
      */
     public function update(Employee $actor, WorkEntry $workEntry): bool
     {
@@ -68,8 +68,8 @@ class WorkEntryPolicy
 
     /**
      * The Approvals page is an inbox for those who approve: anyone who is
-     * someone's effective Manager. Reopening and locking happen on the Work
-     * Entries page instead.
+     * someone's effective Manager. Reopening happens on the Work Entries
+     * page instead.
      */
     public function viewApprovals(Employee $actor): bool
     {
@@ -83,14 +83,5 @@ class WorkEntryPolicy
     public function reopen(Employee $actor): bool
     {
         return $actor->holds(Permission::ReopenWorkEntries);
-    }
-
-    /**
-     * Locking Work Entries needs lock work entries, which applies
-     * company-wide, the locker's own Work Entries included.
-     */
-    public function lock(Employee $actor): bool
-    {
-        return $actor->holds(Permission::LockWorkEntries);
     }
 }

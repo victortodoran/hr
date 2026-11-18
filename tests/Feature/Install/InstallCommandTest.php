@@ -172,10 +172,10 @@ it('creates the starter Manager Role: Reports\' records, Assignments, Work Entri
         ->and($gate->allows(Permission::ManageProjects->value))->toBeFalse();
 });
 
-it('gives reopening and locking Travel Expenses to no starter Role but Admin', function () {
+it('gives reopening Travel Expenses to no starter Role but Admin', function () {
     install(installOptions())->assertSuccessful();
 
-    expect(RolePermission::query()->whereIn('permission', [Permission::ReopenTravelExpenses, Permission::LockTravelExpenses])->exists())->toBeFalse();
+    expect(RolePermission::query()->where('permission', Permission::ReopenTravelExpenses)->exists())->toBeFalse();
 });
 
 it('refuses to run on an app that is already installed', function () {

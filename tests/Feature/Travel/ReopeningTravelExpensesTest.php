@@ -70,8 +70,7 @@ it('lists the Travel Expenses of everyone a reopen Scope covers, offering to reo
         ->component('travel-expenses/List')
         ->where('filters', ['period' => ['mode' => 'month', 'from' => '2026-12-01', 'to' => '2026-12-31', 'query' => ['month' => '2026-12']], 'employee' => 'all', 'project' => null, 'state' => null])
         ->where('canReopen', true)
-        ->where('canLock', false)
-        ->where('expenses.data.0', ['id' => $approved->id, 'paid_on' => '2026-12-04', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'destination' => 'Berlin', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-12-09'], 'locked' => null, 'decline_reason' => null, 'can_reopen' => true, 'can_lock' => false])
+        ->where('expenses.data.0', ['id' => $approved->id, 'paid_on' => '2026-12-04', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'destination' => 'Berlin', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'approved', 'approved' => ['by' => 'Ben', 'on' => '2026-12-09'], 'decline_reason' => null, 'can_reopen' => true])
         ->where('expenses.data.1.id', $pending->id)
         ->where('expenses.data.1.can_reopen', false)
         ->where('expenses.data.2.id', $own->id)
@@ -114,7 +113,7 @@ it('leaves a reopened expense for its Employee to change and their Manager to ap
     expect($expense->approved_by)->toBe($rae->id);
 });
 
-it('skips expenses that aren\'t Approved, a Locked one included', function (string $state) {
+it('skips expenses that aren\'t Approved', function (string $state) {
     $rae = travelReopener();
     $expense = reopenableExpenseOf(Employee::factory()->reportingTo($rae)->create(), $state);
 
@@ -122,7 +121,7 @@ it('skips expenses that aren\'t Approved, a Locked one included', function (stri
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'No Travel Expenses reopened, 1 skipped.']);
 
     expect($expense->refresh()->state->value)->toBe($state);
-})->with(['pending', 'declined', 'locked']);
+})->with(['pending', 'declined']);
 
 it('refuses reopening to a Manager without the Permission, even for their Report', function () {
     $ben = managerBen();
@@ -150,21 +149,18 @@ it('shows the Travel Expenses page in the menu to reopen holders, but not to som
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeTravelExpenseList', false));
 });
 
-it('shows when an expense of an Employee with no Manager was approved and locked, and leaves it reopened for them to correct, which approves it again', function () {
+it('shows when an expense of an Employee with no Manager was approved, and leaves it reopened for them to correct, which approves it again', function () {
     $rae = travelReopener([Permission::ReopenTravelExpenses->value => Scope::Everyone]);
     $ada = Employee::query()->findOrFail($rae->manager_id);
-    $finn = Employee::factory()->create(['name' => 'Finn']);
-    $locked = reopenableExpenseOf($ada, 'locked', ['approved_by' => null, 'approved_at' => '2026-12-04 10:00', 'locked_by' => $finn->id, 'locked_at' => '2026-12-09 10:00']);
     $approved = reopenableExpenseOf($ada, attributes: ['approved_by' => null, 'approved_at' => '2026-12-04 10:00']);
 
     actingAs($rae)->get(route('travel-expense-list.index'))
         ->assertInertia(fn (Assert $page) => $page
+            ->where('expenses.data.0.id', $approved->id)
             ->where('expenses.data.0.approved', ['by' => null, 'on' => '2026-12-04'])
-            ->where('expenses.data.0.locked', ['by' => 'Finn', 'on' => '2026-12-09'])
-            ->where('expenses.data.1.id', $approved->id)
-            ->where('expenses.data.1.can_reopen', true));
-    actingAs($rae)->post(route('travel-expenses.reopenings.store'), ['ids' => [$locked->id, $approved->id]])
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Travel Expense reopened, 1 skipped.']);
+            ->where('expenses.data.0.can_reopen', true));
+    actingAs($rae)->post(route('travel-expenses.reopenings.store'), ['ids' => [$approved->id]])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Travel Expense reopened.']);
     expect($approved->refresh()->state)->toBe(TravelExpenseState::Pending);
 
     actingAs($ada)->put(route('travel-expenses.update', $approved), [

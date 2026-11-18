@@ -106,7 +106,6 @@ it('counts only Pending Work Entries, Time Off and Travel Requests', function ()
     $relaunch = assignmentOf($cara);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-09']);
-    WorkEntry::factory()->for($relaunch)->locked()->create(['date' => '2026-11-06']);
     TimeOff::factory()->unpaid()->for($cara)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-14']);
     TimeOff::factory()->unpaid()->for($cara)->approved()->create(['first_date' => '2026-12-15', 'last_date' => '2026-12-15']);
     TimeOff::factory()->unpaid()->for($cara)->declined()->create(['first_date' => '2026-12-16', 'last_date' => '2026-12-16']);

@@ -57,16 +57,4 @@ class TravelExpenseFactory extends Factory
             'decline_reason' => fake()->sentence(),
         ]);
     }
-
-    /**
-     * Approved and then locked by someone else an hour ago.
-     */
-    public function locked(): static
-    {
-        return $this->approved()->state(fn (array $attributes) => [
-            'state' => TravelExpenseState::Locked,
-            'locked_by' => Employee::factory(),
-            'locked_at' => now()->subHour(),
-        ]);
-    }
 }

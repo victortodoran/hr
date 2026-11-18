@@ -28,7 +28,7 @@ it('opens on the current month and the first Employee by name with Work Entries 
     $bea = Employee::factory()->reportingTo($ada)->create(['name' => 'Bea']);
     $carasRelaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-10-01']);
     $carasBilling = assignmentOf($cara, 'Billing');
-    $locked = WorkEntry::factory()->for($carasBilling)->approved($dan)->locked($dan)->create(['date' => '2026-11-02']);
+    $onBilling = WorkEntry::factory()->for($carasBilling)->approved($dan)->create(['date' => '2026-11-02']);
     $approved = WorkEntry::factory()->for($carasRelaunch)->approved($dan)->create(['date' => '2026-11-09']);
     $pending = WorkEntry::factory()->for($carasRelaunch)->create(['date' => '2026-11-10']);
     WorkEntry::factory()->for($carasRelaunch)->create(['date' => '2026-10-30']);
@@ -41,11 +41,10 @@ it('opens on the current month and the first Employee by name with Work Entries 
         ->component('work-entries/List', false)
         ->where('filters', ['period' => ['mode' => 'month', 'from' => '2026-11-01', 'to' => '2026-11-30', 'query' => ['month' => '2026-11']], 'employee' => $cara->id, 'project' => null, 'state' => null])
         ->where('canReopen', false)
-        ->where('canLock', false)
-        ->where('entries.data', fn (Collection $data): bool => $data->map(fn (array $row): array => [$row['id'], $row['state'], $row['can_reopen'], $row['can_lock']])->all() === [
-            [$locked->id, 'locked', false, false],
-            [$approved->id, 'approved', false, false],
-            [$pending->id, 'pending', false, false],
+        ->where('entries.data', fn (Collection $data): bool => $data->map(fn (array $row): array => [$row['id'], $row['state'], $row['can_reopen']])->all() === [
+            [$onBilling->id, 'approved', false],
+            [$approved->id, 'approved', false],
+            [$pending->id, 'pending', false],
         ])
         ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'count' => 3], ['id' => $dan->id, 'name' => 'Dan', 'count' => 1]])
         ->where('projects', [['id' => $carasBilling->project_id, 'name' => 'Billing'], ['id' => $carasRelaunch->project_id, 'name' => 'Relaunch']]));

@@ -12,8 +12,8 @@ use App\Models\TravelRequest;
  * Who may act on Travel Expenses. Every Employee records their own, on
  * their own Travel Requests, with no Permission needed, and nobody records
  * one for someone else. Only the Employee's effective Manager approves or
- * declines them: no Role grants that. Reopening and locking them come from
- * a Role, like those of Work Entries (ADR 0005).
+ * declines them: no Role grants that. Reopening them comes from a Role,
+ * like that of Work Entries (ADR 0005).
  */
 class TravelExpensePolicy
 {
@@ -51,15 +51,6 @@ class TravelExpensePolicy
     }
 
     /**
-     * Locking Travel Expenses needs lock travel expenses, which applies
-     * company-wide, the locker's own Travel Expenses included.
-     */
-    public function lock(Employee $actor): bool
-    {
-        return $actor->holds(Permission::LockTravelExpenses);
-    }
-
-    /**
      * Only the Employee's effective Manager may approve or decline their
      * Travel Expense, the same rule as Work Entries, and only while it is
      * Pending, even after the Employee has left. No Role grants it, not
@@ -84,7 +75,7 @@ class TravelExpensePolicy
 
     /**
      * Only the Employee whose Travel Expense it is may change it, and only
-     * while it is Pending or Declined: an Approved or Locked one can't be.
+     * while it is Pending or Declined: an Approved one can't be.
      */
     public function update(Employee $actor, TravelExpense $travelExpense): bool
     {

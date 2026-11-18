@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { Receipt } from '@lucide/vue';
-import { computed, ref } from 'vue';
-import TravelExpenseLockController from '@/actions/App/Http/Controllers/Travel/TravelExpenseLockController';
+import { computed } from 'vue';
 import TravelExpenseReceiptController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReceiptController';
 import TravelExpenseReopeningController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReopeningController';
 import DataTable from '@/components/DataTable.vue';
@@ -13,7 +12,6 @@ import Pagination from '@/components/Pagination.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
-import LockTravelExpensesDialog from '@/components/travel-expenses/LockTravelExpensesDialog.vue';
 import { Checkbox } from '@/components/ui/checkbox';
 import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
 import { useBulkSelection } from '@/composables/useBulkSelection';
@@ -38,14 +36,12 @@ defineOptions({
 /**
  * Travel Expenses of the Employees the viewer may see, a Period and an
  * Employee at a time, or every Employee at once, each with its receipt,
- * with reopening and locking the selected ones. Approving happens on
- * Approvals.
+ * with reopening the selected ones. Approving happens on Approvals.
  */
 const props = defineProps<{
     filters: TravelExpenseListFilters;
     today: string;
     canReopen: boolean;
-    canLock: boolean;
     expenses: Paginated<ListedTravelExpense>;
     /** The total of the matching Travel Expenses that aren't Declined, in the company currency. */
     total: string;
@@ -57,10 +53,8 @@ const props = defineProps<{
     projects: Choice[];
 }>();
 
-const canSelect = computed(() => props.canReopen || props.canLock);
-
 const columns = computed<TableColumn[]>(() => [
-    ...(canSelect.value ? [{ key: 'select', label: 'Select' }] : []),
+    ...(props.canReopen ? [{ key: 'select', label: 'Select' }] : []),
     { key: 'paid_on', label: 'Paid', minor: true },
     { key: 'employee', label: 'Employee' },
     { key: 'expense', label: 'Expense' },
@@ -79,9 +73,7 @@ function reloadList(query: Record<string, string>): void {
 }
 
 const selectableOnPage = computed(() =>
-    props.expenses.data.filter(
-        (expense) => expense.can_reopen || expense.can_lock,
-    ),
+    props.expenses.data.filter((expense) => expense.can_reopen),
 );
 
 const {
@@ -104,36 +96,23 @@ const canSelectAllMatching = computed(
     () =>
         props.expenses.total > 0 &&
         props.filters.state === 'approved' &&
-        canSelect.value,
+        props.canReopen,
 );
 
 function reopen(): void {
     submit(TravelExpenseReopeningController.store.url());
 }
 
-const lockOpen = ref(false);
-
-function lock(): void {
-    submit(TravelExpenseLockController.store.url(), () => {
-        lockOpen.value = false;
-    });
-}
-
 /**
- * Who approved and locked a Travel Expense, such as "Approved by Ben on
- * 10 Nov 2026 · Locked by Fay on 11 Nov 2026".
+ * Who approved a Travel Expense and when, such as "Approved by Ben on
+ * 10 Nov 2026", or only when for an Employee with no Manager.
  */
-function signOffs(expense: ListedTravelExpense): string {
-    return [
-        expense.approved &&
-            (expense.approved.by
-                ? `Approved by ${expense.approved.by} on ${formatDate(expense.approved.on)}`
-                : `Approved on ${formatDate(expense.approved.on)}`),
-        expense.locked &&
-            `Locked by ${expense.locked.by} on ${formatDate(expense.locked.on)}`,
-    ]
-        .filter(Boolean)
-        .join(' · ');
+function approvalNote(
+    approved: NonNullable<ListedTravelExpense['approved']>,
+): string {
+    return approved.by
+        ? `Approved by ${approved.by} on ${formatDate(approved.on)}`
+        : `Approved on ${formatDate(approved.on)}`;
 }
 </script>
 
@@ -144,8 +123,8 @@ function signOffs(expense: ListedTravelExpense): string {
         <Heading
             title="Travel Expenses"
             :description="
-                canSelect
-                    ? 'Money Employees paid for travel, to check, reopen and lock'
+                canReopen
+                    ? 'Money Employees paid for travel, to check and reopen'
                     : 'Money Employees paid for travel'
             "
         />
@@ -169,22 +148,14 @@ function signOffs(expense: ListedTravelExpense): string {
 
         <div class="flex flex-col gap-3">
             <SelectionBar
-                v-if="canSelect"
+                v-if="canReopen"
                 :count="selected.length"
                 :matching="canSelectAllMatching ? expenses.total : undefined"
                 @select-all="selectAllMatching"
                 @clear="clear"
             >
                 <template #actions>
-                    <LockTravelExpensesDialog
-                        v-if="canLock"
-                        v-model:open="lockOpen"
-                        :count="selected.length"
-                        :processing="processing"
-                        @lock="lock"
-                    />
                     <SubmitButton
-                        v-if="canReopen"
                         variant="outline"
                         :processing="processing"
                         type="button"
@@ -206,7 +177,7 @@ function signOffs(expense: ListedTravelExpense): string {
                 </template>
                 <template #cell-select="{ row }">
                     <Checkbox
-                        v-if="row.can_reopen || row.can_lock"
+                        v-if="row.can_reopen"
                         :model-value="isSelected(row.id)"
                         :aria-label="`Select ${row.employee.name}'s ${travelExpenseCategories[row.category]} expense paid on ${formatDate(row.paid_on)}`"
                         @update:model-value="toggle(row.id, $event === true)"
@@ -242,9 +213,9 @@ function signOffs(expense: ListedTravelExpense): string {
                             >Receipt</a
                         >
                         <span
-                            v-if="row.approved || row.locked"
+                            v-if="row.approved"
                             class="block text-xs text-muted-foreground"
-                            >{{ signOffs(row) }}</span
+                            >{{ approvalNote(row.approved) }}</span
                         >
                         <span
                             v-if="row.decline_reason"

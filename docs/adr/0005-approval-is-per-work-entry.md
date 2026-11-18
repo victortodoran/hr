@@ -1,0 +1,5 @@
+# Approval is a state of each Work Entry, not of a period
+
+Most time-tracking systems group hours into a Timesheet, approve that, and close a period once it is invoiced. We don't. Each Work Entry is Pending, Approved or Declined on its own. Approving many entries at once, such as a Project's month, is only a bulk action over the entries selected at that moment. A Work Entry recorded later for an already approved month starts Pending and is approved in a later run. This keeps Work Entries free of any grouping (see the glossary) and lets late or corrected hours flow through without reopening anything else.
+
+There is deliberately no final, closed state after Approved. We once had a Locked state for hours invoiced to a Client or expenses paid back, and removed it: whether something was invoiced or paid back is tracked outside the HR system, and an Approved Work Entry or Travel Expense can always be Reopened by someone whose Role grants reopening. Don't introduce Timesheets, closed periods or a final state without revisiting this.

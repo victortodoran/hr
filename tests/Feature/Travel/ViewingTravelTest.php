@@ -65,8 +65,8 @@ function anaWithViewTravelAndCara(Scope $scope): array
 /**
  * Cara's travel on 10 Dec 2026, from the end of her Berlin trip, Approved
  * with its 1,990 RON hotel and a Declined 50 RON dinner: Lisbon, Approved
- * and underway until today, with a 300 RON Approved flight, a 120 RON
- * Locked taxi and a 50 RON Pending lunch; Rome, Approved from the 12th;
+ * and underway until today, with a 300 RON and a 120 RON Approved
+ * expense and a 50 RON Pending lunch; Rome, Approved from the 12th;
  * Vienna, Pending on the 20th, for Globex; Munich, Declined for the 15th;
  * and Paris, Cancelled after it was Approved, for the 18th.
  *
@@ -82,7 +82,7 @@ function carasTravel(Employee $cara): array
 
     $lisbon = TravelRequest::factory()->on($relaunch)->approved()->create(['destination' => 'Lisbon', 'first_date' => '2026-12-09', 'last_date' => '2026-12-10']);
     TravelExpense::factory()->for($lisbon)->approved()->create(['paid_on' => '2026-12-09', 'amount' => 30000]);
-    TravelExpense::factory()->for($lisbon)->locked()->create(['paid_on' => '2026-12-09', 'amount' => 12000]);
+    TravelExpense::factory()->for($lisbon)->approved()->create(['paid_on' => '2026-12-09', 'amount' => 12000]);
     TravelExpense::factory()->for($lisbon)->create(['paid_on' => '2026-12-10', 'amount' => 5000]);
 
     return [

@@ -25,7 +25,7 @@ class WorkEntryExportController extends Controller
         $filters = $request->filters();
         $entries = WorkEntry::query()
             ->listedFor($actor, $filters)
-            ->with(['assignment.employee:id,name', 'assignment.project:id,name,client_id', 'assignment.project.client:id,name', 'approver:id,name', 'locker:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same rows)
+            ->with(['assignment.employee:id,name', 'assignment.project:id,name,client_id', 'assignment.project.client:id,name', 'approver:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same rows)
             ->orderBy('date')
             ->orderBy('id');
 

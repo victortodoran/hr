@@ -108,10 +108,6 @@ _Avoid_: Signed off, confirmed, validated, accepted
 To send an Approved Work Entry or Travel Expense back to Pending, withdrawing its approval so it can be corrected, or a Completed Performance Evaluation back to Open. Only someone whose Role grants reopening for that Employee can reopen it; being the Employee's Manager is not enough on its own. No Employee can reopen their own.
 _Avoid_: Unlock, unapprove, reject, revert
 
-**Locked**:
-The final state of an Approved Work Entry or Travel Expense, closed for good, for example because it has been invoiced to a Client, or paid or paid back to the Employee. A Locked one can never be changed, deleted or sent back to Pending.
-_Avoid_: Invoiced, closed, final, frozen, archived
-
 ### Time Off
 
 **Time Off**:
@@ -145,7 +141,7 @@ An Employee asking to travel for work on one of their Assignments, with a destin
 _Avoid_: Trip, business trip, travel, journey
 
 **Travel Expense**:
-Money an Employee paid themselves for the travel of one of their Approved Travel Requests, which the company pays back to them, as in "Cara paid 1,990 RON for the Berlin hotel". It has the amount in the company's currency, the date it was paid (any day up to today), a Travel Expense Category, a description and the receipt, which is always required. What the company paid for directly is not a Travel Expense. Every Employee records their own, and nobody records one for someone else. Like a Work Entry, each Travel Expense is Pending, Approved, Declined or Locked on its own: the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't), it can be Reopened, and it is Locked once the Employee has been paid back. The Travel Expenses of an Employee with no Manager are Approved as soon as they record them.
+Money an Employee paid themselves for the travel of one of their Approved Travel Requests, which the company pays back to them, as in "Cara paid 1,990 RON for the Berlin hotel". It has the amount in the company's currency, the date it was paid (any day up to today), a Travel Expense Category, a description and the receipt, which is always required. What the company paid for directly is not a Travel Expense. Every Employee records their own, and nobody records one for someone else. Like a Work Entry, each Travel Expense is Pending, Approved or Declined on its own: the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't), and it can be Reopened. The Travel Expenses of an Employee with no Manager are Approved as soon as they record them.
 _Avoid_: Expense, expense claim, cost, receipt, reimbursement, per diem
 
 **Travel Expense Category**:

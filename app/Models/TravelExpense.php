@@ -18,8 +18,7 @@ use Illuminate\Support\Carbon;
  * Requests, which the company pays back (ADR 0007): an amount in the
  * company currency, the date it was paid, a Travel Expense Category, a
  * description and its receipt, kept on the private disk. Like a Work Entry
- * it starts Pending, can be Approved and then Locked for good, or Declined
- * with a reason.
+ * it starts Pending and can be Approved, or Declined with a reason.
  *
  * @property int $id
  * @property int $travel_request_id
@@ -31,8 +30,6 @@ use Illuminate\Support\Carbon;
  * @property TravelExpenseState $state
  * @property int|null $approved_by
  * @property Carbon|null $approved_at
- * @property int|null $locked_by
- * @property Carbon|null $locked_at
  * @property int|null $declined_by
  * @property Carbon|null $declined_at
  * @property string|null $decline_reason
@@ -40,7 +37,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read TravelRequest $travelRequest
  * @property-read Employee|null $approver
- * @property-read Employee|null $locker
  */
 #[Fillable(['paid_on', 'amount', 'category', 'description', 'receipt_path'])] // @pest-mutate-ignore (class attributes never show as covered)
 #[UseEloquentBuilder(TravelExpenseBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
@@ -81,7 +77,6 @@ class TravelExpense extends Model
             'category' => TravelExpenseCategory::class,
             'state' => TravelExpenseState::class,
             'approved_at' => 'datetime',
-            'locked_at' => 'datetime',
             'declined_at' => 'datetime',
         ];
     }
@@ -97,7 +92,7 @@ class TravelExpense extends Model
 
     /**
      * Who approved the Travel Expense and on which day, or null while it
-     * isn't Approved or Locked. Nobody approved that of an Employee with no
+     * isn't Approved. Nobody approved that of an Employee with no
      * Manager, which was Approved at once, so its approver is null. Needs
      * the approver loaded.
      *
@@ -113,21 +108,6 @@ class TravelExpense extends Model
     }
 
     /**
-     * Who locked the Travel Expense and on which day, or null until it is
-     * Locked. Needs the locker loaded.
-     *
-     * @return array{by: string, on: string}|null
-     */
-    public function lock(): ?array
-    {
-        if ($this->locker === null || $this->locked_at === null) { // @pest-mutate-ignore (the travel_expenses_state constraint keeps who and when both set or both empty)
-            return null;
-        }
-
-        return ['by' => $this->locker->name, 'on' => $this->locked_at->toDateString()];
-    }
-
-    /**
      * The Travel Request whose travel it was paid for.
      *
      * @return BelongsTo<TravelRequest, $this>
@@ -138,23 +118,12 @@ class TravelExpense extends Model
     }
 
     /**
-     * The Employee who approved the Travel Expense, while it is Approved or
-     * Locked.
+     * The Employee who approved the Travel Expense, while it is Approved.
      *
      * @return BelongsTo<Employee, $this>
      */
     public function approver(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'approved_by');
-    }
-
-    /**
-     * The Employee who locked the Travel Expense, once it is Locked.
-     *
-     * @return BelongsTo<Employee, $this>
-     */
-    public function locker(): BelongsTo
-    {
-        return $this->belongsTo(Employee::class, 'locked_by');
     }
 }

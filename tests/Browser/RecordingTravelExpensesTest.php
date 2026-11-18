@@ -6,7 +6,6 @@ use App\Enums\TravelExpenseCategory;
 use App\Enums\TravelExpenseState;
 use App\Http\Controllers\Travel\TravelExpenseController;
 use App\Http\Controllers\Travel\TravelExpenseListController;
-use App\Http\Controllers\Travel\TravelExpenseLockController;
 use App\Http\Controllers\Travel\TravelExpenseReopeningController;
 use App\Models\CompanySettings;
 use App\Models\Employee;
@@ -17,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(TravelExpenseController::class, TravelExpenseListController::class, TravelExpenseReopeningController::class, TravelExpenseLockController::class);
+covers(TravelExpenseController::class, TravelExpenseListController::class, TravelExpenseReopeningController::class);
 
 beforeEach(function () {
     travelTo('2026-12-10 09:00');
@@ -107,12 +106,12 @@ it('shows the current receipt when changing an expense, and saves a new file cho
     expect($expense->fresh()?->receipt_path)->not->toBe($expense->receipt_path);
 });
 
-it('filters the Travel Expenses page to Approved expenses, then reopens one and locks another', function () {
-    $finn = employeeWith([Permission::ReopenTravelExpenses->value => Scope::Everyone, Permission::LockTravelExpenses->value => null], ['name' => 'Finn']);
+it('filters the Travel Expenses page to Approved expenses, then reopens one and leaves the other Approved', function () {
+    $finn = employeeWith([Permission::ReopenTravelExpenses->value => Scope::Everyone], ['name' => 'Finn']);
     $cara = Employee::factory()->create(['name' => 'Cara']);
     $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
     $toReopen = TravelExpense::factory()->for($berlin)->approved()->create(['paid_on' => '2026-12-03', 'category' => TravelExpenseCategory::Transport, 'description' => 'Flight']);
-    $toLock = TravelExpense::factory()->for($berlin)->approved()->create(['paid_on' => '2026-12-04', 'category' => TravelExpenseCategory::Accommodation, 'description' => 'Hotel']);
+    $stillApproved = TravelExpense::factory()->for($berlin)->approved()->create(['paid_on' => '2026-12-04', 'category' => TravelExpenseCategory::Accommodation, 'description' => 'Hotel']);
     TravelExpense::factory()->for($berlin)->create(['paid_on' => '2026-12-05', 'category' => TravelExpenseCategory::Meals, 'description' => 'Dinner']);
 
     actingAs($finn);
@@ -127,13 +126,9 @@ it('filters the Travel Expenses page to Approved expenses, then reopens one and 
         ->click('Reopen')
         ->assertSee('1 Travel Expense reopened.')
         ->assertDontSee('Flight')
-        ->click('[aria-label="Select Cara\'s Accommodation expense paid on Dec 4, 2026"]')
-        ->click('internal:role=button[name="Lock"s]')
-        ->assertSee('Lock 1 Travel Expense?')
-        ->click('Lock for good')
-        ->assertSee('1 Travel Expense locked.')
+        ->assertSee('Hotel')
         ->assertNoJavaScriptErrors();
 
     expect($toReopen->refresh()->state)->toBe(TravelExpenseState::Pending)
-        ->and($toLock->refresh()->state)->toBe(TravelExpenseState::Locked);
+        ->and($stillApproved->refresh()->state)->toBe(TravelExpenseState::Approved);
 });
