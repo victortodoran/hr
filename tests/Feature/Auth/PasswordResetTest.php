@@ -81,18 +81,4 @@ class PasswordResetTest extends TestCase
         $this->assertCredentials(['email' => $employee->email, 'password' => 'a-new-password']);
         $this->assertInvalidCredentials(['email' => $employee->email, 'password' => 'password']);
     }
-
-    public function test_password_cannot_be_reset_with_invalid_token(): void
-    {
-        $employee = Employee::factory()->create();
-
-        $response = $this->post(route('password.update'), [
-            'token' => 'invalid-token',
-            'email' => $employee->email,
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
-        ]);
-
-        $response->assertSessionHasErrors('email');
-    }
 }

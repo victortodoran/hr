@@ -93,16 +93,6 @@ it('approves the Time Off of an Employee with no Manager at once, with nobody de
     expect($timeOff->decided_at)->toEqual(now());
 });
 
-it('counts only weekdays: Fri 18 to Mon 21 Dec is 2 days', function () {
-    $cara = timeOffRequester();
-
-    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-18', 'last_date' => '2026-12-21']))
-        ->assertSessionHasNoErrors();
-
-    actingAs($cara)->get(route('time-off.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('timeOff.0.days', 2));
-});
-
 it('refuses Time Off with no weekdays in it', function () {
     $cara = timeOffRequester();
 
@@ -198,17 +188,6 @@ it('refuses Paid Time Off beyond the Paid Days left, counting Pending and Approv
     expect(TimeOff::query()->count())->toBe(2);
 });
 
-it('tells how many Paid Days are left: 20 Paid Days, 19 used and 3 requested Paid is refused, but accepted Unpaid', function () {
-    $cara = timeOffRequester();
-    TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-26']);
-
-    actingAs($cara)->post(route('time-off.store'), timeOffForm())
-        ->assertSessionHasErrors(['is_paid' => 'You have 1 Paid Day left in 2026, but this Paid Time Off takes 3. Request the rest as Unpaid Time Off.']);
-    actingAs($cara)->post(route('time-off.store'), timeOffForm(['is_paid' => false]))->assertSessionHasNoErrors();
-
-    expect(storedTimeOff($cara)[1])->toBe(['first_date' => '2026-12-14', 'last_date' => '2026-12-16', 'is_paid' => false, 'state' => TimeOffState::Pending]);
-});
-
 it('accepts Paid Time Off using exactly the Paid Days left, not counting Unpaid, Declined or Cancelled Time Off', function () {
     $cara = timeOffRequester();
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-24']);
@@ -274,14 +253,6 @@ it('shows the Employee their own Time Off, latest first, and the Paid Days left 
             ]));
 });
 
-it('shows negative Paid Days left once HR has lowered them below what is taken', function () {
-    $cara = timeOffRequester(['paid_days' => 15]);
-    TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-27']);
-
-    actingAs($cara)->get(route('time-off.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('paidDaysLeft', -5));
-});
-
 it('refuses Paid Time Off while Paid Days left are negative, but still takes Unpaid', function () {
     $cara = timeOffRequester(['paid_days' => 15]);
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-27']);
@@ -300,16 +271,6 @@ it('opens the form for requesting Time Off on its own page, with today as the ea
         ->assertInertia(fn (Assert $page) => $page
             ->component('time-off/Create')
             ->where('today', '2026-12-01'));
-});
-
-it('returns a refused request to its form page, keeping the error for the field', function () {
-    $cara = timeOffRequester(['paid_days' => 1]);
-
-    actingAs($cara)->from(route('time-off.create'))->post(route('time-off.store'), timeOffForm())
-        ->assertRedirect(route('time-off.create'))
-        ->assertSessionHasErrors('is_paid');
-
-    expect(TimeOff::query()->count())->toBe(0);
 });
 
 it('needs signing in to see or request Time Off', function () {

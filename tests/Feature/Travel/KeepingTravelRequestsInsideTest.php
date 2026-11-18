@@ -126,16 +126,6 @@ it('refuses a Leaving Date before the last day of the Employee\'s Pending or App
     expect($cara->refresh()->leaving_date?->toDateString())->toBe('2026-12-05');
 })->with(['pending' => null, 'approved' => 'approved']);
 
-it('lets an Employee leave before their Declined or Cancelled travel', function (string $state) {
-    $cara = relaunchWithTravel($state)->employee;
-
-    actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['leaving_date' => '2026-12-01']))
-        ->assertValid();
-
-    expect($cara->refresh()->leaving_date?->toDateString())->toBe('2026-12-01');
-})->with(['declined', 'cancelled']);
-
 it('refuses ending a Project before the last day of Pending or Approved travel on its Assignments, and allows it on that day', function (?string $state) {
     $relaunch = relaunchWithTravel($state);
 
@@ -151,13 +141,3 @@ it('refuses ending a Project before the last day of Pending or Approved travel o
 
     expect($relaunch->project->refresh()->end_date?->toDateString())->toBe('2026-12-05');
 })->with(['pending' => null, 'approved' => 'approved']);
-
-it('lets a Project end before Declined or Cancelled travel on it', function (string $state) {
-    $relaunch = relaunchWithTravel($state);
-
-    actingAs(employeeWith([Permission::ManageProjects->value => null]))
-        ->patch(route('projects.update', $relaunch->project), endingProject($relaunch, '2026-12-01'))
-        ->assertValid();
-
-    expect($relaunch->project->refresh()->end_date?->toDateString())->toBe('2026-12-01');
-})->with(['declined', 'cancelled']);

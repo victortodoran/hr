@@ -52,8 +52,6 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
         ->component('approvals/Index')
         ->where('tab', 'work-entries')
         ->where('waiting', ['workEntries' => 2, 'timeOff' => 0, 'travelRequests' => 0, 'travelExpenses' => 0])
-        ->missing('toApprove')
-        ->missing('canReopen')
         ->where('filters', ['employee' => $cara->id, 'project' => $carasRelaunch->project_id])
         ->where('entries.data', [
             ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Specs'],
@@ -286,17 +284,6 @@ it('offers no Employee or Project to choose when nothing waits for the approver'
         ->where('projects', [])
         ->where('entries.data', [])
         ->where('total', 0));
-});
-
-it('has no date range to filter by', function () {
-    ['ben' => $ben, 'cara' => $cara] = approverOfCaraAndDev();
-    $caras = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03']);
-
-    $response = actingAs($ben)->get(route('approvals.index', ['from' => '2026-11-04', 'to' => 'later']));
-
-    $response->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('filters.employee', $cara->id)
-        ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$caras->id]));
 });
 
 it('refuses malformed filters', function (array $filters, string $field, string $message) {

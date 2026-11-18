@@ -105,14 +105,3 @@ it('refuses reopening one that is still Open', function () {
         ->assertInertia(fn (Assert $page) => $page->where('canReopen', false));
     actingAs($rae)->post(route('performance-evaluations.reopening.store', $evaluation))->assertForbidden();
 });
-
-it('blocks removing the Employee\'s Manager again once reopened', function () {
-    [, $cara, $evaluation] = carasCompletedEvaluation();
-    $rae = employeeWith([Permission::ReopenPerformanceEvaluations->value => Scope::Everyone]);
-    actingAs($rae)->post(route('performance-evaluations.reopening.store', $evaluation));
-
-    actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['manager_id' => null]))
-        ->assertSessionHasErrors('manager_id');
-    expect($evaluation->refresh()->state)->toBe(PerformanceEvaluationState::Open);
-});

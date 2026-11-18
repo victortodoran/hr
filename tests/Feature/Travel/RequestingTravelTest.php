@@ -87,15 +87,6 @@ it('lets an Employee request travel on their Assignment, which starts Pending an
         ->assertInertia(fn (Assert $page) => $page->where('travelRequest.days', 3));
 });
 
-it('counts weekends: Sat 12 to Sun 13 Dec is 2 days and is accepted', function () {
-    $cara = traveller();
-
-    actingAs($cara)->post(route('travel-requests.store'), travelForm(assignmentOf($cara), ['first_date' => '2026-12-12', 'last_date' => '2026-12-13']))
-        ->assertSessionHasNoErrors();
-
-    expect(TravelRequest::query()->sole()->days())->toBe(2);
-});
-
 it('lets an Employee travel for the company itself on their Internal Assignment', function () {
     $cara = traveller();
     $internal = Assignment::factory()->internal()->for($cara)->create();

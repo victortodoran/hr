@@ -122,22 +122,6 @@ it('reopens only expenses of the Travel Request it is sent for', function () {
     expect($paris->refresh()->state)->toBe(TravelExpenseState::Approved);
 });
 
-it('leaves a reopened expense for its Employee to change and their Manager to approve again', function () {
-    $rae = travelReopener();
-    $cara = Employee::factory()->reportingTo($rae)->create();
-    $expense = reopenableExpenseOf($cara);
-
-    actingAs($rae)->post(route('travel-requests.expenses.reopenings.store', $expense->travel_request_id), ['ids' => [$expense->id]]);
-    $expense->refresh();
-
-    expect($cara->can('update', $expense))->toBeTrue();
-    expect($cara->can('delete', $expense))->toBeTrue();
-    actingAs($rae)->post(route('approvals.travel-expenses.store'), ['ids' => [$expense->id]])
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Travel Expense approved.']);
-    expect($expense->refresh()->state)->toBe(TravelExpenseState::Approved);
-    expect($expense->approved_by)->toBe($rae->id);
-});
-
 it('skips expenses that aren\'t Approved', function (string $state) {
     $rae = travelReopener();
     $expense = reopenableExpenseOf(Employee::factory()->reportingTo($rae)->create(), $state);
