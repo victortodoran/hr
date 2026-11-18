@@ -1,3 +1,5 @@
+import type { ListFilters } from './list-filters';
+
 /**
  * Where a Work Entry stands: only a Pending or Declined one can be changed,
  * and a Declined one's hours count nowhere.
@@ -37,18 +39,6 @@ export type WorkEntryRecord = {
     can_delete: boolean;
     /** Who declined it and why, while it is Declined. */
     declined: WorkEntryDecline | null;
-};
-
-/**
- * The days the Work Entries week page shows: a week from Monday to Sunday,
- * a calendar month, or a custom period, from and to as YYYY-MM-DD.
- */
-export type WorkEntryPeriod = {
-    mode: 'week' | 'month' | 'custom';
-    from: string;
-    to: string;
-    /** The URL query asking for the Period, kept when saving or deleting. */
-    query: Record<string, string>;
 };
 
 /**
@@ -168,21 +158,5 @@ export type ChoiceToApprove = {
     pending: number;
 };
 
-/**
- * The Work Entries page's filters, as the server resolved them: the
- * Period; the Employee shown, "all" for any Employee, null only when nobody
- * has Work Entries in the Period; a Project and a state, null for any.
- */
-export type WorkEntryListFilters = {
-    period: WorkEntryPeriod;
-    employee: number | 'all' | null;
-    project: number | null;
-    state: WorkEntryState | null;
-};
-
-/** An Employee with Work Entries in the month shown, and how many. */
-export type EmployeeWithWorkEntries = {
-    id: number;
-    name: string;
-    count: number;
-};
+/** The Work Entries page's filters, as the server resolved them. */
+export type WorkEntryListFilters = ListFilters<WorkEntryState>;

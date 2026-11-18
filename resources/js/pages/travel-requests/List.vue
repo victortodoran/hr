@@ -4,18 +4,19 @@ import { Luggage } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
+import ListFilterBar from '@/components/ListFilterBar.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
-import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
 import { formatDateRange } from '@/lib/dates';
 import { index } from '@/routes/travel-request-list';
 import { show } from '@/routes/travel-requests';
 import type {
     Choice,
-    EmployeeWithWorkEntries,
+    EmployeeWithCount,
     ListedTravelRequest,
     Paginated,
+    StateChoice,
     TableColumn,
     TravelRequestListFilters,
     TravelRequestState,
@@ -40,12 +41,12 @@ const props = defineProps<{
     /** The total of the matching Travel Requests' Travel Expenses that aren't Declined, in the company currency. */
     total: string;
     /** Who has Travel Requests in the Period, by name, with how many. */
-    employees: EmployeeWithWorkEntries[];
+    employees: EmployeeWithCount[];
     /** The Projects the Employee shown, or anyone, has Travel Requests on in the Period. */
     projects: Choice[];
 }>();
 
-const states: { value: TravelRequestState; label: string }[] = [
+const states: StateChoice<TravelRequestState>[] = [
     { value: 'pending', label: 'Pending' },
     { value: 'approved', label: 'Approved' },
     { value: 'declined', label: 'Declined' },
@@ -78,7 +79,7 @@ function reloadList(query: Record<string, string>): void {
             description="Employees' travel and what they spent on it"
         />
 
-        <WorkEntryListFilterBar
+        <ListFilterBar
             :filters="props.filters"
             :today="today"
             :employees="employees"

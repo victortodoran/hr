@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDate } from '@/lib/dates';
-import type { WorkEntryPeriod } from '@/types';
+import type { Period } from '@/types';
 
 /**
- * Chooses the Period a Work Entries page shows. Week steps a week at a time
+ * Chooses the Period a page shows, such as Work Entries or Travel Requests. Week steps a week at a time
  * with "This week", Month uses the month picker, and Custom takes a From and
  * a To date, with no arrows. Later weeks, months and dates can be chosen
  * unless `noFuture` is set, when Custom also starts no later than today.
@@ -20,7 +20,7 @@ import type { WorkEntryPeriod } from '@/types';
  * Period shown. Emits the URL query asking for the chosen Period.
  */
 const props = defineProps<{
-    period: WorkEntryPeriod;
+    period: Period;
     today: string;
     /** Stops at today: no later week or month, and no date after today. */
     noFuture?: boolean;
@@ -30,7 +30,7 @@ const emit = defineEmits<{
     change: [query: Record<string, string>];
 }>();
 
-const modes: { mode: WorkEntryPeriod['mode']; label: string }[] = [
+const modes: { mode: Period['mode']; label: string }[] = [
     { mode: 'week', label: 'Week' },
     { mode: 'month', label: 'Month' },
     { mode: 'custom', label: 'Custom' },
@@ -43,7 +43,7 @@ const anchor = computed(() =>
         : props.period.from,
 );
 
-function chooseMode(mode: WorkEntryPeriod['mode']): void {
+function chooseMode(mode: Period['mode']): void {
     if (mode === props.period.mode) {
         return;
     }

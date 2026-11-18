@@ -5,6 +5,7 @@ import { computed } from 'vue';
 import ReopeningController from '@/actions/App/Http/Controllers/WorkEntries/ReopeningController';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
+import ListFilterBar from '@/components/ListFilterBar.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
@@ -14,7 +15,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import WorkEntryExportMenu from '@/components/work-entries/WorkEntryExportMenu.vue';
-import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
 import WorkEntrySummary from '@/components/work-entries/WorkEntrySummary.vue';
 import { useBulkSelection } from '@/composables/useBulkSelection';
 import { formatDate, formatWeekdayAndDay } from '@/lib/dates';
@@ -23,10 +23,12 @@ import { index as week } from '@/routes/work-entries';
 import { index } from '@/routes/work-entry-list';
 import type {
     Choice,
-    EmployeeWithWorkEntries,
+    EmployeeWithCount,
     ListedWorkEntry,
     Paginated,
+    StateChoice,
     WorkEntryListFilters,
+    WorkEntryState,
 } from '@/types';
 
 defineOptions({
@@ -52,10 +54,16 @@ const props = defineProps<{
     /** Every matching Work Entry's ID; only sent when asked for. */
     matchingIds?: number[];
     /** Who has Work Entries in the Period, by name, with how many. */
-    employees: EmployeeWithWorkEntries[];
+    employees: EmployeeWithCount[];
     /** The Projects the Employee shown, or anyone, has Work Entries on in the Period. */
     projects: Choice[];
 }>();
+
+const states: StateChoice<WorkEntryState>[] = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'declined', label: 'Declined' },
+];
 
 /**
  * The list's grid, as on My Work Entries: on a phone each Work Entry stacks
@@ -146,11 +154,12 @@ function weekOf(entry: ListedWorkEntry): string {
             />
         </div>
 
-        <WorkEntryListFilterBar
+        <ListFilterBar
             :filters="filters"
             :today="today"
             :employees="employees"
             :projects="projects"
+            :states="states"
             @change="reloadList"
         />
 

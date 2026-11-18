@@ -27,7 +27,7 @@ import type {
     WorkEntryAssignment,
     WorkEntryCalendarWeek,
     WorkEntryDay,
-    WorkEntryPeriod,
+    Period,
     WorkEntryState,
 } from '@/types';
 
@@ -48,7 +48,7 @@ const props = defineProps<{
     today: string;
     showWeekends: boolean;
     employee: Choice;
-    period: WorkEntryPeriod;
+    period: Period;
     assignments: WorkEntryAssignment[];
     canManage: boolean;
 }>();
@@ -62,7 +62,7 @@ const emit = defineEmits<{
 const isWide = useMediaQuery('(min-width: 640px)');
 
 /** The Period as changes made on the Calendar send it, so they come back to the Calendar. */
-const calendarPeriod = computed((): WorkEntryPeriod => ({
+const calendarPeriod = computed((): Period => ({
     ...props.period,
     query: { ...props.period.query, tab: 'calendar' },
 }));

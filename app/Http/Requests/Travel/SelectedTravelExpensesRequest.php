@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Travel;
 
-use App\Http\Requests\WorkEntries\SelectedWorkEntriesRequest;
+use App\Support\SelectedIds;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -17,7 +17,7 @@ class SelectedTravelExpensesRequest extends FormRequest
      */
     public function rules(): array
     {
-        return SelectedWorkEntriesRequest::idRules();
+        return SelectedIds::rules();
     }
 
     /**
@@ -37,7 +37,7 @@ class SelectedTravelExpensesRequest extends FormRequest
      */
     public function ids(): array
     {
-        return SelectedWorkEntriesRequest::distinctIds($this->array('ids'));
+        return SelectedIds::distinct($this->array('ids'));
     }
 
     /**
@@ -46,6 +46,6 @@ class SelectedTravelExpensesRequest extends FormRequest
      */
     public function outcome(string $done, int $skipped): string
     {
-        return $skipped > 0 ? __(':done, :skipped skipped.', ['done' => $done, 'skipped' => $skipped]) : $done.'.';
+        return SelectedIds::outcome($done, $skipped);
     }
 }

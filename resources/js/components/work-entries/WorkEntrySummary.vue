@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { formatMonth } from '@/lib/dates';
 import { formatHours } from '@/lib/work-entries';
-import type { WorkEntryAssignmentTotal, WorkEntryPeriod } from '@/types';
+import type { WorkEntryAssignmentTotal, Period } from '@/types';
 
 /**
  * The Period's total hours in large type, saying what it covers, with the
@@ -14,7 +14,7 @@ const props = withDefaults(
         total: number;
         declinedHours: number;
         /** The Period the total covers, worded by `covers`. */
-        period?: WorkEntryPeriod;
+        period?: Period;
         /** What the total covers, in place of the Period's wording, such as "in 3 matching Work Entries". */
         caption?: string;
         assignmentTotals?: WorkEntryAssignmentTotal[];

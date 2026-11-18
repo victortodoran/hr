@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\WorkEntries;
 
+use App\Support\SelectedIds;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -16,7 +17,7 @@ class SelectedWorkEntriesRequest extends FormRequest
      */
     public function rules(): array
     {
-        return self::idRules();
+        return SelectedIds::rules();
     }
 
     /**
@@ -34,7 +35,7 @@ class SelectedWorkEntriesRequest extends FormRequest
      */
     public function ids(): array
     {
-        return self::distinctIds($this->array('ids'));
+        return SelectedIds::distinct($this->array('ids'));
     }
 
     /**
@@ -43,32 +44,7 @@ class SelectedWorkEntriesRequest extends FormRequest
      */
     public function outcome(string $done, int $skipped): string
     {
-        return $skipped > 0 ? __(':done, :skipped skipped.', ['done' => $done, 'skipped' => $skipped]) : $done.'.';
-    }
-
-    /**
-     * Validated Work Entry IDs, which arrive as strings in a query string, as
-     * whole numbers, each once.
-     *
-     * @param  array<mixed>  $ids
-     * @return array<int, int>
-     */
-    public static function distinctIds(array $ids): array
-    {
-        return collect($ids)->map(fn (mixed $id): int => (int) $id)->unique()->values()->all(); // @pest-mutate-ignore (the int return type already turns the validated numeric strings into numbers)
-    }
-
-    /**
-     * A non-empty list of Work Entry IDs.
-     *
-     * @return array<string, array<int, string>>
-     */
-    public static function idRules(): array
-    {
-        return [
-            'ids' => ['required', 'list'],
-            'ids.*' => ['integer'],
-        ];
+        return SelectedIds::outcome($done, $skipped);
     }
 
     /**

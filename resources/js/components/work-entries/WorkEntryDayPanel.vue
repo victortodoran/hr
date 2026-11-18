@@ -13,7 +13,7 @@ import type {
     Choice,
     WorkEntryAssignment,
     WorkEntryDay,
-    WorkEntryPeriod,
+    Period,
 } from '@/types';
 
 /**
@@ -24,7 +24,7 @@ import type {
 const props = defineProps<{
     day: WorkEntryDay;
     employee: Choice;
-    period: WorkEntryPeriod;
+    period: Period;
     today: string;
     assignments: WorkEntryAssignment[];
     /** Whether the viewer can add hours to this day. */

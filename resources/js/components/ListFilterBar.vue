@@ -7,48 +7,40 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
+import PeriodNavigation from '@/components/PeriodNavigation.vue';
 import type {
     Choice,
-    EmployeeWithWorkEntries,
-    WorkEntryListFilters,
-    WorkEntryState,
+    EmployeeWithCount,
+    ListFilters,
+    StateChoice,
 } from '@/types';
 
 /**
- * Filters for the Work Entries page, and the Travel Requests page, which
- * lists Travel Requests the same way: a Period, a week, a month or a custom
- * one, never after today unless `allowFuture` is set; one Employee with
- * Work Entries (or Travel Requests) in it, each offered with how many, or
- * any Employee; a Project they have them on, or any; and a state, or any,
- * from `states` when given. Shows what
+ * Filters for a list across Employees, such as the Work Entries and Travel
+ * Requests pages: a Period, a week, a month or a custom one, never after
+ * today unless `allowFuture` is set; one Employee with something listed in
+ * it, each offered with how many, or any Employee; a Project they have
+ * something on, or any; and one of the list's `states`, or any. Shows what
  * the server resolved, and emits the query string to reload the list with
  * whenever one changes. Changing the Period or state keeps "Any Employee"
- * but otherwise lets the server pick the first Employee; changing anything
- * but the Project drops the Project. With nobody to choose, only the Period
- * and state are offered. An Employee with Work Entries on only one Project
- * shows that Project, without "Any Project" to choose; both list the same
- * Work Entries, so the filter itself stays as it was.
+ * but otherwise lets the server pick; changing anything but the Project
+ * drops the Project. With nobody to choose, only the Period and state are
+ * offered. An Employee with something on only one Project shows that
+ * Project, without "Any Project" to choose; both list the same, so the
+ * filter itself stays as it was.
  */
 const props = withDefaults(
     defineProps<{
-        filters: Omit<WorkEntryListFilters, 'state'> & { state: string | null };
+        filters: ListFilters<string>;
         today: string;
-        employees: EmployeeWithWorkEntries[];
+        employees: EmployeeWithCount[];
         projects: Choice[];
-        /** The states to filter by; a Work Entry's when not given. */
-        states?: { value: string; label: string }[];
+        /** The states the list can be filtered by. */
+        states: StateChoice[];
         /** Lets the Period go past today, for what is planned ahead. */
         allowFuture?: boolean;
     }>(),
-    {
-        states: (): { value: WorkEntryState; label: string }[] => [
-            { value: 'pending', label: 'Pending' },
-            { value: 'approved', label: 'Approved' },
-            { value: 'declined', label: 'Declined' },
-        ],
-        allowFuture: false,
-    },
+    { allowFuture: false },
 );
 
 const emit = defineEmits<{
@@ -78,7 +70,7 @@ function choosePeriod(period: Record<string, string>): void {
     emit('change', query({ period, employee: anyEmployee() }));
 }
 
-/** Whether the one Employee shown has Work Entries on just one Project. */
+/** Whether the one Employee shown has something on just one Project. */
 const hasOnlyOneProject = computed(
     () =>
         typeof props.filters.employee === 'number' &&
