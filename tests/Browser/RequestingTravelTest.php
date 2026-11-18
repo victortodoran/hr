@@ -85,6 +85,7 @@ it('keeps the request travel form from being sent while no Assignment is chosen'
         ->assertNoJavaScriptErrors();
 
     expect($page->script('document.querySelector(\'select[name="assignment_id"]\').validity.valueMissing'))->toBeTrue();
+    expect($page->script('Math.abs(document.querySelector(\'select[name="assignment_id"]\').getBoundingClientRect().top - document.getElementById("travel-assignment").getBoundingClientRect().top)'))->toBeLessThan(50);
     expect(TravelRequest::query()->exists())->toBeFalse();
 });
 

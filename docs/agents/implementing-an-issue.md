@@ -30,6 +30,8 @@ Point it at this doc for the rest.
 - In Pest, chaining `->not` after another matcher fails PHPStan; start a second `expect()`.
 - After moving or renaming PHP files, run `vendor/bin/pint app routes tests`: `--dirty` skips moved files.
 - Pest architecture failures don't name the offending file, so a check about where code sits belongs in a `bin/lint-*.sh` script run by `composer ci:check`.
+- Lists render a second copy of some links and buttons for phones, hidden on desktop (`sm:hidden`), so a browser test clicking by text can hit the hidden copy and time out. Click by role, e.g. `internal:role=link[name="Expenses"s]`, which skips hidden elements.
+- To see a page with data, sign in on hr.test as a demo user from `DemoSeeder`. `migrate:fresh --seed` wipes the shared `hr` database, so ask before running it.
 
 ## Steps
 
