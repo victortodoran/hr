@@ -3,7 +3,12 @@ import type { Choice } from './employee-record';
 /**
  * Where a Performance Evaluation stands.
  */
-export type PerformanceEvaluationState = 'open';
+export type PerformanceEvaluationState = 'open' | 'completed';
+
+/**
+ * How well a Goal, or a Performance Evaluation as a whole, was achieved.
+ */
+export type Outcome = 'not-met' | 'partly-met' | 'met' | 'exceeded';
 
 /**
  * One of the signed-in Employee's own Performance Evaluations on My
@@ -14,6 +19,8 @@ export type OwnPerformanceEvaluation = {
     year: number;
     state: PerformanceEvaluationState;
     goals_count: number;
+    /** The Outcome of the whole, once Completed. */
+    outcome: Outcome | null;
 };
 
 /**
@@ -28,6 +35,8 @@ export type PerformanceEvaluationRow = {
         id: number;
         state: PerformanceEvaluationState;
         goals_count: number;
+        /** The Outcome of the whole, once Completed. */
+        outcome: Outcome | null;
     } | null;
     can_start: boolean;
 };
@@ -42,6 +51,14 @@ export type Goal = {
 };
 
 /**
+ * A Goal on its Performance Evaluation's page, with its Outcome when the
+ * viewer may see it and one has been given.
+ */
+export type AssessedGoal = Goal & {
+    outcome: Outcome | null;
+};
+
+/**
  * A Performance Evaluation in full, with its Goals.
  */
 export type PerformanceEvaluationRecord = {
@@ -49,7 +66,13 @@ export type PerformanceEvaluationRecord = {
     year: number;
     state: PerformanceEvaluationState;
     employee: Choice;
-    goals: Goal[];
+    goals: AssessedGoal[];
+    /** The Outcome of the whole, when the viewer may see it and one has been given. */
+    outcome: Outcome | null;
+    /** The Manager's summary, when the viewer may see it and one has been written. */
+    summary: string | null;
+    /** When it was Completed, if it has been. */
+    completed_at: string | null;
 };
 
 /**

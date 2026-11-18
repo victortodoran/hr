@@ -6,6 +6,7 @@ import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import { outcomes } from '@/lib/outcomes';
 import { index } from '@/routes/my-performance-evaluations';
 import { show } from '@/routes/performance-evaluations';
 import type { OwnPerformanceEvaluation, TableColumn } from '@/types';
@@ -45,7 +46,12 @@ const columns: TableColumn[] = [
                 >
             </template>
             <template #cell-state="{ row }">
-                <StatusBadge :state="row.state" />
+                <div class="flex items-center justify-end gap-2">
+                    <span v-if="row.outcome" class="text-muted-foreground">{{
+                        outcomes[row.outcome]
+                    }}</span>
+                    <StatusBadge :state="row.state" />
+                </div>
             </template>
             <template #empty>
                 <EmptyState

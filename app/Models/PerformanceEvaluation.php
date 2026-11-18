@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Outcome;
 use App\Enums\PerformanceEvaluationState;
 use Database\Factories\PerformanceEvaluationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -22,6 +23,9 @@ use Illuminate\Support\Carbon;
  * @property int $employee_id
  * @property int $year
  * @property PerformanceEvaluationState $state
+ * @property Outcome|null $outcome
+ * @property string|null $summary
+ * @property Carbon|null $completed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Employee $employee
@@ -53,6 +57,8 @@ class PerformanceEvaluation extends Model
         return [
             'year' => 'integer',
             'state' => PerformanceEvaluationState::class,
+            'outcome' => Outcome::class,
+            'completed_at' => 'datetime',
         ];
     }
 

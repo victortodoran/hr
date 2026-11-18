@@ -15,6 +15,8 @@ use App\Http\Controllers\Employees\TeamController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Performance\GoalController;
 use App\Http\Controllers\Performance\MyPerformanceEvaluationController;
+use App\Http\Controllers\Performance\PerformanceEvaluationAssessmentController;
+use App\Http\Controllers\Performance\PerformanceEvaluationCompletionController;
 use App\Http\Controllers\Performance\PerformanceEvaluationController;
 use App\Http\Controllers\Projects\ClientController;
 use App\Http\Controllers\Projects\ProjectController;
@@ -140,6 +142,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('performance-evaluations/{performanceEvaluation}/goals/{goal}/edit', [GoalController::class, 'edit'])->name('performance-evaluations.goals.edit');
         Route::put('performance-evaluations/{performanceEvaluation}/goals/{goal}', [GoalController::class, 'update'])->name('performance-evaluations.goals.update');
         Route::delete('performance-evaluations/{performanceEvaluation}/goals/{goal}', [GoalController::class, 'destroy'])->name('performance-evaluations.goals.destroy');
+        Route::put('performance-evaluations/{performanceEvaluation}/assessment', [PerformanceEvaluationAssessmentController::class, 'update'])->name('performance-evaluations.assessment.update');
+        Route::post('performance-evaluations/{performanceEvaluation}/completion', [PerformanceEvaluationCompletionController::class, 'store'])->name('performance-evaluations.completion.store');
     });
 
     Route::middleware('can:'.Permission::ViewDirectory->value)->group(function () {
