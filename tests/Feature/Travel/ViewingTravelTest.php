@@ -18,9 +18,7 @@ use App\Models\TravelRequest;
 use App\Policies\EmployeePolicy;
 use App\Policies\TravelExpensePolicy;
 use App\Policies\TravelRequestPolicy;
-use App\Support\EmployeePage;
 use App\Support\TravelHistory;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -28,7 +26,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(EmployeeController::class, EmployeePage::class, TravelHistory::class, EmployeePolicy::class, TravelExpensePolicy::class, TravelExpenseReceiptController::class, TravelRequestController::class, TravelRequestPolicy::class, Permission::class);
+covers(EmployeeController::class, TravelHistory::class, EmployeePolicy::class, TravelExpensePolicy::class, TravelExpenseReceiptController::class, TravelRequestController::class, TravelRequestPolicy::class, Permission::class);
 
 beforeEach(function () {
     travelTo('2026-12-10 09:00');
@@ -127,22 +125,13 @@ it('moves a Travel Request to Past the day after its last date', function () {
             ->where('travelRequests.past.2.id', $lisbon->id));
 });
 
-it('shows Cara\'s travel on her record\'s Travel tab in the same Upcoming and Past rows to Ana with view travel for her Reports', function () {
+it('refuses Cara\'s page to Ana with view travel for her Reports, as no travel shows on it', function () {
     [$ana, $cara] = anaWithViewTravelAndCara(Scope::Reports);
-    $travel = carasTravel($cara);
 
-    actingAs($ana)->get(route('employees.show', ['employee' => $cara, 'tab' => 'travel']))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('tab', 'travel')
-            ->where('tabs', ['overview', 'travel'])
-            ->where('travelRequests.upcoming', fn (Collection $rows): bool => $rows->pluck('id')->all() === [$travel['lisbon']->id, $travel['rome']->id, $travel['vienna']->id])
-            ->where('travelRequests.past', fn (Collection $rows): bool => $rows->pluck('id')->all() === [$travel['paris']->id, $travel['munich']->id, $travel['berlin']->id])
-            ->where('travelRequests.past.2.entered_total', "RON\u{a0}1,990.00")
-            ->where('travelRequests.past.2.declined_expenses', 1));
+    actingAs($ana)->get(route('employees.show', $cara))->assertForbidden();
 });
 
-it('shows Cara\'s Travel Request page in full, with its Travel Expenses and nothing to do, and breadcrumbs to her record, to Ana with view travel for her Reports', function () {
+it('shows Cara\'s Travel Request page in full, with its Travel Expenses and nothing to do, and her name in the breadcrumbs leading nowhere, to Ana with view travel for her Reports', function () {
     [$ana, $cara] = anaWithViewTravelAndCara(Scope::Reports);
     $hotel = berlinTripWithHotel($cara);
     $berlin = $hotel->travelRequest;
@@ -167,7 +156,7 @@ it('shows Cara\'s Travel Request page in full, with its Travel Expenses and noth
             ])
             ->where('employee', ['id' => $cara->id, 'name' => 'Cara'])
             ->where('isOwn', false)
-            ->where('canViewEmployee', true));
+            ->where('canViewEmployee', false));
     actingAs($ana)->get(route('travel-expenses.receipt.show', $hotel))->assertOk()->assertStreamedContent('receipt');
 });
 
@@ -226,12 +215,11 @@ it('shows a Travel Request page, with nothing to do, to someone who may reopen T
             ->where('travelRequest.expenses.can_create', false));
 });
 
-it('refuses Ana with view travel for her Reports the page, Travel Request pages and receipts of someone who isn\'t her Report', function () {
+it('refuses Ana with view travel for her Reports the Travel Request pages and receipts of someone who isn\'t her Report', function () {
     [$ana] = anaWithViewTravelAndCara(Scope::Reports);
     $outsider = Employee::factory()->create();
     $hotel = berlinTripWithHotel($outsider);
 
-    actingAs($ana)->get(route('employees.show', ['employee' => $outsider, 'tab' => 'travel']))->assertForbidden();
     actingAs($ana)->get(route('travel-requests.show', $hotel->travelRequest))->assertForbidden();
     actingAs($ana)->get(route('travel-expenses.receipt.show', $hotel))->assertForbidden();
 });
@@ -242,28 +230,32 @@ it('refuses an Employee someone else\'s Travel Request page', function () {
     actingAs(Employee::factory()->create())->get(route('travel-requests.show', $hotel->travelRequest))->assertForbidden();
 });
 
-it('shows anyone\'s travel, Travel Request pages and receipts to Ana with view travel for everyone', function () {
+it('shows anyone\'s Travel Request pages and receipts to Ana with view travel for everyone', function () {
     [$ana] = anaWithViewTravelAndCara(Scope::Everyone);
     $outsider = Employee::factory()->create();
     $hotel = berlinTripWithHotel($outsider);
 
-    actingAs($ana)->get(route('employees.show', ['employee' => $outsider, 'tab' => 'travel']))
-        ->assertInertia(fn (Assert $page) => $page->where('tab', 'travel')->has('travelRequests.past', 1));
     actingAs($ana)->get(route('travel-requests.show', $hotel->travelRequest))->assertOk();
     actingAs($ana)->get(route('travel-expenses.receipt.show', $hotel))->assertOk();
 });
 
-it('offers no Travel tab and refuses Travel Request pages and receipts to someone who may see Cara\'s record but not her travel', function () {
-    $viewer = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]);
-    $hotel = berlinTripWithHotel($cara = Employee::factory()->create());
+it('offers no Travel tab on Cara\'s page, opening Overview when asked for it, even to someone who may see her record and her travel', function () {
+    $viewer = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ViewTravel->value => Scope::Everyone]);
+    berlinTripWithHotel($cara = Employee::factory()->create());
 
     actingAs($viewer)->get(route('employees.show', ['employee' => $cara, 'tab' => 'travel']))
         ->assertInertia(fn (Assert $page) => $page->where('tab', 'overview')->where('tabs', ['overview'])->missing('travelRequests'));
+});
+
+it('refuses Travel Request pages and receipts to someone who may see Cara\'s record but not her travel', function () {
+    $viewer = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]);
+    $hotel = berlinTripWithHotel(Employee::factory()->create());
+
     actingAs($viewer)->get(route('travel-requests.show', $hotel->travelRequest))->assertForbidden();
     actingAs($viewer)->get(route('travel-expenses.receipt.show', $hotel))->assertForbidden();
 });
 
-it('lets a new Employee, given the starter Employee Role, see their own travel on their record', function () {
+it('lets a new Employee, given the starter Employee Role, see their own travel on their Travel page', function () {
     Notification::fake();
     CompanySettings::query()->delete();
     $ana = app(InstallCompany::class)->install('Acme Software', 'RON', 'Engineering', 'Ana', 'ana@acme.test');
@@ -274,6 +266,6 @@ it('lets a new Employee, given the starter Employee Role, see their own travel o
     $cara->markEmailAsVerified();
     berlinTripWithHotel($cara);
 
-    actingAs($cara)->get(route('employees.show', ['employee' => $cara, 'tab' => 'travel']))
-        ->assertInertia(fn (Assert $page) => $page->where('tab', 'travel')->has('travelRequests.past', 1));
+    actingAs($cara)->get(route('travel-requests.index'))
+        ->assertInertia(fn (Assert $page) => $page->has('travelRequests.past', 1));
 });
