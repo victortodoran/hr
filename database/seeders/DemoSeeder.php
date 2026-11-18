@@ -35,8 +35,8 @@ use Illuminate\Support\Str;
  * actions the app uses, four weeks of Work Entries, Paid Days (none for
  * Ivan), Time Off and Travel Requests in every state, a year of Ben's
  * travel among them, and Travel Expenses with small generated PDF
- * receipts, replacing any an earlier demo left behind. Dates are relative to today, so the Future and Former Employees
- * stay that way, and the last two weeks of Work Entries and the Time Off
+ * receipts, replacing any an earlier demo left behind. Dates are relative
+ * to today, so the Future and Former Employees stay that way, and the last two weeks of Work Entries and the Time Off
  * still to come are always Pending, waiting for each Employee's Manager (Ben
  * or Hana) to approve them. Everyone except the Future Employee can sign in
  * with the password "password"; the Future Employee still has an invitation
@@ -55,6 +55,9 @@ use Illuminate\Support\Str;
 class DemoSeeder extends Seeder
 {
     private const string PASSWORD = 'password';
+
+    /** Why a Manager declines a client dinner on a Travel Expense. */
+    private const string CLIENT_DINNER_DECLINED = 'Client dinners go through the company card. Could you add only your own meal?';
 
     public function __construct(
         private InstallCompany $installCompany,
@@ -181,7 +184,7 @@ class DemoSeeder extends Seeder
 
         $this->travelExpense($workshop, $workshop->first_date, TravelExpenseCategory::Transport, 18900, 'Train to Berlin and back', TravelExpenseState::Approved, $ben);
         $this->travelExpense($workshop, $workshop->last_date, TravelExpenseCategory::Accommodation, 39800, 'Hotel, two nights');
-        $this->travelExpense($workshop, $workshop->first_date->addDay(), TravelExpenseCategory::Meals, 14250, 'Team dinner with Globex', TravelExpenseState::Declined, $ben, 'Client dinners go through the company card. Could you add only your own meal?');
+        $this->travelExpense($workshop, $workshop->first_date->addDay(), TravelExpenseCategory::Meals, 14250, 'Team dinner with Globex', TravelExpenseState::Declined, $ben, self::CLIENT_DINNER_DECLINED);
         $this->travelExpense($investors, $today->subDays(3), TravelExpenseCategory::Transport, 32000, 'Flights to London, booked early', TravelExpenseState::Approved);
         $this->bensTravel($benOnRelaunch, $ben->internalAssignment()->sole(), $ana, $thisMonday, $today);
 
@@ -361,10 +364,9 @@ class DemoSeeder extends Seeder
      */
     private function bensTravel(Assignment $relaunch, Assignment $internal, Employee $ana, CarbonInterface $thisMonday, CarbonInterface $today): void
     {
-        $approved = TravelRequestState::Approved;
-        [$transport, $stay, $meals, $other] = [TravelExpenseCategory::Transport, TravelExpenseCategory::Accommodation, TravelExpenseCategory::Meals, TravelExpenseCategory::Other];
-        [$pending, $accepted, $declined, $locked] = [TravelExpenseState::Pending, TravelExpenseState::Approved, TravelExpenseState::Declined, TravelExpenseState::Locked];
-        $cardOnly = 'Client dinners go through the company card. Could you add only your own meal?';
+        $approvedTrip = TravelRequestState::Approved;
+        [$transport, $accommodation, $meals, $other] = [TravelExpenseCategory::Transport, TravelExpenseCategory::Accommodation, TravelExpenseCategory::Meals, TravelExpenseCategory::Other];
+        [$pendingExpense, $approvedExpense, $declinedExpense, $lockedExpense] = [TravelExpenseState::Pending, TravelExpenseState::Approved, TravelExpenseState::Declined, TravelExpenseState::Locked];
 
         /**
          * Each trip: Assignment, destination, first date, days after it,
@@ -375,62 +377,67 @@ class DemoSeeder extends Seeder
          * @var array<int, array{Assignment, string, CarbonInterface, int, string, TravelRequestState, bool, string|null, array<int, array{int|CarbonInterface, TravelExpenseCategory, int, string, TravelExpenseState, string|null}>}> $trips
          */
         $trips = [
-            [$relaunch, 'Berlin', $thisMonday->subWeeks(48)->addDay(), 2, 'Relaunch kickoff with Globex', $approved, true, null, [
-                [0, $transport, 24500, 'Train to Berlin and back', $locked, null],
-                [2, $stay, 61200, 'Hotel, two nights', $locked, null],
-                [1, $meals, 8900, 'Dinner on the road', $locked, null],
+            [$relaunch, 'Berlin', $thisMonday->subWeeks(48)->addDay(), 2, 'Relaunch kickoff with Globex', $approvedTrip, true, null, [
+                [0, $transport, 24500, 'Train to Berlin and back', $lockedExpense, null],
+                [2, $accommodation, 61200, 'Hotel, two nights', $lockedExpense, null],
+                [1, $meals, 8900, 'Dinner on the road', $lockedExpense, null],
             ]],
-            [$internal, 'Munich', $thisMonday->subWeeks(43)->addDays(2), 1, 'Engineering hiring day', $approved, true, null, [
-                [0, $transport, 15800, 'Train to Munich and back', $locked, null],
-                [1, $meals, 4200, 'Lunch between interviews', $locked, null],
+            [$internal, 'Munich', $thisMonday->subWeeks(43)->addDays(2), 1, 'Engineering hiring day', $approvedTrip, true, null, [
+                [0, $transport, 15800, 'Train to Munich and back', $lockedExpense, null],
+                [1, $meals, 4200, 'Lunch between interviews', $lockedExpense, null],
             ]],
-            [$internal, 'London', $thisMonday->subWeeks(39), 3, 'Engineering leadership offsite', $approved, true, null, [
-                [0, $transport, 41000, 'Flights to London and back', $locked, null],
-                [3, $stay, 96000, 'Hotel, three nights', $locked, null],
-                [1, $other, 12000, 'Offsite venue, my share', $locked, null],
-                [2, $meals, 6500, 'Team dinner at the offsite', $declined, 'The offsite dinner was paid for by the company.'],
+            [$internal, 'London', $thisMonday->subWeeks(39), 3, 'Engineering leadership offsite', $approvedTrip, true, null, [
+                [0, $transport, 41000, 'Flights to London and back', $lockedExpense, null],
+                [3, $accommodation, 96000, 'Hotel, three nights', $lockedExpense, null],
+                [1, $other, 12000, 'Offsite venue, my share', $lockedExpense, null],
+                [2, $meals, 6500, 'Team dinner at the offsite', $declinedExpense, 'The offsite dinner was paid for by the company.'],
             ]],
             [$relaunch, 'Berlin', $thisMonday->subWeeks(35)->addDay(), 2, 'Relaunch roadmap review', TravelRequestState::Declined, true, 'We can do the roadmap review over video this time.', []],
-            [$internal, 'Amsterdam', $thisMonday->subWeeks(31)->addDays(2), 2, 'Engineering conference', $approved, true, null, [
-                [0, $other, 89000, 'Conference ticket', $locked, null],
-                [0, $transport, 32000, 'Flights to Amsterdam and back', $locked, null],
-                [2, $stay, 54000, 'Hotel, two nights', $accepted, null],
+            [$internal, 'Amsterdam', $thisMonday->subWeeks(31)->addDays(2), 2, 'Engineering conference', $approvedTrip, true, null, [
+                [0, $other, 89000, 'Conference ticket', $lockedExpense, null],
+                [0, $transport, 32000, 'Flights to Amsterdam and back', $lockedExpense, null],
+                [2, $accommodation, 54000, 'Hotel, two nights', $approvedExpense, null],
             ]],
             [$relaunch, 'Berlin', $thisMonday->subWeeks(27)->addDay(), 1, 'Sprint review with Globex', TravelRequestState::Cancelled, false, null, []],
-            [$relaunch, 'Berlin', $thisMonday->subWeeks(24)->addDay(), 2, 'Checkout design sprint', $approved, true, null, [
-                [0, $transport, 19800, 'Train to Berlin and back', $accepted, null],
-                [2, $stay, 38000, 'Hotel, two nights', $accepted, null],
-                [1, $meals, 7600, 'Lunch with the design team', $accepted, null],
+            [$relaunch, 'Berlin', $thisMonday->subWeeks(24)->addDay(), 2, 'Checkout design sprint', $approvedTrip, true, null, [
+                [0, $transport, 19800, 'Train to Berlin and back', $approvedExpense, null],
+                [2, $accommodation, 38000, 'Hotel, two nights', $approvedExpense, null],
+                [1, $meals, 7600, 'Lunch with the design team', $approvedExpense, null],
             ]],
             [$internal, 'Vienna', $thisMonday->subWeeks(20)->addDays(3), 1, 'Meeting a candidate team lead', TravelRequestState::Cancelled, true, null, [
-                [0, $transport, 21000, 'Train tickets, bought before the meeting moved online', $accepted, null],
+                [0, $transport, 21000, 'Train tickets, bought before the meeting moved online', $approvedExpense, null],
+                [0, $accommodation, 9500, 'Hotel cancellation fee', $approvedExpense, null],
             ]],
-            [$relaunch, 'Berlin', $thisMonday->subWeeks(16)->addDay(), 3, 'Load testing with Globex ops', $approved, true, null, [
-                [0, $transport, 22400, 'Train to Berlin and back', $accepted, null],
-                [3, $stay, 58500, 'Hotel, three nights', $accepted, null],
-                [2, $meals, 11200, 'Dinner with the Globex ops team', $declined, $cardOnly],
-                [1, $other, 3500, 'Taxi to the data centre', $pending, null],
+            [$relaunch, 'Berlin', $thisMonday->subWeeks(16)->addDay(), 3, 'Load testing with Globex ops', $approvedTrip, true, null, [
+                [0, $transport, 22400, 'Train to Berlin and back', $approvedExpense, null],
+                [3, $accommodation, 58500, 'Hotel, three nights', $approvedExpense, null],
+                [2, $meals, 11200, 'Dinner with the Globex ops team', $declinedExpense, self::CLIENT_DINNER_DECLINED],
+                [1, $other, 3500, 'Taxi to the data centre', $pendingExpense, null],
             ]],
-            [$internal, 'Paris', $thisMonday->subWeeks(11)->addDays(2), 2, 'Recruiting fair', $approved, true, null, [
-                [0, $transport, 27000, 'Train to Paris and back', $accepted, null],
-                [2, $stay, 41000, 'Hotel, two nights', $pending, null],
+            [$internal, 'Paris', $thisMonday->subWeeks(11)->addDays(2), 2, 'Recruiting fair', $approvedTrip, true, null, [
+                [0, $transport, 27000, 'Train to Paris and back', $approvedExpense, null],
+                [2, $accommodation, 41000, 'Hotel, two nights', $pendingExpense, null],
             ]],
-            [$relaunch, 'Munich', $thisMonday->subWeeks(7)->addDay(), 1, 'Payment provider workshop', $approved, true, null, [
-                [0, $transport, 16200, 'Train to Munich and back', $pending, null],
-                [1, $meals, 3900, 'Lunch at the workshop', $pending, null],
+            [$relaunch, 'Munich', $thisMonday->subWeeks(7)->addDay(), 1, 'Payment provider workshop', $approvedTrip, true, null, [
+                [0, $transport, 16200, 'Train to Munich and back', $pendingExpense, null],
+                [1, $meals, 3900, 'Lunch at the workshop', $pendingExpense, null],
             ]],
-            [$relaunch, 'Berlin', $thisMonday->subWeeks(2)->addDay(), 2, 'Relaunch beta check-in', $approved, true, null, [
-                [0, $transport, 19900, 'Train to Berlin and back', $pending, null],
-                [2, $stay, 36000, 'Hotel, two nights', $pending, null],
-                [1, $meals, 5200, 'Dinner on the road', $pending, null],
+            [$relaunch, 'Berlin', $thisMonday->subWeeks(2)->addDay(), 2, 'Relaunch beta check-in', $approvedTrip, true, null, [
+                [0, $transport, 19900, 'Train to Berlin and back', $pendingExpense, null],
+                [2, $accommodation, 36000, 'Hotel, two nights', $pendingExpense, null],
+                [1, $meals, 5200, 'Dinner on the road', $pendingExpense, null],
             ]],
-            [$relaunch, 'Berlin', $thisMonday->addWeeks(2)->addDay(), 2, 'Relaunch go-live support', $approved, true, null, [
-                [$today->subDays(2), $transport, 21500, 'Train to Berlin, booked early', $accepted, null],
+            [$relaunch, 'Berlin', $thisMonday->addWeeks(2)->addDay(), 2, 'Relaunch go-live support', $approvedTrip, true, null, [
+                [$today->subDays(2), $transport, 21500, 'Train to Berlin, booked early', $approvedExpense, null],
+                [$today->subDay(), $accommodation, 34000, 'Hotel, two nights, paid when booking', $pendingExpense, null],
             ]],
             [$relaunch, 'Amsterdam', $thisMonday->addWeeks(3)->addDays(2), 1, 'Globex partner meetup', TravelRequestState::Cancelled, false, null, []],
             [$internal, 'Munich', $thisMonday->addWeeks(5)->addDays(2), 1, 'Team lead training', TravelRequestState::Pending, false, null, []],
             [$internal, 'London', $thisMonday->addWeeks(7)->addDay(), 3, 'Engineering leadership offsite', TravelRequestState::Pending, false, null, []],
-            [$relaunch, 'Berlin', $thisMonday->addWeeks(10), 2, 'Quarterly planning with Globex', $approved, true, null, []],
+            [$relaunch, 'Berlin', $thisMonday->addWeeks(10), 2, 'Quarterly planning with Globex', $approvedTrip, true, null, [
+                [$today->subDays(4), $transport, 18900, 'Train to Berlin, booked early', $pendingExpense, null],
+                [$today->subDays(4), $accommodation, 35000, 'Hotel, two nights, paid when booking', $pendingExpense, null],
+            ]],
         ];
 
         foreach ($trips as [$assignment, $destination, $first, $daysAfter, $purpose, $state, $isDecided, $declineReason, $expenses]) {
@@ -462,7 +469,7 @@ class DemoSeeder extends Seeder
         $travelRequest->forceFill([
             'state' => $state,
             'decided_by' => $decider?->id,
-            'decided_at' => in_array($state, [TravelRequestState::Approved, TravelRequestState::Declined], true) || $decider !== null ? now()->subDay() : null,
+            'decided_at' => in_array($state, [TravelRequestState::Approved, TravelRequestState::Declined], true) || ($state === TravelRequestState::Cancelled && $decider !== null) ? now()->subDay() : null,
             'decline_reason' => $declineReason,
             'cancelled_at' => $state === TravelRequestState::Cancelled ? now()->subDay() : null,
         ])->save();
