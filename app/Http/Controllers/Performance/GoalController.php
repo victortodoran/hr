@@ -23,7 +23,7 @@ class GoalController extends Controller
     public function create(PerformanceEvaluation $performanceEvaluation): Response
     {
         return Inertia::render('performance-evaluations/goals/Create', [
-            'evaluation' => $this->evaluationName($performanceEvaluation),
+            'evaluation' => $this->evaluationSummary($performanceEvaluation),
         ]);
     }
 
@@ -45,7 +45,7 @@ class GoalController extends Controller
     public function edit(PerformanceEvaluation $performanceEvaluation, Goal $goal): Response
     {
         return Inertia::render('performance-evaluations/goals/Edit', [
-            'evaluation' => $this->evaluationName($performanceEvaluation),
+            'evaluation' => $this->evaluationSummary($performanceEvaluation),
             'goal' => $goal->only('id', 'title', 'description'),
         ]);
     }
@@ -80,12 +80,12 @@ class GoalController extends Controller
      *
      * @return array{id: int, year: int, employee: array{id: int, name: string}}
      */
-    private function evaluationName(PerformanceEvaluation $performanceEvaluation): array
+    private function evaluationSummary(PerformanceEvaluation $performanceEvaluation): array
     {
         return [
             'id' => $performanceEvaluation->id,
             'year' => $performanceEvaluation->year,
-            'employee' => ['id' => $performanceEvaluation->employee->id, 'name' => $performanceEvaluation->employee->name],
+            'employee' => $performanceEvaluation->employee->only('id', 'name'),
         ];
     }
 }

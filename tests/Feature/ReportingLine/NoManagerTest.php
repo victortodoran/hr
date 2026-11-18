@@ -98,7 +98,7 @@ it('refuses removing an Employee\'s Manager while they have Pending Work Entries
     'an Open Performance Evaluation' => [fn (Employee $cara) => PerformanceEvaluation::factory()->of($cara)->create()],
 ]);
 
-it('refuses a Leaving Date that would leave a Report with no Manager and Pending items, until they have a new Manager', function (Closure $pending) {
+it('refuses a Leaving Date that would leave a Report with no Manager and Pending items or an Open Performance Evaluation, until they have a new Manager', function (Closure $pending) {
     $ana = Employee::factory()->startedLongAgo()->create(['name' => 'Ana Founder']);
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ana)->create(['name' => 'Cara Lane']);
     $pending($cara);

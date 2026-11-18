@@ -5,10 +5,10 @@ import PageContainer from '@/components/PageContainer.vue';
 import GoalForm from '@/components/performance-evaluations/GoalForm.vue';
 import { index, show } from '@/routes/performance-evaluations';
 import { edit } from '@/routes/performance-evaluations/goals';
-import type { Goal, PerformanceEvaluationName } from '@/types';
+import type { Goal, PerformanceEvaluationSummary } from '@/types';
 
 const props = defineProps<{
-    evaluation: PerformanceEvaluationName;
+    evaluation: PerformanceEvaluationSummary;
     goal: Goal;
 }>();
 

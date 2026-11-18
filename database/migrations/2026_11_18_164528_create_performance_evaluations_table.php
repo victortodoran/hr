@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * A Performance Evaluation is the yearly look at how one Employee did
      * over one calendar year, at most one per Employee per year, and holds
-     * the Goals their Manager gave them for it. It is Open until Completed.
+     * the Goals their Manager gave them for it. It starts Open.
      */
     public function up(): void
     {

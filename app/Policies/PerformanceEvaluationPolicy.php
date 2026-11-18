@@ -31,7 +31,7 @@ class PerformanceEvaluationPolicy
     public function view(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
         return $performanceEvaluation->employee_id === $actor->id
-            || $this->writes($actor, $performanceEvaluation->employee);
+            || $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee);
     }
 
     /**
@@ -43,7 +43,7 @@ class PerformanceEvaluationPolicy
     {
         $year = today()->year;
 
-        return $this->writes($actor, $employee)
+        return $this->isEffectiveManagerOf($actor, $employee)
             && Employee::query()->whereKey($employee->id)->employedDuring($year)->exists()
             && ! $employee->performanceEvaluations()->where('year', $year)->exists();
     }
@@ -55,14 +55,14 @@ class PerformanceEvaluationPolicy
     public function manageGoals(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
         return $performanceEvaluation->state->takesGoals()
-            && $this->writes($actor, $performanceEvaluation->employee);
+            && $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee);
     }
 
     /**
      * Whether the actor is the Employee's effective Manager, the one who
      * writes their Performance Evaluations.
      */
-    private function writes(Employee $actor, Employee $employee): bool
+    private function isEffectiveManagerOf(Employee $actor, Employee $employee): bool
     {
         return Employee::query()->effectivelyManagedBy($actor)->whereKey($employee->id)->exists();
     }

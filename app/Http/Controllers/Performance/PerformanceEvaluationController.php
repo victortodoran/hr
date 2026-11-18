@@ -8,6 +8,7 @@ use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
 use App\Support\PageWithin;
+use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -24,22 +25,15 @@ class PerformanceEvaluationController extends Controller
      * Show, for one year, the Employees the viewer effectively manages who
      * work for the company on some day of it, Former Employees included,
      * by name, each with that year's Performance Evaluation if they have
-     * one and whether the viewer may start it. The years to choose from are
-     * those any of these Employees has a Performance Evaluation for, and the
-     * current one.
+     * one and whether the viewer may start it. The years to choose from run
+     * back from the current one to the earliest Start Date among the
+     * Employees the viewer effectively manages.
      */
     public function index(PerformanceEvaluationListRequest $request, #[CurrentUser] Employee $actor): Response
     {
         $year = $request->year();
-        $years = PerformanceEvaluation::query()
-            ->whereIn('employee_id', Employee::query()->effectivelyManagedBy($actor)->select('employees.id'))
-            ->distinct()
-            ->pluck('year')
-            ->push(today()->year)
-            ->unique()
-            ->sortDesc()
-            ->values()
-            ->all();
+        $firstStart = Employee::query()->effectivelyManagedBy($actor)->min('start_date');
+        $years = range(today()->year, min(today()->year, $firstStart === null ? today()->year : CarbonImmutable::parse($firstStart)->year));
 
         return Inertia::render('performance-evaluations/Index', [
             'year' => $year,

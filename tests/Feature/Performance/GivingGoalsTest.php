@@ -103,7 +103,7 @@ it('lists, for the year, the Employees the viewer effectively manages who work t
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/Index')
             ->where('year', 2026)
-            ->where('years', [2026])
+            ->where('years', [2026, 2025, 2024, 2023, 2022, 2021, 2020])
             ->where('employees.data', [
                 ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3], 'can_start' => false],
                 ['id' => $dan->id, 'name' => 'Dan', 'evaluation' => null, 'can_start' => true],
@@ -119,7 +119,7 @@ it('shows an earlier year with the Employees who worked that year, and offers no
     actingAs($ben)->get(route('performance-evaluations.index', ['year' => 2025]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('year', 2025)
-            ->where('years', [2026, 2024])
+            ->where('years', [2026, 2025, 2024, 2023, 2022, 2021, 2020])
             ->where('employees.data', [
                 ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => null, 'can_start' => false],
                 ['id' => $ola->id, 'name' => 'Ola', 'evaluation' => null, 'can_start' => false],
@@ -178,6 +178,14 @@ it('refuses starting a Performance Evaluation for anyone but the effective Manag
     'their Manager\'s Manager' => [fn (Employee $ben, Employee $cara) => Employee::query()->where('name', 'Ada')->sole()],
     'an Admin' => [fn (Employee $ben, Employee $cara) => employeeWhoManagesRoles()],
 ]);
+
+it('lets the effective Manager start this year\'s Performance Evaluation for a Future Employee who starts this year', function () {
+    $ben = managerBen();
+    $dan = Employee::factory()->reportingTo($ben)->create(['start_date' => '2026-12-14']);
+
+    actingAs($ben)->post(route('employees.performance-evaluations.store', $dan))->assertRedirect();
+    expect($dan->performanceEvaluations()->sole()->year)->toBe(2026);
+});
 
 it('refuses starting this year\'s Performance Evaluation for a Future Employee who starts next year', function () {
     $ben = managerBen();

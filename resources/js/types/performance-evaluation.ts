@@ -56,7 +56,7 @@ export type PerformanceEvaluationRecord = {
  * What the Goal forms show of a Performance Evaluation: whose it is and
  * for which year.
  */
-export type PerformanceEvaluationName = {
+export type PerformanceEvaluationSummary = {
     id: number;
     year: number;
     employee: Choice;
