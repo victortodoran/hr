@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Saves the Manager's Outcomes for a Performance Evaluation's Goals, its
  * overall Outcome and its summary, all in one transaction, and, when
- * asked, Completes it.
+ * asked, Completes it, or Reopens it once Completed.
  */
 class AssessPerformanceEvaluation
 {
@@ -52,6 +52,15 @@ class AssessPerformanceEvaluation
         });
 
         return true;
+    }
+
+    /**
+     * Send a Completed Performance Evaluation back to Open, keeping its
+     * Goals, Outcomes and summary for its Manager to correct.
+     */
+    public function reopen(PerformanceEvaluation $evaluation): void
+    {
+        $evaluation->forceFill(['state' => PerformanceEvaluationState::Open, 'completed_at' => null])->save();
     }
 
     /**

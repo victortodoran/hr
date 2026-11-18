@@ -23,6 +23,7 @@ enum Permission: string
     case ViewTravel = 'view-travel';
     case ReopenTravelExpenses = 'reopen-travel-expenses';
     case ViewPerformanceEvaluations = 'view-performance-evaluations';
+    case ReopenPerformanceEvaluations = 'reopen-performance-evaluations';
     case ViewDirectory = 'view-directory';
     case ViewProjects = 'view-projects';
     case ManageProjects = 'manage-projects';
@@ -54,7 +55,7 @@ enum Permission: string
             self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries => 'Work entries',
             self::ViewTimeOff, self::ManagePaidDays => 'Time off',
             self::ViewTravel, self::ReopenTravelExpenses => 'Travel',
-            self::ViewPerformanceEvaluations => 'Performance',
+            self::ViewPerformanceEvaluations, self::ReopenPerformanceEvaluations => 'Performance',
             self::ViewDirectory, self::ViewProjects, self::ManageProjects, self::ManageClients, self::ManageDepartments => 'Organization',
             self::ManageRoles, self::ManageCompany => 'Administration',
         };
@@ -79,7 +80,8 @@ enum Permission: string
             self::ManagePaidDays,
             self::ViewTravel,
             self::ReopenTravelExpenses,
-            self::ViewPerformanceEvaluations => true,
+            self::ViewPerformanceEvaluations,
+            self::ReopenPerformanceEvaluations => true,
             default => false,
         };
     }
@@ -87,13 +89,14 @@ enum Permission: string
     /**
      * The Scopes a Role can give this Permission with, narrowest first, or
      * none when it applies company-wide. No Employee may reopen their own
-     * Work Entries or Travel Expenses, so reopen can't be given for own.
+     * Work Entries, Travel Expenses or Performance Evaluations, so reopen
+     * can't be given for own.
      *
      * @return list<Scope>
      */
     public function scopes(): array
     {
-        if ($this === self::ReopenWorkEntries || $this === self::ReopenTravelExpenses) {
+        if (in_array($this, [self::ReopenWorkEntries, self::ReopenTravelExpenses, self::ReopenPerformanceEvaluations], true)) {
             return [Scope::Reports, Scope::Everyone];
         }
 
@@ -139,13 +142,14 @@ enum Permission: string
 
     /**
      * The Permissions that let someone read an Employee's Performance
-     * Evaluations without writing them. The one list the policy, the
+     * Evaluations without writing them: viewing them, or reopening them, as
+     * you can always see what you can act on. The one list the policy, the
      * Performance Evaluations page and the flags use.
      *
      * @return list<Permission>
      */
     public static function seeingPerformanceEvaluations(): array
     {
-        return [self::ViewPerformanceEvaluations];
+        return [self::ViewPerformanceEvaluations, self::ReopenPerformanceEvaluations];
     }
 }

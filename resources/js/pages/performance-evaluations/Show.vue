@@ -5,6 +5,7 @@ import { Target } from '@lucide/vue';
 import GoalController from '@/actions/App/Http/Controllers/Performance/GoalController';
 import PerformanceEvaluationAssessmentController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationAssessmentController';
 import PerformanceEvaluationCompletionController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationCompletionController';
+import PerformanceEvaluationReopeningController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationReopeningController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -59,6 +60,8 @@ const props = defineProps<{
     canEdit: boolean;
     /** Whether the viewer sees its Outcomes and summary. */
     canSeeOutcomes: boolean;
+    /** Whether the viewer may send it, Completed, back to Open for its Manager to correct. */
+    canReopen: boolean;
 }>();
 
 /** Each Goal's Outcome by Goal ID, the whole's Outcome and the summary, as the Manager is writing them. */
@@ -170,6 +173,22 @@ setLayoutProps({
             <Button v-if="canEdit" as-child>
                 <Link :href="create(evaluation.id)">Give a Goal</Link>
             </Button>
+            <ConfirmDeleteDialog
+                v-if="canReopen"
+                :form="
+                    PerformanceEvaluationReopeningController.store.form(
+                        evaluation.id,
+                    )
+                "
+                :title="`Reopen ${evaluation.employee.name}'s ${evaluation.year} Performance Evaluation?`"
+                :description="`It goes back to Open, keeping its Goals, Outcomes and summary, so their Manager can correct it and Complete it again. ${evaluation.employee.name} doesn't see the Outcomes until then.`"
+                confirm-label="Reopen"
+                dismiss-label="Keep it Completed"
+            >
+                <template #trigger>
+                    <Button variant="outline">Reopen</Button>
+                </template>
+            </ConfirmDeleteDialog>
         </header>
 
         <section class="space-y-2">
@@ -312,7 +331,8 @@ setLayoutProps({
             </div>
             <p class="text-sm text-muted-foreground">
                 {{ evaluation.employee.name }} sees the Outcomes and summary
-                once you complete it. After that, nothing on it can change.
+                once you complete it. After that, it can't change unless it's
+                Reopened.
             </p>
             <div class="flex flex-wrap gap-2">
                 <SubmitButton
@@ -333,8 +353,8 @@ setLayoutProps({
                             >
                             <DialogDescription
                                 >{{ evaluation.employee.name }} sees the
-                                Outcomes and summary, and nothing on it can
-                                change after that.</DialogDescription
+                                Outcomes and summary, and it can't change after
+                                that unless it's Reopened.</DialogDescription
                             >
                         </DialogHeader>
                         <DialogFooter class="gap-2">
