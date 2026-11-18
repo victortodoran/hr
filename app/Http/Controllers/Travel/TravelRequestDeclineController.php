@@ -19,11 +19,13 @@ class TravelRequestDeclineController extends Controller
 {
     /**
      * Decline the Travel Request, recording who declined it, when and why.
-     * It is kept on record and the Employee sees the reason.
+     * It is kept on record and the Employee sees the reason. One decided or
+     * cancelled since the policy check is refused, never changed.
      */
     public function store(TravelRequestDeclineRequest $request, TravelRequest $travelRequest, #[CurrentUser] Employee $actor, DeclineTravelRequest $declineTravelRequest): RedirectResponse
     {
-        $declineTravelRequest->decline($travelRequest, $actor, $request->reason());
+        $changed = $declineTravelRequest->decline($travelRequest, $actor, $request->reason());
+        abort_if(! $changed, 403); // @pest-mutate-ignore (only reached when the Travel Request is decided or cancelled between the policy check and this write)
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Request declined.')]);
 

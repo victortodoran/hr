@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\ApproveTravelRequest;
+use App\Actions\DeclineTravelRequest;
 use App\Enums\TravelRequestState;
 use App\Http\Controllers\Travel\TravelRequestApprovalController;
 use App\Http\Controllers\Travel\TravelRequestController;
@@ -17,7 +19,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(ApprovalController::class, TravelRequestApprovalController::class, TravelRequestController::class, TravelRequestDeclineController::class, TravelRequestDeclineRequest::class, TravelRequestPolicy::class);
+covers(ApproveTravelRequest::class, DeclineTravelRequest::class, ApprovalController::class, TravelRequestApprovalController::class, TravelRequestController::class, TravelRequestDeclineController::class, TravelRequestDeclineRequest::class, TravelRequestPolicy::class);
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
@@ -137,6 +139,27 @@ it('refuses answering a Travel Request that isn\'t Pending', function (string $s
 
     expect($travelRequest->refresh()->state)->toBe(TravelRequestState::from($state));
 })->with(['approved', 'declined', 'cancelled'])->with('travel answers');
+
+dataset('changes since the policy check', [
+    'approved since' => fn () => ['state' => TravelRequestState::Approved, 'decided_by' => Employee::factory()->create()->id, 'decided_at' => now()],
+    'declined since' => fn () => ['state' => TravelRequestState::Declined, 'decided_by' => Employee::factory()->create()->id, 'decided_at' => now(), 'decline_reason' => 'Not that week.'],
+    'cancelled since' => fn () => ['state' => TravelRequestState::Cancelled, 'cancelled_at' => now()],
+]);
+
+it('leaves a Travel Request answered or cancelled since the policy check as it was', function (array $change, Closure $answer) {
+    $ben = managerBen();
+    $travelRequest = pendingTravelRequestOf($ben);
+    TravelRequest::query()->findOrFail($travelRequest->id)->forceFill($change)->save();
+    $stored = TravelRequest::query()->findOrFail($travelRequest->id)->getAttributes();
+    travelTo('2026-12-01 10:00');
+
+    expect($answer($travelRequest, $ben))->toBeFalse();
+
+    expect(TravelRequest::query()->findOrFail($travelRequest->id)->getAttributes())->toBe($stored);
+})->with('changes since the policy check')->with([
+    'approve' => fn (TravelRequest $travelRequest, Employee $ben): bool => app(ApproveTravelRequest::class)->approve($travelRequest, $ben),
+    'decline' => fn (TravelRequest $travelRequest, Employee $ben): bool => app(DeclineTravelRequest::class)->decline($travelRequest, $ben, 'The release is that week.'),
+]);
 
 it('lets the Manager answer a Pending Travel Request whose first date has passed', function (string $route, array $form) {
     $ben = managerBen();
