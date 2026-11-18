@@ -62,7 +62,7 @@ it('lets an Employee read their own Performance Evaluation\'s Goals but not chan
             ->component('performance-evaluations/Show')
             ->where('evaluation.goals', [['id' => $goal->id, 'title' => 'Lead the Checkout API', 'description' => 'Own its design.', 'outcome' => null]])
             ->where('isOwn', true)
-            ->where('canManageGoals', false));
+            ->where('canEdit', false));
 
     actingAs($cara)->post(route('performance-evaluations.goals.store', $evaluation), ['title' => 'Mine', 'description' => 'Set by me'])->assertForbidden();
     actingAs($cara)->put(route('performance-evaluations.goals.update', [$evaluation, $goal]), ['title' => 'Mine', 'description' => 'Set by me'])->assertForbidden();
@@ -199,7 +199,7 @@ it('lets the effective Manager give, change and remove Goals while the Evaluatio
     $evaluation = PerformanceEvaluation::factory()->of(caraReportingTo($ben))->create();
 
     actingAs($ben)->get(route('performance-evaluations.show', $evaluation))
-        ->assertInertia(fn (Assert $page) => $page->where('isOwn', false)->where('canManageGoals', true));
+        ->assertInertia(fn (Assert $page) => $page->where('isOwn', false)->where('canEdit', true));
     actingAs($ben)->get(route('performance-evaluations.goals.create', $evaluation))
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/goals/Create')

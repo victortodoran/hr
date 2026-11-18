@@ -3,12 +3,12 @@
 namespace Database\Seeders;
 
 use App\Actions\AddEmployee;
+use App\Actions\AssessPerformanceEvaluation;
 use App\Actions\ChangeAccess;
 use App\Actions\InstallCompany;
 use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\Outcome;
 use App\Enums\PayKind;
-use App\Enums\PerformanceEvaluationState;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\TimeOffState;
@@ -69,6 +69,7 @@ class DemoSeeder extends Seeder
         private AddEmployee $addEmployee,
         private ChangeAccess $changeAccess,
         private UpdateTrimmingAssignments $updateTrimmingAssignments,
+        private AssessPerformanceEvaluation $assessPerformanceEvaluation,
     ) {}
 
     /**
@@ -508,12 +509,13 @@ class DemoSeeder extends Seeder
     private function completedPerformanceEvaluation(Employee $employee, array $goals, Outcome $outcome, string $summary): void
     {
         $evaluation = $employee->performanceEvaluations()->create(['year' => today()->year - 1]);
+        $goalOutcomes = [];
 
         foreach ($goals as [$title, $description, $goalOutcome]) {
-            $evaluation->goals()->create(['title' => $title, 'description' => $description])->forceFill(['outcome' => $goalOutcome])->save();
+            $goalOutcomes[$evaluation->goals()->create(['title' => $title, 'description' => $description])->id] = $goalOutcome;
         }
 
-        $evaluation->forceFill(['state' => PerformanceEvaluationState::Completed, 'outcome' => $outcome, 'summary' => $summary, 'completed_at' => now()->subMonths(10)])->save();
+        $this->assessPerformanceEvaluation->complete($evaluation, $goalOutcomes, $outcome, $summary);
     }
 
     /**

@@ -13,10 +13,10 @@ enum PerformanceEvaluationState: string
     case Completed = 'completed';
 
     /**
-     * Whether its Goals, their Outcomes and its summary can still be
-     * given, changed or removed.
+     * Whether anything on it can still change: its Goals, their Outcomes,
+     * its own Outcome and its summary.
      */
-    public function takesGoals(): bool
+    public function isEditable(): bool
     {
         return match ($this) {
             self::Open => true,

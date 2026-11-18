@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Performance;
 
-use App\Enums\PerformanceEvaluationState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
 use App\Models\Employee;
@@ -56,7 +55,7 @@ class PerformanceEvaluationController extends Controller
                             'id' => $evaluation->id,
                             'state' => $evaluation->state->value,
                             'goals_count' => $evaluation->goals_count,
-                            'outcome' => $evaluation->state === PerformanceEvaluationState::Completed ? $evaluation->outcome?->value : null,
+                            'outcome' => $evaluation->completedOutcome()?->value,
                         ],
                         'can_start' => $evaluation === null && $year === today()->year && $actor->can('create', [PerformanceEvaluation::class, $employee]),
                     ];
@@ -106,7 +105,7 @@ class PerformanceEvaluationController extends Controller
                 'completed_at' => $performanceEvaluation->completed_at?->toDateString(),
             ],
             'isOwn' => $performanceEvaluation->employee_id === $actor->id,
-            'canManageGoals' => $actor->can('manageGoals', $performanceEvaluation),
+            'canEdit' => $actor->can('edit', $performanceEvaluation),
             'canSeeOutcomes' => $seesOutcomes,
         ]);
     }

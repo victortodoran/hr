@@ -33,6 +33,8 @@ it('saves Outcomes, completes the Evaluation, and the Employee then reads them',
         ->click('internal:role=option[name="Met"s]')
         ->fill('#evaluation-summary', 'A strong year.')
         ->click('internal:role=button[name="Complete"s]')
+        ->assertSee('Complete Cara\'s 2026 Performance Evaluation?')
+        ->click('internal:role=dialog >> internal:role=button[name="Complete"s]')
         ->assertSee('Performance Evaluation completed.')
         ->assertSee('A strong year.')
         ->assertDontSee('Save Outcomes')

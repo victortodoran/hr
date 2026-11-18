@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\PerformanceEvaluationState;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
 
@@ -55,9 +54,9 @@ class PerformanceEvaluationPolicy
      * Goals of their Performance Evaluation, give their Outcomes and its
      * summary, and Complete it, and only while it is Open.
      */
-    public function manageGoals(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
+    public function edit(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
-        return $performanceEvaluation->state->takesGoals()
+        return $performanceEvaluation->state->isEditable()
             && $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee);
     }
 
@@ -68,7 +67,7 @@ class PerformanceEvaluationPolicy
      */
     public function seeOutcomes(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
-        return $performanceEvaluation->state === PerformanceEvaluationState::Completed
+        return $performanceEvaluation->isCompleted()
             || $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee);
     }
 

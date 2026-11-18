@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Performance;
 
-use App\Enums\PerformanceEvaluationState;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
@@ -34,7 +33,7 @@ class MyPerformanceEvaluationController extends Controller
                     'year' => $evaluation->year,
                     'state' => $evaluation->state->value,
                     'goals_count' => $evaluation->goals_count,
-                    'outcome' => $evaluation->state === PerformanceEvaluationState::Completed ? $evaluation->outcome?->value : null,
+                    'outcome' => $evaluation->completedOutcome()?->value,
                 ])
                 ->all(),
         ]);

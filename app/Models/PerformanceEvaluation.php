@@ -71,6 +71,22 @@ class PerformanceEvaluation extends Model
     }
 
     /**
+     * Whether its Manager has Completed it.
+     */
+    public function isCompleted(): bool
+    {
+        return $this->state === PerformanceEvaluationState::Completed;
+    }
+
+    /**
+     * The Outcome of the whole as the lists show it: only once Completed.
+     */
+    public function completedOutcome(): ?Outcome
+    {
+        return $this->isCompleted() ? $this->outcome : null;
+    }
+
+    /**
      * The Goals the Employee's Manager gave for it, in the order given.
      *
      * @return HasMany<Goal, $this>

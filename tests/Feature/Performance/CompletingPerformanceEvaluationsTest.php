@@ -145,7 +145,7 @@ it('lets nobody change a Completed Evaluation: its Goals, Outcomes or summary', 
     $goal = $evaluation->goals()->firstOrFail();
 
     actingAs($ben)->get(route('performance-evaluations.show', $evaluation))
-        ->assertInertia(fn (Assert $page) => $page->where('evaluation.state', 'completed')->where('canManageGoals', false));
+        ->assertInertia(fn (Assert $page) => $page->where('evaluation.state', 'completed')->where('canEdit', false));
     actingAs($ben)->post(route('performance-evaluations.goals.store', $evaluation), ['title' => 'Late', 'description' => 'Too late'])->assertForbidden();
     actingAs($ben)->put(route('performance-evaluations.goals.update', [$evaluation, $goal]), ['title' => 'Late', 'description' => 'Too late'])->assertForbidden();
     actingAs($ben)->delete(route('performance-evaluations.goals.destroy', [$evaluation, $goal]))->assertForbidden();

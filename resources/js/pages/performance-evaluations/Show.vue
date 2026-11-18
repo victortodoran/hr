@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import { Target } from '@lucide/vue';
 import GoalController from '@/actions/App/Http/Controllers/Performance/GoalController';
 import PerformanceEvaluationAssessmentController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationAssessmentController';
@@ -12,6 +13,16 @@ import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -45,7 +56,7 @@ const props = defineProps<{
     /** Whether the Performance Evaluation is the viewer's own. */
     isOwn: boolean;
     /** Whether the viewer may give, change or remove its Goals and their Outcomes, and Complete it. */
-    canManageGoals: boolean;
+    canEdit: boolean;
     /** Whether the viewer sees its Outcomes and summary. */
     canSeeOutcomes: boolean;
 }>();
@@ -88,6 +99,9 @@ function saveAssessment(): void {
         );
 }
 
+/** Whether the question before Completing is showing. */
+const confirmingCompletion = ref(false);
+
 function complete(): void {
     assessment
         .transform(assessmentPayload)
@@ -95,7 +109,10 @@ function complete(): void {
             PerformanceEvaluationCompletionController.store(
                 props.evaluation.id,
             ),
-            { preserveScroll: true },
+            {
+                preserveScroll: true,
+                onFinish: () => (confirmingCompletion.value = false),
+            },
         );
 }
 
@@ -112,7 +129,7 @@ const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
 const columns: TableColumn[] = [
     { key: 'goal', label: 'Goal' },
     ...(props.canSeeOutcomes ? [{ key: 'outcome', label: 'Outcome' }] : []),
-    ...(props.canManageGoals
+    ...(props.canEdit
         ? [{ key: 'actions', label: 'Actions', align: 'end' as const }]
         : []),
 ];
@@ -150,7 +167,7 @@ setLayoutProps({
                     >
                 </div>
             </div>
-            <Button v-if="canManageGoals" as-child>
+            <Button v-if="canEdit" as-child>
                 <Link :href="create(evaluation.id)">Give a Goal</Link>
             </Button>
         </header>
@@ -166,7 +183,8 @@ setLayoutProps({
                 </template>
                 <template #cell-outcome="{ row }">
                     <Select
-                        v-if="canManageGoals"
+                        v-if="canEdit"
+                        :name="`goals[${row.id}][outcome]`"
                         :model-value="assessment.goalOutcomes[row.id] ?? ''"
                         @update:model-value="
                             assessment.goalOutcomes[row.id] = $event
@@ -241,7 +259,7 @@ setLayoutProps({
                                 : 'The Goals you give for this year appear here.'
                         "
                     >
-                        <template v-if="canManageGoals" #action>
+                        <template v-if="canEdit" #action>
                             <Button as-child variant="outline">
                                 <Link :href="create(evaluation.id)"
                                     >Give a Goal</Link
@@ -254,7 +272,7 @@ setLayoutProps({
         </section>
 
         <form
-            v-if="canManageGoals && evaluation.goals.length > 0"
+            v-if="canEdit && evaluation.goals.length > 0"
             class="space-y-4"
             @submit.prevent="saveAssessment"
         >
@@ -262,6 +280,7 @@ setLayoutProps({
             <div class="grid gap-2">
                 <Label for="evaluation-outcome">Outcome</Label>
                 <Select
+                    name="outcome"
                     :model-value="assessment.outcome"
                     @update:model-value="
                         assessment.outcome = $event ? ($event as Outcome) : ''
@@ -301,12 +320,38 @@ setLayoutProps({
                     :processing="assessment.processing"
                     >Save Outcomes</SubmitButton
                 >
-                <SubmitButton
-                    type="button"
-                    :processing="assessment.processing"
-                    @click="complete"
-                    >Complete</SubmitButton
-                >
+                <Dialog v-model:open="confirmingCompletion">
+                    <DialogTrigger as-child>
+                        <Button type="button">Complete</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader class="space-y-3">
+                            <DialogTitle
+                                >Complete {{ evaluation.employee.name }}'s
+                                {{ evaluation.year }} Performance
+                                Evaluation?</DialogTitle
+                            >
+                            <DialogDescription
+                                >{{ evaluation.employee.name }} sees the
+                                Outcomes and summary, and nothing on it can
+                                change after that.</DialogDescription
+                            >
+                        </DialogHeader>
+                        <DialogFooter class="gap-2">
+                            <DialogClose as-child>
+                                <Button type="button" variant="secondary"
+                                    >Keep writing</Button
+                                >
+                            </DialogClose>
+                            <SubmitButton
+                                type="button"
+                                :processing="assessment.processing"
+                                @click="complete"
+                                >Complete</SubmitButton
+                            >
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </form>
 

@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\DB;
 class AssessPerformanceEvaluation
 {
     /**
-     * Save the assessment as given, leaving out nothing: an Outcome left
-     * empty is cleared.
+     * Save the assessment as given: a Goal sent with no Outcome has its
+     * Outcome cleared, and a Goal not sent keeps the one it had.
      *
      * @param  array<int, Outcome|null>  $goalOutcomes  Each Goal's Outcome, by Goal ID
      */
