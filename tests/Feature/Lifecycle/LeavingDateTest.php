@@ -124,6 +124,7 @@ it('shows whether an Employee is future, current or former, with their Leaving D
         );
 })->with([
     ['future', 'future'],
+    ['startedLongAgo', 'current'],
     ['former', 'former'],
 ]);
 

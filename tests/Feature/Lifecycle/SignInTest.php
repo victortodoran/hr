@@ -74,6 +74,16 @@ it('ends an existing session on the first request after the Leaving Date', funct
     expect(session()->token())->not->toBe($token);
 });
 
+it('ends a Future Employee\'s session on their first request, so they can do nothing before their Start Date', function () {
+    $cara = employeeWithDates(['start_date' => '2026-03-02']);
+
+    actingAs($cara)->get(route('time-off.index'))
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors(['email' => 'You can sign in from your Start Date, 2 March 2026.']);
+
+    assertGuest();
+});
+
 it('lets a Future Employee set their password before their Start Date', function () {
     $cara = Employee::factory()->invited()->future()->create();
     $token = Password::broker('invites')->createToken($cara);

@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Models\Employee;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
@@ -67,8 +68,8 @@ class PasswordResetTest extends TestCase
             $response = $this->post(route('password.update'), [
                 'token' => $notification->token,
                 'email' => $employee->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
+                'password' => 'a-new-password',
+                'password_confirmation' => 'a-new-password',
             ]);
 
             $response
@@ -77,6 +78,10 @@ class PasswordResetTest extends TestCase
 
             return true;
         });
+
+        $password = $employee->refresh()->password;
+        $this->assertTrue(Hash::check('a-new-password', $password));
+        $this->assertFalse(Hash::check('password', $password));
     }
 
     public function test_password_cannot_be_reset_with_invalid_token(): void

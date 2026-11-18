@@ -132,15 +132,6 @@ it('refuses dates in the past, after the Leaving Date or out of order', function
     'not Paid or Unpaid' => [[], ['is_paid' => 'maybe'], 'is_paid', 'Choose Paid or Unpaid Time Off.'],
 ]);
 
-it('never lets Time Off start before the Start Date, since a Future Employee can\'t sign in to request it', function () {
-    $cara = timeOffRequester(['start_date' => '2026-12-07']);
-
-    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-04', 'last_date' => '2026-12-07']))
-        ->assertRedirect(route('login'));
-
-    expect(storedTimeOff($cara))->toBe([]);
-});
-
 it('accepts Time Off from the Start Date up to the Leaving Date', function () {
     $cara = timeOffRequester(['start_date' => '2026-12-01', 'leaving_date' => '2026-12-16']);
 
