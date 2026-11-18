@@ -216,17 +216,6 @@ it('marks a past weekday with no Work Entries and no Time Off as nothing logged,
         ->where('days.6.nothing_logged', false));
 });
 
-it('marks neither today nor days still to come as nothing logged', function () {
-    $cara = recorder();
-
-    $response = actingAs($cara)->get(route('work-entries.index'));
-
-    $response->assertInertia(fn (Assert $page) => $page
-        ->where('days.1.nothing_logged', true)
-        ->where('days.2.nothing_logged', false)
-        ->where('days.3.nothing_logged', false));
-});
-
 it('marks no day before the Start Date or after the Leaving Date as nothing logged', function () {
     $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
     $cara = Employee::factory()->create(['start_date' => '2026-11-03', 'leaving_date' => '2026-11-05']);

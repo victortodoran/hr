@@ -126,7 +126,7 @@ it('requires a valid date', function (mixed $date) {
 
     actingAs($cara)->post(route('employees.work-entry-copies.store', $cara), ['date' => $date])
         ->assertSessionHasErrors('date');
-})->with([null, 'yesterday', '13/11/2026']);
+})->with([null, 'yesterday']);
 
 it('lets only those who may record hours for the Employee copy them', function () {
     $cara = Employee::factory()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);

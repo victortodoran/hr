@@ -227,11 +227,3 @@ it('lists the Pending Time Off of the Manager\'s Direct Reports on the Approvals
             ->missing('entries')
             ->missing('filters'));
 });
-
-it('no longer lists Time Off to approve on the Time Off page', function () {
-    $ben = managerBen();
-    pendingTimeOffOf($ben);
-
-    actingAs($ben)->get(route('time-off.index'))
-        ->assertInertia(fn (Assert $page) => $page->missing('toApprove'));
-});

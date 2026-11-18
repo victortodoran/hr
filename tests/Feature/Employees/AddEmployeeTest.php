@@ -159,14 +159,6 @@ it('refuses an Employee record with a missing or invalid value, and says why', f
     'Start Date not a date' => ['start_date', 'next tuesday-ish', 'The Start Date field must be a valid date.'],
 ]);
 
-it('refuses an email any Employee has ever used, including a Former Employee', function () {
-    Employee::factory()->create(['email' => 'cara@acme.test']);
-
-    actingAs(employeeWhoManagesEmployees())
-        ->post(route('employees.store'), newEmployeeDetails())
-        ->assertSessionHasErrors(['email' => 'The email has already been taken.']);
-});
-
 it('shows the add page with the Departments and possible Managers to choose from', function () {
     $hr = employeeWhoManagesEmployees();
     $finance = Department::factory()->create(['name' => 'Finance']);

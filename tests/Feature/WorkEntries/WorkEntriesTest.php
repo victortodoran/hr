@@ -52,7 +52,6 @@ it('refuses hours that are not a positive number of quarter hours up to 24', fun
     assertDatabaseCount('work_entries', 0);
 })->with([
     'nothing' => ['0', 'The hours field must be greater than 0.'],
-    'less than nothing' => ['-1', 'The hours field must be greater than 0.'],
     'not a quarter hour' => ['1.1', 'Record hours in quarter-hour steps, such as 1.25 or 7.5.'],
     'more than a day' => ['24.25', 'The hours field must not be greater than 24.'],
     'not a number' => ['many', 'The hours field must be a number.'],

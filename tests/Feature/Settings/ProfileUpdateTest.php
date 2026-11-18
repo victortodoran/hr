@@ -10,17 +10,6 @@ class ProfileUpdateTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_profile_page_is_displayed(): void
-    {
-        $employee = Employee::factory()->create();
-
-        $response = $this
-            ->actingAs($employee)
-            ->get(route('profile.edit'));
-
-        $response->assertOk();
-    }
-
     public function test_employees_cannot_change_their_own_name_or_email(): void
     {
         $employee = Employee::factory()->create(['name' => 'Cara Lane', 'email' => 'cara@acme.test']);

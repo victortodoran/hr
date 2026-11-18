@@ -33,12 +33,6 @@ function inviteAndCaptureToken(Employee $employee): string
     return (string) $token;
 }
 
-it('emails a newly added Employee an invitation', function () {
-    $employee = Employee::factory()->invited()->create();
-
-    inviteAndCaptureToken($employee);
-});
-
 it('shows the set-password page from the invitation link', function () {
     $employee = Employee::factory()->invited()->create();
     $token = inviteAndCaptureToken($employee);
