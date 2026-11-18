@@ -25,6 +25,17 @@ class TimeOffBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to Declined Time Off, which the Employee's Manager
+     * turned down.
+     */
+    public function declined(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('state'), TimeOffState::Declined);
+        });
+    }
+
+    /**
      * Limit the query to Time Off that still stands: Pending or Approved.
      */
     public function standing(): static

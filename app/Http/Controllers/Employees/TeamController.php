@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Employees;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
+use App\Pages\Employees\TeamPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,17 +22,6 @@ class TeamController extends Controller
      */
     public function __invoke(#[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('team/Index', [
-            'directReports' => $actor->managedEmployees()
-                ->map(fn (Employee $report): array => [
-                    'id' => $report->id,
-                    'name' => $report->name,
-                    'email' => $report->email,
-                    'job_title' => $report->internalAssignment?->job_title,
-                    'department' => $report->department?->name, // @pest-mutate-ignore (every Employee has a Department; the nullsafe only satisfies the relation's nullable type)
-                    'can_view' => $actor->can('view', $report),
-                ])
-                ->all(),
-        ]);
+        return Inertia::render('team/Index', TeamPage::props($actor));
     }
 }

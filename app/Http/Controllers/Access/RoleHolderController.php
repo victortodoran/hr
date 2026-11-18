@@ -39,8 +39,6 @@ class RoleHolderController extends Controller
      */
     public function destroy(#[CurrentUser] Employee $actor, Role $role, Employee $employee, ChangeAccess $changeAccess): RedirectResponse
     {
-        abort_unless($role->employees()->whereKey($employee->id)->exists(), 404);
-
         $changeAccess->takeRole($actor, $role, $employee);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':role taken from :name.', ['role' => $role->name, 'name' => $employee->name])]);

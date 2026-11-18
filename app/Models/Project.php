@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Builders\ProjectBuilder;
 use Carbon\CarbonInterface;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['name', 'client_id', 'start_date', 'end_date'])] // @pest-mutate-ignore (class attributes never show as covered)
+#[UseEloquentBuilder(ProjectBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
@@ -51,7 +54,7 @@ class Project extends Model
      */
     public static function internal(): self
     {
-        return self::query()->where('is_internal', true)->sole();
+        return self::query()->internal()->sole();
     }
 
     /**

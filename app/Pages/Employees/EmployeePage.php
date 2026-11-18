@@ -2,8 +2,11 @@
 
 namespace App\Pages\Employees;
 
+use App\Enums\EmployeePageTab;
 use App\Enums\EmploymentStatus;
+use App\Enums\Permission;
 use App\Models\Assignment;
+use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\Project;
@@ -15,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * The Employee page's tabs, each as the props it renders: Overview,
+ * The Employee page as the props it renders, in tabs: Overview,
  * Assignments & Pay and Time Off. Each tab is only built when it is open.
  * The Overview's Reports needing a new Manager are shown on the edit form
  * too.
@@ -23,13 +26,68 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 final class EmployeePage
 {
     /**
+     * An Employee's page in tabs, each offered only when the viewer may see
+     * something on it. Overview: their record, the reports needing a new
+     * Manager when they have left, and their Reporting Chain unless they
+     * have left. Assignments & Pay: their Assignments, with Pay for viewers
+     * allowed to see it. Time Off: their Paid Days to set, and their Time
+     * Off with this year's Paid Days left. Only the open tab's data is
+     * loaded, apart from the Employee's employment status, which the header
+     * shows on every tab to viewers who may see their record; an unknown or
+     * forbidden tab opens Overview.
+     *
+     * @return array<string, mixed>
+     */
+    public static function props(Employee $actor, Employee $employee, ?EmployeePageTab $asked): array
+    {
+        $canViewAssignments = $actor->can('viewAny', [Assignment::class, $employee]);
+        $canManage = $actor->can('create', [Assignment::class, $employee]);
+        $canViewPay = $actor->can('viewPay', [Assignment::class, $employee]);
+        $canManagePay = $actor->can('managePay', [Assignment::class, $employee]);
+        $canSetPaidDays = $actor->can('setPaidDays', $employee);
+        $canViewTimeOff = $actor->can('viewTimeOffAndPaidDays', $employee);
+        $currency = $canViewPay ? CompanySettings::payCurrency() : null;
+        $canViewRecord = $actor->can(Permission::ViewEmployeeRecords->value, $employee);
+
+        $tabs = array_values(array_filter([
+            EmployeePageTab::Overview,
+            $canViewAssignments ? EmployeePageTab::Assignments : null,
+            $canSetPaidDays || $canViewTimeOff ? EmployeePageTab::TimeOff : null,
+        ]));
+        $tab = in_array($asked, $tabs, true) ? $asked : EmployeePageTab::Overview;
+
+        return [
+            'employee' => [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'job_title' => $employee->internalAssignment?->job_title,
+            ],
+            'tab' => $tab->value,
+            'tabs' => array_map(fn (EmployeePageTab $offered): string => $offered->value, $tabs),
+            'canManage' => $canManage,
+            'canViewPay' => $canViewPay,
+            'canManagePay' => $canManagePay,
+            ...($canManagePay && $currency !== null ? ['currency' => $currency->code] : []),
+            'canEdit' => $actor->can('update', $employee),
+            'standing' => $canViewRecord
+                ? ['status' => $employee->employmentStatus()->value]
+                : null,
+            ...match ($tab) {
+                EmployeePageTab::Overview => self::overviewTab($actor, $employee, $canViewRecord),
+                EmployeePageTab::Assignments => self::assignmentsTab($employee, $currency, $canManage),
+                EmployeePageTab::TimeOff => self::timeOffTab($employee, $canSetPaidDays, $canViewTimeOff),
+            },
+        ];
+    }
+
+    /**
      * The Overview tab: the Employee's record and the reports needing a new
      * Manager, when the viewer may see the record, and their Reporting Chain
      * unless they have left.
      *
      * @return array{record: array<string, mixed>|null, reportsNeedingAManager: array<int, array{id: int, name: string}>, reportingChain: array<string, mixed>|null}
      */
-    public static function overviewTab(Employee $actor, Employee $employee, bool $canViewRecord): array
+    private static function overviewTab(Employee $actor, Employee $employee, bool $canViewRecord): array
     {
         return [
             'record' => $canViewRecord ? self::record($employee) : null,
@@ -45,7 +103,7 @@ final class EmployeePage
      *
      * @return array{assignments: array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, has_ended: bool, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>, projects: array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>}
      */
-    public static function assignmentsTab(Employee $employee, ?Currency $currency, bool $canManage): array
+    private static function assignmentsTab(Employee $employee, ?Currency $currency, bool $canManage): array
     {
         return [
             'assignments' => self::assignments($employee, $currency),
@@ -59,7 +117,7 @@ final class EmployeePage
      *
      * @return array{paidDays: int|null, timeOff: array<string, mixed>|null}
      */
-    public static function timeOffTab(Employee $employee, bool $canSetPaidDays, bool $canViewTimeOff): array
+    private static function timeOffTab(Employee $employee, bool $canSetPaidDays, bool $canViewTimeOff): array
     {
         return [
             'paidDays' => $canSetPaidDays ? $employee->paid_days : null,
@@ -197,7 +255,7 @@ final class EmployeePage
     {
         return Project::query()
             ->with('client:id,name')
-            ->where('is_internal', false)
+            ->notInternal()
             ->where(fn (Builder $query) => $query->whereNull('end_date')->orWhereDate('end_date', '>=', today()))
             ->orderBy('name')
             ->orderBy('id')

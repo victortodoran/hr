@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Projects;
 
+use App\Actions\DeleteProject;
 use App\Actions\UpdateTrimmingAssignments;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\ProjectRequest;
-use App\Models\Assignment;
-use App\Models\Client;
 use App\Models\Employee;
 use App\Models\Project;
+use App\Pages\Projects\ProjectListPage;
+use App\Pages\Projects\ProjectPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,26 +28,7 @@ class ProjectController extends Controller
      */
     public function index(): Response
     {
-        $projects = Project::query()
-            ->with('client:id,name')
-            ->orderByDesc('is_internal')
-            ->orderBy('name')
-            ->orderBy('id')
-            ->get()
-            ->map(fn (Project $project): array => [
-                'id' => $project->id,
-                'name' => $project->name,
-                'client' => $project->client?->only('id', 'name'),
-                ...$project->dates(),
-                'is_internal' => $project->is_internal,
-            ]);
-
-        return Inertia::render('projects/Index', [
-            'projects' => $projects,
-            'clients' => Gate::allows('create', Project::class)
-                ? Client::query()->orderBy('name')->get(['id', 'name'])
-                : [],
-        ]);
+        return Inertia::render('projects/Index', ProjectListPage::props(Gate::allows('create', Project::class)));
     }
 
     /**
@@ -56,28 +37,7 @@ class ProjectController extends Controller
      */
     public function show(#[CurrentUser] Employee $actor, Project $project): Response
     {
-        return Inertia::render('projects/Show', [
-            'project' => [
-                'id' => $project->id,
-                'name' => $project->name,
-                'client' => $project->client?->only('id', 'name'),
-                ...$project->dates(),
-                'is_internal' => $project->is_internal,
-            ],
-            'team' => $project->assignments()
-                ->visibleTo($actor)
-                ->with('employee:id,name')
-                ->orderByEmployeeName()
-                ->get()
-                ->map(fn (Assignment $assignment): array => [
-                    'id' => $assignment->id,
-                    'employee' => $assignment->employee->only('id', 'name'),
-                    'job_title' => $assignment->job_title,
-                    'start_date' => $assignment->start_date->toDateString(),
-                    'end_date' => $assignment->end_date?->toDateString(),
-                    'capacity' => $assignment->capacity,
-                ]),
-        ]);
+        return Inertia::render('projects/Show', ProjectPage::props($actor, $project));
     }
 
     public function store(ProjectRequest $request): RedirectResponse
@@ -106,15 +66,9 @@ class ProjectController extends Controller
      * Delete a Project, refusing once anyone has been assigned to it, since
      * that work is part of their record.
      */
-    public function destroy(Project $project): RedirectResponse
+    public function destroy(Project $project, DeleteProject $deleteProject): RedirectResponse
     {
-        if ($project->assignments()->exists()) {
-            throw ValidationException::withMessages([
-                'project' => __(':project has Assignments, so it can\'t be deleted. Set an end date instead.', ['project' => $project->name]),
-            ]);
-        }
-
-        $project->delete();
+        $deleteProject->delete($project);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project deleted.')]);
 
