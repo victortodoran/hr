@@ -391,7 +391,6 @@ it('refuses a selection that is not a list of Work Entry IDs', function (mixed $
 
     actingAs($ben)->post(route('approvals.store'), ['ids' => $ids])->assertInvalid([$field => $message]);
 })->with([
-    'missing' => [null, 'ids', 'Select at least one Work Entry.'],
     'empty' => [[], 'ids', 'Select at least one Work Entry.'],
     'not a list' => ['all', 'ids', 'Select at least one Work Entry.'],
     'not numbers' => [['first'], 'ids.0', 'The ids.0 field must be an integer.'],

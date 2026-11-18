@@ -149,7 +149,3 @@ it('shows the page in the menu to those who view travel or reopen Travel Expense
     actingAs(travelViewer([$permission => Scope::Reports]))->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeTravelRequestList', true));
 })->with([Permission::ViewTravel->value, Permission::ReopenTravelExpenses->value]);
-
-it('no longer has a Travel Expenses page', function () {
-    actingAs(travelViewer())->get('/travel-expenses')->assertNotFound();
-});

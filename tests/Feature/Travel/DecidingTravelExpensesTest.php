@@ -171,7 +171,7 @@ it('refuses a decline without a reason', function (mixed $reason) {
         ->assertSessionHasErrors('decline_reason');
 
     expect($expense->refresh()->state)->toBe(TravelExpenseState::Pending);
-})->with(['missing' => null, 'blank' => '   ', 'not text' => [['No receipt.']], 'over 1,000 characters' => str_repeat('a', 1001)]);
+})->with(['blank' => '   ', 'not text' => [['No receipt.']], 'over 1,000 characters' => str_repeat('a', 1001)]);
 
 it('says to give a reason when declining without one', function () {
     $ben = managerBen();

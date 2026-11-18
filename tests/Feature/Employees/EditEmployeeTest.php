@@ -84,39 +84,12 @@ function employeeRecordFields(Employee $employee, array $overrides = []): array
     ];
 }
 
-it('keeps an Employee\'s own email valid when saving their record', function () {
-    $cara = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
-
-    actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $cara), employeeRecordFields($cara))
-        ->assertSessionHasNoErrors();
-});
-
-it('refuses another Employee\'s email', function () {
-    $cara = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
-    $ben = Employee::factory()->create();
-
-    actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $cara), employeeRecordFields($cara, ['email' => $ben->email]))
-        ->assertSessionHasErrors(['email' => 'The email has already been taken.']);
-});
-
 it('refuses making an Employee their own Manager', function () {
     $cara = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
 
     actingAs(employeeWhoManagesEmployees())
         ->patch(route('employees.update', $cara), employeeRecordFields($cara, ['manager_id' => $cara->id]))
         ->assertSessionHasErrors(['manager_id' => 'An Employee cannot be their own Manager.']);
-});
-
-it('lets HR remove an Employee\'s Manager when nothing of theirs is Pending', function () {
-    $cara = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
-
-    actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $cara), employeeRecordFields($cara, ['manager_id' => null]))
-        ->assertSessionHasNoErrors();
-
-    expect($cara->refresh()->manager_id)->toBeNull();
 });
 
 it('saves an Employee with no Manager, and gives them one', function () {

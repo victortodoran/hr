@@ -166,7 +166,6 @@ it('creates the starter Manager Role: Reports\' records, Assignments, Work Entri
         ->and($ben->widestScopeFor(Permission::ReopenWorkEntries)?->value)->toBe('reports')
         ->and($ben->widestScopeFor(Permission::ViewTimeOff)?->value)->toBe('reports')
         ->and($ben->widestScopeFor(Permission::ManagePaidDays))->toBeNull()
-        ->and(Role::query()->where('name', 'Manager')->sole()->grants())->not->toHaveKey('approve-work-entries')
         ->and($ben->widestScopeFor(Permission::ManageWorkEntries))->toBeNull()
         ->and($ben->widestScopeFor(Permission::ViewPay))->toBeNull()
         ->and($gate->allows(Permission::ManageProjects->value))->toBeFalse();

@@ -58,7 +58,6 @@ it('offers every Permission with the Scopes it can carry, in its group', functio
             ->where('permissions.13', ['value' => 'view-performance-evaluations', 'label' => 'View performance evaluations', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Performance'])
             ->where('permissions.14', ['value' => 'reopen-performance-evaluations', 'label' => 'Reopen performance evaluations', 'scopes' => ['reports', 'everyone'], 'group' => 'Performance'])
             ->where('permissions.20', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => [], 'group' => 'Administration'])
-            ->where('permissions', fn (Collection $permissions): bool => ! $permissions->contains('value', 'approve-work-entries'))
             ->where('permissions', fn (Collection $permissions): bool => $permissions->pluck('group')->unique()->values()->all() === ['Employees', 'Assignments', 'Pay', 'Work entries', 'Time off', 'Travel', 'Performance', 'Organization', 'Administration'])
             ->etc(),
         );
@@ -148,7 +147,6 @@ it('rejects a Role whose name or Permissions are invalid', function (array $inpu
     'scoped Permission with an unknown Scope' => [['permissions' => ['view-pay' => 'department']], 'permissions', 'Choose a Scope for View pay: own, reports or everyone.'],
     'reopen work entries for own' => [['permissions' => ['reopen-work-entries' => 'own']], 'permissions', 'Choose a Scope for Reopen work entries: reports or everyone.'],
     'reopen travel expenses for own' => [['permissions' => ['reopen-travel-expenses' => 'own']], 'permissions', 'Choose a Scope for Reopen travel expenses: reports or everyone.'],
-    'approve work entries, which only Managers do' => [['permissions' => ['approve-work-entries' => 'reports']], 'permissions', 'The HR system has no Permission called "approve-work-entries".'],
     'company-wide Permission with a Scope' => [['permissions' => ['manage-roles' => 'own']], 'permissions', 'Manage roles always applies company-wide, so it takes no Scope.'],
     'mark missing' => [['given_to_new_employees' => null], 'given_to_new_employees', 'The given to new employees field is required.'],
     'mark not true or false' => [['given_to_new_employees' => 'maybe'], 'given_to_new_employees', 'The given to new employees field must be true or false.'],

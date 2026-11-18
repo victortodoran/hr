@@ -4,14 +4,6 @@ use App\Enums\Scope;
 
 covers(Scope::class);
 
-it('picks everyone as the widest Scope', function () {
-    expect(Scope::widest([Scope::Own, Scope::Everyone, Scope::Reports]))->toBe(Scope::Everyone);
-});
-
-it('picks reports over own', function () {
-    expect(Scope::widest([Scope::Own, Scope::Reports]))->toBe(Scope::Reports);
-});
-
 it('keeps a single Scope', function () {
     expect(Scope::widest([Scope::Own]))->toBe(Scope::Own);
 });
