@@ -26,8 +26,8 @@ import type {
 /**
  * Records a Travel Expense on a Travel Request, or, given one, changes it.
  * A new one always needs its receipt; a change shows the current receipt
- * and keeps it unless a new file is chosen to replace it. Saving and cancelling both lead back to the Travel
- * Request's page.
+ * and keeps it unless a new file is chosen to replace it. Saving and
+ * cancelling both lead back to the Travel Request's page.
  */
 const props = defineProps<{
     today: string;
@@ -106,7 +106,7 @@ function save(): void {
                 <InputError :message="form.errors.amount" />
             </div>
         </div>
-        <div class="grid gap-2">
+        <div class="relative grid gap-2">
             <Label for="travel-expense-category">Category</Label>
             <Select
                 name="category"
