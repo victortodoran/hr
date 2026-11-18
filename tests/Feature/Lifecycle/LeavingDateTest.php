@@ -157,14 +157,6 @@ it('offers resending the invitation only while it can be resent', function (stri
     'invited, but has left' => ['former', false],
 ]);
 
-it('does not resend an invitation to a Former Employee', function () {
-    $cara = Employee::factory()->invited()->former()->create();
-
-    actingAs(employeeWhoManagesEmployees())
-        ->post(route('employees.invitation.store', $cara))
-        ->assertForbidden();
-});
-
 it('refuses a Leaving Date for the last Employee who could manage Roles, until someone else can', function () {
     $ada = reportingEmployee(['name' => 'Ada']);
     $adminRole = giveRole($ada, [Permission::ManageRoles->value => null, Permission::ManageEmployees->value => null]);

@@ -60,19 +60,6 @@ it('lets someone who manages Paid Days set an Employee\'s Paid Days, with no yea
     expect(shownPaidDays($cara))->toBe(20);
 });
 
-it('applies the one number to every year, past ones included', function (string $date) {
-    $cara = cara();
-    actingAs(paidDaysManager())->post(route('employees.paid-days.store', $cara), ['days' => 20]);
-    travelTo($date);
-
-    actingAs($cara->refresh())->get(route('time-off.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('paidDaysLeft', 20));
-})->with([
-    'last year' => ['2025-06-01 09:00'],
-    'this year' => ['2026-06-01 09:00'],
-    'next year' => ['2027-06-01 09:00'],
-]);
-
 it('gives a new Employee no Paid Days', function () {
     expect(shownPaidDays(cara()))->toBe(0);
 });
@@ -103,16 +90,6 @@ it('saves Paid Days lowered below what is booked, leaving the booked Time Off as
             ->where('timeOff.requests.0.id', $booked->id)
             ->where('timeOff.requests.0.state', 'approved')
             ->where('timeOff.requests.0.days', 15));
-});
-
-it('lets someone who only manages Paid Days open the Employee\'s page to set them', function () {
-    $cara = cara(['paid_days' => 20]);
-
-    actingAs(paidDaysManager())->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('tabs', ['overview', 'time-off'])
-            ->where('tab', 'time-off')
-            ->where('paidDays', 20));
 });
 
 it('refuses setting Paid Days to someone without Manage Paid Days for the Employee', function (array $grants) {

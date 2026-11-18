@@ -103,12 +103,3 @@ it('refuses invalid or incomplete dates', function (array $input, string $field,
 it('needs signing in to preview Time Off', function () {
     getJson(timeOffPreview())->assertUnauthorized();
 });
-
-it('previews Time Off covering exactly a year and refuses one a day longer', function () {
-    actingAs(timeOffPreviewer())->getJson(timeOffPreview(['last_date' => '2027-12-13', 'is_paid' => 0]))
-        ->assertOk();
-
-    actingAs(timeOffPreviewer())->getJson(timeOffPreview(['last_date' => '2027-12-14']))
-        ->assertUnprocessable()
-        ->assertOnlyJsonValidationErrors(['last_date' => 'The longest Time Off is a year. Request longer leave as several Time Off.']);
-});

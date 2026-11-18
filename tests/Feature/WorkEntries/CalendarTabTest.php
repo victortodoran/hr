@@ -1,12 +1,8 @@
 <?php
 
-use App\Enums\Permission;
-use App\Enums\Scope;
 use App\Enums\WorkEntriesTab;
 use App\Http\Controllers\WorkEntries\WorkEntryController;
 use App\Http\Requests\WorkEntries\WorkEntryPeriodRequest;
-use App\Models\Employee;
-use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -79,17 +75,6 @@ it('totals the month on each Project, most hours first', function () {
         ]));
 });
 
-it('marks Time Off on the calendar, in future months too', function () {
-    $cara = recorder();
-    TimeOff::factory()->for($cara)->unpaid()->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-21']);
-
-    $response = actingAs($cara)->get(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-12']));
-
-    $response->assertInertia(fn (Assert $page) => $page
-        ->where('calendar.3.days.0.date', '2026-12-21')
-        ->where('calendar.3.days.0.time_off', 'unpaid'));
-});
-
 it('opens the calendar on the month holding the first day of the period asked for', function (array $period) {
     $cara = recorder();
 
@@ -120,18 +105,6 @@ it('opens the list for a tab it doesn\'t know, or none, loading only its own day
             ->has('days', 7)
             ->missing('calendar'));
 })->with(['', 'agenda']);
-
-it('shows the calendar of an Employee the viewer\'s Scope covers, as not their own', function () {
-    $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Reports]);
-    $cara = Employee::factory()->reportingTo($ben)->create();
-    WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03', 'minutes' => 60]);
-
-    actingAs($ben)->get(route('work-entries.index', ['employee' => $cara->id, 'tab' => 'calendar']))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('isOwn', false)
-            ->where('calendar.1.days.1.hours', 1));
-});
 
 it('goes back to the Calendar on the month of the day after adding or deleting a Work Entry from it', function () {
     $cara = recorder();

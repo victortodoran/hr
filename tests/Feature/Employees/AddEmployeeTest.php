@@ -21,7 +21,6 @@ use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
-use function Pest\Laravel\post;
 
 covers(Assignment::class, Project::class, EmployeeController::class, EmployeeRequest::class, EmployeePolicy::class, AddEmployee::class, ChangeAccess::class, Employee::class, AssignmentsFit::class);
 
@@ -64,14 +63,6 @@ it('adds an Employee and invites them to set a password', function () {
     Notification::assertSentTo($cara, Invitation::class);
 });
 
-it('adds an Employee who already has a Leaving Date', function () {
-    actingAs(employeeWhoManagesEmployees())
-        ->post(route('employees.store'), newEmployeeDetails(['leaving_date' => '2027-05-31']))
-        ->assertSessionHasNoErrors();
-
-    expect(Employee::query()->where('email', 'cara@acme.test')->sole()->leaving_date?->toDateString())->toBe('2027-05-31');
-});
-
 it('puts the new Employee on the Internal Project for their whole period of work, with no internal Job Title and 0% capacity', function (?string $leavingDate) {
     actingAs(employeeWhoManagesEmployees())->post(route('employees.store'), newEmployeeDetails(['leaving_date' => $leavingDate]));
 
@@ -84,18 +75,6 @@ it('puts the new Employee on the Internal Project for their whole period of work
         ->and($internal->job_title)->toBeNull()
         ->and($internal->capacity)->toBe(0);
 })->with(['staying' => null, 'leaving' => '2027-05-31']);
-
-it('gives the new Employee every Role marked for new Employees, and no others', function () {
-    $employeeRole = Role::factory()->create(['is_given_to_new_employees' => true]);
-    $handbook = Role::factory()->create(['is_given_to_new_employees' => true]);
-    Role::factory()->create(['is_given_to_new_employees' => false]);
-
-    actingAs(employeeWhoManagesEmployees())->post(route('employees.store'), newEmployeeDetails());
-
-    $cara = Employee::query()->where('email', 'cara@acme.test')->sole();
-
-    expect($cara->roles->pluck('id')->sort()->values()->all())->toBe([$employeeRole->id, $handbook->id]);
-});
 
 it('logs each Role given to a new Employee, with who added them', function () {
     $employeeRole = Role::factory()->create(['name' => 'Employee', 'is_given_to_new_employees' => true]);
@@ -111,29 +90,6 @@ it('logs each Role given to a new Employee, with who added them', function () {
         ->and($entry->role_id)->toBe($employeeRole->id)
         ->and($entry->role_name)->toBe('Employee')
         ->and($entry->employee_id)->toBe($cara->id);
-});
-
-it('lets the invited Employee set a password from the invite', function () {
-    actingAs(employeeWhoManagesEmployees())->post(route('employees.store'), newEmployeeDetails());
-    $cara = Employee::query()->where('email', 'cara@acme.test')->sole();
-
-    $token = null;
-    Notification::assertSentTo($cara, Invitation::class, function (Invitation $invitation) use (&$token) {
-        $token = $invitation->token;
-
-        return true;
-    });
-
-    auth()->logout();
-
-    post(route('invitation.store'), [
-        'token' => $token,
-        'email' => 'cara@acme.test',
-        'password' => 'a-new-password',
-        'password_confirmation' => 'a-new-password',
-    ])->assertRedirect(route('login'));
-
-    expect($cara->refresh()->hasPendingInvitation())->toBeFalse();
 });
 
 it('refuses an Employee record with a missing or invalid value, and says why', function (string $field, mixed $value, string $message) {

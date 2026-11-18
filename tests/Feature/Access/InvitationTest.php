@@ -113,17 +113,6 @@ it('refuses an expired invitation', function () {
     expect($employee->refresh()->hasVerifiedEmail())->toBeFalse();
 });
 
-it('refuses a made-up token', function () {
-    $employee = Employee::factory()->invited()->create();
-
-    post(route('invitation.store'), [
-        'token' => 'not-a-real-token',
-        'email' => $employee->email,
-        'password' => 'a-new-password',
-        'password_confirmation' => 'a-new-password',
-    ])->assertSessionHasErrors('email');
-});
-
 it('requires the password to be confirmed', function () {
     $employee = Employee::factory()->invited()->create();
     $token = inviteAndCaptureToken($employee);

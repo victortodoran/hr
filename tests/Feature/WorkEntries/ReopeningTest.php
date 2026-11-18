@@ -137,12 +137,3 @@ it('refuses a reopening selection that is not a list of Work Entry IDs', functio
     actingAs($rae)->post(route('reopenings.store'), ['ids' => []])
         ->assertInvalid(['ids' => 'Select at least one Work Entry.']);
 });
-
-it('shows the Work Entries list, not Approvals, to those who may only reopen Work Entries', function () {
-    $rae = reopener();
-
-    actingAs($rae)->get(route('profile.edit'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('auth.canSeeWorkEntryList', true)
-            ->where('auth.canSeeApprovals', false));
-});

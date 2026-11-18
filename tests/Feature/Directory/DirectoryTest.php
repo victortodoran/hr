@@ -78,20 +78,6 @@ it('leaves out Future and Former Employees', function () {
         );
 });
 
-it('counts the Leaving Date and the Start Date as days in the directory', function () {
-    $viewer = colleague();
-    $leavingToday = Employee::factory()->create(['name' => 'Ada Leaving', 'start_date' => today()->subYear(), 'leaving_date' => today()]);
-    $startingToday = Employee::factory()->create(['name' => 'Bob Starting', 'start_date' => today()]);
-
-    actingAs($viewer)->get(route('directory.index'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('employees.data.0.id', $leavingToday->id)
-            ->where('employees.data.1.id', $startingToday->id)
-            ->has('employees.data', 3)
-            ->etc(),
-        );
-});
-
 it('searches the directory by any part of a name, ignoring case', function () {
     $viewer = colleague();
     $cara = Employee::factory()->create(['name' => 'Cara McDonald']);

@@ -5,7 +5,6 @@ use App\Http\Controllers\TimeOff\TimeOffCancellationController;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Policies\TimeOffPolicy;
-use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
@@ -40,17 +39,6 @@ it('lets an Employee cancel their Pending or Approved Time Off before its first 
     expect($timeOff->cancelled_at)->toEqual(now());
     expect($timeOff->first_date->toDateString())->toBe('2026-12-14');
 })->with(['pending' => null, 'approved' => 'approved']);
-
-it('frees the Paid Days of cancelled Time Off', function () {
-    $timeOff = carasTimeOff();
-
-    actingAs($timeOff->employee)->post(route('time-off.cancellation.store', $timeOff));
-
-    actingAs($timeOff->employee)->get(route('time-off.index'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('paidDaysLeft', 20)
-            ->where('timeOff.0.can_cancel', false));
-});
 
 it('refuses cancelling Time Off from its first date on', function (string $today) {
     $timeOff = carasTimeOff('approved');

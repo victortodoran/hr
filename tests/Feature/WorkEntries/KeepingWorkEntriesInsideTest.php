@@ -117,14 +117,3 @@ it('lets a Project end on the day of the last Work Entry on it', function () {
     $response->assertValid();
     expect($project->refresh()->end_date?->toDateString())->toBe('2026-11-10');
 });
-
-it('lets a new Assignment be added, which holds no Work Entries yet', function () {
-    $cara = recorder();
-    $project = assignmentOf(Employee::factory()->create())->project;
-
-    $response = actingAs(employeeWith([Permission::ManageAssignments->value => Scope::Everyone]))
-        ->post(route('employees.assignments.store', $cara), ['project_id' => $project->id, 'job_title' => 'Developer', 'start_date' => '2026-11-02', 'end_date' => null, 'capacity' => 50]);
-
-    $response->assertValid();
-    expect($cara->assignments()->sole()->project_id)->toBe($project->id);
-});

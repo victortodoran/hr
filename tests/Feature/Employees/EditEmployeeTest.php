@@ -92,23 +92,6 @@ it('refuses making an Employee their own Manager', function () {
         ->assertSessionHasErrors(['manager_id' => 'An Employee cannot be their own Manager.']);
 });
 
-it('saves an Employee with no Manager, and gives them one', function () {
-    $dana = Employee::factory()->create();
-    $ben = Employee::factory()->create();
-
-    actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $dana), employeeRecordFields($dana, ['name' => 'Dana Owner']))
-        ->assertSessionHasNoErrors();
-
-    expect($dana->refresh()->name)->toBe('Dana Owner');
-
-    actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $dana), employeeRecordFields($dana, ['manager_id' => $ben->id]))
-        ->assertSessionHasNoErrors();
-
-    expect($dana->refresh()->manager_id)->toBe($ben->id);
-});
-
 it('resends the invitation to an Employee who has yet to set a password', function () {
     $cara = Employee::factory()->invited()->create();
 

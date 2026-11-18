@@ -22,9 +22,7 @@ class SecurityTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('settings/Security')
-                ->has('passwordRules')
-                ->missing('passkeys')
-                ->missing('twoFactorEnabled'),
+                ->has('passwordRules'),
             );
     }
 

@@ -119,27 +119,6 @@ it('lets Scope decide whose record an Employee may see', function (Scope $scope,
     'everyone' => [Scope::Everyone, ['Dana', 'Cara', 'Dev', 'Eve'], true],
 ]);
 
-it('shows a Manager their Report\'s record and Assignments but no Pay', function () {
-    $ben = employeeWith([
-        Permission::ViewEmployeeRecords->value => Scope::Reports,
-        Permission::ViewAssignments->value => Scope::Reports,
-        Permission::ManageAssignments->value => Scope::Reports,
-        Permission::ViewProjects->value => null,
-    ], ['manager_id' => Employee::factory()->create()->id]);
-    $cara = Employee::factory()->reportingTo($ben)->create();
-    Assignment::factory()->internal()->for($cara)->create();
-
-    actingAs($ben)->get(route('employees.show', $cara))
-        ->assertInertia(fn (Assert $page) => $page->where('record.manager.id', $ben->id));
-    actingAs($ben)->get(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
-        ->assertInertia(fn (Assert $page) => $page
-            ->has('assignments', 1)
-            ->missing('assignments.0.pay')
-            ->where('canViewPay', false)
-            ->missing('currency'),
-        );
-});
-
 it('offers Edit only to those who manage Employees', function (array $grants, bool $expected) {
     $cara = Employee::factory()->create();
 

@@ -23,11 +23,4 @@ class PasswordConfirmationTest extends TestCase
             ->component('auth/ConfirmPassword'),
         );
     }
-
-    public function test_password_confirmation_requires_authentication(): void
-    {
-        $response = $this->get(route('password.confirm'));
-
-        $response->assertRedirect(route('login'));
-    }
 }

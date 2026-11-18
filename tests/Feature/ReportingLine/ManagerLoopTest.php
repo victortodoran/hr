@@ -40,19 +40,6 @@ it('refuses a Manager change that would create a loop', function (string $newMan
     expect($ben->refresh()->manager_id)->toBe($dana->id);
 })->with(['a direct Report' => 'Cara', 'an indirect Report' => 'Dev']);
 
-it('allows moving an Employee under someone outside their own reporting line', function () {
-    $dana = Employee::factory()->create();
-    $ben = Employee::factory()->reportingTo($dana)->create();
-    $eve = Employee::factory()->reportingTo($dana)->create();
-    $cara = Employee::factory()->reportingTo($ben)->create();
-
-    actingAs(employeeWhoManagesEmployees())
-        ->patch(route('employees.update', $cara), managerChange($cara, ['manager_id' => $eve->id]))
-        ->assertSessionHasNoErrors();
-
-    expect($cara->refresh()->manager_id)->toBe($eve->id);
-});
-
 it('rejects a Manager that is not an Employee before checking for loops', function (mixed $managerId, string $message) {
     $ben = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
 

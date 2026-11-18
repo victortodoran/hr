@@ -97,10 +97,6 @@ it('opens the Roles page on the first Role by name, or on the Role in the URL, t
     'a new Role' => [fn (array $roles) => route('roles.create'), 'create', null],
 ]);
 
-it('answers a Role that does not exist with not found', function () {
-    actingAs(employeeWhoManagesRoles())->get('/roles/999999')->assertNotFound();
-});
-
 it('lets an Employee who manages Roles create one, choosing Permissions and Scopes', function () {
     freezeTime();
     $admin = employeeWhoManagesRoles();

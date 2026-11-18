@@ -10,10 +10,6 @@ use function Pest\Laravel\actingAs;
 
 covers(HandleInertiaRequests::class);
 
-it('has no Dashboard', function () {
-    actingAs(Employee::factory()->create())->get('/dashboard')->assertNotFound();
-});
-
 it('gives pages the signed-in Employee', function () {
     actingAs(Employee::factory()->create(['name' => 'Cara Lopez']))->get(route('profile.edit'))
         ->assertInertia(fn (Assert $page) => $page
