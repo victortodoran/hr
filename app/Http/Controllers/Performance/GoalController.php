@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Performance;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\GoalRequest;
-use App\Models\Comment;
 use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
-use App\Models\ProgressChange;
+use App\Pages\Performance\GoalFormPage;
+use App\Pages\Performance\GoalPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,9 +29,7 @@ class GoalController extends Controller
      */
     public function create(PerformanceEvaluation $performanceEvaluation): Response
     {
-        return Inertia::render('performance-evaluations/goals/Create', [
-            'evaluation' => $this->evaluationSummary($performanceEvaluation),
-        ]);
+        return Inertia::render('performance-evaluations/goals/Create', GoalFormPage::create($performanceEvaluation));
     }
 
     /**
@@ -53,34 +51,7 @@ class GoalController extends Controller
      */
     public function show(PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/goals/Show', [
-            'evaluation' => $this->evaluationSummary($performanceEvaluation),
-            'goal' => [
-                ...$goal->only('id', 'title', 'description'),
-                'progress' => $goal->progress->value,
-                'given_at' => $goal->created_at?->toDateString(),
-            ],
-            'history' => $goal->progressChanges()->with('changedBy:id,name')->get()
-                ->map(fn (ProgressChange $change): array => [
-                    'progress' => $change->progress->value,
-                    'previous_progress' => $change->previous_progress->value,
-                    'changed_by' => $change->changedBy->name,
-                    'changed_at' => $change->created_at->toIso8601String(),
-                ])
-                ->all(),
-            'comments' => $goal->comments()->with('author:id,name')->get()
-                ->map(fn (Comment $comment): array => [
-                    'id' => $comment->id,
-                    'body' => $comment->body,
-                    'author' => $comment->author->name,
-                    'written_at' => $comment->created_at->toIso8601String(),
-                ])
-                ->all(),
-            'isOwn' => $performanceEvaluation->employee_id === $actor->id,
-            'canChangeProgress' => $actor->can('changeProgress', $performanceEvaluation),
-            'canComment' => $actor->can('comment', $performanceEvaluation),
-            'canEdit' => $actor->can('edit', $performanceEvaluation),
-        ]);
+        return Inertia::render('performance-evaluations/goals/Show', GoalPage::props($performanceEvaluation, $goal, $actor));
     }
 
     /**
@@ -89,11 +60,7 @@ class GoalController extends Controller
      */
     public function edit(Request $request, PerformanceEvaluation $performanceEvaluation, Goal $goal): Response
     {
-        return Inertia::render('performance-evaluations/goals/Edit', [
-            'evaluation' => $this->evaluationSummary($performanceEvaluation),
-            'goal' => $goal->only('id', 'title', 'description'),
-            'returnsToGoal' => $request->query('from') === 'goal',
-        ]);
+        return Inertia::render('performance-evaluations/goals/Edit', GoalFormPage::edit($performanceEvaluation, $goal, $request->query('from') === 'goal'));
     }
 
     /**
@@ -121,20 +88,5 @@ class GoalController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal removed.')]);
 
         return to_route('performance-evaluations.show', $performanceEvaluation);
-    }
-
-    /**
-     * What the Goal forms show of the Performance Evaluation: whose it is
-     * and for which year.
-     *
-     * @return array{id: int, year: int, employee: array{id: int, name: string}}
-     */
-    private function evaluationSummary(PerformanceEvaluation $performanceEvaluation): array
-    {
-        return [
-            'id' => $performanceEvaluation->id,
-            'year' => $performanceEvaluation->year,
-            'employee' => $performanceEvaluation->employee->only('id', 'name'),
-        ];
     }
 }

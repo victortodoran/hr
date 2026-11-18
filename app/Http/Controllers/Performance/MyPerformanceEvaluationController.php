@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Performance;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
-use App\Models\PerformanceEvaluation;
+use App\Pages\Performance\MyPerformanceEvaluationsPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,21 +23,6 @@ class MyPerformanceEvaluationController extends Controller
      */
     public function __invoke(#[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/Mine', [
-            'evaluations' => $actor->performanceEvaluations()
-                ->withCount('goals')
-                ->withAtRiskGoalsCount()
-                ->orderByDesc('year')
-                ->get()
-                ->map(fn (PerformanceEvaluation $evaluation): array => [
-                    'id' => $evaluation->id,
-                    'year' => $evaluation->year,
-                    'state' => $evaluation->state->value,
-                    'goals_count' => $evaluation->goals_count,
-                    'at_risk_goals_count' => $evaluation->openAtRiskGoalsCount(),
-                    'outcome' => $evaluation->completedOutcome()?->value,
-                ])
-                ->all(),
-        ]);
+        return Inertia::render('performance-evaluations/Mine', MyPerformanceEvaluationsPage::props($actor));
     }
 }
