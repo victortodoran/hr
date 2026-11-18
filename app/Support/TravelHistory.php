@@ -11,9 +11,9 @@ use App\Models\TravelRequest;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * An Employee's Travel Requests as the Travel page and the Travel tab of the
- * Employee page both list them, split into Upcoming and Past, and one Travel
- * Request in full, with its Travel Expenses, as its own page shows it.
+ * An Employee's Travel Requests as the Travel page lists them, split into
+ * Upcoming and Past, and one Travel Request in full, with its Travel
+ * Expenses, as its own page shows it.
  */
 final class TravelHistory
 {

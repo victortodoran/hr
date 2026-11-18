@@ -131,7 +131,7 @@ it('refuses Outcomes and Completing to anyone but the effective Manager, the Emp
     [$ben, $cara, $evaluation, $api, $mentoring] = carasEvaluation();
     $form = assessmentForm([$api->id => 'exceeded', $mentoring->id => 'exceeded'], 'exceeded', 'My best year.');
 
-    foreach ([$cara, Employee::query()->where('name', 'Ada')->sole(), employeeWhoManagesRoles()] as $other) {
+    foreach ([$cara, Employee::query()->where('name', 'Ada')->sole(), employeeHoldingAdmin()] as $other) {
         actingAs($other)->put(route('performance-evaluations.assessment.update', $evaluation), $form)->assertForbidden();
         actingAs($other)->post(route('performance-evaluations.completion.store', $evaluation), $form)->assertForbidden();
     }

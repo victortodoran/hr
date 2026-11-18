@@ -176,7 +176,7 @@ it('refuses starting a Performance Evaluation for anyone but the effective Manag
 })->with([
     'the Employee themselves' => [fn (Employee $ben, Employee $cara) => $cara],
     'their Manager\'s Manager' => [fn (Employee $ben, Employee $cara) => Employee::query()->where('name', 'Ada')->sole()],
-    'an Admin' => [fn (Employee $ben, Employee $cara) => employeeWhoManagesRoles()],
+    'an Admin' => [fn (Employee $ben, Employee $cara) => employeeHoldingAdmin()],
 ]);
 
 it('lets the effective Manager start this year\'s Performance Evaluation for a Future Employee who starts this year', function () {

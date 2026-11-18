@@ -67,8 +67,8 @@ class PasswordResetTest extends TestCase
             $response = $this->post(route('password.update'), [
                 'token' => $notification->token,
                 'email' => $employee->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
+                'password' => 'a-new-password',
+                'password_confirmation' => 'a-new-password',
             ]);
 
             $response
@@ -77,6 +77,9 @@ class PasswordResetTest extends TestCase
 
             return true;
         });
+
+        $this->assertCredentials(['email' => $employee->email, 'password' => 'a-new-password']);
+        $this->assertInvalidCredentials(['email' => $employee->email, 'password' => 'password']);
     }
 
     public function test_password_cannot_be_reset_with_invalid_token(): void
