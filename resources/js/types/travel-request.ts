@@ -1,4 +1,4 @@
-import type { WorkEntryListFilters } from './work-entry';
+import type { ListFilters } from './list-filters';
 
 /**
  * Where a Travel Request stands: Pending until decided, Approved or
@@ -190,9 +190,7 @@ export type TravelExpensesToApprove = {
 };
 
 /** The Travel Requests page's filters, as on the Work Entries page. */
-export type TravelRequestListFilters = Omit<WorkEntryListFilters, 'state'> & {
-    state: TravelRequestState | null;
-};
+export type TravelRequestListFilters = ListFilters<TravelRequestState>;
 
 /**
  * A Travel Request on the Travel Requests page, across Employees, with a

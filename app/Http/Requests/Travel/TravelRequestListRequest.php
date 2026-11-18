@@ -3,8 +3,8 @@
 namespace App\Http\Requests\Travel;
 
 use App\Enums\TravelRequestState;
-use App\Http\Requests\WorkEntries\WorkEntryPeriodRequest;
 use App\Support\Period;
+use App\Support\PeriodRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -24,7 +24,7 @@ class TravelRequestListRequest extends FormRequest
     public function rules(): array
     {
         return [
-            ...WorkEntryPeriodRequest::periodRules(),
+            ...PeriodRules::rules(),
             'employee' => ['nullable', 'regex:/^(all|[0-9]+)$/'],
             'project' => ['nullable', 'integer'],
             'state' => ['nullable', Rule::enum(TravelRequestState::class)],
@@ -36,7 +36,7 @@ class TravelRequestListRequest extends FormRequest
      */
     public function after(): array
     {
-        return [fn (Validator $validator) => WorkEntryPeriodRequest::checkCustomLength($this, $validator)];
+        return [fn (Validator $validator) => PeriodRules::checkCustomLength($this, $validator)];
     }
 
     /**

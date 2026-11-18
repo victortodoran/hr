@@ -4,6 +4,7 @@ namespace App\Http\Requests\WorkEntries;
 
 use App\Enums\PeriodMode;
 use App\Support\Period;
+use App\Support\PeriodRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -21,7 +22,7 @@ class WorkEntryFiltersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            ...WorkEntryPeriodRequest::periodRules(),
+            ...PeriodRules::rules(),
             'employee' => ['nullable', 'integer'],
             'project' => ['nullable', 'integer'],
         ];
@@ -32,7 +33,7 @@ class WorkEntryFiltersRequest extends FormRequest
      */
     public function after(): array
     {
-        return [fn (Validator $validator) => WorkEntryPeriodRequest::checkCustomLength($this, $validator)];
+        return [fn (Validator $validator) => PeriodRules::checkCustomLength($this, $validator)];
     }
 
     /**

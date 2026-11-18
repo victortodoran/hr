@@ -5,6 +5,7 @@ export * from './department';
 export * from './directory';
 export * from './employee-record';
 export * from './navigation';
+export * from './list-filters';
 export * from './pagination';
 export * from './project';
 export * from './ui';
