@@ -4,7 +4,6 @@ import { Plane } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
-import { Button } from '@/components/ui/button';
 import { formatDateRange } from '@/lib/dates';
 import { show } from '@/routes/travel-requests';
 import type { TableColumn, TravelHistory } from '@/types';
@@ -13,7 +12,7 @@ import type { TableColumn, TravelHistory } from '@/types';
  * An Employee's Travel Requests under Upcoming and Past, one short row
  * each: the destination, which opens the Travel Request's page, its
  * Client, what was entered and what was approved of its Travel Expenses,
- * its state, and an "Expenses" button to its page on those that take
+ * its state, and an "Expenses" link to its page on those that take
  * Travel Expenses. On a phone each row stacks into two lines: destination
  * and dates, then the rest.
  */
@@ -75,13 +74,11 @@ const sections = [
                                 class="text-destructive"
                                 >{{ row.declined_expenses }} declined</span
                             >
-                            <Button variant="outline" size="sm" as-child>
-                                <Link
-                                    :href="show(row.id)"
-                                    class="text-foreground"
-                                    >Expenses</Link
-                                >
-                            </Button>
+                            <Link
+                                :href="show(row.id)"
+                                class="text-foreground underline-offset-4 hover:underline"
+                                >Expenses</Link
+                            >
                         </template>
                         <span v-else>—</span>
                         <StatusBadge :state="row.state" />
@@ -112,16 +109,12 @@ const sections = [
                     <span class="sr-only">Actions</span>
                 </template>
                 <template #cell-actions="{ row }">
-                    <Button
+                    <Link
                         v-if="row.takes_expenses"
-                        variant="outline"
-                        size="sm"
-                        as-child
+                        :href="show(row.id)"
+                        class="underline-offset-4 hover:underline"
+                        >Expenses</Link
                     >
-                        <Link :href="show(row.id)" class="text-foreground"
-                            >Expenses</Link
-                        >
-                    </Button>
                 </template>
                 <template #empty>
                     <EmptyState
