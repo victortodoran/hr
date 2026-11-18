@@ -22,11 +22,19 @@ export type TravelRequestSummary = {
     /** Empty for the Internal Assignment, whose Project has no Client. */
     client: string | null;
     state: TravelRequestState;
+    /** Whether it can have Travel Expenses: Approved, or Cancelled after it was Approved. */
+    takes_expenses: boolean;
     /**
-     * The total of its Travel Expenses not Declined, already shown in the
-     * company currency; none for a Travel Request that doesn't take them.
+     * The total of its Travel Expenses entered that aren't Declined, already
+     * shown in the company currency; none for a Travel Request that doesn't
+     * take them.
      */
-    expense_total: string | null;
+    entered_total: string | null;
+    /**
+     * The total of its Approved and Locked Travel Expenses, already shown in
+     * the company currency; none for a Travel Request that doesn't take them.
+     */
+    approved_total: string | null;
     /** How many of its Travel Expenses are Declined. */
     declined_expenses: number;
 };

@@ -25,7 +25,7 @@ beforeEach(function () {
     Storage::fake(TravelExpense::RECEIPT_DISK);
 });
 
-it('adds an expense with its receipt to an Approved Travel Request from its page, landing back there', function () {
+it('adds an expense with its receipt to an Approved Travel Request opened from its Expenses button, which the Travel page then shows as entered', function () {
     $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
     $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
     $receipt = tempnam(sys_get_temp_dir(), 'receipt').'.pdf';
@@ -34,7 +34,7 @@ it('adds an expense with its receipt to an Approved Travel Request from its page
     actingAs($cara);
 
     visit(route('travel-requests.index'))
-        ->click('Berlin')
+        ->click('internal:role=link[name="Expenses"s]')
         ->assertPathIs("/travel-requests/{$berlin->id}")
         ->assertSee('Money paid for this travel appears here')
         ->click('Add expense')
@@ -52,6 +52,9 @@ it('adds an expense with its receipt to an Approved Travel Request from its page
         ->assertSee('Hotel, three nights')
         ->assertSeeLink('Receipt')
         ->assertSeeLink('Edit')
+        ->navigate(route('travel-requests.index'))
+        ->assertSeeIn('td:nth-child(3)', "RON\u{a0}1,990.00")
+        ->assertSeeIn('td:nth-child(4)', "RON\u{a0}0.00")
         ->assertNoJavaScriptErrors();
 
     $expense = TravelExpense::query()->sole();
