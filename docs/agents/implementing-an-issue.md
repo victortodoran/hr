@@ -30,12 +30,14 @@ Point it at this doc for the rest.
 - In Pest, chaining `->not` after another matcher fails PHPStan; start a second `expect()`.
 - After moving or renaming PHP files, run `vendor/bin/pint app routes tests`: `--dirty` skips moved files.
 - Pest architecture failures don't name the offending file, so a check about where code sits belongs in a `bin/lint-*.sh` script run by `composer ci:check`.
+- Lists render a second copy of some links and buttons for phones, hidden on desktop (`sm:hidden`), so a browser test clicking by text can hit the hidden copy and time out. Click by role, e.g. `internal:role=link[name="Expenses"s]`, which skips hidden elements.
 
 ## Steps
 
 1. `git fetch origin && git checkout -b <branch> origin/main`.
 2. Implement the issue until every acceptance-criteria checkbox holds, following sibling files and `CODING_STANDARDS.md`.
    Check a migration that rewrites existing rows against a copy of the dev database, so `hr` stays usable from other branches: `createdb -T hr hr_scratch`, run with `DB_DATABASE=hr_scratch`, then `dropdb hr_scratch`.
+   To see a page with data, sign in on hr.test as a demo user from `DemoSeeder`. `migrate:fresh --seed` wipes the shared `hr` database, so ask before running it.
 3. Write feature tests through HTTP and Inertia prop assertions. When a change is mostly UI (a page, dialog, tab or layout), also add or extend a browser test in `tests/Browser` that opens it and asserts no JavaScript errors; browser tests run against built assets, so run `npm run build` before running one on its own.
 4. Run `npm run build` when routes or controllers changed (`composer ci:check` also builds first), `vendor/bin/pint --dirty --format agent` after PHP edits, and `npm run check:fix` after JS or Vue edits.
 5. `composer ci:check` passes.

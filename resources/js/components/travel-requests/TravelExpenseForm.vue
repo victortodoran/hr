@@ -106,7 +106,7 @@ function save(): void {
                 <InputError :message="form.errors.amount" />
             </div>
         </div>
-        <div class="relative grid gap-2">
+        <div class="grid gap-2">
             <Label for="travel-expense-category">Category</Label>
             <Select
                 name="category"

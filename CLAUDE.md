@@ -16,7 +16,7 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 
 ### Code review
 
-Commit first, run `git fetch origin main:main` so the review diffs against the real `main`, then run `/code-review medium <branch>` against the feature branch, unless I say otherwise. Without a target it reviews only uncommitted changes, and new files show up as bare signatures. Reviewers apply `CODING_STANDARDS.md`.
+Commit first, run `git fetch origin main:main` so the review diffs against the real `main`, then run the `mattpocock-skills:code-review` skill with fixed point `main`, unless I say otherwise. Reviewers apply `CODING_STANDARDS.md`.
 
 ### Delivery
 

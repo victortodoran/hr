@@ -51,6 +51,7 @@
         "lint:folders": "Fails when a controller or form request sits directly in app/Http/Controllers or app/Http/Requests instead of an area folder.",
         "lint:scopes": "Fails when a model declares query scopes; reusable queries go in the model's builder in app/Models/Builders.",
         "lint:builders": "Fails when a public builder method in app/Models/Builders doesn't start with return $this->scoped(...).",
+        "lint:browser-tests": "Fails when a browser test in tests/Browser still calls screenshot(), debug() or pause().",
         "test:failures": "Runs the tests (or the paths given) and prints one line per failure or error: file:line, test name and message."
     },
     "scripts": {
@@ -80,6 +81,7 @@
             "@lint:folders",
             "@lint:scopes",
             "@lint:builders",
+            "@lint:browser-tests",
             "npm run build",
             "npm run types:check",
             "@test"
@@ -89,6 +91,7 @@
         "lint:folders": "bin/lint-folders.sh",
         "lint:scopes": "bin/lint-scopes.sh",
         "lint:builders": "@php bin/lint-builders.php",
+        "lint:browser-tests": "bin/lint-browser-tests.sh",
         "types:check": [
             "phpstan analyse --memory-limit=1G"
         ],

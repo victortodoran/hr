@@ -84,7 +84,12 @@ it('keeps the request travel form from being sent while no Assignment is chosen'
         ->assertPathIs('/travel-requests/create')
         ->assertNoJavaScriptErrors();
 
-    expect($page->script('document.querySelector(\'select[name="assignment_id"]\').validity.valueMissing'))->toBeTrue();
+    $hiddenSelect = 'document.querySelector(\'select[name="assignment_id"]\')';
+    expect($page->script("{$hiddenSelect}.validity.valueMissing"))->toBeTrue();
+
+    // The browser's message points at the hidden select, so it must sit beside the dropdown, not at the top of the page.
+    $pixelsFromDropdown = $page->script("Math.abs({$hiddenSelect}.getBoundingClientRect().top - document.getElementById('travel-assignment').getBoundingClientRect().top)");
+    expect($pixelsFromDropdown)->toBeLessThan(50);
     expect(TravelRequest::query()->exists())->toBeFalse();
 });
 
