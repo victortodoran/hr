@@ -25,7 +25,7 @@ export type OwnPerformanceEvaluation = {
     state: PerformanceEvaluationState;
     goals_count: number;
     /** How many of its Goals are At Risk now; always 0 once Completed. */
-    at_risk_count: number;
+    at_risk_goals_count: number;
     /** The Outcome of the whole, once Completed. */
     outcome: Outcome | null;
 };
@@ -43,7 +43,7 @@ export type PerformanceEvaluationRow = {
         state: PerformanceEvaluationState;
         goals_count: number;
         /** How many of its Goals are At Risk now; always 0 once Completed. */
-        at_risk_count: number;
+        at_risk_goals_count: number;
         /** The Outcome of the whole, once Completed. */
         outcome: Outcome | null;
     } | null;

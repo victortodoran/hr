@@ -103,9 +103,9 @@ function showYear(year: unknown): void {
                         >
                         <StatusBadge :state="row.evaluation.state" />
                         <StatusBadge
-                            v-if="row.evaluation.at_risk_count > 0"
+                            v-if="row.evaluation.at_risk_goals_count > 0"
                             state="at-risk"
-                            >{{ row.evaluation.at_risk_count }} At
+                            >{{ row.evaluation.at_risk_goals_count }} At
                             Risk</StatusBadge
                         >
                     </template>

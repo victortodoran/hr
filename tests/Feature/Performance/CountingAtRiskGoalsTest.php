@@ -50,7 +50,7 @@ function assertAtRiskCountsOnList(Employee $viewer, array $expected): void
 {
     actingAs($viewer)->get(route('performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page->where('employees.data', fn (Collection $rows): bool => $rows
-            ->mapWithKeys(fn (array $row): array => [$row['name'] => $row['evaluation']['at_risk_count'] ?? null])
+            ->mapWithKeys(fn (array $row): array => [$row['name'] => $row['evaluation']['at_risk_goals_count'] ?? null])
             ->only(array_keys($expected))
             ->all() === $expected));
 }
@@ -72,7 +72,7 @@ it('counts the Employee\'s own At Risk Goals on My Performance Evaluations', fun
     [, $cara] = atRiskLine();
 
     actingAs($cara)->get(route('my-performance-evaluations.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('evaluations.0.at_risk_count', 2));
+        ->assertInertia(fn (Assert $page) => $page->where('evaluations.0.at_risk_goals_count', 2));
 });
 
 it('follows the Goals\' current Progress', function () {
@@ -93,5 +93,5 @@ it('never counts At Risk Goals on a Completed Evaluation', function () {
 
     assertAtRiskCountsOnList($ben, ['Cara' => 0]);
     actingAs($cara)->get(route('my-performance-evaluations.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('evaluations.0.at_risk_count', 0));
+        ->assertInertia(fn (Assert $page) => $page->where('evaluations.0.at_risk_goals_count', 0));
 });

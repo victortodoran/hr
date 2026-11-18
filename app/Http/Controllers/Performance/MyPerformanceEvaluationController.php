@@ -34,7 +34,7 @@ class MyPerformanceEvaluationController extends Controller
                     'year' => $evaluation->year,
                     'state' => $evaluation->state->value,
                     'goals_count' => $evaluation->goals_count,
-                    'at_risk_count' => $evaluation->openAtRiskGoalsCount(),
+                    'at_risk_goals_count' => $evaluation->openAtRiskGoalsCount(),
                     'outcome' => $evaluation->completedOutcome()?->value,
                 ])
                 ->all(),
