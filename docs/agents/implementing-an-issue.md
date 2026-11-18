@@ -28,15 +28,16 @@ Point it at this doc for the rest.
 - Adding an Employee needs the Internal Project (`Project::factory()->internal()->create()`), or the request returns 404, and `Notification::fake()` for the invitation.
 - `actingAs($employee)` reuses that one model across every request in the test, so a value remembered on the Employee (a property or `once()`) carries stale data into the next request.
 - In Pest, chaining `->not` after another matcher fails PHPStan; start a second `expect()`.
+- Functions declared in a Pest test file are global across the suite, so a helper needs a name no other test file uses.
+- `useForm` reserves some field names, such as `progress`; for a form with one of those, use `<Form>` with named inputs.
 - After moving or renaming PHP files, run `vendor/bin/pint app routes tests`: `--dirty` skips moved files.
 - Pest architecture failures don't name the offending file, so a check about where code sits belongs in a `bin/lint-*.sh` script run by `composer ci:check`.
 - Lists render a second copy of some links and buttons for phones, hidden on desktop (`sm:hidden`), so a browser test clicking by text can hit the hidden copy and time out. Click by role, e.g. `internal:role=link[name="Expenses"s]`, which skips hidden elements.
 
 ## Steps
 
-1. `bin/worktree.sh add <branch>`, then work in the worktree it prints. Prefix every test run, `composer ci:check` and `git push` (its hook runs the tests) there with the `DB_DATABASE=…` it prints, so tests use the worktree's own database rather than the shared `hr_testing`. Once the PR merges, `bin/worktree.sh remove <branch>`.
+1. `bin/worktree.sh add <branch>`, then work in the worktree it prints. Prefix every test run, `composer ci:check` and `git push` (its hook runs the tests) there with the `DB_DATABASE=…` it prints, so tests use the worktree's own database rather than the shared `hr_testing`. Its `.env` points at its own dev database, a copy of `hr`, so `migrate` and seeding there leave hr.test alone. Once the PR merges, `bin/worktree.sh remove <branch>`.
 2. Implement the issue until every acceptance-criteria checkbox holds, following sibling files and `CODING_STANDARDS.md`.
-   Check a migration that rewrites existing rows against a copy of the dev database, so `hr` stays usable from other branches: `createdb -T hr hr_scratch`, run with `DB_DATABASE=hr_scratch`, then `dropdb hr_scratch`.
    Until the user says the app is deployed, that check is all such a migration needs, since the dev database is the only one it has to work on. After that, give such a migration a test that rolls it back, sets up the old rows and migrates again, and delete it in a later issue once the user confirms every install has run it.
    To see a page with data, sign in on hr.test as a demo user from `DemoSeeder`. `migrate:fresh --seed` wipes the shared `hr` database, so ask before running it.
 3. Write feature tests through HTTP and Inertia prop assertions. When a change is mostly UI (a page, dialog, tab or layout), also add or extend a browser test in `tests/Browser` that opens it and asserts no JavaScript errors; browser tests run against built assets, so run `npm run build` before running one on its own.

@@ -19,8 +19,6 @@ class PerformanceEvaluationBuilder extends ModelBuilder
      */
     public function withAtRiskGoalsCount(): static
     {
-        return $this->scoped(function (): void {
-            $this->withCount(['goals as at_risk_goals_count' => fn (Builder $goals) => $goals->where('progress', Progress::AtRisk)]);
-        });
+        return $this->withCount(['goals as at_risk_goals_count' => fn (Builder $goals) => $goals->where('progress', Progress::AtRisk)]);
     }
 }
