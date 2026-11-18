@@ -102,6 +102,12 @@ function showYear(year: unknown): void {
                             >{{ outcomes[row.evaluation.outcome] }}</span
                         >
                         <StatusBadge :state="row.evaluation.state" />
+                        <StatusBadge
+                            v-if="row.evaluation.at_risk_goals_count > 0"
+                            state="at-risk"
+                            >{{ row.evaluation.at_risk_goals_count }} At
+                            Risk</StatusBadge
+                        >
                     </template>
                     <Form
                         v-else-if="row.can_start"

@@ -51,6 +51,11 @@ const columns: TableColumn[] = [
                         outcomes[row.outcome]
                     }}</span>
                     <StatusBadge :state="row.state" />
+                    <StatusBadge
+                        v-if="row.at_risk_goals_count > 0"
+                        state="at-risk"
+                        >{{ row.at_risk_goals_count }} At Risk</StatusBadge
+                    >
                 </div>
             </template>
             <template #empty>
