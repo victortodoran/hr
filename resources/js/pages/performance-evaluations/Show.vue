@@ -34,6 +34,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { formatDate } from '@/lib/dates';
+import { goalRemovalWarning } from '@/lib/goals';
 import { outcomes } from '@/lib/outcomes';
 import { index as mine } from '@/routes/my-performance-evaluations';
 import { index, show } from '@/routes/performance-evaluations';
@@ -43,7 +44,6 @@ import {
     show as showGoal,
 } from '@/routes/performance-evaluations/goals';
 import type {
-    AssessedGoal,
     BreadcrumbItem,
     Outcome,
     PerformanceEvaluationRecord,
@@ -106,18 +106,6 @@ function saveAssessment(): void {
             ),
             { preserveScroll: true },
         );
-}
-
-/** What removing a Goal takes with it, counting its Comments when it has any. */
-function removalWarning(goal: AssessedGoal): string {
-    const warning =
-        'The Goal is removed from this Performance Evaluation for good, with its Progress history.';
-
-    if (goal.comments_count === 0) {
-        return warning;
-    }
-
-    return `${warning} Its ${goal.comments_count} ${goal.comments_count === 1 ? 'Comment is' : 'Comments are'} removed with it.`;
 }
 
 /** Whether the question before Completing is showing. */
@@ -284,7 +272,9 @@ setLayoutProps({
                                 })
                             "
                             :title="`Remove “${row.title}”?`"
-                            :description="removalWarning(row)"
+                            :description="
+                                goalRemovalWarning(row.comments_count)
+                            "
                             confirm-label="Remove Goal"
                             :error-bag="`goal-${row.id}`"
                         >
