@@ -64,7 +64,7 @@ class HandleInertiaRequests extends Middleware
                 'canSeeApprovals' => fn (): bool => $asManagerOnce()['managesAnyone'],
                 'approvalsWaiting' => fn (): int => $asManagerOnce()['waiting'],
                 'canSeePerformanceEvaluations' => fn (): bool => $asManagerOnce()['managesAnyone']
-                    || ($employee instanceof Employee && $employee->reachesOthersThrough(Permission::seeingPerformanceEvaluations())),
+                    || ($employee instanceof Employee && $employee->seesOthersPerformanceEvaluations()),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

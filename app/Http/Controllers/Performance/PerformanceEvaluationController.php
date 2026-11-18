@@ -16,16 +16,17 @@ use Inertia\Response;
 
 /**
  * The Performance Evaluations page, where a Manager starts and writes the
- * Performance Evaluations of the Employees they effectively manage and
- * anyone view performance evaluations lets read them reads them, and the
+ * Performance Evaluations of the Employees they effectively manage, and
+ * whoever one of the Permissions for reading them
+ * (Permission::seeingPerformanceEvaluations()) reaches reads them; and the
  * page of each Performance Evaluation.
  */
 class PerformanceEvaluationController extends Controller
 {
     /**
      * Show, for one year, the Employees whose Performance Evaluations the
-     * viewer may open here (those they effectively manage, and those view
-     * performance evaluations reaches) who work for the company on some
+     * viewer may open here (those they effectively manage, and those one of
+     * the Permissions for reading them reaches) who work for the company on some
      * day of it, Former Employees included, by name, each with that year's
      * Performance Evaluation if they have one and whether the viewer may
      * start it. The years to choose from run back from the current one to

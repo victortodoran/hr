@@ -68,6 +68,17 @@ trait HasAccess
     }
 
     /**
+     * Whether the Employee may read Performance Evaluations of anyone
+     * besides themselves: one of the Permissions for reading them
+     * (Permission::seeingPerformanceEvaluations()) reaches beyond
+     * themselves.
+     */
+    public function seesOthersPerformanceEvaluations(): bool
+    {
+        return $this->reachesOthersThrough(Permission::seeingPerformanceEvaluations());
+    }
+
+    /**
      * How far a Permission reaches for the Employee: the widest Scope their
      * Roles give for one about Employees, Everyone for a company-wide one
      * they hold, or null when no Role grants it.
