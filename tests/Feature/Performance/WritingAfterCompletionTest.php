@@ -118,3 +118,13 @@ it('writes no Comment on an Evaluation Completed since it was loaded', function 
     expect($written)->toBeFalse()
         ->and($goal->comments()->count())->toBe(0);
 });
+
+it('saves the Outcome and summary sent even when they match what was loaded before a save from another tab', function () {
+    [, , $evaluation] = evaluationLoadedWhileOpen();
+    PerformanceEvaluation::query()->whereKey($evaluation->id)->update(['outcome' => Outcome::NotMet, 'summary' => 'Other tab.']);
+
+    app(AssessPerformanceEvaluation::class)->save($evaluation, [], Outcome::Met, 'Good year.');
+
+    expect($evaluation->fresh()?->outcome)->toBe(Outcome::Met)
+        ->and($evaluation->fresh()?->summary)->toBe('Good year.');
+});

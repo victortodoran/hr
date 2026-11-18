@@ -26,11 +26,13 @@ class AssessPerformanceEvaluation
     public function save(PerformanceEvaluation $evaluation, array $goalOutcomes, ?Outcome $outcome, ?string $summary): bool
     {
         return DB::transaction(function () use ($evaluation, $goalOutcomes, $outcome, $summary): bool {
-            if (! $this->lockWhileOpen($evaluation)) {
+            $locked = $this->lockWhileOpen($evaluation);
+
+            if ($locked === null) {
                 return false;
             }
 
-            $this->write($evaluation, $goalOutcomes, $outcome, $summary);
+            $this->write($locked, $goalOutcomes, $outcome, $summary);
 
             return true;
         });
@@ -51,11 +53,13 @@ class AssessPerformanceEvaluation
     public function complete(PerformanceEvaluation $evaluation, array $goalOutcomes, ?Outcome $outcome, ?string $summary): bool
     {
         return DB::transaction(function () use ($evaluation, $goalOutcomes, $outcome, $summary): bool {
-            if (! $this->lockWhileOpen($evaluation)) {
+            $locked = $this->lockWhileOpen($evaluation);
+
+            if ($locked === null) {
                 return false;
             }
 
-            $goalIds = $evaluation->goals()->pluck('id');
+            $goalIds = $locked->goals()->pluck('id');
 
             if ($goalIds->isEmpty()) {
                 throw ValidationException::withMessages(['outcome' => __('Give at least one Goal before completing.')]);
@@ -69,8 +73,8 @@ class AssessPerformanceEvaluation
                 throw ValidationException::withMessages(['outcome' => __('Give every Goal and the whole an Outcome, and write a summary, before completing.')]);
             }
 
-            $this->write($evaluation, $goalOutcomes, $outcome, $summary);
-            $evaluation->forceFill(['state' => PerformanceEvaluationState::Completed, 'completed_at' => now()])->save();
+            $this->write($locked, $goalOutcomes, $outcome, $summary);
+            $locked->forceFill(['state' => PerformanceEvaluationState::Completed, 'completed_at' => now()])->save();
 
             return true;
         });
@@ -87,12 +91,15 @@ class AssessPerformanceEvaluation
 
     /**
      * Lock the Performance Evaluation until the transaction ends and
-     * return whether it is still Open. Every write that needs it Open
-     * takes this lock first, so a Complete never interleaves with one.
+     * return it as it is now, or null when it is no longer Open. Every
+     * write that needs it Open takes this lock first, so a Complete never
+     * interleaves with one. Writing through the row returned, not the one
+     * loaded earlier, saves every value sent even when it matches what
+     * was loaded before another save.
      */
-    private function lockWhileOpen(PerformanceEvaluation $evaluation): bool
+    private function lockWhileOpen(PerformanceEvaluation $evaluation): ?PerformanceEvaluation
     {
-        return PerformanceEvaluation::query()->whereKey($evaluation->id)->open()->lockForUpdate()->exists();
+        return PerformanceEvaluation::query()->whereKey($evaluation->id)->open()->lockForUpdate()->first();
     }
 
     /**
