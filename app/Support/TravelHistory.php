@@ -5,10 +5,10 @@ namespace App\Support;
 use App\Enums\Permission;
 use App\Enums\TravelExpenseState;
 use App\Enums\TravelRequestState;
+use App\Models\Builders\TravelExpenseBuilder;
 use App\Models\Employee;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * An Employee's Travel Requests as the Travel page lists them, split into
@@ -32,9 +32,9 @@ final class TravelHistory
     {
         $travelRequests = $employee->travelRequests()
             ->with('assignment.project.client:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
-            ->withSum(['travelExpenses as entered_amount' => fn (Builder $expenses) => $expenses->where('state', '!=', TravelExpenseState::Declined)], 'amount')
-            ->withSum(['travelExpenses as approved_amount' => fn (Builder $expenses) => $expenses->where('state', TravelExpenseState::Approved)], 'amount')
-            ->withCount(['travelExpenses as declined_expenses' => fn (Builder $expenses) => $expenses->where('state', TravelExpenseState::Declined)])
+            ->withSum(['travelExpenses as entered_amount' => fn (TravelExpenseBuilder $expenses) => $expenses->notDeclined()], 'amount')
+            ->withSum(['travelExpenses as approved_amount' => fn (TravelExpenseBuilder $expenses) => $expenses->approved()], 'amount')
+            ->withCount(['travelExpenses as declined_expenses' => fn (TravelExpenseBuilder $expenses) => $expenses->declined()])
             ->orderBy('first_date')
             ->orderBy('id')
             ->get();

@@ -38,6 +38,17 @@ class TravelExpenseBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to Declined Travel Expenses, whose amount counts
+     * nowhere.
+     */
+    public function declined(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('state'), TravelExpenseState::Declined);
+        });
+    }
+
+    /**
      * Limit the query to the Travel Expenses the actor may approve or
      * decline: Pending ones of the Employees whose effective Manager they
      * are, so never their own.

@@ -13,11 +13,11 @@ use LogicException;
 use Throwable;
 
 /**
- * What recording, changing and deleting a Travel Expense share: keeping
- * its receipt on the private disk, deleting one no Travel Expense points
- * to any more, and the state a recorded or changed one takes.
+ * What recording, changing and deleting a Travel Expense share: the state
+ * a recorded or changed one takes, keeping its receipt on the private
+ * disk, and deleting one no Travel Expense points to any more.
  */
-trait KeepsTravelExpenseReceipts
+trait WritesTravelExpenses
 {
     /**
      * The state a recorded or changed Travel Expense takes: Pending for its

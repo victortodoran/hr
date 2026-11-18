@@ -4,7 +4,6 @@ namespace App\Actions;
 
 use App\Enums\TravelRequestState;
 use App\Models\Employee;
-use App\Models\TravelRequest;
 
 /**
  * Makes a Travel Request for the signed-in Employee.
@@ -18,7 +17,7 @@ class MakeTravelRequest
      *
      * @param  array{assignment_id: int, destination: string, first_date: string, last_date: string, purpose: string}  $details
      */
-    public function make(Employee $actor, array $details): TravelRequest
+    public function make(Employee $actor, array $details): void
     {
         $travelRequest = $actor->travelRequests()->make($details);
 
@@ -27,7 +26,5 @@ class MakeTravelRequest
         }
 
         $travelRequest->save();
-
-        return $travelRequest;
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Actions;
 
-use App\Concerns\KeepsTravelExpenseReceipts;
+use App\Concerns\WritesTravelExpenses;
 use App\Enums\TravelExpenseState;
 use App\Models\Employee;
 use App\Models\TravelExpense;
@@ -14,7 +14,7 @@ use Illuminate\Http\UploadedFile;
  */
 class ChangeTravelExpense
 {
-    use KeepsTravelExpenseReceipts;
+    use WritesTravelExpenses;
 
     /**
      * Correct the Travel Expense and return whether it changed, replacing

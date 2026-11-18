@@ -2,7 +2,7 @@
 
 namespace App\Actions;
 
-use App\Concerns\KeepsTravelExpenseReceipts;
+use App\Concerns\WritesTravelExpenses;
 use App\Enums\TravelExpenseState;
 use App\Models\TravelExpense;
 
@@ -11,7 +11,7 @@ use App\Models\TravelExpense;
  */
 class DeleteTravelExpense
 {
-    use KeepsTravelExpenseReceipts;
+    use WritesTravelExpenses;
 
     /**
      * Delete the Travel Expense and its receipt, and return whether it was

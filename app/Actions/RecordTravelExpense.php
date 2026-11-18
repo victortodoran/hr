@@ -2,9 +2,8 @@
 
 namespace App\Actions;
 
-use App\Concerns\KeepsTravelExpenseReceipts;
+use App\Concerns\WritesTravelExpenses;
 use App\Models\Employee;
-use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use Illuminate\Http\UploadedFile;
 
@@ -14,7 +13,7 @@ use Illuminate\Http\UploadedFile;
  */
 class RecordTravelExpense
 {
-    use KeepsTravelExpenseReceipts;
+    use WritesTravelExpenses;
 
     /**
      * Record the Travel Expense, keeping its receipt on the private disk. It
@@ -25,7 +24,7 @@ class RecordTravelExpense
      *
      * @param  array{amount: int, paid_on: string, category: string, description: string}  $details
      */
-    public function record(TravelRequest $travelRequest, Employee $actor, array $details, UploadedFile $receipt): TravelExpense
+    public function record(TravelRequest $travelRequest, Employee $actor, array $details, UploadedFile $receipt): void
     {
         $receiptPath = $this->keep($receipt);
         $travelExpense = $travelRequest->travelExpenses()->make([
@@ -35,7 +34,5 @@ class RecordTravelExpense
         $travelExpense->forceFill($this->newState($actor));
 
         $this->discardingOnFailure($receiptPath, fn (): bool => $travelExpense->save());
-
-        return $travelExpense;
     }
 }

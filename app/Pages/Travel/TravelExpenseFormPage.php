@@ -31,7 +31,7 @@ final class TravelExpenseFormPage
      * The form for changing a Travel Expense, filled in as it would be
      * typed; its receipt is kept unless a new file is chosen.
      *
-     * @return array<string, mixed>
+     * @return array{travelRequest: array{id: int, destination: string, first_date: string, last_date: string}, currency: array{code: string, decimals: int}, today: string, travelExpense: array{id: int, paid_on: string, category: string, amount: string, description: string}}
      */
     public static function edit(TravelRequest $travelRequest, TravelExpense $travelExpense): array
     {
