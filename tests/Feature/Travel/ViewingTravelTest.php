@@ -66,9 +66,9 @@ function anaWithViewTravelAndCara(Scope $scope): array
  * Cara's travel on 10 Dec 2026, from the end of her Berlin trip, Approved
  * with its 1,990 RON hotel and a Declined 50 RON dinner: Lisbon, Approved
  * and underway until today, with a 300 RON Approved flight, a 120 RON
- * Locked taxi and a 50 RON Pending lunch; Rome, Approved from the 12th; Vienna, Pending
- * on the 20th, for Globex; Munich, Declined for the 15th; and Paris,
- * Cancelled after it was Approved, for the 18th.
+ * Locked taxi and a 50 RON Pending lunch; Rome, Approved from the 12th;
+ * Vienna, Pending on the 20th, for Globex; Munich, Declined for the 15th;
+ * and Paris, Cancelled after it was Approved, for the 18th.
  *
  * @return array<string, TravelRequest>
  */
@@ -105,14 +105,14 @@ it('splits the Employee\'s own travel into Upcoming, soonest first, and Past, ne
         ->assertInertia(fn (Assert $page) => $page
             ->component('travel-requests/Index')
             ->where('travelRequests.upcoming', [
-                ['id' => $travel['lisbon']->id, 'destination' => 'Lisbon', 'first_date' => '2026-12-09', 'last_date' => '2026-12-10', 'client' => null, 'state' => 'approved', 'expense_total' => "RON\u{a0}470.00", 'approved_total' => "RON\u{a0}420.00", 'declined_expenses' => 0],
-                ['id' => $travel['rome']->id, 'destination' => 'Rome', 'first_date' => '2026-12-12', 'last_date' => '2026-12-13', 'client' => null, 'state' => 'approved', 'expense_total' => "RON\u{a0}0.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 0],
-                ['id' => $travel['vienna']->id, 'destination' => 'Vienna', 'first_date' => '2026-12-20', 'last_date' => '2026-12-21', 'client' => 'Globex', 'state' => 'pending', 'expense_total' => null, 'approved_total' => null, 'declined_expenses' => 0],
+                ['id' => $travel['lisbon']->id, 'destination' => 'Lisbon', 'first_date' => '2026-12-09', 'last_date' => '2026-12-10', 'client' => null, 'state' => 'approved', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}470.00", 'approved_total' => "RON\u{a0}420.00", 'declined_expenses' => 0],
+                ['id' => $travel['rome']->id, 'destination' => 'Rome', 'first_date' => '2026-12-12', 'last_date' => '2026-12-13', 'client' => null, 'state' => 'approved', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}0.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 0],
+                ['id' => $travel['vienna']->id, 'destination' => 'Vienna', 'first_date' => '2026-12-20', 'last_date' => '2026-12-21', 'client' => 'Globex', 'state' => 'pending', 'takes_expenses' => false, 'entered_total' => null, 'approved_total' => null, 'declined_expenses' => 0],
             ])
             ->where('travelRequests.past', [
-                ['id' => $travel['paris']->id, 'destination' => 'Paris', 'first_date' => '2026-12-18', 'last_date' => '2026-12-18', 'client' => null, 'state' => 'cancelled', 'expense_total' => "RON\u{a0}0.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 0],
-                ['id' => $travel['munich']->id, 'destination' => 'Munich', 'first_date' => '2026-12-15', 'last_date' => '2026-12-15', 'client' => null, 'state' => 'declined', 'expense_total' => null, 'approved_total' => null, 'declined_expenses' => 0],
-                ['id' => $travel['berlin']->id, 'destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'client' => null, 'state' => 'approved', 'expense_total' => "RON\u{a0}1,990.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 1],
+                ['id' => $travel['paris']->id, 'destination' => 'Paris', 'first_date' => '2026-12-18', 'last_date' => '2026-12-18', 'client' => null, 'state' => 'cancelled', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}0.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 0],
+                ['id' => $travel['munich']->id, 'destination' => 'Munich', 'first_date' => '2026-12-15', 'last_date' => '2026-12-15', 'client' => null, 'state' => 'declined', 'takes_expenses' => false, 'entered_total' => null, 'approved_total' => null, 'declined_expenses' => 0],
+                ['id' => $travel['berlin']->id, 'destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'client' => null, 'state' => 'approved', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}1,990.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 1],
             ]));
 });
 
@@ -138,7 +138,7 @@ it('shows Cara\'s travel on her record\'s Travel tab in the same Upcoming and Pa
             ->where('tabs', ['overview', 'travel'])
             ->where('travelRequests.upcoming', fn (Collection $rows): bool => $rows->pluck('id')->all() === [$travel['lisbon']->id, $travel['rome']->id, $travel['vienna']->id])
             ->where('travelRequests.past', fn (Collection $rows): bool => $rows->pluck('id')->all() === [$travel['paris']->id, $travel['munich']->id, $travel['berlin']->id])
-            ->where('travelRequests.past.2.expense_total', "RON\u{a0}1,990.00")
+            ->where('travelRequests.past.2.entered_total', "RON\u{a0}1,990.00")
             ->where('travelRequests.past.2.declined_expenses', 1));
 });
 

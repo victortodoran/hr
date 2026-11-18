@@ -24,4 +24,15 @@ enum TravelExpenseState: string
     {
         return [self::Pending, self::Declined];
     }
+
+    /**
+     * The states in which its amount has been accepted as correct: Approved,
+     * or Locked, which an Approved one becomes for good.
+     *
+     * @return array<int, self>
+     */
+    public static function accepted(): array
+    {
+        return [self::Approved, self::Locked];
+    }
 }

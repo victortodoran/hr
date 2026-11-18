@@ -65,28 +65,26 @@ const sections = [
                         class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground sm:hidden"
                     >
                         <span v-if="row.client">{{ row.client }} ·</span>
-                        <span
-                            v-if="row.expense_total !== null"
-                            class="tabular-nums"
-                            >Entered {{ row.expense_total }} · Approved
-                            {{ row.approved_total }}</span
-                        >
-                        <span
-                            v-if="row.declined_expenses > 0"
-                            class="text-destructive"
-                            >{{ row.declined_expenses }} declined</span
-                        >
-                        <StatusBadge :state="row.state" />
-                        <Button
-                            v-if="row.expense_total !== null"
-                            variant="outline"
-                            size="sm"
-                            as-child
-                        >
-                            <Link :href="show(row.id)" class="text-foreground"
-                                >Expenses</Link
+                        <template v-if="row.takes_expenses">
+                            <span class="tabular-nums"
+                                >Entered {{ row.entered_total }} · Approved
+                                {{ row.approved_total }}</span
                             >
-                        </Button>
+                            <span
+                                v-if="row.declined_expenses > 0"
+                                class="text-destructive"
+                                >{{ row.declined_expenses }} declined</span
+                            >
+                            <Button variant="outline" size="sm" as-child>
+                                <Link
+                                    :href="show(row.id)"
+                                    class="text-foreground"
+                                    >Expenses</Link
+                                >
+                            </Button>
+                        </template>
+                        <span v-else>—</span>
+                        <StatusBadge :state="row.state" />
                     </div>
                 </template>
                 <template #cell-client="{ row }">
@@ -94,7 +92,7 @@ const sections = [
                 </template>
                 <template #cell-entered="{ row }">
                     <span class="whitespace-nowrap tabular-nums">{{
-                        row.expense_total ?? '—'
+                        row.entered_total ?? '—'
                     }}</span>
                     <span
                         v-if="row.declined_expenses > 0"
@@ -115,12 +113,14 @@ const sections = [
                 </template>
                 <template #cell-actions="{ row }">
                     <Button
-                        v-if="row.expense_total !== null"
+                        v-if="row.takes_expenses"
                         variant="outline"
                         size="sm"
                         as-child
                     >
-                        <Link :href="show(row.id)">Expenses</Link>
+                        <Link :href="show(row.id)" class="text-foreground"
+                            >Expenses</Link
+                        >
                     </Button>
                 </template>
                 <template #empty>
