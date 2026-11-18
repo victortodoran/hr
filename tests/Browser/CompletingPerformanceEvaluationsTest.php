@@ -31,12 +31,13 @@ it('saves Outcomes, completes the Evaluation, and the Employee then reads them',
         ->assertSee('Outcomes saved.')
         ->click('#evaluation-outcome')
         ->click('internal:role=option[name="Met"s]')
-        ->fill('#evaluation-summary', 'A strong year.')
+        ->fill('#evaluation-summary', "A strong year.\nThe Relaunch shipped on time.")
         ->click('internal:role=button[name="Complete"s]')
         ->assertSee('Complete Cara\'s 2026 Performance Evaluation?')
         ->click('internal:role=dialog >> internal:role=button[name="Complete"s]')
         ->assertSee('Performance Evaluation completed.')
         ->assertSee('A strong year.')
+        ->assertSee('The Relaunch shipped on time.')
         ->assertDontSee('Save Outcomes')
         ->assertNoJavaScriptErrors();
 
