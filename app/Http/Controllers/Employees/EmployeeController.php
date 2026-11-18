@@ -100,11 +100,10 @@ class EmployeeController extends Controller
      * Manager when they have left, and their Reporting Chain unless they have
      * left. Assignments & Pay: their Assignments, with Pay for viewers allowed
      * to see it. Time Off: their Paid Days to set, and their Time Off with
-     * this year's Paid Days left. Travel: their Travel Requests, Upcoming
-     * and Past, for viewers view travel reaches them with. Only the
-     * open tab's data is loaded, apart from the Employee's employment
-     * status, which the header shows on every tab to viewers who may see
-     * their record; an unknown or forbidden tab opens Overview.
+     * this year's Paid Days left. Only the open tab's data is loaded, apart
+     * from the Employee's employment status, which the header shows on every
+     * tab to viewers who may see their record; an unknown or forbidden tab
+     * opens Overview.
      */
     public function show(#[CurrentUser] Employee $actor, Employee $employee, Request $request): Response
     {
@@ -116,13 +115,11 @@ class EmployeeController extends Controller
         $canViewTimeOff = $actor->can('viewTimeOffAndPaidDays', $employee);
         $currency = $canViewPay ? CompanySettings::payCurrency() : null;
         $canViewRecord = $actor->can(Permission::ViewEmployeeRecords->value, $employee);
-        $canViewTravel = $actor->can(Permission::ViewTravel->value, $employee);
 
         $tabs = array_values(array_filter([
             EmployeePageTab::Overview,
             $canViewAssignments ? EmployeePageTab::Assignments : null,
             $canSetPaidDays || $canViewTimeOff ? EmployeePageTab::TimeOff : null,
-            $canViewTravel ? EmployeePageTab::Travel : null,
         ]));
         $query = $request->query('tab');
         $asked = is_string($query) ? EmployeePageTab::tryFrom($query) : null;
@@ -148,7 +145,6 @@ class EmployeeController extends Controller
                 EmployeePageTab::Overview => EmployeePage::overviewTab($actor, $employee, $canViewRecord),
                 EmployeePageTab::Assignments => EmployeePage::assignmentsTab($employee, $currency, $canManage),
                 EmployeePageTab::TimeOff => EmployeePage::timeOffTab($employee, $canSetPaidDays, $canViewTimeOff),
-                EmployeePageTab::Travel => EmployeePage::travelTab($employee),
             },
         ]);
     }

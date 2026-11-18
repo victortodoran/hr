@@ -33,9 +33,7 @@ const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
           {
               title: props.employee.name,
               href: props.canViewEmployee
-                  ? showEmployee(props.employee.id, {
-                        query: { tab: 'travel' },
-                    })
+                  ? showEmployee(props.employee.id)
                   : undefined,
           },
       ];

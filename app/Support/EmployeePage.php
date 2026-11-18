@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Enums\EmploymentStatus;
 use App\Models\Assignment;
-use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\Project;
@@ -14,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * The Employee page's tabs, each as the props it renders: Overview,
- * Assignments & Pay, Time Off and Travel. Each tab is only built when it is open.
+ * Assignments & Pay and Time Off. Each tab is only built when it is open.
  * The Overview's Reports needing a new Manager are shown on the edit form
  * too.
  */
@@ -62,19 +61,6 @@ final class EmployeePage
         return [
             'paidDays' => $canSetPaidDays ? $employee->paid_days : null,
             'timeOff' => $canViewTimeOff ? self::timeOff($employee, today()->year) : null,
-        ];
-    }
-
-    /**
-     * The Travel tab: the Employee's Travel Requests, Upcoming and Past,
-     * as summary rows that open each Travel Request's page.
-     *
-     * @return array{travelRequests: array{upcoming: array<int, array<string, mixed>>, past: array<int, array<string, mixed>>}}
-     */
-    public static function travelTab(Employee $employee): array
-    {
-        return [
-            'travelRequests' => TravelHistory::of($employee, CompanySettings::payCurrency()),
         ];
     }
 
