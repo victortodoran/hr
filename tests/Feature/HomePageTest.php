@@ -87,7 +87,7 @@ it('shows an Employee their hours for each month this year up to this one, leavi
     $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2025-12-01']);
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2025-12-31', 'minutes' => 600]);
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-01-05', 'minutes' => 480]);
-    WorkEntry::factory()->for($relaunch)->approved()->locked()->create(['date' => '2026-01-30', 'minutes' => 240]);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-01-30', 'minutes' => 240]);
     WorkEntry::factory()->for($relaunch)->declined()->create(['date' => '2026-03-02', 'minutes' => 300]);
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-02', 'minutes' => 360]);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'minutes' => 90]);

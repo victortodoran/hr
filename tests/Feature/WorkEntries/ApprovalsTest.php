@@ -54,7 +54,6 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
         ->where('waiting', ['workEntries' => 2, 'timeOff' => 0, 'travelRequests' => 0, 'travelExpenses' => 0])
         ->missing('toApprove')
         ->missing('canReopen')
-        ->missing('canLock')
         ->where('filters', ['employee' => $cara->id, 'project' => $carasRelaunch->project_id])
         ->where('entries.data', [
             ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Specs'],
@@ -119,12 +118,11 @@ it('opens Work Entries for a tab it doesn\'t know', function () {
             ->has('entries'));
 });
 
-it('refuses the Approvals page to someone who manages nobody, however their Roles let them see, reopen or lock Work Entries', function () {
+it('refuses the Approvals page to someone who manages nobody, however their Roles let them see or reopen Work Entries', function () {
     $cara = employeeWith([
         Permission::ManageWorkEntries->value => Scope::Everyone,
         Permission::ViewWorkEntries->value => Scope::Everyone,
         Permission::ReopenWorkEntries->value => Scope::Everyone,
-        Permission::LockWorkEntries->value => null,
     ]);
 
     actingAs($cara)->get(route('approvals.index'))->assertForbidden();
@@ -365,16 +363,14 @@ it('approves only the selected Work Entries it may, counting each once, and says
     $pending = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     $own = WorkEntry::factory()->for(assignmentOf($ben))->create(['date' => '2026-11-10']);
     $approved = WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10']);
-    $locked = WorkEntry::factory()->for($relaunch)->locked()->create(['date' => '2026-11-10']);
     $approvedBy = $approved->approved_by;
 
-    $response = actingAs($ben)->post(route('approvals.store'), ['ids' => [$pending->id, $pending->id, $own->id, $approved->id, $locked->id, WorkEntry::query()->max('id') + 1]]);
+    $response = actingAs($ben)->post(route('approvals.store'), ['ids' => [$pending->id, $pending->id, $own->id, $approved->id, WorkEntry::query()->max('id') + 1]]);
 
-    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry approved, 4 skipped.']);
+    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Work Entry approved, 3 skipped.']);
     expect($pending->refresh()->state)->toBe(WorkEntryState::Approved)
         ->and($own->refresh()->state)->toBe(WorkEntryState::Pending)
-        ->and($approved->refresh()->approved_by)->toBe($approvedBy)
-        ->and($locked->refresh()->state)->toBe(WorkEntryState::Locked);
+        ->and($approved->refresh()->approved_by)->toBe($approvedBy);
 });
 
 it('skips Work Entries of Employees the approver is not the Manager of, Reports further down included', function () {
@@ -401,13 +397,12 @@ it('refuses a selection that is not a list of Work Entry IDs', function (mixed $
     'not numbers' => [['first'], 'ids.0', 'The ids.0 field must be an integer.'],
 ]);
 
-it('shows the Approvals item in the navigation to Managers only, not to someone who only manages, reopens or locks Work Entries', function () {
+it('shows the Approvals item in the navigation to Managers only, not to someone who only manages or reopens Work Entries', function () {
     $ben = managerBen();
     Employee::factory()->reportingTo($ben)->create();
     $cara = employeeWith([
         Permission::ManageWorkEntries->value => Scope::Everyone,
         Permission::ReopenWorkEntries->value => Scope::Everyone,
-        Permission::LockWorkEntries->value => null,
     ]);
 
     actingAs($ben)->get(route('profile.edit'))

@@ -13,7 +13,6 @@ import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import LockDialog from '@/components/work-entries/LockDialog.vue';
 import WorkEntryExportMenu from '@/components/work-entries/WorkEntryExportMenu.vue';
 import WorkEntryListFilterBar from '@/components/work-entries/WorkEntryListFilterBar.vue';
 import WorkEntrySummary from '@/components/work-entries/WorkEntrySummary.vue';
@@ -38,14 +37,12 @@ defineOptions({
 
 /**
  * Work Entries of the Employees the viewer may see, a Period and an Employee
- * at a time, or every Employee at once, with reopening and locking the
- * selected ones. Approving happens on Approvals.
+ * at a time, or every Employee at once, with reopening the selected ones. Approving happens on Approvals.
  */
 const props = defineProps<{
     filters: WorkEntryListFilters;
     today: string;
     canReopen: boolean;
-    canLock: boolean;
     entries: Paginated<ListedWorkEntry>;
     /** Total hours of every Work Entry matching the filters. */
     total: number;
@@ -59,8 +56,6 @@ const props = defineProps<{
     projects: Choice[];
 }>();
 
-const canSelect = computed(() => props.canReopen || props.canLock);
-
 /**
  * The list's grid, as on My Work Entries: on a phone each Work Entry stacks
  * into lines; from `sm` up, a checkbox when the viewer can select, then Day,
@@ -68,7 +63,7 @@ const canSelect = computed(() => props.canReopen || props.canLock);
  * out in full so Tailwind finds them; keep their shared tracks alike.
  */
 const columns = computed(() =>
-    canSelect.value
+    props.canReopen
         ? 'grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[1rem_4.5rem_minmax(0,10rem)_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem]'
         : 'grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[4.5rem_minmax(0,10rem)_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem]',
 );
@@ -83,7 +78,7 @@ function reloadList(query: Record<string, string>): void {
 }
 
 const selectableOnPage = computed(() =>
-    props.entries.data.filter((entry) => entry.can_reopen || entry.can_lock),
+    props.entries.data.filter((entry) => entry.can_reopen),
 );
 
 /**
@@ -91,7 +86,7 @@ const selectableOnPage = computed(() =>
  * so it is left out when nothing on the page can be selected.
  */
 const headerOnPhone = computed(
-    () => canSelect.value && selectableOnPage.value.length > 0,
+    () => props.canReopen && selectableOnPage.value.length > 0,
 );
 
 const {
@@ -114,7 +109,7 @@ const canSelectAllMatching = computed(
     () =>
         props.entries.total > 0 &&
         props.filters.state === 'approved' &&
-        canSelect.value,
+        props.canReopen,
 );
 
 function reopen(): void {
@@ -129,21 +124,6 @@ function weekOf(entry: ListedWorkEntry): string {
         query: { employee: entry.employee.id, week: entry.date },
     });
 }
-
-/**
- * Who approved and locked a Work Entry, such as "Approved by Ben on
- * 10 Nov 2026 · Locked by Fay on 11 Nov 2026".
- */
-function signOffs(entry: ListedWorkEntry): string {
-    return [
-        entry.approved &&
-            `Approved by ${entry.approved.by} on ${formatDate(entry.approved.on)}`,
-        entry.locked &&
-            `Locked by ${entry.locked.by} on ${formatDate(entry.locked.on)}`,
-    ]
-        .filter(Boolean)
-        .join(' · ');
-}
 </script>
 
 <template>
@@ -154,8 +134,8 @@ function signOffs(entry: ListedWorkEntry): string {
             <Heading
                 title="Work Entries"
                 :description="
-                    canSelect
-                        ? 'Hours across Employees, to check, reopen and lock'
+                    canReopen
+                        ? 'Hours across Employees, to check and reopen'
                         : 'Hours across Employees'
                 "
             />
@@ -182,21 +162,14 @@ function signOffs(entry: ListedWorkEntry): string {
 
         <div class="flex flex-col gap-3">
             <SelectionBar
-                v-if="canSelect"
+                v-if="canReopen"
                 :count="selected.length"
                 :matching="canSelectAllMatching ? entries.total : undefined"
                 @select-all="selectAllMatching"
                 @clear="clear"
             >
                 <template #actions>
-                    <LockDialog
-                        v-if="canLock"
-                        :ids="selected"
-                        :filters="filters"
-                        @locked="clear"
-                    />
                     <SubmitButton
-                        v-if="canReopen"
                         variant="outline"
                         :processing="processing"
                         type="button"
@@ -216,7 +189,7 @@ function signOffs(entry: ListedWorkEntry): string {
                     class="items-center bg-muted/50 px-4 py-2 font-medium text-muted-foreground"
                 >
                     <span
-                        v-if="canSelect"
+                        v-if="canReopen"
                         class="col-span-2 flex items-center sm:col-span-1"
                     >
                         <Label
@@ -254,9 +227,9 @@ function signOffs(entry: ListedWorkEntry): string {
                     <span
                         class="col-span-2 flex min-w-0 items-center gap-2 font-medium sm:contents"
                     >
-                        <span v-if="canSelect" class="flex size-4">
+                        <span v-if="canReopen" class="flex size-4">
                             <Checkbox
-                                v-if="entry.can_reopen || entry.can_lock"
+                                v-if="entry.can_reopen"
                                 :model-value="isSelected(entry.id)"
                                 :aria-label="`Select ${entry.employee.name}'s Work Entry on ${formatDate(entry.date)}`"
                                 @update:model-value="
@@ -303,7 +276,8 @@ function signOffs(entry: ListedWorkEntry): string {
                     <span
                         v-if="entry.approved"
                         class="order-3 col-span-2 text-xs text-muted-foreground sm:order-none sm:col-span-4 sm:-col-end-1"
-                        >{{ signOffs(entry) }}</span
+                        >Approved by {{ entry.approved.by }} on
+                        {{ formatDate(entry.approved.on) }}</span
                     >
                     <span
                         v-if="entry.declined"

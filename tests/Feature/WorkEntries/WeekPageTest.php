@@ -149,21 +149,18 @@ it('numbers the weeks around the new year as ISO weeks', function () {
         ->where('weeks.1', ['number' => 1, 'from' => '2027-01-04', 'to' => '2027-01-04', 'hours' => 0]));
 });
 
-it('shows each Work Entry\'s state, but not who approved or locked it, and offers to change only Pending ones', function () {
+it('shows each Work Entry\'s state, but not who approved it, and offers to change only Pending ones', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
     $ben = Employee::factory()->create(['name' => 'Ben']);
-    $fay = Employee::factory()->create(['name' => 'Fay']);
     $pending = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'minutes' => 60, 'description' => 'Pending']);
     $approved = WorkEntry::factory()->for($relaunch)->approved($ben)->create(['date' => '2026-11-10', 'minutes' => 60, 'description' => 'Approved', 'approved_at' => '2026-11-10 17:00']);
-    $locked = WorkEntry::factory()->for($relaunch)->approved($ben)->locked($fay)->create(['date' => '2026-11-10', 'minutes' => 60, 'description' => 'Locked', 'approved_at' => '2026-11-10 18:00', 'locked_at' => '2026-11-11 08:00']);
 
     $response = actingAs($cara)->get(route('work-entries.index'));
 
     $response->assertInertia(fn (Assert $page) => $page->where('days.1.entries', [
         ['id' => $pending->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Pending', 'state' => 'pending', 'can_edit' => true, 'can_delete' => true, 'declined' => null],
         ['id' => $approved->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Approved', 'state' => 'approved', 'can_edit' => false, 'can_delete' => false, 'declined' => null],
-        ['id' => $locked->id, 'assignment_id' => $relaunch->id, 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Locked', 'state' => 'locked', 'can_edit' => false, 'can_delete' => false, 'declined' => null],
     ]));
 });
 
@@ -298,7 +295,7 @@ it('lets someone see the week of an Employee their Scope covers, as not their ow
     'manage reports' => [[Permission::ManageWorkEntries->value => Scope::Reports], true],
 ]);
 
-it('lets someone who may reopen or lock open the week of anyone that covers, read-only', function (array $grants) {
+it('lets someone who may reopen open the week of anyone that covers, read-only', function (array $grants) {
     $top = Employee::factory()->create(['name' => 'Ada']);
     $ben = employeeWith($grants, ['name' => 'Ben', 'manager_id' => $top->id]);
 
@@ -310,7 +307,6 @@ it('lets someone who may reopen or lock open the week of anyone that covers, rea
         ->where('isOwn', false));
 })->with([
     'reopen everyone' => [[Permission::ReopenWorkEntries->value => Scope::Everyone]],
-    'lock' => [[Permission::LockWorkEntries->value => null]],
 ]);
 
 it("opens on the viewer's own week, even when they may see other Employees' weeks", function () {
@@ -379,7 +375,6 @@ it('offers My Work Entries in the navigation, opens it and shows the hours on Ho
     'view own' => [[Permission::ViewWorkEntries->value => Scope::Own], true],
     'manage own' => [[Permission::ManageWorkEntries->value => Scope::Own], true],
     'reopen for everyone' => [[Permission::ReopenWorkEntries->value => Scope::Everyone], true],
-    'lock' => [[Permission::LockWorkEntries->value => null], true],
     'view only for Reports, which never covers one\'s own' => [[Permission::ViewWorkEntries->value => Scope::Reports], false],
     'no Work Entries Permission' => [[Permission::ViewAssignments->value => Scope::Everyone], false],
 ]);

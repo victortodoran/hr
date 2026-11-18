@@ -32,7 +32,7 @@ use Inertia\Response;
  * Project at a time, and approving many of them at once, or declining them
  * with the WorkEntryDeclineController. Nobody approves or declines their own
  * Work Entries.
- * Reopening and locking happen on the Work Entries page. Time Off: the
+ * Reopening happens on the Work Entries page. Time Off: the
  * Pending Time Off the viewer decides, answered by the
  * TimeOffApprovalController and TimeOffDeclineController. Travel Requests:
  * the Pending Travel Requests the viewer decides, answered by the

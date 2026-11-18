@@ -12,7 +12,7 @@ const badges: Record<
 > = {
     future: { label: 'Future Employee', state: 'upcoming' },
     current: { label: 'Current Employee', state: 'approved' },
-    former: { label: 'Former Employee', state: 'locked' },
+    former: { label: 'Former Employee', state: 'cancelled' },
 };
 </script>
 

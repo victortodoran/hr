@@ -29,7 +29,7 @@ it('lets an Employee record hours on their own Assignment and see them Pending o
 
     $response->assertRedirect(route('work-entries.index', ['employee' => $cara->id, 'week' => '2026-11-09']))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Work Entry added.']);
-    assertDatabaseHas('work_entries', ['assignment_id' => $relaunch->id, 'date' => '2026-11-10', 'minutes' => 165, 'description' => 'Reviewing the API', 'state' => 'pending', 'approved_by' => null, 'locked_by' => null]);
+    assertDatabaseHas('work_entries', ['assignment_id' => $relaunch->id, 'date' => '2026-11-10', 'minutes' => 165, 'description' => 'Reviewing the API', 'state' => 'pending', 'approved_by' => null]);
     actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-10']))
         ->assertInertia(fn (Assert $page) => $page
             ->component('work-entries/Index')
@@ -122,11 +122,11 @@ it('refuses hours that would take the Employee past 24 hours on the day, across 
     'half hours left' => [210, '1', 'Cara already has 23.5 hours on 10 Nov 2026, so at most 0.5 more can be recorded that day.'],
 ]);
 
-it('counts Approved and Locked Work Entries towards the 24 hours on the day', function () {
+it('counts Approved Work Entries towards the 24 hours on the day', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10', 'minutes' => 12 * 60]);
-    WorkEntry::factory()->for($relaunch)->locked()->create(['date' => '2026-11-10', 'minutes' => 11 * 60]);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-10', 'minutes' => 11 * 60]);
 
     $response = actingAs($cara)->post(route('employees.work-entries.store', $cara), workEntryForm($relaunch, ['date' => '2026-11-10', 'hours' => '2']));
 

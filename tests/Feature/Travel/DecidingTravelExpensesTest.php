@@ -132,7 +132,7 @@ it('skips an expense that isn\'t Pending, leaving it as it was', function (strin
     expect($after?->state)->toBe($expense->state);
     expect($after?->approved_by)->toBe($expense->approved_by);
     expect($after?->declined_by)->toBe($expense->declined_by);
-})->with(['approved', 'declined', 'locked'])->with('travel expense answers');
+})->with(['approved', 'declined'])->with('travel expense answers');
 
 it('approves only once when the same approval is sent twice', function () {
     $ben = managerBen();
@@ -243,7 +243,6 @@ it('lists the Pending Travel Expenses of the Employees Ben effectively manages, 
     $flight = expenseOn($berlin, attributes: ['paid_on' => '2026-12-01', 'category' => TravelExpenseCategory::Transport, 'description' => 'Flight', 'amount' => 45050]);
     expenseOn($berlin, 'approved');
     expenseOn($berlin, 'declined');
-    expenseOn($berlin, 'locked');
     TravelRequest::factory()->on($berlin->assignment)->approved()->create(['first_date' => '2026-11-02', 'last_date' => '2026-11-03']);
     $dev = Employee::factory()->former()->reportingTo($ben)->create(['name' => 'Dev']);
     $lisbon = TravelRequest::factory()->on(assignmentOf($dev, 'Website'))->cancelledAfterApproval()->create(['destination' => 'Lisbon', 'first_date' => '2026-11-16', 'last_date' => '2026-11-17']);

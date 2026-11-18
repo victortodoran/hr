@@ -2,7 +2,7 @@
  * Where a Work Entry stands: only a Pending or Declined one can be changed,
  * and a Declined one's hours count nowhere.
  */
-export type WorkEntryState = 'pending' | 'approved' | 'locked' | 'declined';
+export type WorkEntryState = 'pending' | 'approved' | 'declined';
 
 /**
  * Who declined a Work Entry, and why.
@@ -13,7 +13,7 @@ export type WorkEntryDecline = {
 };
 
 /**
- * Who approved or locked a Work Entry, and on which day.
+ * Who approved a Work Entry, and on which day.
  */
 export type WorkEntrySignOff = {
     by: string;
@@ -125,15 +125,13 @@ export type ApprovalEntry = {
 
 /**
  * A Work Entry on the Work Entries page, with whose it is, who signed it off
- * or declined it, and whether the viewer may reopen or lock it.
+ * or declined it, and whether the viewer may reopen it.
  */
 export type ListedWorkEntry = ApprovalEntry & {
     state: WorkEntryState;
     approved: WorkEntrySignOff | null;
-    locked: WorkEntrySignOff | null;
     declined: WorkEntryDecline | null;
     can_reopen: boolean;
-    can_lock: boolean;
 };
 
 /** The tabs of the Approvals page. */
@@ -187,15 +185,4 @@ export type EmployeeWithWorkEntries = {
     id: number;
     name: string;
     count: number;
-};
-
-/**
- * What locking the selected Work Entries would do: the Approved ones to be
- * locked, by Project and Employee, and the Pending ones matching the same
- * filters that won't be.
- */
-export type LockSummary = {
-    locking: { count: number; hours: number };
-    breakdown: { project: string; employee: string; hours: number }[];
-    pending: { count: number; hours: number };
 };

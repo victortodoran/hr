@@ -202,7 +202,7 @@ function shownDays(week: WorkEntryCalendarWeek): (WorkEntryDay | null)[] {
 }
 
 /** The Work Entry states, in the order the dots and legend show them. */
-const states = ['pending', 'approved', 'locked', 'declined'] as const;
+const states = ['pending', 'approved', 'declined'] as const;
 
 /**
  * A day's Work Entries and Time Off as its tooltip, one per line, such as

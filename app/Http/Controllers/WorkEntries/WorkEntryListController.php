@@ -20,10 +20,9 @@ use Inertia\Response;
 /**
  * The Work Entries page: Work Entries of the Employees the viewer may see,
  * one Period and one Employee at a time, or every Employee at once, with
- * reopening and locking many of them at once. Who is listed comes from the
- * viewer's view, manage and reopen Scopes, or everyone for someone who can
- * lock. Reopening is done by the ReopeningController and locking by the
- * LockController; approving happens on the Approvals page.
+ * reopening many of them at once. Who is listed comes from the viewer's
+ * view, manage and reopen Scopes. Reopening is done by the
+ * ReopeningController; approving happens on the Approvals page.
  */
 class WorkEntryListController extends Controller
 {
@@ -40,7 +39,6 @@ class WorkEntryListController extends Controller
      */
     public function index(#[CurrentUser] Employee $actor, WorkEntryListRequest $request): Response
     {
-        $canLock = $actor->can('lock', WorkEntry::class);
         $requested = $request->filters();
         $visible = fn (): EmployeeBuilder => Employee::query()->withWorkEntriesVisibleTo($actor);
         $inPeriod = fn (WorkEntryBuilder $entries): WorkEntryBuilder => self::inPeriod($entries, $requested['period'], $requested['state']);
@@ -76,9 +74,8 @@ class WorkEntryListController extends Controller
             'filters' => $filters,
             'today' => today()->toDateString(),
             'canReopen' => $actor->holds(Permission::ReopenWorkEntries),
-            'canLock' => $canLock,
             'entries' => PageWithin::paginate((clone $matching)
-                ->with(['assignment.employee:id,name', 'assignment.project:id,name', 'approver:id,name', 'locker:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+                ->with(['assignment.employee:id,name', 'assignment.project:id,name', 'approver:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
                 ->orderBy('date')
                 ->orderBy('id'), 25)
                 ->withQueryString()
@@ -91,10 +88,8 @@ class WorkEntryListController extends Controller
                     'description' => $entry->description,
                     'state' => $entry->state->value,
                     'approved' => $entry->approval(),
-                    'locked' => $entry->lock(),
                     'declined' => $entry->decline(),
                     'can_reopen' => $entry->state === WorkEntryState::Approved && $reopenable->contains($entry->assignment->employee_id),
-                    'can_lock' => $entry->state === WorkEntryState::Approved && $canLock,
                 ]),
             'total' => (int) (clone $matching)->counted()->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)
             'declinedTotal' => (int) (clone $matching)->where('state', WorkEntryState::Declined)->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)

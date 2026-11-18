@@ -27,8 +27,7 @@ class TravelExpenseBuilder extends ModelBuilder
     }
 
     /**
-     * Limit the query to Approved Travel Expenses, which can be reopened or
-     * locked.
+     * Limit the query to Approved Travel Expenses, which can be reopened.
      */
     public function approved(): static
     {
