@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support;
+namespace App\Pages\Employees;
 
 use App\Enums\EmploymentStatus;
 use App\Models\Assignment;
@@ -8,6 +8,9 @@ use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\Project;
 use App\Models\TimeOff;
+use App\Support\Currency;
+use App\Support\PayHistory;
+use App\Support\ReportingChain;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
