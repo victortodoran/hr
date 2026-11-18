@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Travel;
 
+use App\Actions\DeclineTravelRequest;
 use App\Enums\ApprovalsTab;
-use App\Enums\TravelRequestState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Travel\TravelRequestDeclineRequest;
 use App\Models\Employee;
@@ -21,14 +21,9 @@ class TravelRequestDeclineController extends Controller
      * Decline the Travel Request, recording who declined it, when and why.
      * It is kept on record and the Employee sees the reason.
      */
-    public function store(TravelRequestDeclineRequest $request, TravelRequest $travelRequest, #[CurrentUser] Employee $actor): RedirectResponse
+    public function store(TravelRequestDeclineRequest $request, TravelRequest $travelRequest, #[CurrentUser] Employee $actor, DeclineTravelRequest $declineTravelRequest): RedirectResponse
     {
-        $travelRequest->forceFill([
-            'state' => TravelRequestState::Declined,
-            'decided_by' => $actor->id,
-            'decided_at' => now(),
-            'decline_reason' => $request->reason(),
-        ])->save();
+        $declineTravelRequest->decline($travelRequest, $actor, $request->reason());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Request declined.')]);
 

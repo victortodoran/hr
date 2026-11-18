@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Travel;
 
+use App\Actions\ApproveTravelRequest;
 use App\Enums\ApprovalsTab;
-use App\Enums\TravelRequestState;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\TravelRequest;
@@ -19,9 +19,9 @@ class TravelRequestApprovalController extends Controller
     /**
      * Approve the Travel Request, recording who approved it and when.
      */
-    public function store(TravelRequest $travelRequest, #[CurrentUser] Employee $actor): RedirectResponse
+    public function store(TravelRequest $travelRequest, #[CurrentUser] Employee $actor, ApproveTravelRequest $approveTravelRequest): RedirectResponse
     {
-        $travelRequest->forceFill(['state' => TravelRequestState::Approved, 'decided_by' => $actor->id, 'decided_at' => now()])->save();
+        $approveTravelRequest->approve($travelRequest, $actor);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Request approved.')]);
 

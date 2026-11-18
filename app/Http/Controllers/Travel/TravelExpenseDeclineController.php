@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\Travel;
 
-use App\Enums\TravelExpenseState;
+use App\Actions\DeclineTravelExpenses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Travel\DeclineTravelExpensesRequest;
 use App\Models\Employee;
-use App\Models\TravelExpense;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -24,20 +23,11 @@ class TravelExpenseDeclineController extends Controller
      * Employee sees the reason on their Travel page. The rest are skipped,
      * and the toast says how many of each.
      */
-    public function store(#[CurrentUser] Employee $actor, DeclineTravelExpensesRequest $request): RedirectResponse
+    public function store(#[CurrentUser] Employee $actor, DeclineTravelExpensesRequest $request, DeclineTravelExpenses $declineTravelExpenses): RedirectResponse
     {
         $ids = $request->ids();
 
-        $declined = TravelExpense::query()
-            ->ofEmployees(Employee::query()->effectivelyManagedBy($actor))
-            ->whereKey($ids)
-            ->pending()
-            ->update([
-                'state' => TravelExpenseState::Declined,
-                'declined_by' => $actor->id,
-                'declined_at' => now(),
-                'decline_reason' => $request->reason(),
-            ]);
+        $declined = $declineTravelExpenses->decline($actor, $ids, $request->reason());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => $request->outcome(
             trans_choice('{0} No Travel Expenses declined|{1} 1 Travel Expense declined|[2,*] :count Travel Expenses declined', $declined),

@@ -55,8 +55,7 @@ class AssignmentBuilder extends ModelBuilder
     public function runningOn(CarbonInterface $day): static
     {
         return $this->scoped(function () use ($day): void {
-            $this->whereDate('start_date', '<=', $day)
-                ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $day));
+            $this->whereDate('start_date', '<=', $day)->notEndedBefore($day);
         });
     }
 
@@ -67,8 +66,18 @@ class AssignmentBuilder extends ModelBuilder
     public function runningDuring(Period $period): static
     {
         return $this->scoped(function () use ($period): void {
-            $this->whereDate('start_date', '<=', $period->to)
-                ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $period->from));
+            $this->whereDate('start_date', '<=', $period->to)->notEndedBefore($period->from);
+        });
+    }
+
+    /**
+     * Limit the query to Assignments not ended before the day: with no end
+     * date, or ending on it or later.
+     */
+    public function notEndedBefore(CarbonInterface $day): static
+    {
+        return $this->scoped(function () use ($day): void {
+            $this->where(fn (Builder $open) => $open->whereNull('end_date')->orWhereDate('end_date', '>=', $day));
         });
     }
 
