@@ -52,6 +52,8 @@ it('opens an Approved Travel Request from its Expenses button and adds an expens
         ->assertSee('Hotel, three nights')
         ->assertSeeLink('Receipt')
         ->assertSeeLink('Edit')
+        ->navigate(route('travel-requests.index'))
+        ->assertSee("Expenses · RON\u{a0}1,990.00")
         ->assertNoJavaScriptErrors();
 
     $expense = TravelExpense::query()->sole();

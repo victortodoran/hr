@@ -28,10 +28,11 @@ final class TravelHistory
      */
     public static function of(Employee $employee, Currency $currency): array
     {
+        $counted = fn (Builder $expenses) => $expenses->where('state', '!=', TravelExpenseState::Declined);
         $travelRequests = $employee->travelRequests()
             ->with('assignment.project.client:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
-            ->withSum(['travelExpenses as counted_amount' => fn (Builder $expenses) => $expenses->where('state', '!=', TravelExpenseState::Declined)], 'amount')
-            ->withCount(['travelExpenses as counted_expenses' => fn (Builder $expenses) => $expenses->where('state', '!=', TravelExpenseState::Declined)])
+            ->withSum(['travelExpenses as counted_amount' => $counted], 'amount')
+            ->withCount(['travelExpenses as counted_expenses' => $counted])
             ->withCount(['travelExpenses as declined_expenses' => fn (Builder $expenses) => $expenses->where('state', TravelExpenseState::Declined)])
             ->orderBy('first_date')
             ->orderBy('id')

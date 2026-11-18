@@ -29,9 +29,13 @@ const columns: TableColumn[] = [
     { key: 'state', label: 'State', align: 'end', minor: true },
 ];
 
-/** What the Expenses button says after "Expenses ·": the total, or "none" while nothing counts towards it. */
-function expensesLabel(row: TravelRequestSummary): string {
-    return row.counted_expenses > 0 ? (row.expense_total ?? '') : 'none';
+/**
+ * What the Expenses button says after "Expenses ·": the total, or "none"
+ * while nothing counts towards it. Only asked for rows that take Travel
+ * Expenses, whose total is always there.
+ */
+function expensesLabel(row: TravelRequestSummary): string | null {
+    return row.counted_expenses > 0 ? row.expense_total : 'none';
 }
 
 const sections = [
@@ -77,6 +81,7 @@ const sections = [
                                 >Expenses · {{ expensesLabel(row) }}</Link
                             >
                         </Button>
+                        <span v-else>—</span>
                         <span
                             v-if="row.declined_expenses > 0"
                             class="text-destructive"
