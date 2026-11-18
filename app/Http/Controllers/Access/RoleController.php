@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Access;
 
 use App\Actions\ChangeAccess;
-use App\Enums\EmploymentStatus;
-use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Access\RoleRequest;
 use App\Models\Employee;
 use App\Models\Role;
+use App\Pages\Access\RolesPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -25,7 +24,7 @@ class RoleController extends Controller
      */
     public function index(): Response
     {
-        return $this->page('view', Role::query()->orderBy('name')->orderBy('id')->first());
+        return Inertia::render('roles/Index', RolesPage::index());
     }
 
     /**
@@ -33,7 +32,7 @@ class RoleController extends Controller
      */
     public function show(Role $role): Response
     {
-        return $this->page('view', $role);
+        return Inertia::render('roles/Index', RolesPage::show($role));
     }
 
     /**
@@ -41,7 +40,7 @@ class RoleController extends Controller
      */
     public function create(): Response
     {
-        return $this->page('create', null);
+        return Inertia::render('roles/Index', RolesPage::create());
     }
 
     /**
@@ -49,7 +48,7 @@ class RoleController extends Controller
      */
     public function edit(Role $role): Response
     {
-        return $this->page('edit', $role);
+        return Inertia::render('roles/Index', RolesPage::edit($role));
     }
 
     /**
@@ -87,57 +86,5 @@ class RoleController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role deleted.')]);
 
         return to_route('roles.index');
-    }
-
-    /**
-     * The Roles page: every Role, by name, with its Permissions and holders,
-     * the one selected, and whether it is viewed, edited or a new one is
-     * being made; plus every Permission a Role can contain, and every
-     * Employee who hasn't left, to give Roles to.
-     *
-     * @param  'view'|'edit'|'create'  $mode
-     */
-    private function page(string $mode, ?Role $selected): Response
-    {
-        $roles = Role::query()
-            ->with('permissions') // @pest-mutate-ignore (eager loading only saves queries)
-            ->with(['employees' => fn ($query) => $query->orderBy('name')])
-            ->orderBy('name')
-            ->orderBy('id') // @pest-mutate-ignore (only orders Roles that share a name, which the unique index rules out)
-            ->get();
-
-        return Inertia::render('roles/Index', [
-            'mode' => $mode,
-            'selected' => $selected?->id,
-            'roles' => $roles->map(fn (Role $role): array => [
-                'id' => $role->id,
-                'name' => $role->name,
-                'is_admin' => $role->is_admin,
-                'permissions' => $role->grants(),
-                'given_to_new_employees' => $role->is_given_to_new_employees,
-                'holders' => $role->employees
-                    ->map(fn (Employee $holder): array => [
-                        'id' => $holder->id,
-                        'name' => $holder->name,
-                        'status' => $holder->employmentStatus()->value,
-                    ])
-                    ->all(),
-            ])->all(),
-            'permissions' => collect(Permission::cases())
-                ->map(fn (Permission $permission): array => [
-                    'value' => $permission->value,
-                    'label' => $permission->label(),
-                    'scopes' => $permission->scopes(),
-                    'group' => $permission->group(),
-                ])
-                ->all(),
-            'employees' => Employee::query()
-                ->orderBy('name')
-                ->get(['id', 'name', 'start_date', 'leaving_date'])
-                ->reject(fn (Employee $employee): bool => $employee->employmentStatus() === EmploymentStatus::Former)
-                ->map(fn (Employee $employee): array => ['id' => $employee->id, 'name' => $employee->name, 'status' => $employee->employmentStatus()->value])
-                ->values()
-                ->all(),
-        ]);
     }
 }

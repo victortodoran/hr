@@ -25,6 +25,17 @@ class TimeOffBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to Declined Time Off, which the Employee's Manager
+     * turned down.
+     */
+    public function declined(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('state'), TimeOffState::Declined);
+        });
+    }
+
+    /**
      * Limit the query to Time Off that still stands: Pending or Approved.
      */
     public function standing(): static
@@ -56,12 +67,15 @@ class TimeOffBuilder extends ModelBuilder
     }
 
     /**
-     * Limit the query to the Time Off of the given Employees.
+     * Limit the query to the Time Off of the given Employees, given as a
+     * query or by ID.
+     *
+     * @param  EmployeeBuilder|array<int, int|string>  $employees
      */
-    public function ofEmployees(EmployeeBuilder $employees): static
+    public function ofEmployees(EmployeeBuilder|array $employees): static
     {
         return $this->scoped(function () use ($employees): void {
-            $this->whereIn($this->qualifyColumn('employee_id'), $employees->select('employees.id'));
+            $this->whereIn($this->qualifyColumn('employee_id'), $employees instanceof EmployeeBuilder ? $employees->select('employees.id') : $employees);
         });
     }
 }

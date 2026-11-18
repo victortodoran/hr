@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers\Projects;
 
+use App\Actions\DeleteClient;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\ClientRequest;
-use App\Models\Assignment;
 use App\Models\Client;
 use App\Models\Employee;
-use App\Models\Project;
+use App\Pages\Projects\ClientListPage;
+use App\Pages\Projects\ClientPage;
 use Illuminate\Container\Attributes\CurrentUser;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,9 +25,7 @@ class ClientController extends Controller
      */
     public function index(): Response
     {
-        return Inertia::render('clients/Index', [
-            'clients' => Client::query()->select(['id', 'name'])->withCount('projects')->orderBy('name')->get(),
-        ]);
+        return Inertia::render('clients/Index', ClientListPage::props());
     }
 
     /**
@@ -38,33 +35,7 @@ class ClientController extends Controller
      */
     public function show(#[CurrentUser] Employee $actor, Client $client): Response
     {
-        return Inertia::render('clients/Show', [
-            'client' => $client->only('id', 'name'),
-            'projects' => $client->projects()
-                ->with(['assignments' => fn (HasMany $assignments) => $assignments
-                    ->runningOn(today())
-                    ->visibleTo($actor)
-                    ->with('employee:id,name') // @pest-mutate-ignore (eager loading only saves queries)
-                    ->orderByEmployeeName()])
-                ->orderBy('name')
-                ->orderBy('id')
-                ->get()
-                ->map(fn (Project $project): array => [
-                    'id' => $project->id,
-                    'name' => $project->name,
-                    ...$project->dates(),
-                    'team' => $project->assignments
-                        ->map(fn (Assignment $assignment): array => [
-                            'id' => $assignment->id,
-                            'employee' => $assignment->employee->only('id', 'name'),
-                            'job_title' => $assignment->job_title,
-                            'start_date' => $assignment->start_date->toDateString(),
-                            'end_date' => $assignment->end_date?->toDateString(),
-                            'capacity' => $assignment->capacity,
-                        ])
-                        ->all(),
-                ]),
-        ]);
+        return Inertia::render('clients/Show', ClientPage::props($actor, $client));
     }
 
     public function store(ClientRequest $request): RedirectResponse
@@ -88,17 +59,9 @@ class ClientController extends Controller
     /**
      * Delete a Client, refusing while it still has Projects.
      */
-    public function destroy(Client $client): RedirectResponse
+    public function destroy(Client $client, DeleteClient $deleteClient): RedirectResponse
     {
-        if ($client->projects()->exists()) {
-            throw ValidationException::withMessages([
-                'client' => __(':client still has Projects. Move or delete them before deleting the Client.', [
-                    'client' => $client->name,
-                ]),
-            ]);
-        }
-
-        $client->delete();
+        $deleteClient->delete($client);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client deleted.')]);
 

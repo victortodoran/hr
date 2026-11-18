@@ -7,6 +7,7 @@ use App\Models\AccessLogEntry;
 use App\Models\Employee;
 use App\Models\Role;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -146,10 +147,15 @@ class ChangeAccess
     }
 
     /**
-     * Take the Role away from an Employee who holds it.
+     * Take the Role away from an Employee who holds it. One who doesn't
+     * hold it is not found.
+     *
+     * @throws ModelNotFoundException<Employee>
      */
     public function takeRole(Employee $actor, Role $role, Employee $employee): void
     {
+        $role->employees()->findOrFail($employee->id);
+
         DB::transaction(function () use ($actor, $role, $employee): void {
             $someoneCouldManageRoles = $this->someoneCanManageRoles();
             $role->employees()->detach($employee);

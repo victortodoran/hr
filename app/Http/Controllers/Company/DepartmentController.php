@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Company;
 
+use App\Actions\DeleteDepartment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\DepartmentRequest;
 use App\Models\Department;
+use App\Pages\Company\DepartmentListPage;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,9 +22,7 @@ class DepartmentController extends Controller
      */
     public function index(): Response
     {
-        return Inertia::render('departments/Index', [
-            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
-        ]);
+        return Inertia::render('departments/Index', DepartmentListPage::props());
     }
 
     public function store(DepartmentRequest $request): RedirectResponse
@@ -47,17 +46,9 @@ class DepartmentController extends Controller
     /**
      * Delete a Department, refusing while any Employee still belongs to it.
      */
-    public function destroy(Department $department): RedirectResponse
+    public function destroy(Department $department, DeleteDepartment $deleteDepartment): RedirectResponse
     {
-        if ($department->employees()->exists()) {
-            throw ValidationException::withMessages([
-                'department' => __(':department still has Employees. Move them to another Department before deleting it.', [
-                    'department' => $department->name,
-                ]),
-            ]);
-        }
-
-        $department->delete();
+        $deleteDepartment->delete($department);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Department deleted.')]);
 

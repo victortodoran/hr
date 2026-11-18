@@ -3,13 +3,8 @@
 namespace App\Models\Builders;
 
 use App\Enums\EmploymentStatus;
-use App\Enums\PerformanceEvaluationState;
 use App\Enums\Permission;
 use App\Enums\Scope;
-use App\Enums\TimeOffState;
-use App\Enums\TravelExpenseState;
-use App\Enums\TravelRequestState;
-use App\Enums\WorkEntryState;
 use App\Models\Employee;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -160,11 +155,11 @@ class EmployeeBuilder extends ModelBuilder
     {
         return $this->scoped(function (): void {
             $this->where(fn (Builder $pending) => $pending
-                ->whereHas('workEntries', fn (Builder $entries) => $entries->where('work_entries.state', WorkEntryState::Pending))
-                ->orWhereHas('timeOff', fn (Builder $timeOff) => $timeOff->where('state', TimeOffState::Pending))
-                ->orWhereHas('travelRequests', fn (Builder $travelRequests) => $travelRequests->where('state', TravelRequestState::Pending))
-                ->orWhereHas('travelRequests.travelExpenses', fn (Builder $expenses) => $expenses->where('travel_expenses.state', TravelExpenseState::Pending))
-                ->orWhereHas('performanceEvaluations', fn (Builder $evaluations) => $evaluations->where('state', PerformanceEvaluationState::Open)));
+                ->whereHas('workEntries', fn (WorkEntryBuilder $entries) => $entries->pending())
+                ->orWhereHas('timeOff', fn (TimeOffBuilder $timeOff) => $timeOff->pending())
+                ->orWhereHas('travelRequests', fn (TravelRequestBuilder $travelRequests) => $travelRequests->pending())
+                ->orWhereHas('travelRequests.travelExpenses', fn (TravelExpenseBuilder $expenses) => $expenses->pending())
+                ->orWhereHas('performanceEvaluations', fn (PerformanceEvaluationBuilder $evaluations) => $evaluations->open()));
         });
     }
 

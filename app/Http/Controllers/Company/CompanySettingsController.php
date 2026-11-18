@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Company;
 
+use App\Actions\ChangeCompanySettings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\CompanySettingsRequest;
-use App\Models\CompanySettings;
-use App\Models\Project;
+use App\Pages\Company\CompanySettingsPage;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,22 +21,19 @@ class CompanySettingsController extends Controller
      */
     public function edit(): Response
     {
-        return Inertia::render('company/Edit', [
-            'company' => CompanySettings::query()->sole()->only('name', 'currency'),
-            'isCurrencyLocked' => CompanySettings::isCurrencyLocked(),
-        ]);
+        return Inertia::render('company/Edit', CompanySettingsPage::edit());
     }
 
     /**
-     * Save the company's name and currency. The Internal Project is named
-     * after the company, so it is renamed in the same save.
+     * Save the company's name and currency, renaming the Internal Project
+     * with it.
      */
-    public function update(CompanySettingsRequest $request): RedirectResponse
+    public function update(CompanySettingsRequest $request, ChangeCompanySettings $changeCompanySettings): RedirectResponse
     {
-        DB::transaction(function () use ($request): void {
-            CompanySettings::query()->sole()->update($request->validated());
-            Project::query()->where('is_internal', true)->update(['name' => $request->string('name')->value()]);
-        });
+        /** @var array{name: string, currency: string} $settings */
+        $settings = $request->validated();
+
+        $changeCompanySettings->change($settings);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Company settings saved.')]);
 

@@ -68,12 +68,15 @@ class TravelRequestBuilder extends ModelBuilder
     }
 
     /**
-     * Limit the query to the Travel Requests of the given Employees.
+     * Limit the query to the Travel Requests of the given Employees, given as a
+     * query or by ID.
+     *
+     * @param  EmployeeBuilder|array<int, int|string>  $employees
      */
-    public function ofEmployees(EmployeeBuilder $employees): static
+    public function ofEmployees(EmployeeBuilder|array $employees): static
     {
         return $this->scoped(function () use ($employees): void {
-            $this->whereIn($this->qualifyColumn('employee_id'), $employees->select('employees.id'));
+            $this->whereIn($this->qualifyColumn('employee_id'), $employees instanceof EmployeeBuilder ? $employees->select('employees.id') : $employees);
         });
     }
 }

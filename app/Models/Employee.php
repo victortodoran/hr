@@ -3,9 +3,6 @@
 namespace App\Models;
 
 use App\Enums\EmploymentStatus;
-use App\Enums\TimeOffState;
-use App\Enums\TravelRequestState;
-use App\Enums\WorkEntryState;
 use App\Models\Builders\EmployeeBuilder;
 use App\Models\Concerns\HasAccess;
 use App\Notifications\Invitation;
@@ -418,16 +415,16 @@ class Employee extends Authenticatable implements MustVerifyEmail
     {
         return [
             'workEntries' => WorkEntry::query()
-                ->where('state', WorkEntryState::Pending)
-                ->whereIn('assignment_id', Assignment::query()->select('id')->whereIn('employee_id', $decidedFor))
+                ->pending()
+                ->ofEmployees($decidedFor)
                 ->count(),
             'timeOff' => TimeOff::query()
-                ->where('state', TimeOffState::Pending)
-                ->whereIn('employee_id', $decidedFor)
+                ->pending()
+                ->ofEmployees($decidedFor)
                 ->count(),
             'travelRequests' => TravelRequest::query()
-                ->where('state', TravelRequestState::Pending)
-                ->whereIn('employee_id', $decidedFor)
+                ->pending()
+                ->ofEmployees($decidedFor)
                 ->count(),
             'travelExpenses' => TravelExpense::query()
                 ->pending()
