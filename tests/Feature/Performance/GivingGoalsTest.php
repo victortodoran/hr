@@ -60,7 +60,7 @@ it('lets an Employee read their own Performance Evaluation\'s Goals but not chan
     actingAs($cara)->get(route('performance-evaluations.show', $evaluation))
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/Show')
-            ->where('evaluation.goals', [['id' => $goal->id, 'title' => 'Lead the Checkout API', 'description' => 'Own its design.', 'outcome' => null]])
+            ->where('evaluation.goals', [['id' => $goal->id, 'title' => 'Lead the Checkout API', 'description' => 'Own its design.', 'progress' => 'not-started', 'outcome' => null]])
             ->where('isOwn', true)
             ->where('canEdit', false));
 

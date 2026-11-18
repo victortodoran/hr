@@ -10,6 +10,7 @@ use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\Outcome;
 use App\Enums\PayKind;
 use App\Enums\Permission;
+use App\Enums\Progress;
 use App\Enums\Scope;
 use App\Enums\TimeOffState;
 use App\Enums\TravelExpenseCategory;
@@ -39,6 +40,7 @@ use Illuminate\Support\Str;
  * travel among them, Travel Expenses with small generated PDF
  * receipts, replacing any an earlier demo left behind, and this year's
  * Open Performance Evaluations with Goals for Ben, Cara, Lia and Ivan,
+ * their Progress changed over the last two months, a few of them At Risk,
  * Completed ones for last year for Ben, Cara and Ivan,
  * leaving Hana's and Finn's for Ana to start. Dates are relative
  * to today, so the Future and Former Employees stay that way, and the last two weeks of Work Entries and the Time Off
@@ -207,23 +209,23 @@ class DemoSeeder extends Seeder
         ], Outcome::Met, 'Ivan settled into the team quickly and the homepage was signed off first time.');
 
         $this->performanceEvaluation($ben, [
-            ['Grow two Tech Leads', 'Cara and Lia each run a Relaunch stream on their own by the end of the year.'],
-            ['Ship the Relaunch', 'Go live with Globex on the date agreed, with no rollback.'],
-            ['Hire a QA Engineer', 'Fill the role Eve left, with the new hire onboarded.'],
-            ['Cut review time', 'Pull requests wait under a day for their first review.'],
+            ['Grow two Tech Leads', 'Cara and Lia each run a Relaunch stream on their own by the end of the year.', [[Progress::OnTrack, $ben]]],
+            ['Ship the Relaunch', 'Go live with Globex on the date agreed, with no rollback.', [[Progress::OnTrack, $ben], [Progress::AtRisk, $ana]]],
+            ['Hire a QA Engineer', 'Fill the role Eve left, with the new hire onboarded.', [[Progress::OnTrack, $ben], [Progress::Done, $ben]]],
+            ['Cut review time', 'Pull requests wait under a day for their first review.', []],
         ]);
         $this->performanceEvaluation($cara, [
-            ['Lead the Checkout API', 'Own its design and delivery, and present it at the Globex workshop.'],
-            ['Mentor Lia', 'Pair with Lia weekly until she reviews pull requests on her own.'],
-            ['Cut payment errors', 'Bring failed payments below one in a thousand.'],
+            ['Lead the Checkout API', 'Own its design and delivery, and present it at the Globex workshop.', [[Progress::OnTrack, $cara], [Progress::AtRisk, $ben]]],
+            ['Mentor Lia', 'Pair with Lia weekly until she reviews pull requests on her own.', [[Progress::OnTrack, $cara]]],
+            ['Cut payment errors', 'Bring failed payments below one in a thousand.', []],
         ]);
         $this->performanceEvaluation($lia, [
-            ['Own the cart', 'Take the cart from design to release on the Relaunch.'],
-            ['Review code', 'Review at least two pull requests a week.'],
+            ['Own the cart', 'Take the cart from design to release on the Relaunch.', [[Progress::OnTrack, $lia]]],
+            ['Review code', 'Review at least two pull requests a week.', [[Progress::OnTrack, $ben], [Progress::Done, $lia]]],
         ]);
         $this->performanceEvaluation($ivan, [
-            ['Launch the Website Revamp', 'Hand over the final designs before the launch date.'],
-            ['Build the icon set', 'Finish one icon set the whole Website Revamp uses.'],
+            ['Launch the Website Revamp', 'Hand over the final designs before the launch date.', [[Progress::OnTrack, $ivan], [Progress::AtRisk, $hana], [Progress::OnTrack, $ivan]]],
+            ['Build the icon set', 'Finish one icon set the whole Website Revamp uses.', []],
         ]);
 
         $this->command?->info('Demo company seeded. Sign in as ana@acme.test (Admin), ben@acme.test, hana@acme.test, finn@acme.test, cara@acme.test, ivan@acme.test or lia@acme.test with the password "password".');
@@ -486,16 +488,29 @@ class DemoSeeder extends Seeder
 
     /**
      * Start the Employee's Performance Evaluation for this year, Open, with
-     * the Goals given as title and description.
+     * the Goals given as title, description and the changes to their
+     * Progress, each as the Progress and who changed it. The Goals were
+     * given up to two months ago, never before this year, and their
+     * changes are spread evenly from then to today.
      *
-     * @param  array<int, array{string, string}>  $goals
+     * @param  array<int, array{string, string, array<int, array{Progress, Employee}>}>  $goals
      */
     private function performanceEvaluation(Employee $employee, array $goals): void
     {
         $evaluation = $employee->performanceEvaluations()->create(['year' => today()->year]);
+        $givenAt = today()->subMonths(2)->max(today()->startOfYear())->setTime(9, 0);
+        $days = (int) $givenAt->diffInDays(today());
 
-        foreach ($goals as [$title, $description]) {
-            $evaluation->goals()->create(['title' => $title, 'description' => $description]);
+        foreach ($goals as [$title, $description, $changes]) {
+            $goal = $evaluation->goals()->create(['title' => $title, 'description' => $description]);
+            $goal->forceFill(['created_at' => $givenAt])->save();
+
+            foreach ($changes as $position => [$progress, $changedBy]) {
+                $goal->changeProgress($progress, $changedBy);
+                $goal->progressChanges()->firstOrFail()
+                    ->forceFill(['created_at' => $givenAt->addDays(intdiv($days * ($position + 1), count($changes) + 1))->addHours($position + 1)])
+                    ->save();
+            }
         }
     }
 

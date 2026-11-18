@@ -100,6 +100,7 @@ class PerformanceEvaluationController extends Controller
                 'goals' => $performanceEvaluation->goals
                     ->map(fn (Goal $goal): array => [
                         ...$goal->only('id', 'title', 'description'),
+                        'progress' => $goal->progress->value,
                         'outcome' => $seesOutcomes ? $goal->outcome?->value : null,
                     ])
                     ->all(),

@@ -71,6 +71,8 @@
     --color-status-closed-foreground: var(--status-closed-foreground);
     --color-status-upcoming: var(--status-upcoming);
     --color-status-upcoming-foreground: var(--status-upcoming-foreground);
+    --color-status-attention: var(--status-attention);
+    --color-status-attention-foreground: var(--status-attention-foreground);
 }
 
 /*
@@ -146,6 +148,8 @@
     --status-closed-foreground: hsl(0 0% 32%);
     --status-upcoming: hsl(214 95% 93%);
     --status-upcoming-foreground: hsl(224 64% 33%);
+    --status-attention: hsl(33 100% 90%);
+    --status-attention-foreground: hsl(17 88% 34%);
 }
 
 @layer base {
