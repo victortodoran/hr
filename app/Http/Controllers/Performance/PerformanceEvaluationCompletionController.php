@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\AssessmentRequest;
 use App\Models\PerformanceEvaluation;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 /**
@@ -26,13 +25,7 @@ class PerformanceEvaluationCompletionController extends Controller
      */
     public function store(AssessmentRequest $request, PerformanceEvaluation $performanceEvaluation): RedirectResponse
     {
-        if (! $performanceEvaluation->goals()->exists()) {
-            throw ValidationException::withMessages(['outcome' => __('Give at least one Goal before completing.')]);
-        }
-
-        if (! $this->assess->complete($performanceEvaluation, $request->goalOutcomes(), $request->outcome(), $request->summary())) {
-            throw ValidationException::withMessages(['outcome' => __('Give every Goal and the whole an Outcome, and write a summary, before completing.')]);
-        }
+        $this->assess->complete($performanceEvaluation, $request->goalOutcomes(), $request->outcome(), $request->summary());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Performance Evaluation completed.')]);
 

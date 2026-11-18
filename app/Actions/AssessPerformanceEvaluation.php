@@ -6,6 +6,7 @@ use App\Enums\Outcome;
 use App\Enums\PerformanceEvaluationState;
 use App\Models\PerformanceEvaluation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Saves the Manager's Outcomes for a Performance Evaluation's Goals, its
@@ -28,30 +29,34 @@ class AssessPerformanceEvaluation
     }
 
     /**
-     * Save the assessment and Complete the Performance Evaluation, unless
-     * it still lacks Goals or an Outcome somewhere or its summary, in
-     * which case nothing is saved and false is returned.
+     * Save the assessment and Complete the Performance Evaluation, or
+     * refuse, saving nothing, while it has no Goals or still lacks an
+     * Outcome somewhere or its summary.
      *
      * @param  array<int, Outcome|null>  $goalOutcomes  Each Goal's Outcome, by Goal ID
+     *
+     * @throws ValidationException
      */
-    public function complete(PerformanceEvaluation $evaluation, array $goalOutcomes, ?Outcome $outcome, ?string $summary): bool
+    public function complete(PerformanceEvaluation $evaluation, array $goalOutcomes, ?Outcome $outcome, ?string $summary): void
     {
         $goalIds = $evaluation->goals()->pluck('id');
-        $isReady = $goalIds->isNotEmpty()
-            && $goalIds->every(fn (int $id): bool => ($goalOutcomes[$id] ?? null) !== null)
+
+        if ($goalIds->isEmpty()) {
+            throw ValidationException::withMessages(['outcome' => __('Give at least one Goal before completing.')]);
+        }
+
+        $isReady = $goalIds->every(fn (int $id): bool => ($goalOutcomes[$id] ?? null) !== null)
             && $outcome !== null
             && filled($summary);
 
         if (! $isReady) {
-            return false;
+            throw ValidationException::withMessages(['outcome' => __('Give every Goal and the whole an Outcome, and write a summary, before completing.')]);
         }
 
         DB::transaction(function () use ($evaluation, $goalOutcomes, $outcome, $summary): void {
             $this->write($evaluation, $goalOutcomes, $outcome, $summary);
             $evaluation->forceFill(['state' => PerformanceEvaluationState::Completed, 'completed_at' => now()])->save();
         });
-
-        return true;
     }
 
     /**

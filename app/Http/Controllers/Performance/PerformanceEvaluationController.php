@@ -5,10 +5,9 @@ namespace App\Http\Controllers\Performance;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
 use App\Models\Employee;
-use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
-use App\Support\PageWithin;
-use Carbon\CarbonImmutable;
+use App\Pages\Performance\PerformanceEvaluationListPage;
+use App\Pages\Performance\PerformanceEvaluationPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -34,37 +33,7 @@ class PerformanceEvaluationController extends Controller
      */
     public function index(PerformanceEvaluationListRequest $request, #[CurrentUser] Employee $actor): Response
     {
-        $year = $request->year();
-        $firstStart = Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->min('start_date');
-        $years = range(today()->year, min(today()->year, $firstStart === null ? today()->year : CarbonImmutable::parse($firstStart)->year));
-
-        return Inertia::render('performance-evaluations/Index', [
-            'year' => $year,
-            'years' => $years,
-            'employees' => PageWithin::paginate(Employee::query()
-                ->withPerformanceEvaluationsVisibleTo($actor)
-                ->employedDuring($year)
-                ->with(['performanceEvaluations' => fn ($evaluations) => $evaluations->where('year', $year)->withCount('goals')->withAtRiskGoalsCount()]) // @pest-mutate-ignore (eager loading only saves queries; the row reads the same year either way)
-                ->orderBy('name')
-                ->orderBy('id'), 25)
-                ->withQueryString()
-                ->through(function (Employee $employee) use ($actor, $year): array {
-                    $evaluation = $employee->performanceEvaluations->first();
-
-                    return [
-                        'id' => $employee->id,
-                        'name' => $employee->name,
-                        'evaluation' => $evaluation === null ? null : [
-                            'id' => $evaluation->id,
-                            'state' => $evaluation->state->value,
-                            'goals_count' => $evaluation->goals_count,
-                            'at_risk_goals_count' => $evaluation->openAtRiskGoalsCount(),
-                            'outcome' => $evaluation->completedOutcome()?->value,
-                        ],
-                        'can_start' => $evaluation === null && $year === today()->year && $actor->can('create', [PerformanceEvaluation::class, $employee]),
-                    ];
-                }),
-        ]);
+        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationListPage::props($actor, $request->year()));
     }
 
     /**
@@ -90,30 +59,6 @@ class PerformanceEvaluationController extends Controller
      */
     public function show(PerformanceEvaluation $performanceEvaluation, #[CurrentUser] Employee $actor): Response
     {
-        $seesOutcomes = $actor->can('seeOutcomes', $performanceEvaluation);
-
-        return Inertia::render('performance-evaluations/Show', [
-            'evaluation' => [
-                'id' => $performanceEvaluation->id,
-                'year' => $performanceEvaluation->year,
-                'state' => $performanceEvaluation->state->value,
-                'employee' => $performanceEvaluation->employee->only('id', 'name'),
-                'goals' => $performanceEvaluation->goals()->withCount('comments')->get()
-                    ->map(fn (Goal $goal): array => [
-                        ...$goal->only('id', 'title', 'description'),
-                        'progress' => $goal->progress->value,
-                        'comments_count' => $goal->comments_count,
-                        'outcome' => $seesOutcomes ? $goal->outcome?->value : null,
-                    ])
-                    ->all(),
-                'outcome' => $seesOutcomes ? $performanceEvaluation->outcome?->value : null,
-                'summary' => $seesOutcomes ? $performanceEvaluation->summary : null,
-                'completed_at' => $performanceEvaluation->completed_at?->toDateString(),
-            ],
-            'isOwn' => $performanceEvaluation->employee_id === $actor->id,
-            'canEdit' => $actor->can('edit', $performanceEvaluation),
-            'canSeeOutcomes' => $seesOutcomes,
-            'canReopen' => $actor->can('reopen', $performanceEvaluation),
-        ]);
+        return Inertia::render('performance-evaluations/Show', PerformanceEvaluationPage::props($performanceEvaluation, $actor));
     }
 }
