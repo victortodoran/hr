@@ -50,9 +50,9 @@ const props = defineProps<{
     isOwn: boolean;
 }>();
 
-/** "My Work Entries" for the viewer's own week, "Ben's Work Entries" for another Employee's. */
+/** "Work" for the viewer's own week, "Ben's Work Entries" for another Employee's. */
 const title = computed(() =>
-    props.isOwn ? 'My Work Entries' : `${props.employee.name}'s Work Entries`,
+    props.isOwn ? 'Work' : `${props.employee.name}'s Work Entries`,
 );
 
 /** The breadcrumb opens the current week of whoever's week this is, so it holds whichever week is shown. */

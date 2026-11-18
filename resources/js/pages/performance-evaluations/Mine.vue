@@ -13,7 +13,7 @@ import type { OwnPerformanceEvaluation, TableColumn } from '@/types';
 
 defineOptions({
     layout: {
-        breadcrumbs: [{ title: 'My Performance Evaluations', href: index() }],
+        breadcrumbs: [{ title: 'Performance', href: index() }],
     },
 });
 
@@ -29,11 +29,11 @@ const columns: TableColumn[] = [
 </script>
 
 <template>
-    <Head title="My Performance Evaluations" />
+    <Head title="Performance" />
 
     <PageContainer width="wide">
         <Heading
-            title="My Performance Evaluations"
+            title="Performance"
             description="The Goals your Manager gives you for each year"
         />
 

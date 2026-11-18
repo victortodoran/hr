@@ -139,7 +139,7 @@ class EmployeeBuilder extends ModelBuilder
      * given Employee may open from the Performance Evaluations page: those
      * whose effective Manager they are, and those a Permission for reading
      * them (Permission::seeingPerformanceEvaluations()) reaches, leaving
-     * out the viewer, whose own are on My Performance Evaluations.
+     * out the viewer, whose own are on the Performance page.
      */
     public function withPerformanceEvaluationsVisibleTo(Employee $viewer): static
     {

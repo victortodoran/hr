@@ -139,7 +139,7 @@ it("opens an Employee's week from the list under their name, while the viewer's 
     actingAs($finn);
 
     visit(route('work-entries.index'))
-        ->assertSee('My Work Entries')
+        ->assertTitle('Work - '.config('app.name'))
         ->assertNotPresent('[aria-label="Employee"]')
         ->assertNoJavaScriptErrors();
 

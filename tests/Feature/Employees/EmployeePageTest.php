@@ -70,7 +70,7 @@ it('refuses an Employee\'s page to a viewer who may see none of their record, As
         ->assertForbidden();
 });
 
-it('always opens My Page to an Employee with no Roles, with their Reporting Chain but not their record, and still refuses them anyone else\'s page', function () {
+it('always opens their Profile to an Employee with no Roles, with their Reporting Chain but not their record, and still refuses them anyone else\'s page', function () {
     $top = Employee::factory()->create(['name' => 'Ada']);
     $ana = Employee::factory()->create(['name' => 'Ana', 'manager_id' => $top->id]);
     Assignment::factory()->internal()->for($ana)->create(['job_title' => 'Accountant']);

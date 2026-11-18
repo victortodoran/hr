@@ -119,9 +119,9 @@ function complete(): void {
         );
 }
 
-/** My Performance Evaluations › year for the Employee; Performance Evaluations › name · year for their Manager. */
+/** Performance › year for the Employee; Performance Evaluations › name · year for their Manager. */
 const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
-    ? [{ title: 'My Performance Evaluations', href: mine() }]
+    ? [{ title: 'Performance', href: mine() }]
     : [
           {
               title: 'Performance Evaluations',

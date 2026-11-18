@@ -66,7 +66,7 @@ const states: StateChoice<WorkEntryState>[] = [
 ];
 
 /**
- * The list's grid, as on My Work Entries: on a phone each Work Entry stacks
+ * The list's grid, as on the Work page: on a phone each Work Entry stacks
  * into lines; from `sm` up, a checkbox when the viewer can select, then Day,
  * Employee, Description, Project, Status and Hours. Both strings are written
  * out in full so Tailwind finds them; keep their shared tracks alike.
@@ -126,7 +126,7 @@ function reopen(): void {
 }
 
 /**
- * The week on My Work Entries holding the Work Entry, for its Employee.
+ * The week on the Work page holding the Work Entry, for its Employee.
  */
 function weekOf(entry: ListedWorkEntry): string {
     return week.url({

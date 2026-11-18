@@ -29,7 +29,7 @@ it('lands an Employee on Home after signing in, showing their month, Paid Days a
         ->assertSee('17')
         ->assertSee('Next Time Off')
         ->assertDontSee('Waiting for you')
-        ->click('Open My Work Entries')
+        ->click('Open Work')
         ->assertQueryStringHas('month', '2026-11')
         ->assertNoJavaScriptErrors();
 });
@@ -91,6 +91,6 @@ it('tells an Employee with no hours this month or year that none count yet, each
         ->assertSee('No hours this month yet. Declined ones don\'t count.')
         ->assertSee("You haven't recorded any hours this year.")
         ->assertNotPresent('[data-test="month-of-hours"]')
-        ->assertScript("[...document.querySelectorAll('a')].filter((link) => link.textContent.includes('Open My Work Entries')).map((link) => new URL(link.href).searchParams.get('month')).join()", '2026-11,2026-11')
+        ->assertScript("[...document.querySelectorAll('a')].filter((link) => link.textContent.includes('Open Work')).map((link) => new URL(link.href).searchParams.get('month')).join()", '2026-11,2026-11')
         ->assertNoJavaScriptErrors();
 });
