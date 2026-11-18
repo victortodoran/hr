@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Performance;
 
+use App\Actions\ChangeGoal;
+use App\Actions\GiveGoal;
+use App\Actions\RemoveGoal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\GoalRequest;
 use App\Models\Employee;
@@ -33,11 +36,13 @@ class GoalController extends Controller
     }
 
     /**
-     * Give the Performance Evaluation a Goal.
+     * Give the Performance Evaluation a Goal. One Completed since the
+     * policy check is refused, never given one.
      */
-    public function store(GoalRequest $request, PerformanceEvaluation $performanceEvaluation): RedirectResponse
+    public function store(GoalRequest $request, PerformanceEvaluation $performanceEvaluation, GiveGoal $giveGoal): RedirectResponse
     {
-        $performanceEvaluation->goals()->create($request->goal());
+        $given = $giveGoal->give($performanceEvaluation, $request->goal());
+        abort_if(! $given, 403); // @pest-mutate-ignore (only reached when the Performance Evaluation is Completed between the policy check and this write)
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal given.')]);
 
@@ -65,11 +70,13 @@ class GoalController extends Controller
 
     /**
      * Change a Goal's title and description, then lead back to where it
-     * was changed from.
+     * was changed from. One whose Performance Evaluation was Completed
+     * since the policy check is refused, never changed.
      */
-    public function update(GoalRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal): RedirectResponse
+    public function update(GoalRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, ChangeGoal $changeGoal): RedirectResponse
     {
-        $goal->update($request->goal());
+        $changed = $changeGoal->change($goal, $request->goal());
+        abort_if(! $changed, 403); // @pest-mutate-ignore (only reached when the Performance Evaluation is Completed between the policy check and this write)
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal changed.')]);
 
@@ -79,11 +86,14 @@ class GoalController extends Controller
     }
 
     /**
-     * Remove a Goal from the Performance Evaluation.
+     * Remove a Goal from the Performance Evaluation. One whose
+     * Performance Evaluation was Completed since the policy check is
+     * refused, never removed.
      */
-    public function destroy(PerformanceEvaluation $performanceEvaluation, Goal $goal): RedirectResponse
+    public function destroy(PerformanceEvaluation $performanceEvaluation, Goal $goal, RemoveGoal $removeGoal): RedirectResponse
     {
-        $goal->delete();
+        $removed = $removeGoal->remove($goal);
+        abort_if(! $removed, 403); // @pest-mutate-ignore (only reached when the Performance Evaluation is Completed between the policy check and this write)
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal removed.')]);
 

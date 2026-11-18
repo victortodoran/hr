@@ -21,11 +21,13 @@ class PerformanceEvaluationCompletionController extends Controller
 
     /**
      * Save the assessment and Complete the Performance Evaluation, or
-     * refuse, saving nothing, while anything is missing.
+     * refuse, saving nothing, while anything is missing. One Completed
+     * since the policy check is refused, never changed.
      */
     public function store(AssessmentRequest $request, PerformanceEvaluation $performanceEvaluation): RedirectResponse
     {
-        $this->assess->complete($performanceEvaluation, $request->goalOutcomes(), $request->outcome(), $request->summary());
+        $completed = $this->assess->complete($performanceEvaluation, $request->goalOutcomes(), $request->outcome(), $request->summary());
+        abort_if(! $completed, 403); // @pest-mutate-ignore (only reached when the Performance Evaluation is Completed between the policy check and this write)
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Performance Evaluation completed.')]);
 
