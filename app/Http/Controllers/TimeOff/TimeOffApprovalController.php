@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\TimeOff;
 
+use App\Actions\ApproveTimeOff;
 use App\Enums\ApprovalsTab;
-use App\Enums\TimeOffState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TimeOff\TimeOffApprovalRequest;
 use App\Models\Employee;
@@ -20,9 +20,9 @@ class TimeOffApprovalController extends Controller
     /**
      * Approve the Time Off, recording who approved it and when.
      */
-    public function store(TimeOffApprovalRequest $request, TimeOff $timeOff, #[CurrentUser] Employee $actor): RedirectResponse
+    public function store(TimeOffApprovalRequest $request, TimeOff $timeOff, #[CurrentUser] Employee $actor, ApproveTimeOff $approveTimeOff): RedirectResponse
     {
-        $timeOff->forceFill(['state' => TimeOffState::Approved, 'decided_by' => $actor->id, 'decided_at' => now()])->save();
+        $approveTimeOff->approve($actor, $timeOff);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Time Off approved.')]);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\TimeOff;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TimeOff\TimeOffPreviewRequest;
+use App\Pages\TimeOff\TimeOffPreviewPage;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -19,16 +20,6 @@ class TimeOffPreviewController extends Controller
      */
     public function show(TimeOffPreviewRequest $request): JsonResponse
     {
-        $timeOff = $request->unsavedTimeOff();
-        $years = $timeOff->is_paid ? $request->employee()->paidDaysUsedBy($timeOff) : [];
-
-        return response()->json([
-            'weekdays' => $timeOff->weekdays(),
-            'years' => array_map(fn (array $year): array => [
-                'year' => $year['year'],
-                'uses' => $year['uses'],
-                'left_after' => $year['left'] - $year['uses'],
-            ], $years),
-        ]);
+        return response()->json(TimeOffPreviewPage::props($request->unsavedTimeOff(), $request->employee()));
     }
 }
