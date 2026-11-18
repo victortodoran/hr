@@ -17,7 +17,7 @@ Point it at this doc for the rest.
 ## Keep context small
 
 - Pipe long commands through `tail`, and re-run one in full only when it fails: `composer ci:check 2>&1 | tail -40`, `npm run build 2>&1 | tail -20`.
-- Run single test files with `php artisan test --compact <path>`, one test command at a time: every run shares the `hr_testing` database, and overlapping runs deadlock.
+- Run single test files with `php artisan test --compact <path>`, one test command at a time: overlapping runs on one database deadlock.
 - When tests fail, list them one per line with `composer test:failures -- <path>`, and read why with `composer test:readable -- <path>`.
 - Open the files the brief points to and their direct imports. Read the parent spec or the whole glossary only when the issue is unclear without them.
 - Read files in ranges when only part is needed.
@@ -34,7 +34,7 @@ Point it at this doc for the rest.
 
 ## Steps
 
-1. `git fetch origin && git checkout -b <branch> origin/main`.
+1. `bin/worktree.sh add <branch>`, then work in the worktree it prints. Prefix every test run, `composer ci:check` and `git push` there with the `DB_DATABASE=…` it prints, so tests use the worktree's own database rather than the shared `hr_testing`. Once the PR merges, `bin/worktree.sh remove <branch>`.
 2. Implement the issue until every acceptance-criteria checkbox holds, following sibling files and `CODING_STANDARDS.md`.
    Check a migration that rewrites existing rows against a copy of the dev database, so `hr` stays usable from other branches: `createdb -T hr hr_scratch`, run with `DB_DATABASE=hr_scratch`, then `dropdb hr_scratch`.
    To see a page with data, sign in on hr.test as a demo user from `DemoSeeder`. `migrate:fresh --seed` wipes the shared `hr` database, so ask before running it.
