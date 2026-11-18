@@ -81,6 +81,7 @@ it('shows Cara\'s Time Off to someone who manages her Paid Days', function () {
         ->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('tabs', ['overview', 'time-off'])
+            ->where('tab', 'time-off')
             ->where('paidDays', 20)
             ->where('timeOff.paid_days', 20)
             ->has('timeOff.requests', 4));
