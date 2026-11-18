@@ -10,6 +10,8 @@ import type { Goal, PerformanceEvaluationSummary } from '@/types';
 const props = defineProps<{
     evaluation: PerformanceEvaluationSummary;
     goal: Goal;
+    /** Whether it was opened from the Goal's own page, where saving leads back. */
+    returnsToGoal: boolean;
 }>();
 
 setLayoutProps({
@@ -42,6 +44,10 @@ setLayoutProps({
             :description="`${evaluation.employee.name} · ${evaluation.year} Performance Evaluation`"
         />
 
-        <GoalForm :evaluation-id="evaluation.id" :goal="goal" />
+        <GoalForm
+            :evaluation-id="evaluation.id"
+            :goal="goal"
+            :returns-to-goal="returnsToGoal"
+        />
     </PageContainer>
 </template>

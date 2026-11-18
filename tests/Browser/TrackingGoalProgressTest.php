@@ -43,3 +43,27 @@ it('opens a Goal from its Performance Evaluation, changes its Progress, and the 
 
     expect($goal->fresh()?->progress)->toBe(Progress::AtRisk);
 });
+
+it('lets the Manager change the Goal from its page and come back, then remove it from there', function () {
+    $ben = managerBen();
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
+    $evaluation = PerformanceEvaluation::factory()->of($cara)->create();
+    $goal = Goal::factory()->for($evaluation)->create(['title' => 'Lead the Checkout API']);
+
+    actingAs($ben);
+
+    visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
+        ->click('internal:role=link[name="Change"s]')
+        ->fill('#goal-title', 'Lead the Payments API')
+        ->click('Save Goal')
+        ->assertSee('Goal changed.')
+        ->assertSee('The Goal was given')
+        ->assertSee('Lead the Payments API')
+        ->click('internal:role=button[name="Remove"s]')
+        ->click('internal:role=dialog >> internal:role=button[name="Remove Goal"s]')
+        ->assertSee('Goal removed.')
+        ->assertSee('The Goals you give for this year appear here.')
+        ->assertNoJavaScriptErrors();
+
+    expect($evaluation->goals()->count())->toBe(0);
+});

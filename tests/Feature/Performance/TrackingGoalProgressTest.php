@@ -203,3 +203,33 @@ it('lets the next Manager up change Progress once the Employee\'s Manager has le
 
     expect($goal->fresh()?->progress)->toBe(Progress::OnTrack);
 });
+
+it('offers Change and Remove on the Goal\'s page only to the effective Manager while it is Open', function () {
+    [$ana, $ben, $cara, $goal] = goalProgressLine();
+    giveRole($ana, [Permission::ViewPerformanceEvaluations->value => Scope::Everyone]);
+
+    actingAs($ben)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', true));
+    actingAs($cara)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', false));
+    actingAs($ana)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', false));
+
+    app(AssessPerformanceEvaluation::class)->complete($goal->performanceEvaluation, [$goal->id => Outcome::Met], Outcome::Met, 'Good year.');
+
+    actingAs($ben)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', false));
+});
+
+it('leads back to the Goal\'s page after changing it from there, and to the Evaluation otherwise', function () {
+    [, $ben, , $goal] = goalProgressLine();
+    $update = route('performance-evaluations.goals.update', [$goal->performanceEvaluation, $goal]);
+
+    actingAs($ben)->get(route('performance-evaluations.goals.edit', [$goal->performanceEvaluation, $goal, 'from' => 'goal']))
+        ->assertInertia(fn (Assert $page) => $page->where('returnsToGoal', true));
+    actingAs($ben)->get(route('performance-evaluations.goals.edit', [$goal->performanceEvaluation, $goal]))
+        ->assertInertia(fn (Assert $page) => $page->where('returnsToGoal', false));
+
+    actingAs($ben)->put($update, ['title' => 'Lead the Payments API', 'description' => 'Own it.', 'from' => 'goal'])
+        ->assertRedirect(goalRoute($goal));
+    actingAs($ben)->put($update, ['title' => 'Lead the Payments API', 'description' => 'Own it.'])
+        ->assertRedirect(route('performance-evaluations.show', $goal->performanceEvaluation));
+    actingAs($ben)->put($update, ['title' => 'Lead the Payments API', 'description' => 'Own it.', 'from' => 'elsewhere'])
+        ->assertSessionHasErrors('from');
+});

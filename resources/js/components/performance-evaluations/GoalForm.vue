@@ -7,22 +7,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { show } from '@/routes/performance-evaluations';
+import { show as showGoal } from '@/routes/performance-evaluations/goals';
 import type { Goal } from '@/types';
 
 /**
  * Gives a Performance Evaluation a Goal, or, given one, changes it. Saving
- * and cancelling both lead back to the Performance Evaluation's page.
+ * and cancelling lead back to the Performance Evaluation's page, or to the
+ * Goal's own page when it was changed from there.
  */
 const props = defineProps<{
     /** The Performance Evaluation the Goal is on. */
     evaluationId: number;
     /** The Goal to change; none to give a new one. */
     goal?: Goal;
+    /** Whether saving and cancelling lead back to the Goal's own page. */
+    returnsToGoal?: boolean;
 }>();
 
 const form = useForm({
     title: props.goal?.title ?? '',
     description: props.goal?.description ?? '',
+    from: props.returnsToGoal ? 'goal' : null,
 });
 
 function save(): void {
@@ -70,7 +75,17 @@ function save(): void {
                 goal ? 'Save Goal' : 'Give Goal'
             }}</SubmitButton>
             <Button variant="ghost" as-child>
-                <Link :href="show(evaluationId)">Cancel</Link>
+                <Link
+                    :href="
+                        returnsToGoal && goal
+                            ? showGoal({
+                                  performanceEvaluation: evaluationId,
+                                  goal: goal.id,
+                              })
+                            : show(evaluationId)
+                    "
+                    >Cancel</Link
+                >
             </Button>
         </div>
     </form>

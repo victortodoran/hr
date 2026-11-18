@@ -11,6 +11,7 @@ use App\Models\PerformanceEvaluation;
 use App\Models\ProgressChange;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -48,7 +49,7 @@ class GoalController extends Controller
     /**
      * Show the Goal with its Progress and every change to it, newest
      * first, and its Comments, oldest first, and whether the viewer may
-     * change the Progress and write Comments.
+     * change the Progress, write Comments, and change or remove the Goal.
      */
     public function show(PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): Response
     {
@@ -78,22 +79,26 @@ class GoalController extends Controller
             'isOwn' => $performanceEvaluation->employee_id === $actor->id,
             'canChangeProgress' => $actor->can('changeProgress', $performanceEvaluation),
             'canComment' => $actor->can('comment', $performanceEvaluation),
+            'canEdit' => $actor->can('edit', $performanceEvaluation),
         ]);
     }
 
     /**
-     * Show the form for changing a Goal.
+     * Show the form for changing a Goal, and whether it was opened from
+     * the Goal's own page (`?from=goal`), where saving then leads back.
      */
-    public function edit(PerformanceEvaluation $performanceEvaluation, Goal $goal): Response
+    public function edit(Request $request, PerformanceEvaluation $performanceEvaluation, Goal $goal): Response
     {
         return Inertia::render('performance-evaluations/goals/Edit', [
             'evaluation' => $this->evaluationSummary($performanceEvaluation),
             'goal' => $goal->only('id', 'title', 'description'),
+            'returnsToGoal' => $request->query('from') === 'goal',
         ]);
     }
 
     /**
-     * Change a Goal's title and description.
+     * Change a Goal's title and description, then lead back to where it
+     * was changed from.
      */
     public function update(GoalRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal): RedirectResponse
     {
@@ -101,7 +106,9 @@ class GoalController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal changed.')]);
 
-        return to_route('performance-evaluations.show', $performanceEvaluation);
+        return $request->returnsToGoal()
+            ? to_route('performance-evaluations.goals.show', [$performanceEvaluation, $goal])
+            : to_route('performance-evaluations.show', $performanceEvaluation);
     }
 
     /**
