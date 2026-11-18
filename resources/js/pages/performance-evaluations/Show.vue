@@ -24,7 +24,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -352,7 +352,7 @@ setLayoutProps({
             </div>
             <div class="grid gap-2">
                 <Label for="evaluation-summary">Summary</Label>
-                <Input
+                <Textarea
                     id="evaluation-summary"
                     v-model="assessment.summary"
                     placeholder="How the year went, in a few sentences"
