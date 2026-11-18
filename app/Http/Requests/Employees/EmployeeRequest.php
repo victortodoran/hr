@@ -95,17 +95,17 @@ class EmployeeRequest extends FormRequest
             $stranded = $this->strandedBy($employee, $managerId, $leavingDate);
 
             if ($stranded?->is($employee)) {
-                $validator->errors()->add('manager_id', __(':name has Pending Work Entries, Time Off, Travel Requests or Travel Expenses, which nobody could decide without a Manager. Decide them first.', ['name' => $employee->name]));
+                $validator->errors()->add('manager_id', __(':name has Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or an Open Performance Evaluation, which only a Manager can settle. Settle them first.', ['name' => $employee->name]));
             } elseif ($stranded !== null) {
-                $validator->errors()->add($leavingChanges ? 'leaving_date' : 'manager_id', __(':name would have no Manager to decide their Pending Work Entries, Time Off, Travel Requests or Travel Expenses. Give them a new Manager first.', ['name' => $stranded->name]));
+                $validator->errors()->add($leavingChanges ? 'leaving_date' : 'manager_id', __(':name would have no Manager to settle their Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or their Open Performance Evaluation. Give them a new Manager first.', ['name' => $stranded->name]));
             }
         }];
     }
 
     /**
      * Who, of the Employee and everyone below them, would be left with no
-     * Manager while they have Pending Work Entries, Time Off or Travel
-     * Requests, once the record is saved with this Manager and Leaving Date and, for a
+     * Manager while they have Pending Work Entries, Time Off, Travel
+     * Requests or Travel Expenses, or an Open Performance Evaluation, once the record is saved with this Manager and Leaving Date and, for a
      * Leaving Date, once it has passed. The change is tried in a transaction
      * that is always undone, so the reporting line is read exactly as the
      * rest of the app reads it. The Employee comes first, then by name.
@@ -123,7 +123,7 @@ class EmployeeRequest extends FormRequest
             $affected = Employee::query()->reportsOf($employee)->pluck('employees.id')->push($employee->id);
 
             return Employee::query()
-                ->fromSub(Employee::query()->whereKey($affected)->withPendingDecisions()->withEffectiveManager($on), 'employees')
+                ->fromSub(Employee::query()->whereKey($affected)->withWorkForTheirManager()->withEffectiveManager($on), 'employees')
                 ->whereNull('effective_manager_id')
                 ->orderByRaw('id = ? desc', [$employee->id])
                 ->orderBy('name')

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\EmploymentStatus;
+use App\Enums\PerformanceEvaluationState;
 use App\Enums\Permission;
 use App\Enums\TimeOffState;
 use App\Enums\TravelExpenseState;
@@ -14,6 +15,7 @@ use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\PayEntry;
+use App\Models\PerformanceEvaluation;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\TimeOff;
@@ -108,6 +110,19 @@ it('gives Travel Expenses only on Travel Requests that take them, each with a PD
         ->and($expenses->every(fn (TravelExpense $expense): bool => $expense->travelRequest->takesExpenses()
             && ! $expense->paid_on->isFuture()
             && str_starts_with((string) Storage::disk(TravelExpense::RECEIPT_DISK)->get($expense->receipt_path), '%PDF-')))->toBeTrue();
+});
+
+it('gives some Employees with a Manager an Open Performance Evaluation for this year with two to four Goals, and leaves others to start', function () {
+    seed(DemoSeeder::class);
+
+    $evaluations = PerformanceEvaluation::query()->with('employee')->withCount('goals')->get();
+
+    expect($evaluations->count())->toBeGreaterThanOrEqual(3)
+        ->and($evaluations->pluck('state')->unique()->values()->all())->toBe([PerformanceEvaluationState::Open])
+        ->and($evaluations->every(fn (PerformanceEvaluation $evaluation): bool => $evaluation->year === today()->year
+            && $evaluation->goals_count >= 2 && $evaluation->goals_count <= 4
+            && ! $evaluation->employee->hasNoManager()))->toBeTrue()
+        ->and(Employee::query()->whereNotNull('manager_id')->whereDoesntHave('performanceEvaluations')->exists())->toBeTrue();
 });
 
 it('clears receipts left over from an earlier demo before adding its own', function () {

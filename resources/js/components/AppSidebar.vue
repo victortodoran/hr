@@ -4,6 +4,7 @@ import {
     Briefcase,
     CalendarDays,
     CheckCheck,
+    ClipboardCheck,
     Clock,
     Building2,
     FolderKanban,
@@ -13,6 +14,7 @@ import {
     Landmark,
     Network,
     ShieldCheck,
+    Target,
     UserRound,
     UsersRound,
     Users,
@@ -37,6 +39,8 @@ import { edit as company } from '@/routes/company';
 import { index as departments } from '@/routes/departments';
 import { index as directory } from '@/routes/directory';
 import { index as employees, show as employeePage } from '@/routes/employees';
+import { index as myPerformanceEvaluations } from '@/routes/my-performance-evaluations';
+import { index as performanceEvaluations } from '@/routes/performance-evaluations';
 import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import { index as team } from '@/routes/team';
@@ -63,6 +67,11 @@ const meItems = computed<NavItem[]>(() => [
         : []),
     { title: 'Time Off', href: timeOff(), icon: CalendarDays },
     { title: 'Travel', href: travelRequests(), icon: Plane },
+    {
+        title: 'My Performance Evaluations',
+        href: myPerformanceEvaluations(),
+        icon: Target,
+    },
 ]);
 
 const manageItems = computed<NavItem[]>(() => [
@@ -76,6 +85,15 @@ const manageItems = computed<NavItem[]>(() => [
                   href: approvals(),
                   icon: CheckCheck,
                   badge: auth.value.approvalsWaiting,
+              },
+          ]
+        : []),
+    ...(auth.value.canSeePerformanceEvaluations
+        ? [
+              {
+                  title: 'Performance Evaluations',
+                  href: performanceEvaluations(),
+                  icon: ClipboardCheck,
               },
           ]
         : []),

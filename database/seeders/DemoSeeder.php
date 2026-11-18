@@ -34,8 +34,10 @@ use Illuminate\Support\Str;
  * Employees, Roles, Clients, Projects, Assignments and Pay through the same
  * actions the app uses, four weeks of Work Entries, Paid Days (none for
  * Ivan), Time Off and Travel Requests in every state, a year of Ben's
- * travel among them, and Travel Expenses with small generated PDF
- * receipts, replacing any an earlier demo left behind. Dates are relative
+ * travel among them, Travel Expenses with small generated PDF
+ * receipts, replacing any an earlier demo left behind, and this year's
+ * Open Performance Evaluations with Goals for Ben, Cara, Lia and Ivan,
+ * leaving Hana's and Finn's for Ana to start. Dates are relative
  * to today, so the Future and Former Employees stay that way, and the last two weeks of Work Entries and the Time Off
  * still to come are always Pending, waiting for each Employee's Manager (Ben
  * or Hana) to approve them. Everyone except the Future Employee can sign in
@@ -187,6 +189,26 @@ class DemoSeeder extends Seeder
         $this->travelExpense($workshop, $workshop->first_date->addDay(), TravelExpenseCategory::Meals, 14250, 'Team dinner with Globex', TravelExpenseState::Declined, $ben, self::CLIENT_DINNER_DECLINED);
         $this->travelExpense($investors, $today->subDays(3), TravelExpenseCategory::Transport, 32000, 'Flights to London, booked early', TravelExpenseState::Approved);
         $this->bensTravel($benOnRelaunch, $ben->internalAssignment()->sole(), $ana, $thisMonday, $today);
+
+        $this->performanceEvaluation($ben, [
+            ['Grow two Tech Leads', 'Cara and Lia each run a Relaunch stream on their own by the end of the year.'],
+            ['Ship the Relaunch', 'Go live with Globex on the date agreed, with no rollback.'],
+            ['Hire a QA Engineer', 'Fill the role Eve left, with the new hire onboarded.'],
+            ['Cut review time', 'Pull requests wait under a day for their first review.'],
+        ]);
+        $this->performanceEvaluation($cara, [
+            ['Lead the Checkout API', 'Own its design and delivery, and present it at the Globex workshop.'],
+            ['Mentor Lia', 'Pair with Lia weekly until she reviews pull requests on her own.'],
+            ['Cut payment errors', 'Bring failed payments below one in a thousand.'],
+        ]);
+        $this->performanceEvaluation($lia, [
+            ['Own the cart', 'Take the cart from design to release on the Relaunch.'],
+            ['Review code', 'Review at least two pull requests a week.'],
+        ]);
+        $this->performanceEvaluation($ivan, [
+            ['Launch the Website Revamp', 'Hand over the final designs before the launch date.'],
+            ['Build the icon set', 'Finish one icon set the whole Website Revamp uses.'],
+        ]);
 
         $this->command?->info('Demo company seeded. Sign in as ana@acme.test (Admin), ben@acme.test, hana@acme.test, finn@acme.test, cara@acme.test, ivan@acme.test or lia@acme.test with the password "password".');
     }
@@ -443,6 +465,21 @@ class DemoSeeder extends Seeder
             foreach ($expenses as [$paidOn, $category, $amount, $description, $expenseState, $expenseDeclineReason]) {
                 $this->travelExpense($travelRequest, is_int($paidOn) ? $first->addDays($paidOn) : $paidOn, $category, $amount, $description, $expenseState, $ana, $expenseDeclineReason);
             }
+        }
+    }
+
+    /**
+     * Start the Employee's Performance Evaluation for this year, Open, with
+     * the Goals given as title and description.
+     *
+     * @param  array<int, array{string, string}>  $goals
+     */
+    private function performanceEvaluation(Employee $employee, array $goals): void
+    {
+        $evaluation = $employee->performanceEvaluations()->create(['year' => today()->year]);
+
+        foreach ($goals as [$title, $description]) {
+            $evaluation->goals()->create(['title' => $title, 'description' => $description]);
         }
     }
 
