@@ -34,7 +34,7 @@ Point it at this doc for the rest.
 
 ## Steps
 
-1. `bin/worktree.sh add <branch>`, then work in the worktree it prints. Prefix every test run, `composer ci:check` and `git push` there with the `DB_DATABASE=…` it prints, so tests use the worktree's own database rather than the shared `hr_testing`. Once the PR merges, `bin/worktree.sh remove <branch>`.
+1. `bin/worktree.sh add <branch>`, then work in the worktree it prints. Prefix every test run, `composer ci:check` and `git push` (its hook runs the tests) there with the `DB_DATABASE=…` it prints, so tests use the worktree's own database rather than the shared `hr_testing`. Once the PR merges, `bin/worktree.sh remove <branch>`.
 2. Implement the issue until every acceptance-criteria checkbox holds, following sibling files and `CODING_STANDARDS.md`.
    Check a migration that rewrites existing rows against a copy of the dev database, so `hr` stays usable from other branches: `createdb -T hr hr_scratch`, run with `DB_DATABASE=hr_scratch`, then `dropdb hr_scratch`.
    To see a page with data, sign in on hr.test as a demo user from `DemoSeeder`. `migrate:fresh --seed` wipes the shared `hr` database, so ask before running it.
