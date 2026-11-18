@@ -23,7 +23,7 @@ An Employee who has left the company. Their records are kept, but they can no lo
 _Avoid_: Leaver, ex-employee, deleted user, inactive user
 
 **Leaving Date**:
-The last day an Employee works for the company. From the next day on, they are a Former Employee. An Employee can't be given a Leaving Date while it would leave one of their Reports with no Manager and with Pending Work Entries, Time Off, Travel Requests or Travel Expenses.
+The last day an Employee works for the company. From the next day on, they are a Former Employee. An Employee can't be given a Leaving Date while it would leave one of their Reports with no Manager and with Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or an Open Performance Evaluation.
 _Avoid_: End date, termination date, exit date
 
 ### Reporting line

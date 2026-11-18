@@ -6,6 +6,7 @@ use App\Http\Controllers\TimeOff\TimeOffController;
 use App\Http\Controllers\WorkEntries\WorkEntryController;
 use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Employee;
+use App\Models\PerformanceEvaluation;
 use App\Models\Project;
 use App\Models\TimeOff;
 use App\Models\TravelExpense;
@@ -74,13 +75,13 @@ it('keeps the Time Off of an Employee with a Manager Pending', function () {
     expect(TimeOff::query()->where('employee_id', $cara->id)->sole()->state)->toBe(TimeOffState::Pending);
 });
 
-it('refuses removing an Employee\'s Manager while they have Pending Work Entries, Time Off, Travel Requests or Travel Expenses, and allows it once decided', function (Closure $pending) {
+it('refuses removing an Employee\'s Manager while they have Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or an Open Performance Evaluation, and allows it once settled', function (Closure $pending) {
     $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara Lane']);
     $item = $pending($cara);
 
     actingAs(employeeWhoManagesEmployees())
         ->patch(route('employees.update', $cara), recordOf($cara, ['manager_id' => null]))
-        ->assertSessionHasErrors(['manager_id' => 'Cara Lane has Pending Work Entries, Time Off, Travel Requests or Travel Expenses, which nobody could decide without a Manager. Decide them first.']);
+        ->assertSessionHasErrors(['manager_id' => 'Cara Lane has Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or an Open Performance Evaluation, which only a Manager can settle. Settle them first.']);
 
     $item->delete();
 
@@ -94,6 +95,7 @@ it('refuses removing an Employee\'s Manager while they have Pending Work Entries
     'Pending Time Off' => [fn (Employee $cara) => TimeOff::factory()->for($cara)->create()],
     'a Pending Travel Request' => [fn (Employee $cara) => TravelRequest::factory()->on(assignmentOf($cara))->create()],
     'a Pending Travel Expense' => [fn (Employee $cara) => TravelExpense::factory()->for(TravelRequest::factory()->on(assignmentOf($cara))->approved())->create()],
+    'an Open Performance Evaluation' => [fn (Employee $cara) => PerformanceEvaluation::factory()->of($cara)->create()],
 ]);
 
 it('refuses a Leaving Date that would leave a Report with no Manager and Pending items, until they have a new Manager', function (Closure $pending) {
@@ -103,7 +105,7 @@ it('refuses a Leaving Date that would leave a Report with no Manager and Pending
     $hr = employeeWhoManagesEmployees();
 
     actingAs($hr)->patch(route('employees.update', $ana), recordOf($ana, ['leaving_date' => '2026-12-31']))
-        ->assertSessionHasErrors(['leaving_date' => 'Cara Lane would have no Manager to decide their Pending Work Entries, Time Off, Travel Requests or Travel Expenses. Give them a new Manager first.']);
+        ->assertSessionHasErrors(['leaving_date' => 'Cara Lane would have no Manager to settle their Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or their Open Performance Evaluation. Give them a new Manager first.']);
 
     $cara->update(['manager_id' => Employee::factory()->create()->id]);
 
@@ -113,6 +115,7 @@ it('refuses a Leaving Date that would leave a Report with no Manager and Pending
     'Pending Time Off' => [fn (Employee $cara) => TimeOff::factory()->for($cara)->create()],
     'a Pending Travel Request' => [fn (Employee $cara) => TravelRequest::factory()->on(assignmentOf($cara))->create()],
     'a Pending Travel Expense' => [fn (Employee $cara) => TravelExpense::factory()->for(TravelRequest::factory()->on(assignmentOf($cara))->approved())->create()],
+    'an Open Performance Evaluation' => [fn (Employee $cara) => PerformanceEvaluation::factory()->of($cara)->create()],
 ]);
 
 it('allows a Leaving Date when the next Manager up takes over the Reports', function () {
@@ -132,7 +135,7 @@ it('refuses removing the Manager of a Former Employee when a Report\'s Pending i
     TimeOff::factory()->for($cara)->create();
 
     actingAs(employeeWhoManagesEmployees())->patch(route('employees.update', $ben), recordOf($ben, ['manager_id' => null]))
-        ->assertSessionHasErrors(['manager_id' => 'Cara Lane would have no Manager to decide their Pending Work Entries, Time Off, Travel Requests or Travel Expenses. Give them a new Manager first.']);
+        ->assertSessionHasErrors(['manager_id' => 'Cara Lane would have no Manager to settle their Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or their Open Performance Evaluation. Give them a new Manager first.']);
 });
 
 it('refuses a new Manager who has left with nobody above, while the Employee has Pending items', function () {
@@ -141,7 +144,7 @@ it('refuses a new Manager who has left with nobody above, while the Employee has
     $gone = Employee::factory()->former()->create();
 
     actingAs(employeeWhoManagesEmployees())->patch(route('employees.update', $cara), recordOf($cara, ['manager_id' => $gone->id]))
-        ->assertSessionHasErrors(['manager_id' => 'Cara Lane has Pending Work Entries, Time Off, Travel Requests or Travel Expenses, which nobody could decide without a Manager. Decide them first.']);
+        ->assertSessionHasErrors(['manager_id' => 'Cara Lane has Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or an Open Performance Evaluation, which only a Manager can settle. Settle them first.']);
 });
 
 it('refuses a Leaving Date after that of the last Manager above, which would leave a Report with nobody', function () {
@@ -151,7 +154,7 @@ it('refuses a Leaving Date after that of the last Manager above, which would lea
     TimeOff::factory()->for($cara)->create();
 
     actingAs(employeeWhoManagesEmployees())->patch(route('employees.update', $ben), recordOf($ben, ['leaving_date' => '2026-12-31']))
-        ->assertSessionHasErrors(['leaving_date' => 'Cara Lane would have no Manager to decide their Pending Work Entries, Time Off, Travel Requests or Travel Expenses. Give them a new Manager first.']);
+        ->assertSessionHasErrors(['leaving_date' => 'Cara Lane would have no Manager to settle their Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or their Open Performance Evaluation. Give them a new Manager first.']);
 });
 
 it('saves other changes to an Employee whose Leaving Date was accepted before a Report had Pending items', function () {

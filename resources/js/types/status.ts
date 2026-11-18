@@ -9,4 +9,5 @@ export type StatusBadgeState =
     | 'approved'
     | 'declined'
     | 'cancelled'
-    | 'upcoming';
+    | 'upcoming'
+    | 'open';

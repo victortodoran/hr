@@ -141,6 +141,16 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * The Employee's Performance Evaluations, at most one per year.
+     *
+     * @return HasMany<PerformanceEvaluation, $this>
+     */
+    public function performanceEvaluations(): HasMany
+    {
+        return $this->hasMany(PerformanceEvaluation::class);
+    }
+
+    /**
      * The Travel Expenses the Employee recorded on their Travel Requests,
      * in every state.
      *
@@ -324,12 +334,13 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Whether the Employee has Pending Work Entries, Time Off, Travel
-     * Requests or Travel Expenses, which their Manager is to decide.
+     * Whether the Employee has something only their Manager can settle:
+     * Pending Work Entries, Time Off, Travel Requests or Travel Expenses,
+     * or an Open Performance Evaluation.
      */
-    public function hasPendingDecisions(): bool
+    public function hasWorkForTheirManager(): bool
     {
-        return self::query()->whereKey($this->id)->withPendingDecisions()->exists();
+        return self::query()->whereKey($this->id)->withWorkForTheirManager()->exists();
     }
 
     /**

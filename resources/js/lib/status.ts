@@ -9,11 +9,13 @@ export const statusLabels: Record<StatusBadgeState, string> = {
     declined: 'Declined',
     cancelled: 'Cancelled',
     upcoming: 'Upcoming',
+    open: 'Open',
 };
 
 /**
  * Each state's status colour: Pending amber, Approved green, Declined red,
- * Cancelled grey, Upcoming blue.
+ * Cancelled grey, Upcoming blue, and an Open Performance Evaluation amber,
+ * since it waits on the Employee's Manager.
  */
 export const statusColours: Record<StatusBadgeState, string> = {
     pending: 'bg-status-pending text-status-pending-foreground',
@@ -21,4 +23,5 @@ export const statusColours: Record<StatusBadgeState, string> = {
     declined: 'bg-status-declined text-status-declined-foreground',
     cancelled: 'bg-status-closed text-status-closed-foreground',
     upcoming: 'bg-status-upcoming text-status-upcoming-foreground',
+    open: 'bg-status-pending text-status-pending-foreground',
 };

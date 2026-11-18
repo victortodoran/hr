@@ -3,6 +3,7 @@
 namespace App\Models\Builders;
 
 use App\Enums\EmploymentStatus;
+use App\Enums\PerformanceEvaluationState;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\TimeOffState;
@@ -134,17 +135,32 @@ class EmployeeBuilder extends ModelBuilder
     }
 
     /**
-     * Limit the query to Employees with Pending Work Entries, Time Off,
-     * Travel Requests or Travel Expenses, which their Manager is to decide.
+     * Limit the query to Employees with something only their Manager can
+     * settle: Pending Work Entries, Time Off, Travel Requests or Travel
+     * Expenses to decide, or an Open Performance Evaluation to complete.
      */
-    public function withPendingDecisions(): static
+    public function withWorkForTheirManager(): static
     {
         return $this->scoped(function (): void {
             $this->where(fn (Builder $pending) => $pending
                 ->whereHas('workEntries', fn (Builder $entries) => $entries->where('work_entries.state', WorkEntryState::Pending))
                 ->orWhereHas('timeOff', fn (Builder $timeOff) => $timeOff->where('state', TimeOffState::Pending))
                 ->orWhereHas('travelRequests', fn (Builder $travelRequests) => $travelRequests->where('state', TravelRequestState::Pending))
-                ->orWhereHas('travelRequests.travelExpenses', fn (Builder $expenses) => $expenses->where('travel_expenses.state', TravelExpenseState::Pending)));
+                ->orWhereHas('travelRequests.travelExpenses', fn (Builder $expenses) => $expenses->where('travel_expenses.state', TravelExpenseState::Pending))
+                ->orWhereHas('performanceEvaluations', fn (Builder $evaluations) => $evaluations->where('state', PerformanceEvaluationState::Open)));
+        });
+    }
+
+    /**
+     * Limit the query to Employees who work for the company on at least
+     * one day of the calendar year: started by its end, and not left
+     * before its start.
+     */
+    public function employedDuring(int $year): static
+    {
+        return $this->scoped(function () use ($year): void {
+            $this->whereDate('start_date', '<=', "{$year}-12-31")
+                ->where(fn (Builder $staying) => $staying->whereNull('leaving_date')->orWhereDate('leaving_date', '>=', "{$year}-01-01"));
         });
     }
 

@@ -27,4 +27,6 @@ export type Auth = {
     canSeeApprovals: boolean;
     /** How many Pending Work Entries and Time Off wait for the signed-in Employee to decide. */
     approvalsWaiting: number;
+    /** Whether the signed-in Employee effectively manages anyone, for the Performance Evaluations page. */
+    canSeePerformanceEvaluations: boolean;
 };
