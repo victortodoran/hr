@@ -18,7 +18,8 @@ class MyPerformanceEvaluationController extends Controller
 {
     /**
      * Show the Employee's Performance Evaluations by year, newest first,
-     * with their state and how many Goals each holds.
+     * with their state, how many Goals each holds and, once Completed,
+     * the Outcome of the whole.
      */
     public function __invoke(#[CurrentUser] Employee $actor): Response
     {
@@ -32,6 +33,7 @@ class MyPerformanceEvaluationController extends Controller
                     'year' => $evaluation->year,
                     'state' => $evaluation->state->value,
                     'goals_count' => $evaluation->goals_count,
+                    'outcome' => $evaluation->completedOutcome()?->value,
                 ])
                 ->all(),
         ]);

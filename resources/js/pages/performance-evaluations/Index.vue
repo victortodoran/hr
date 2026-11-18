@@ -16,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { outcomes } from '@/lib/outcomes';
 import { index, show } from '@/routes/performance-evaluations';
 import type { Paginated, PerformanceEvaluationRow, TableColumn } from '@/types';
 
@@ -93,10 +94,14 @@ function showYear(year: unknown): void {
             </template>
             <template #cell-state="{ row }">
                 <div class="flex items-center justify-end gap-2">
-                    <StatusBadge
-                        v-if="row.evaluation"
-                        :state="row.evaluation.state"
-                    />
+                    <template v-if="row.evaluation">
+                        <span
+                            v-if="row.evaluation.outcome"
+                            class="text-muted-foreground"
+                            >{{ outcomes[row.evaluation.outcome] }}</span
+                        >
+                        <StatusBadge :state="row.evaluation.state" />
+                    </template>
                     <Form
                         v-else-if="row.can_start"
                         v-bind="

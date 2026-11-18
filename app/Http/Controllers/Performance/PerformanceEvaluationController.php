@@ -55,6 +55,7 @@ class PerformanceEvaluationController extends Controller
                             'id' => $evaluation->id,
                             'state' => $evaluation->state->value,
                             'goals_count' => $evaluation->goals_count,
+                            'outcome' => $evaluation->completedOutcome()?->value,
                         ],
                         'can_start' => $evaluation === null && $year === today()->year && $actor->can('create', [PerformanceEvaluation::class, $employee]),
                     ];
@@ -77,12 +78,16 @@ class PerformanceEvaluationController extends Controller
 
     /**
      * Show one Performance Evaluation with its Goals, and whether the
-     * viewer may give, change or remove them. Whether it is the viewer's
+     * viewer may give, change or remove them and their Outcomes. Outcomes
+     * and the summary are left out for anyone but the effective Manager
+     * until it is Completed. Whether it is the viewer's
      * own sets where its breadcrumbs lead: My Performance Evaluations, or
      * the Performance Evaluations page for the year.
      */
     public function show(PerformanceEvaluation $performanceEvaluation, #[CurrentUser] Employee $actor): Response
     {
+        $seesOutcomes = $actor->can('seeOutcomes', $performanceEvaluation);
+
         return Inertia::render('performance-evaluations/Show', [
             'evaluation' => [
                 'id' => $performanceEvaluation->id,
@@ -90,11 +95,18 @@ class PerformanceEvaluationController extends Controller
                 'state' => $performanceEvaluation->state->value,
                 'employee' => $performanceEvaluation->employee->only('id', 'name'),
                 'goals' => $performanceEvaluation->goals
-                    ->map(fn (Goal $goal): array => $goal->only('id', 'title', 'description'))
+                    ->map(fn (Goal $goal): array => [
+                        ...$goal->only('id', 'title', 'description'),
+                        'outcome' => $seesOutcomes ? $goal->outcome?->value : null,
+                    ])
                     ->all(),
+                'outcome' => $seesOutcomes ? $performanceEvaluation->outcome?->value : null,
+                'summary' => $seesOutcomes ? $performanceEvaluation->summary : null,
+                'completed_at' => $performanceEvaluation->completed_at?->toDateString(),
             ],
             'isOwn' => $performanceEvaluation->employee_id === $actor->id,
-            'canManageGoals' => $actor->can('manageGoals', $performanceEvaluation),
+            'canEdit' => $actor->can('edit', $performanceEvaluation),
+            'canSeeOutcomes' => $seesOutcomes,
         ]);
     }
 }

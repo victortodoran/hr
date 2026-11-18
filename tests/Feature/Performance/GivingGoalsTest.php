@@ -47,8 +47,8 @@ it('shows every Employee only their own Performance Evaluations, newest first, w
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/Mine')
             ->where('evaluations', [
-                ['id' => $current->id, 'year' => 2026, 'state' => 'open', 'goals_count' => 2],
-                ['id' => $older->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 0],
+                ['id' => $current->id, 'year' => 2026, 'state' => 'open', 'goals_count' => 2, 'outcome' => null],
+                ['id' => $older->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 0, 'outcome' => null],
             ]));
 });
 
@@ -60,9 +60,9 @@ it('lets an Employee read their own Performance Evaluation\'s Goals but not chan
     actingAs($cara)->get(route('performance-evaluations.show', $evaluation))
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/Show')
-            ->where('evaluation.goals', [['id' => $goal->id, 'title' => 'Lead the Checkout API', 'description' => 'Own its design.']])
+            ->where('evaluation.goals', [['id' => $goal->id, 'title' => 'Lead the Checkout API', 'description' => 'Own its design.', 'outcome' => null]])
             ->where('isOwn', true)
-            ->where('canManageGoals', false));
+            ->where('canEdit', false));
 
     actingAs($cara)->post(route('performance-evaluations.goals.store', $evaluation), ['title' => 'Mine', 'description' => 'Set by me'])->assertForbidden();
     actingAs($cara)->put(route('performance-evaluations.goals.update', [$evaluation, $goal]), ['title' => 'Mine', 'description' => 'Set by me'])->assertForbidden();
@@ -105,7 +105,7 @@ it('lists, for the year, the Employees the viewer effectively manages who work t
             ->where('year', 2026)
             ->where('years', [2026, 2025, 2024, 2023, 2022, 2021, 2020])
             ->where('employees.data', [
-                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3], 'can_start' => false],
+                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3, 'outcome' => null], 'can_start' => false],
                 ['id' => $dan->id, 'name' => 'Dan', 'evaluation' => null, 'can_start' => true],
             ]));
 });
@@ -199,7 +199,7 @@ it('lets the effective Manager give, change and remove Goals while the Evaluatio
     $evaluation = PerformanceEvaluation::factory()->of(caraReportingTo($ben))->create();
 
     actingAs($ben)->get(route('performance-evaluations.show', $evaluation))
-        ->assertInertia(fn (Assert $page) => $page->where('isOwn', false)->where('canManageGoals', true));
+        ->assertInertia(fn (Assert $page) => $page->where('isOwn', false)->where('canEdit', true));
     actingAs($ben)->get(route('performance-evaluations.goals.create', $evaluation))
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/goals/Create')

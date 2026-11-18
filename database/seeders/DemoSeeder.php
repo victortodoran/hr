@@ -3,9 +3,11 @@
 namespace Database\Seeders;
 
 use App\Actions\AddEmployee;
+use App\Actions\AssessPerformanceEvaluation;
 use App\Actions\ChangeAccess;
 use App\Actions\InstallCompany;
 use App\Actions\UpdateTrimmingAssignments;
+use App\Enums\Outcome;
 use App\Enums\PayKind;
 use App\Enums\Permission;
 use App\Enums\Scope;
@@ -37,6 +39,7 @@ use Illuminate\Support\Str;
  * travel among them, Travel Expenses with small generated PDF
  * receipts, replacing any an earlier demo left behind, and this year's
  * Open Performance Evaluations with Goals for Ben, Cara, Lia and Ivan,
+ * Completed ones for last year for Ben, Cara and Ivan,
  * leaving Hana's and Finn's for Ana to start. Dates are relative
  * to today, so the Future and Former Employees stay that way, and the last two weeks of Work Entries and the Time Off
  * still to come are always Pending, waiting for each Employee's Manager (Ben
@@ -66,6 +69,7 @@ class DemoSeeder extends Seeder
         private AddEmployee $addEmployee,
         private ChangeAccess $changeAccess,
         private UpdateTrimmingAssignments $updateTrimmingAssignments,
+        private AssessPerformanceEvaluation $assessPerformanceEvaluation,
     ) {}
 
     /**
@@ -189,6 +193,18 @@ class DemoSeeder extends Seeder
         $this->travelExpense($workshop, $workshop->first_date->addDay(), TravelExpenseCategory::Meals, 14250, 'Team dinner with Globex', TravelExpenseState::Declined, $ben, self::CLIENT_DINNER_DECLINED);
         $this->travelExpense($investors, $today->subDays(3), TravelExpenseCategory::Transport, 32000, 'Flights to London, booked early', TravelExpenseState::Approved);
         $this->bensTravel($benOnRelaunch, $ben->internalAssignment()->sole(), $ana, $thisMonday, $today);
+
+        $this->completedPerformanceEvaluation($ben, [
+            ['Take over the Engineering team', 'Run planning and one-to-ones for everyone on the team.', Outcome::Exceeded],
+            ['Start the Relaunch', 'Agree the Relaunch scope with Globex and staff it.', Outcome::Met],
+        ], Outcome::Exceeded, 'Ben took the team over smoothly and had the Relaunch staffed a month early.');
+        $this->completedPerformanceEvaluation($cara, [
+            ['Finish the Data Audit', 'Deliver the Globex Data Audit report.', Outcome::Met],
+            ['Learn the payments stack', 'Ship one payments change end to end.', Outcome::PartlyMet],
+        ], Outcome::Met, 'Cara delivered the Data Audit and is close to owning payments on her own.');
+        $this->completedPerformanceEvaluation($ivan, [
+            ['Design the new homepage', 'Get the homepage mock-ups signed off.', Outcome::Met],
+        ], Outcome::Met, 'Ivan settled into the team quickly and the homepage was signed off first time.');
 
         $this->performanceEvaluation($ben, [
             ['Grow two Tech Leads', 'Cara and Lia each run a Relaunch stream on their own by the end of the year.'],
@@ -481,6 +497,25 @@ class DemoSeeder extends Seeder
         foreach ($goals as [$title, $description]) {
             $evaluation->goals()->create(['title' => $title, 'description' => $description]);
         }
+    }
+
+    /**
+     * Add the Employee's Performance Evaluation for last year, Completed,
+     * with the Goals given as title, description and Outcome, and the
+     * Outcome and summary of the whole.
+     *
+     * @param  array<int, array{string, string, Outcome}>  $goals
+     */
+    private function completedPerformanceEvaluation(Employee $employee, array $goals, Outcome $outcome, string $summary): void
+    {
+        $evaluation = $employee->performanceEvaluations()->create(['year' => today()->year - 1]);
+        $goalOutcomes = [];
+
+        foreach ($goals as [$title, $description, $goalOutcome]) {
+            $goalOutcomes[$evaluation->goals()->create(['title' => $title, 'description' => $description])->id] = $goalOutcome;
+        }
+
+        $this->assessPerformanceEvaluation->complete($evaluation, $goalOutcomes, $outcome, $summary);
     }
 
     /**

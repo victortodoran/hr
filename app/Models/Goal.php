@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Outcome;
 use Database\Factories\GoalFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property int $performance_evaluation_id
  * @property string $title
  * @property string $description
+ * @property Outcome|null $outcome How well it was achieved, once the Manager has said
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read PerformanceEvaluation $performanceEvaluation
@@ -27,6 +29,18 @@ class Goal extends Model
 {
     /** @use HasFactory<GoalFactory> */
     use HasFactory;
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'outcome' => Outcome::class,
+        ];
+    }
 
     /**
      * @return BelongsTo<PerformanceEvaluation, $this>

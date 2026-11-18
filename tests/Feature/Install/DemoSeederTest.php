@@ -14,6 +14,7 @@ use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Goal;
 use App\Models\PayEntry;
 use App\Models\PerformanceEvaluation;
 use App\Models\Project;
@@ -115,14 +116,24 @@ it('gives Travel Expenses only on Travel Requests that take them, each with a PD
 it('gives some Employees with a Manager an Open Performance Evaluation for this year with two to four Goals, and leaves others to start', function () {
     seed(DemoSeeder::class);
 
-    $evaluations = PerformanceEvaluation::query()->with('employee')->withCount('goals')->get();
+    $evaluations = PerformanceEvaluation::query()->where('year', today()->year)->with('employee')->withCount('goals')->get();
 
     expect($evaluations->count())->toBeGreaterThanOrEqual(3)
         ->and($evaluations->pluck('state')->unique()->values()->all())->toBe([PerformanceEvaluationState::Open])
-        ->and($evaluations->every(fn (PerformanceEvaluation $evaluation): bool => $evaluation->year === today()->year
-            && $evaluation->goals_count >= 2 && $evaluation->goals_count <= 4
+        ->and($evaluations->every(fn (PerformanceEvaluation $evaluation): bool => $evaluation->goals_count >= 2 && $evaluation->goals_count <= 4
             && ! $evaluation->employee->hasNoManager()))->toBeTrue()
         ->and(Employee::query()->whereNotNull('manager_id')->whereDoesntHave('performanceEvaluations')->exists())->toBeTrue();
+});
+
+it('gives some Employees a Completed Performance Evaluation for last year, with an Outcome on every Goal and on the whole', function () {
+    seed(DemoSeeder::class);
+
+    $completed = PerformanceEvaluation::query()->where('state', PerformanceEvaluationState::Completed)->with('goals')->get();
+
+    expect($completed->count())->toBeGreaterThanOrEqual(2)
+        ->and($completed->every(fn (PerformanceEvaluation $evaluation): bool => $evaluation->year === today()->year - 1
+            && $evaluation->outcome !== null && filled($evaluation->summary) && $evaluation->completed_at !== null
+            && $evaluation->goals->isNotEmpty() && $evaluation->goals->every(fn (Goal $goal): bool => $goal->outcome !== null)))->toBeTrue();
 });
 
 it('clears receipts left over from an earlier demo before adding its own', function () {

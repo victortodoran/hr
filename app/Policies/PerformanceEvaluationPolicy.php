@@ -8,7 +8,8 @@ use App\Models\PerformanceEvaluation;
 /**
  * Who may act on Performance Evaluations. Every Employee sees their own
  * with no Permission needed. Only the Employee's effective Manager starts
- * one and gives, changes or removes its Goals: no Role grants that, and
+ * one, gives, changes or removes its Goals, gives their Outcomes and
+ * Completes it: no Role grants that, and
  * since nobody is their own effective Manager, nobody sets their own.
  */
 class PerformanceEvaluationPolicy
@@ -50,12 +51,24 @@ class PerformanceEvaluationPolicy
 
     /**
      * Only the Employee's effective Manager may give, change or remove the
-     * Goals of their Performance Evaluation, and only while it is Open.
+     * Goals of their Performance Evaluation, give their Outcomes and its
+     * summary, and Complete it, and only while it is Open.
      */
-    public function manageGoals(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
+    public function edit(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
-        return $performanceEvaluation->state->takesGoals()
+        return $performanceEvaluation->state->isEditable()
             && $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee);
+    }
+
+    /**
+     * Seeing the Outcomes and summary of a Performance Evaluation the actor
+     * may open: its effective Manager always, while writing them, and
+     * anyone else only once it is Completed.
+     */
+    public function seeOutcomes(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
+    {
+        return $performanceEvaluation->isCompleted()
+            || $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee);
     }
 
     /**
