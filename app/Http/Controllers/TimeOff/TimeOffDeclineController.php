@@ -23,7 +23,8 @@ class TimeOffDeclineController extends Controller
      */
     public function store(TimeOffDeclineRequest $request, TimeOff $timeOff, #[CurrentUser] Employee $actor, DeclineTimeOff $declineTimeOff): RedirectResponse
     {
-        $declineTimeOff->decline($actor, $timeOff, $request->reason());
+        $changed = $declineTimeOff->decline($actor, $timeOff, $request->reason());
+        abort_if(! $changed, 403); // @pest-mutate-ignore (only reached when the Time Off is cancelled or decided between the policy check and this write)
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Time Off declined.')]);
 

@@ -46,6 +46,18 @@ class TimeOffBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to Time Off the Employee can still cancel: Pending or
+     * Approved, and not started yet.
+     */
+    public function cancellable(): static
+    {
+        return $this->scoped(function (): void {
+            $this->whereIn($this->qualifyColumn('state'), TimeOffState::standing())
+                ->whereDate($this->qualifyColumn('first_date'), '>', today());
+        });
+    }
+
+    /**
      * Limit the query to Paid Time Off, which uses the Employee's Paid Days.
      */
     public function paid(): static

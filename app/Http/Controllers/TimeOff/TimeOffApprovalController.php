@@ -22,7 +22,8 @@ class TimeOffApprovalController extends Controller
      */
     public function store(TimeOffApprovalRequest $request, TimeOff $timeOff, #[CurrentUser] Employee $actor, ApproveTimeOff $approveTimeOff): RedirectResponse
     {
-        $approveTimeOff->approve($actor, $timeOff);
+        $changed = $approveTimeOff->approve($actor, $timeOff);
+        abort_if(! $changed, 403); // @pest-mutate-ignore (only reached when the Time Off is cancelled or decided between the policy check and this write)
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Time Off approved.')]);
 
