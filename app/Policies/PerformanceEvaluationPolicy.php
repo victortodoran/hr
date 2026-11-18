@@ -81,6 +81,19 @@ class PerformanceEvaluationPolicy
     }
 
     /**
+     * Reopening a Completed Performance Evaluation, sending it back to Open
+     * so its Manager can correct it: only someone whom reopen performance
+     * evaluations reaches the Employee for. Being their Manager isn't
+     * enough on its own, and nobody reopens their own.
+     */
+    public function reopen(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
+    {
+        return $performanceEvaluation->isCompleted()
+            && $performanceEvaluation->employee_id !== $actor->id
+            && $actor->reachesThrough([Permission::ReopenPerformanceEvaluations], $performanceEvaluation->employee);
+    }
+
+    /**
      * Whether the actor is the Employee's effective Manager, the one who
      * writes their Performance Evaluations.
      */

@@ -5,6 +5,7 @@ import { Target } from '@lucide/vue';
 import GoalController from '@/actions/App/Http/Controllers/Performance/GoalController';
 import PerformanceEvaluationAssessmentController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationAssessmentController';
 import PerformanceEvaluationCompletionController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationCompletionController';
+import PerformanceEvaluationReopeningController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationReopeningController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -59,6 +60,8 @@ const props = defineProps<{
     canEdit: boolean;
     /** Whether the viewer sees its Outcomes and summary. */
     canSeeOutcomes: boolean;
+    /** Whether the viewer may send it, Completed, back to Open for its Manager to correct. */
+    canReopen: boolean;
 }>();
 
 /** Each Goal's Outcome by Goal ID, the whole's Outcome and the summary, as the Manager is writing them. */
@@ -170,6 +173,21 @@ setLayoutProps({
             <Button v-if="canEdit" as-child>
                 <Link :href="create(evaluation.id)">Give a Goal</Link>
             </Button>
+            <ConfirmDeleteDialog
+                v-if="canReopen"
+                :form="
+                    PerformanceEvaluationReopeningController.store.form(
+                        evaluation.id,
+                    )
+                "
+                :title="`Reopen ${evaluation.employee.name}'s ${evaluation.year} Performance Evaluation?`"
+                :description="`It goes back to Open, keeping its Goals, Outcomes and summary, so their Manager can correct it and Complete it again. ${evaluation.employee.name} doesn't see the Outcomes until then.`"
+                confirm-label="Reopen"
+            >
+                <template #trigger>
+                    <Button variant="outline">Reopen</Button>
+                </template>
+            </ConfirmDeleteDialog>
         </header>
 
         <section class="space-y-2">

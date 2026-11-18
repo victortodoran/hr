@@ -18,6 +18,7 @@ use App\Http\Controllers\Performance\MyPerformanceEvaluationController;
 use App\Http\Controllers\Performance\PerformanceEvaluationAssessmentController;
 use App\Http\Controllers\Performance\PerformanceEvaluationCompletionController;
 use App\Http\Controllers\Performance\PerformanceEvaluationController;
+use App\Http\Controllers\Performance\PerformanceEvaluationReopeningController;
 use App\Http\Controllers\Projects\ClientController;
 use App\Http\Controllers\Projects\ProjectController;
 use App\Http\Controllers\TimeOff\PaidDaysController;
@@ -136,6 +137,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('performance-evaluations', [PerformanceEvaluationController::class, 'index'])->middleware('can:viewList,'.PerformanceEvaluation::class)->name('performance-evaluations.index');
     Route::post('employees/{employee}/performance-evaluations', [PerformanceEvaluationController::class, 'store'])->middleware('can:create,'.PerformanceEvaluation::class.',employee')->name('employees.performance-evaluations.store');
     Route::get('performance-evaluations/{performanceEvaluation}', [PerformanceEvaluationController::class, 'show'])->middleware('can:view,performanceEvaluation')->name('performance-evaluations.show');
+    Route::post('performance-evaluations/{performanceEvaluation}/reopening', [PerformanceEvaluationReopeningController::class, 'store'])->middleware('can:reopen,performanceEvaluation')->name('performance-evaluations.reopening.store');
     Route::middleware('can:edit,performanceEvaluation')->scopeBindings()->group(function () {
         Route::get('performance-evaluations/{performanceEvaluation}/goals/create', [GoalController::class, 'create'])->name('performance-evaluations.goals.create');
         Route::post('performance-evaluations/{performanceEvaluation}/goals', [GoalController::class, 'store'])->name('performance-evaluations.goals.store');

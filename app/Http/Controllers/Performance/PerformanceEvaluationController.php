@@ -110,6 +110,7 @@ class PerformanceEvaluationController extends Controller
             'isOwn' => $performanceEvaluation->employee_id === $actor->id,
             'canEdit' => $actor->can('edit', $performanceEvaluation),
             'canSeeOutcomes' => $seesOutcomes,
+            'canReopen' => $actor->can('reopen', $performanceEvaluation),
         ]);
     }
 }
