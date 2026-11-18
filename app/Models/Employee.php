@@ -171,7 +171,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
     {
         $taken = $this->timeOff()
             ->standing()
-            ->where('is_paid', true)
+            ->paid()
             ->overlapping(CarbonImmutable::createFromDate($year, 1, 1), CarbonImmutable::createFromDate($year, 12, 31)) // @pest-mutate-ignore (the surviving mutants only widen the year, and weekdaysIn() counts nothing outside it; the narrowing ones are tested)
             ->get()
             ->sum(fn (TimeOff $timeOff): int => $timeOff->weekdaysIn($year));
