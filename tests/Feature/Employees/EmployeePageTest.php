@@ -96,31 +96,27 @@ it('always opens My Page to an Employee with no Roles, with their Reporting Chai
  * ├── Ben ── Cara ── Dev
  * └── Eve
  */
-it('lets Scope decide whose record an Employee may see', function (Scope $scope, array $visible) {
+it('lets Scope decide whose record an Employee may see', function (Scope $scope, array $visible, bool $seesOwnRecord) {
     $dana = Employee::factory()->create();
     $ben = employeeWith([Permission::ViewEmployeeRecords->value => $scope], ['manager_id' => $dana->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
-    $people = [
+    $others = [
         'Dana' => $dana,
-        'Ben' => $ben,
         'Cara' => $cara,
         'Dev' => Employee::factory()->reportingTo($cara)->create(),
         'Eve' => Employee::factory()->reportingTo($dana)->create(),
     ];
 
-    foreach ($people as $name => $employee) {
-        $response = actingAs($ben)->get(route('employees.show', $employee));
-
-        if ($name === 'Ben') {
-            $response->assertOk()->assertInertia(fn (Assert $page) => $page->where('record', fn ($record) => ($record !== null) === in_array('Ben', $visible, true)));
-        } else {
-            $response->assertStatus(in_array($name, $visible, true) ? 200 : 403);
-        }
+    foreach ($others as $name => $employee) {
+        actingAs($ben)->get(route('employees.show', $employee))
+            ->assertStatus(in_array($name, $visible, true) ? 200 : 403);
     }
+    actingAs($ben)->get(route('employees.show', $ben))->assertOk()
+        ->assertInertia(fn (Assert $page) => $seesOwnRecord ? $page->has('record.email') : $page->where('record', null));
 })->with([
-    'own' => [Scope::Own, ['Ben']],
-    'reports' => [Scope::Reports, ['Cara', 'Dev']],
-    'everyone' => [Scope::Everyone, ['Dana', 'Ben', 'Cara', 'Dev', 'Eve']],
+    'own' => [Scope::Own, [], true],
+    'reports' => [Scope::Reports, ['Cara', 'Dev'], false],
+    'everyone' => [Scope::Everyone, ['Dana', 'Cara', 'Dev', 'Eve'], true],
 ]);
 
 it('shows a Manager their Report\'s record and Assignments but no Pay', function () {
