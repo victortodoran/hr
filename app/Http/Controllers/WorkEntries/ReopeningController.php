@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\WorkEntries;
 
-use App\Enums\Permission;
-use App\Enums\WorkEntryState;
+use App\Actions\ReopenWorkEntries;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\SelectedWorkEntriesRequest;
 use App\Models\Employee;
-use App\Models\WorkEntry;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -26,15 +24,11 @@ class ReopeningController extends Controller
      * Pending with their approval withdrawn. The rest are skipped, and the
      * toast says how many of each.
      */
-    public function store(#[CurrentUser] Employee $actor, SelectedWorkEntriesRequest $request): RedirectResponse
+    public function store(#[CurrentUser] Employee $actor, SelectedWorkEntriesRequest $request, ReopenWorkEntries $reopenWorkEntries): RedirectResponse
     {
         $ids = $request->ids();
 
-        $reopened = WorkEntry::query()
-            ->ofEmployees(Employee::query()->reopenableBy($actor, Permission::ReopenWorkEntries))
-            ->whereKey($ids)
-            ->where('state', WorkEntryState::Approved)
-            ->update(['state' => WorkEntryState::Pending, 'approved_by' => null, 'approved_at' => null]);
+        $reopened = $reopenWorkEntries->reopen($actor, $ids);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => $request->outcome(
             trans_choice('{0} No Work Entries reopened|{1} 1 Work Entry reopened|[2,*] :count Work Entries reopened', $reopened),

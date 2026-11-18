@@ -3,6 +3,7 @@
 namespace App\Http\Requests\WorkEntries;
 
 use App\Enums\WorkEntriesTab;
+use App\Models\Employee;
 use App\Support\Period;
 use App\Support\PeriodRules;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -62,5 +63,14 @@ class WorkEntryPeriodRequest extends FormRequest
         }
 
         return $period ?? Period::week(today());
+    }
+
+    /**
+     * The Employee whose Work Entries are asked for, the viewer when none
+     * is, or null when the one asked for doesn't exist.
+     */
+    public function employee(Employee $viewer): ?Employee
+    {
+        return $this->filled('employee') ? Employee::query()->find($this->integer('employee')) : $viewer;
     }
 }

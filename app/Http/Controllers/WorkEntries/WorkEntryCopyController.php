@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers\WorkEntries;
 
+use App\Actions\CopyWorkEntries;
 use App\Enums\WorkEntriesTab;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\CopyWorkEntriesRequest;
 use App\Models\Employee;
-use App\Models\WorkEntry;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 /**
@@ -22,17 +21,12 @@ class WorkEntryCopyController extends Controller
      * all or none, then go back to the tab and Period the page sent,
      * holding the day.
      */
-    public function store(CopyWorkEntriesRequest $request, Employee $employee): RedirectResponse
+    public function store(CopyWorkEntriesRequest $request, Employee $employee, CopyWorkEntries $copyWorkEntries): RedirectResponse
     {
         $date = $request->day();
         $toCopy = $request->toCopy();
 
-        DB::transaction(fn () => $toCopy->each(fn (WorkEntry $entry) => WorkEntry::query()->create([
-            'assignment_id' => $entry->assignment_id,
-            'date' => $date->toDateString(),
-            'minutes' => $entry->minutes,
-            'description' => $entry->description,
-        ])));
+        $copyWorkEntries->copy($toCopy, $date);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => trans_choice('{1} Copied :count Work Entry from :source.|[2,*] Copied :count Work Entries from :source.', $toCopy->count(), [
             'source' => $request->sourceLabel(),
