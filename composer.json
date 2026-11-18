@@ -82,7 +82,7 @@
             "@lint:scopes",
             "@lint:builders",
             "@lint:browser-tests",
-            "npm run build",
+            "npm run build -- --logLevel warn",
             "npm run types:check",
             "@test"
         ],

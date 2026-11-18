@@ -26,6 +26,6 @@ One line per rule; list each place a diff breaks one.
 - A dropdown (`Select`) whose field the server requires carries `name` and `required`, so the browser stops an empty submit.
 - Submit buttons show a spinner while saving (`SubmitButton`).
 - Every delete asks for confirmation (`ConfirmDeleteDialog`).
-- Lists use the shared table (`DataTable`) and mark their minor columns, so a row fits on a phone without scrolling sideways; no hand-written `<table>`s or bordered `ul` lists. The one exception is the Work Entries List (`WorkEntryList`), whose week rows, folded runs of days and inline forms `DataTable` doesn't support; it still stacks on a phone instead of scrolling.
+- Lists use the shared table (`DataTable`) and mark their minor columns, so a row fits on a phone without scrolling sideways; no hand-written `<table>`s or bordered `ul` lists. The exceptions are the Work Entries List (`WorkEntryList`), whose week rows, folded runs of days and inline forms `DataTable` doesn't support, and a thread of messages, each an author, a time and its text, such as the Comments on a Goal, which stacks as a plain list; both still stack on a phone instead of scrolling.
 - Every list has an empty state (`EmptyState`): an icon, a sentence saying what belongs there, and its action only when the page's permission flag allows it.
 - Tabs (`@/components/ui/tabs`) are kept in the URL, and only the open tab's data loads.
