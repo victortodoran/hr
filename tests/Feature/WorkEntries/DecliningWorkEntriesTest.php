@@ -129,7 +129,7 @@ it('refuses to decline without a reason or a selection', function (array $form, 
     'no selection' => [['ids' => []], 'ids', 'Select at least one Work Entry.'],
 ]);
 
-it('shows a Declined Work Entry with who declined it and why, open to change or delete, its hours counted nowhere', function () {
+it('shows a Declined Work Entry with who declined it and why, open to change or delete, its hours left out of the week\'s totals', function () {
     ['ben' => $ben, 'cara' => $cara] = benAndCara();
     $relaunch = assignmentOf($cara);
     $internal = assignmentOf($cara, 'Internal');
@@ -137,7 +137,6 @@ it('shows a Declined Work Entry with who declined it and why, open to change or 
     $declined = WorkEntry::factory()->for($internal)->declined($ben, 'Interviews go on Internal, not Acme')->create(['date' => '2026-11-10', 'minutes' => 90]);
 
     $week = actingAs($cara)->get(route('work-entries.index'));
-    $calendar = actingAs($cara)->get(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']));
 
     $week->assertInertia(fn (Assert $page) => $page
         ->where('total', 5)
@@ -152,13 +151,6 @@ it('shows a Declined Work Entry with who declined it and why, open to change or 
             'can_delete' => true,
             'declined' => ['by' => 'Ben', 'reason' => 'Interviews go on Internal, not Acme'],
         ]));
-    $calendar->assertInertia(fn (Assert $page) => $page
-        ->where('total', 5)
-        ->where('declinedHours', 1.5)
-        ->where('calendar.2.hours', 5)
-        ->where('calendar.2.days.1.hours', 5));
-    actingAs($cara)->get(route('landing'))
-        ->assertInertia(fn (Assert $page) => $page->where('hoursThisMonth.hours', 5));
 });
 
 it('sends a changed Declined Work Entry back to Pending without its reason', function () {

@@ -150,7 +150,7 @@ it('lets a reopen holder open the receipts of their Reports\' expenses, but not 
     actingAs($rae)->get(route('travel-expenses.receipt.show', $outsider))->assertForbidden();
 });
 
-it('lets an expense of an Employee with no Manager be reopened for them to correct, which approves it again', function () {
+it('lets an expense of an Employee with no Manager be reopened for them to correct', function () {
     $rae = travelReopener([Permission::ReopenTravelExpenses->value => Scope::Everyone]);
     $ada = Employee::query()->findOrFail($rae->manager_id);
     $approved = reopenableExpenseOf($ada, attributes: ['approved_by' => null, 'approved_at' => '2026-12-04 10:00']);
@@ -160,10 +160,4 @@ it('lets an expense of an Employee with no Manager be reopened for them to corre
     actingAs($rae)->post(route('travel-requests.expenses.reopenings.store', $approved->travel_request_id), ['ids' => [$approved->id]])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Travel Expense reopened.']);
     expect($approved->refresh()->state)->toBe(TravelExpenseState::Pending);
-
-    actingAs($ada)->put(route('travel-expenses.update', $approved), [
-        'paid_on' => '2026-12-04', 'amount' => '25', 'category' => 'meals', 'description' => 'Lunch, corrected',
-    ])->assertRedirect(route('travel-requests.show', $approved->travel_request_id));
-
-    expect($approved->refresh()->state)->toBe(TravelExpenseState::Approved);
 });

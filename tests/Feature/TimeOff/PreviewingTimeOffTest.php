@@ -96,8 +96,10 @@ it('refuses invalid or incomplete dates', function (array $input, string $field,
     'last date before the first' => [['last_date' => '2026-12-11'], 'last_date', 'The last date field must be a date after or equal to first date.'],
     'no first date' => [['first_date' => ''], 'first_date', 'The first date field is required.'],
     'no last date' => [['last_date' => ''], 'last_date', 'The last date field is required.'],
+    'first date not a date' => [['first_date' => '14 Dec 2026'], 'first_date', 'The first date field must match the format Y-m-d.'],
     'last date not a date' => [['last_date' => '2026-12'], 'last_date', 'The last date field must match the format Y-m-d.'],
     'neither Paid nor Unpaid' => [['is_paid' => ''], 'is_paid', 'Choose Paid or Unpaid Time Off.'],
+    'not Paid or Unpaid' => [['is_paid' => 'maybe'], 'is_paid', 'Choose Paid or Unpaid Time Off.'],
 ]);
 
 it('needs signing in to preview Time Off', function () {

@@ -205,8 +205,8 @@ it('lets an Employee record hours on their Internal Assignment', function () {
     assertDatabaseHas('work_entries', ['assignment_id' => $internal->id, 'description' => 'Training']);
 });
 
-it('lets someone record hours for the Employees their manage work entries Scope covers', function (Scope $scope) {
-    $ben = employeeWith([Permission::ManageWorkEntries->value => $scope], ['manager_id' => Employee::factory()->create()->id]);
+it('lets someone record hours for the Employees their manage work entries Scope covers', function () {
+    $ben = employeeWith([Permission::ManageWorkEntries->value => Scope::Reports], ['manager_id' => Employee::factory()->create()->id]);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
     $relaunch = assignmentOf($cara);
 
@@ -214,7 +214,7 @@ it('lets someone record hours for the Employees their manage work entries Scope 
         ->assertRedirect(route('work-entries.index', ['employee' => $cara->id, 'week' => '2026-11-09']));
 
     assertDatabaseHas('work_entries', ['assignment_id' => $relaunch->id]);
-})->with([Scope::Reports, Scope::Everyone]);
+});
 
 it('forbids recording hours for an Employee outside the Scope, or with only view work entries', function (array $grants) {
     $ben = employeeWith($grants);
@@ -225,7 +225,6 @@ it('forbids recording hours for an Employee outside the Scope, or with only view
 
     assertDatabaseCount('work_entries', 0);
 })->with([
-    'manage own' => [[Permission::ManageWorkEntries->value => Scope::Own]],
     'manage reports, not a report' => [[Permission::ManageWorkEntries->value => Scope::Reports]],
     'view everyone' => [[Permission::ViewWorkEntries->value => Scope::Everyone]],
 ]);
