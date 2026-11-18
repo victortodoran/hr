@@ -7,14 +7,15 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { formatDateRange } from '@/lib/dates';
 import { show } from '@/routes/travel-requests';
-import type { TableColumn, TravelHistory, TravelRequestSummary } from '@/types';
+import type { TableColumn, TravelHistory } from '@/types';
 
 /**
  * An Employee's Travel Requests under Upcoming and Past, one short row
- * each whose destination opens the Travel Request's page, as does an
- * "Expenses" button with their total on those that take Travel Expenses.
- * On a phone each row stacks into two lines: destination and dates, then
- * Client, expenses and state.
+ * each: the destination, which opens the Travel Request's page, its
+ * Client, what was entered and what was approved of its Travel Expenses,
+ * its state, and an "Expenses" button to its page on those that take
+ * Travel Expenses. On a phone each row stacks into two lines: destination
+ * and dates, then the rest.
  */
 defineProps<{
     travelRequests: TravelHistory;
@@ -25,18 +26,11 @@ defineProps<{
 const columns: TableColumn[] = [
     { key: 'travel', label: 'Travel Request' },
     { key: 'client', label: 'Client', minor: true },
-    { key: 'expenses', label: 'Expenses', align: 'end', minor: true },
+    { key: 'entered', label: 'Entered', align: 'end', minor: true },
+    { key: 'approved', label: 'Approved', align: 'end', minor: true },
     { key: 'state', label: 'State', align: 'end', minor: true },
+    { key: 'actions', label: 'Actions', align: 'end', minor: true },
 ];
-
-/**
- * What the Expenses button says after "Expenses ·": the total, or "none"
- * while nothing counts towards it. Only asked for rows that take Travel
- * Expenses, whose total is always there.
- */
-function expensesLabel(row: TravelRequestSummary): string | null {
-    return row.counted_expenses > 0 ? row.expense_total : 'none';
-}
 
 const sections = [
     { key: 'upcoming', title: 'Upcoming' },
@@ -71,50 +65,63 @@ const sections = [
                         class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground sm:hidden"
                     >
                         <span v-if="row.client">{{ row.client }} ·</span>
-                        <Button
+                        <span
                             v-if="row.expense_total !== null"
-                            variant="outline"
-                            size="sm"
-                            as-child
+                            class="tabular-nums"
+                            >Entered {{ row.expense_total }} · Approved
+                            {{ row.approved_total }}</span
                         >
-                            <Link :href="show(row.id)" class="tabular-nums"
-                                >Expenses · {{ expensesLabel(row) }}</Link
-                            >
-                        </Button>
-                        <span v-else>—</span>
                         <span
                             v-if="row.declined_expenses > 0"
                             class="text-destructive"
                             >{{ row.declined_expenses }} declined</span
                         >
                         <StatusBadge :state="row.state" />
+                        <Button
+                            v-if="row.expense_total !== null"
+                            variant="outline"
+                            size="sm"
+                            as-child
+                        >
+                            <Link :href="show(row.id)" class="text-foreground"
+                                >Expenses</Link
+                            >
+                        </Button>
                     </div>
                 </template>
                 <template #cell-client="{ row }">
                     {{ row.client ?? '—' }}
                 </template>
-                <template #cell-expenses="{ row }">
+                <template #cell-entered="{ row }">
+                    <span class="whitespace-nowrap tabular-nums">{{
+                        row.expense_total ?? '—'
+                    }}</span>
+                    <span
+                        v-if="row.declined_expenses > 0"
+                        class="block whitespace-nowrap text-destructive"
+                        >{{ row.declined_expenses }} declined</span
+                    >
+                </template>
+                <template #cell-approved="{ row }">
+                    <span class="whitespace-nowrap tabular-nums">{{
+                        row.approved_total ?? '—'
+                    }}</span>
+                </template>
+                <template #cell-state="{ row }">
+                    <StatusBadge :state="row.state" />
+                </template>
+                <template #head-actions>
+                    <span class="sr-only">Actions</span>
+                </template>
+                <template #cell-actions="{ row }">
                     <Button
                         v-if="row.expense_total !== null"
                         variant="outline"
                         size="sm"
                         as-child
                     >
-                        <Link
-                            :href="show(row.id)"
-                            class="whitespace-nowrap tabular-nums"
-                            >Expenses · {{ expensesLabel(row) }}</Link
-                        >
+                        <Link :href="show(row.id)">Expenses</Link>
                     </Button>
-                    <span v-else>—</span>
-                    <span
-                        v-if="row.declined_expenses > 0"
-                        class="mt-1 block whitespace-nowrap text-destructive"
-                        >{{ row.declined_expenses }} declined</span
-                    >
-                </template>
-                <template #cell-state="{ row }">
-                    <StatusBadge :state="row.state" />
                 </template>
                 <template #empty>
                     <EmptyState
