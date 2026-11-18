@@ -56,7 +56,7 @@ databases() {
 case $command in
     add)
         if [ -n "$(databases)" ]; then
-            echo "$database already exists, perhaps for a branch with a similar name; pick another branch name." >&2
+            echo "$dev_database or $database already exists, perhaps for a branch with a similar name; pick another branch name." >&2
             exit 1
         fi
 
@@ -64,13 +64,15 @@ case $command in
         git -C "$main" worktree add --quiet -b "$branch" "$path" origin/main
         # An EXIT trap rather than ERR, which macOS's bash 3.2 skips when a subshell fails.
         ready=false
-        trap '$ready || { echo "Setup failed; undoing the worktree, branch and databases." >&2; git -C "$main" worktree remove --force "$path"; git -C "$main" branch -qD "$branch"; for name in $(databases); do psql_admin -c "drop database \"$name\""; done; }' EXIT
+        trap '$ready || { echo "Setup failed; undoing the databases, worktree and branch." >&2; for name in $(databases); do psql_admin -c "drop database \"$name\" with (force)" || true; done; git -C "$main" worktree remove --force "$path" || true; git -C "$main" branch -qD "$branch" || true; }' EXIT
 
         # A copy of the main dev database needs nobody else connected to it.
-        if ! psql_admin -c "create database \"$dev_database\" template \"$main_database\"" 2> /dev/null; then
-            echo "$main_database is in use, so $dev_database starts empty and migrated instead of a copy." >&2
+        dev_origin="a copy of $main_database"
+        if ! copy_error=$(psql_admin -c "create database \"$dev_database\" template \"$main_database\"" 2>&1); then
+            echo "Couldn't copy $main_database ($copy_error), so $dev_database starts empty and migrated, with no demo data." >&2
             psql_admin -c "create database \"$dev_database\""
             fresh_dev_database=true
+            dev_origin="empty and migrated"
         fi
         sed -e "s/^DB_DATABASE=.*/DB_DATABASE=$dev_database/" "$main/.env" > "$path/.env"
         (
@@ -86,14 +88,14 @@ case $command in
         ready=true
 
         echo "Worktree ready: $path"
-        echo "Its .env uses its own dev database, $dev_database, a copy of $main_database."
+        echo "Its .env uses its own dev database, $dev_database, $dev_origin."
         echo "Run tests and pushes there with: DB_DATABASE=$database"
         ;;
     remove)
         names=$(databases)
         git -C "$main" worktree remove "$path"
         for name in $names; do
-            psql_admin -c "drop database \"$name\""
+            psql_admin -c "drop database \"$name\" with (force)"
         done
 
         git -C "$main" fetch --quiet origin
