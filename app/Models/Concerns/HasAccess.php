@@ -39,7 +39,7 @@ trait HasAccess
     }
 
     /**
-     * Whether the Employee may open My Work Entries: they may see their own,
+     * Whether the Employee may open the Work page: they may see their own,
      * as the policy decides.
      */
     public function canSeeWorkEntries(): bool

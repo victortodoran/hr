@@ -84,7 +84,7 @@ class PerformanceEvaluationController extends Controller
      * viewer may give, change or remove them and their Outcomes. Outcomes
      * and the summary are left out for anyone but the effective Manager
      * until it is Completed. Whether it is the viewer's
-     * own sets where its breadcrumbs lead: My Performance Evaluations, or
+     * own sets where its breadcrumbs lead: the Performance page, or
      * the Performance Evaluations page for the year.
      */
     public function show(PerformanceEvaluation $performanceEvaluation, #[CurrentUser] Employee $actor): Response

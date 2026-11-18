@@ -77,7 +77,7 @@ function describe(month: MonthOfHours): string {
                                     },
                                 })
                             "
-                            >Open My Work Entries</Link
+                            >Open Work</Link
                         >
                     </Button>
                 </template>

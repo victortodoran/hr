@@ -52,7 +52,7 @@ const props = defineProps<{
     waitingForYou: ApprovalsWaiting | null;
 }>();
 
-/** My Work Entries on this month. */
+/** The Work page on this month. */
 const thisMonthsWorkEntries = computed(() =>
     workEntries({ query: { month: props.hoursThisMonth?.month ?? '' } }),
 );
@@ -153,7 +153,7 @@ const thisMonthsWorkEntries = computed(() =>
                         <template #action>
                             <Button variant="outline" as-child>
                                 <Link :href="thisMonthsWorkEntries"
-                                    >Open My Work Entries</Link
+                                    >Open Work</Link
                                 >
                             </Button>
                         </template>
@@ -174,7 +174,7 @@ const thisMonthsWorkEntries = computed(() =>
                         <Link
                             :href="thisMonthsWorkEntries"
                             class="inline-block underline underline-offset-4"
-                            >Open My Work Entries</Link
+                            >Open Work</Link
                         >
                     </div>
                 </CardContent>

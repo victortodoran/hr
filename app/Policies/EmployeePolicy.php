@@ -23,7 +23,7 @@ class EmployeePolicy
     }
 
     /**
-     * Every Employee may always open their own page, My Page, whatever their
+     * Every Employee may always open their own page, Profile, whatever their
      * Roles, as it always shows their Reporting Chain. Opening anyone else's
      * needs something on it the viewer may see: their record, their
      * Assignments (which seeing their Pay also allows), their Time Off and

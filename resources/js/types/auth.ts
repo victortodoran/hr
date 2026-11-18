@@ -15,7 +15,7 @@ export type Auth = {
     can: string[];
     /** Whether the Employees list holds more than the signed-in Employee. */
     canListEmployees: boolean;
-    /** Whether the signed-in Employee may see any Work Entries, for My Work Entries. */
+    /** Whether the signed-in Employee may see any Work Entries, for the Work page. */
     canSeeWorkEntries: boolean;
     /** Whether the signed-in Employee may see Work Entries of anyone besides themselves, for the Work Entries page. */
     canSeeWorkEntryList: boolean;

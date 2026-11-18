@@ -10,7 +10,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * The My Performance Evaluations page: the signed-in Employee's own
+ * The Performance page: the signed-in Employee's own
  * Performance Evaluations, which every Employee sees with no Permission
  * needed.
  */
