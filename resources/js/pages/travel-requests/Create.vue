@@ -92,6 +92,8 @@ function request(): void {
             <div class="grid gap-2">
                 <Label for="travel-assignment">Assignment</Label>
                 <Select
+                    name="assignment_id"
+                    required
                     :model-value="form.assignment_id"
                     @update:model-value="
                         form.assignment_id = $event ? String($event) : ''
