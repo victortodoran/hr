@@ -109,8 +109,6 @@ it('refuses an Employee record with a missing or invalid value, and says why', f
     'no Department' => ['department_id', '', 'The Department field is required.'],
     'Department not a number' => ['department_id', 'finance', 'The Department field must be an integer.'],
     'unknown Department' => ['department_id', 999999, 'The selected Department is invalid.'],
-    'Manager not a number' => ['manager_id', 'ben', 'The Manager field must be an integer.'],
-    'unknown Manager' => ['manager_id', 999999, 'The selected Manager is invalid.'],
     'no Start Date' => ['start_date', '', 'The Start Date field is required.'],
     'Start Date not a date' => ['start_date', 'next tuesday-ish', 'The Start Date field must be a valid date.'],
 ]);

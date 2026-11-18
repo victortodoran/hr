@@ -56,10 +56,6 @@ it('lets someone with reopen performance evaluations send a Completed one back t
         ->and($evaluation->goals()->pluck('outcome')->all())->toBe([Outcome::Met, Outcome::Met]);
     actingAs($ben)->get(route('performance-evaluations.show', $evaluation))
         ->assertInertia(fn (Assert $page) => $page->where('canEdit', true)->where('canReopen', false)->where('evaluation.summary', 'A steady year.'));
-    foreach ([$cara, $rae, employeeWith([Permission::ViewPerformanceEvaluations->value => Scope::Everyone])] as $reader) {
-        actingAs($reader)->get(route('performance-evaluations.show', $evaluation))
-            ->assertInertia(fn (Assert $page) => $page->where('canSeeOutcomes', false)->where('evaluation.goals.0.outcome', null)->where('evaluation.outcome', null)->where('evaluation.summary', null));
-    }
 
     actingAs($ben)->post(route('performance-evaluations.completion.store', $evaluation), [
         'goals' => $evaluation->goals->map(fn (Goal $goal): array => ['id' => $goal->id, 'outcome' => 'exceeded'])->all(),

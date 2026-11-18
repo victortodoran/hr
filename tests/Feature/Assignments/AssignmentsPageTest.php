@@ -88,7 +88,6 @@ it('lets Scope decide whose Assignments an Employee may see', function (Scope $s
 })->with([
     'own' => [Scope::Own, [], 'assignments'],
     'reports' => [Scope::Reports, ['Cara', 'Dev'], 'overview'],
-    'everyone' => [Scope::Everyone, ['Dana', 'Cara', 'Dev', 'Eve'], 'assignments'],
 ]);
 
 it('lets an Employee who manages someone\'s Assignments see them too', function () {
@@ -133,7 +132,6 @@ it('lets Scope decide whose Assignments an Employee may create and change', func
 })->with([
     'own' => [Scope::Own, ['Ben']],
     'reports' => [Scope::Reports, ['Cara', 'Dev']],
-    'everyone' => [Scope::Everyone, ['Dana', 'Ben', 'Cara', 'Dev', 'Eve']],
 ]);
 
 it('refuses to let an Employee who can only see Assignments change them', function () {

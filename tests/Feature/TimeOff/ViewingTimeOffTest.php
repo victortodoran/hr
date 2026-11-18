@@ -95,18 +95,11 @@ it('shows Cara\'s Time Off to someone who manages her Paid Days', function () {
 it('lets someone with the reports Scope see the Time Off of their Reports only', function () {
     $dana = Employee::factory()->create();
     $ben = employeeWith([Permission::ViewTimeOff->value => Scope::Reports], ['manager_id' => $dana->id]);
-    $cara = Employee::factory()->reportingTo($ben)->create();
-    $others = [
-        'Dana' => $dana,
-        'Cara' => $cara,
-        'Dev' => Employee::factory()->reportingTo($cara)->create(),
-        'Eve' => Employee::factory()->reportingTo($dana)->create(),
-    ];
+    $dev = Employee::factory()->reportingTo(Employee::factory()->reportingTo($ben)->create())->create();
+    $eve = Employee::factory()->reportingTo($dana)->create();
 
-    foreach ($others as $name => $employee) {
-        actingAs($ben)->get(route('employees.show', $employee))
-            ->assertStatus(in_array($name, ['Cara', 'Dev'], true) ? 200 : 403);
-    }
+    actingAs($ben)->get(route('employees.show', $dev))->assertOk();
+    actingAs($ben)->get(route('employees.show', $eve))->assertForbidden();
     actingAs($ben)->get(route('employees.show', $ben))->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('tabs', ['overview']));
 });

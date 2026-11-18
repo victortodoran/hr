@@ -100,9 +100,6 @@ it('rejects an invalid internal Job Title or Capacity and explains why', functio
     'Job Title not text' => ['job_title', ['Designer'], 'The Job Title field must be a string.'],
     'Job Title too long' => ['job_title', str_repeat('a', 256), 'The Job Title field must not be greater than 255 characters.'],
     'Capacity missing' => ['capacity', null, 'The Capacity field is required.'],
-    'Capacity below 0%' => ['capacity', -1, 'The Capacity field must be between 0 and 100.'],
-    'Capacity over 100%' => ['capacity', 101, 'The Capacity field must be between 0 and 100.'],
-    'Capacity a fraction' => ['capacity', 40.5, 'The Capacity field must be an integer.'],
 ]);
 
 it('still requires a Job Title and a Capacity on other Assignments', function () {

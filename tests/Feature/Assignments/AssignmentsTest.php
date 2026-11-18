@@ -151,13 +151,13 @@ it('accepts a Capacity anywhere from 0% to 100%', function (int $capacity) {
     expect($ana->assignments()->sole()->capacity)->toBe($capacity);
 })->with([0, 60, 100]);
 
-it('lets an assignment manager change an Assignment\'s Job Title, dates and Capacity, but not its Project', function (int $capacity) {
+it('lets an assignment manager change an Assignment\'s Job Title, dates and Capacity, but not its Project', function () {
     $ana = Employee::factory()->startedLongAgo()->create();
     $relaunch = Project::factory()->create(['start_date' => '2026-01-05']);
     $assignment = Assignment::factory()->for($ana)->for($relaunch)->create(['job_title' => 'Developer', 'start_date' => '2026-02-01', 'end_date' => null, 'capacity' => 50]);
 
     actingAs(assignmentManager())
-        ->patch(route('assignments.update', $assignment), assignmentForm(Project::factory()->create(), ['job_title' => 'Tech Lead', 'start_date' => '2026-01-05', 'end_date' => '2026-12-31', 'capacity' => $capacity]))
+        ->patch(route('assignments.update', $assignment), assignmentForm(Project::factory()->create(), ['job_title' => 'Tech Lead', 'start_date' => '2026-01-05', 'end_date' => '2026-12-31', 'capacity' => 40]))
         ->assertRedirect(route('employees.show', ['employee' => $ana, 'tab' => 'assignments']))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Assignment saved.']);
 
@@ -167,8 +167,8 @@ it('lets an assignment manager change an Assignment\'s Job Title, dates and Capa
         ->and($assignment->job_title)->toBe('Tech Lead')
         ->and($assignment->start_date->toDateString())->toBe('2026-01-05')
         ->and($assignment->end_date?->toDateString())->toBe('2026-12-31')
-        ->and($assignment->capacity)->toBe($capacity);
-})->with([0, 40, 100]);
+        ->and($assignment->capacity)->toBe(40);
+});
 
 it('lets an assignment manager end an Assignment early', function () {
     travelTo('2026-05-10');

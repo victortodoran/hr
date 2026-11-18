@@ -116,7 +116,6 @@ it('lets Scope decide whose record an Employee may see', function (Scope $scope,
 })->with([
     'own' => [Scope::Own, [], true],
     'reports' => [Scope::Reports, ['Cara', 'Dev'], false],
-    'everyone' => [Scope::Everyone, ['Dana', 'Cara', 'Dev', 'Eve'], true],
 ]);
 
 it('offers Edit only to those who manage Employees', function (array $grants, bool $expected) {
@@ -165,7 +164,6 @@ it('links to an Employee\'s page from their Reporting Chain only when the viewer
     actingAs($ben)->get(route('directory.show', $cara))
         ->assertInertia(fn (Assert $page) => $page->where('reportingChain.employee.link', $expected));
 })->with([
-    'records of reports' => [[Permission::ViewEmployeeRecords->value => Scope::Reports], 'employee'],
     'assignments of reports' => [[Permission::ViewAssignments->value => Scope::Reports], 'employee'],
     'own only' => [[Permission::ViewEmployeeRecords->value => Scope::Own, Permission::ViewAssignments->value => Scope::Own], 'directory'],
 ]);

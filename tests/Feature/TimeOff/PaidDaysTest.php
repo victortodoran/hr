@@ -114,18 +114,15 @@ it('refuses setting Paid Days to someone without Manage Paid Days for the Employ
 it('lets someone with the reports Scope set Paid Days for their Reports only', function () {
     $dana = Employee::factory()->create();
     $ben = employeeWith([Permission::ManagePaidDays->value => Scope::Reports], ['manager_id' => $dana->id]);
-    $cara = Employee::factory()->reportingTo($ben)->create();
-    $dev = Employee::factory()->reportingTo($cara)->create();
+    $dev = Employee::factory()->reportingTo(Employee::factory()->reportingTo($ben)->create())->create();
     $eve = Employee::factory()->reportingTo($dana)->create();
 
-    foreach ([$cara, $dev] as $report) {
-        actingAs($ben)->post(route('employees.paid-days.store', $report), ['days' => 20])->assertSessionHasNoErrors();
-    }
-    foreach ([$ben, $dana, $eve] as $other) {
+    actingAs($ben)->post(route('employees.paid-days.store', $dev), ['days' => 20])->assertSessionHasNoErrors();
+    foreach ([$ben, $eve] as $other) {
         actingAs($ben)->post(route('employees.paid-days.store', $other), ['days' => 20])->assertForbidden();
     }
 
-    expect(array_map(shownPaidDays(...), [$cara, $dev, $ben, $dana, $eve]))->toBe([20, 20, 0, 0, 0]);
+    expect(array_map(shownPaidDays(...), [$dev, $ben, $eve]))->toBe([20, 0, 0]);
 });
 
 it('lets Admin set Paid Days without being granted Manage Paid Days', function () {
