@@ -88,11 +88,21 @@ it('gives Travel Requests in every state, on Client and Internal Assignments, sh
             && ! $travel->employee->timeOff()->standing()->overlapping($travel->first_date, $travel->last_date)->exists()))->toBeTrue();
 });
 
+it('gives Ben a year of travel, a dozen trips behind him and some ahead, each within its Assignment\'s dates', function () {
+    seed(DemoSeeder::class);
+    $bensTravel = Employee::query()->where('name', 'Ben Ionescu')->sole()->travelRequests()->with('assignment')->get();
+
+    expect($bensTravel->filter(fn (TravelRequest $travel): bool => $travel->last_date->isPast())->count())->toBeGreaterThanOrEqual(12)
+        ->and($bensTravel->filter(fn (TravelRequest $travel): bool => $travel->first_date->isFuture())->count())->toBeGreaterThanOrEqual(4)
+        ->and($bensTravel->every(fn (TravelRequest $travel): bool => ! $travel->first_date->isBefore($travel->assignment->start_date)
+            && ($travel->assignment->end_date === null || ! $travel->last_date->isAfter($travel->assignment->end_date))))->toBeTrue();
+});
+
 it('gives Travel Expenses only on Travel Requests that take them, each with a PDF receipt on the receipt disk', function () {
     seed(DemoSeeder::class);
     $expenses = TravelExpense::query()->with('travelRequest')->get();
 
-    expect($expenses->pluck('state')->unique()->values()->all())->toEqualCanonicalizing([TravelExpenseState::Pending, TravelExpenseState::Approved, TravelExpenseState::Declined])
+    expect($expenses->pluck('state')->unique()->values()->all())->toEqualCanonicalizing(TravelExpenseState::cases())
         ->and($expenses->every(fn (TravelExpense $expense): bool => $expense->travelRequest->takesExpenses()
             && ! $expense->paid_on->isFuture()
             && str_starts_with((string) Storage::disk(TravelExpense::RECEIPT_DISK)->get($expense->receipt_path), '%PDF-')))->toBeTrue();
