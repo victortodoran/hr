@@ -22,6 +22,7 @@ enum Permission: string
     case ManagePaidDays = 'manage-paid-days';
     case ViewTravel = 'view-travel';
     case ReopenTravelExpenses = 'reopen-travel-expenses';
+    case ViewPerformanceEvaluations = 'view-performance-evaluations';
     case ViewDirectory = 'view-directory';
     case ViewProjects = 'view-projects';
     case ManageProjects = 'manage-projects';
@@ -41,7 +42,8 @@ enum Permission: string
     /**
      * The area of the HR system the Permission is about, as the Roles page
      * groups them: Employees, Assignments, Pay, Work entries, Time off,
-     * Travel, Organization or Administration, in the Permissions' own order.
+     * Travel, Performance, Organization or Administration, in the
+     * Permissions' own order.
      */
     public function group(): string
     {
@@ -52,6 +54,7 @@ enum Permission: string
             self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries => 'Work entries',
             self::ViewTimeOff, self::ManagePaidDays => 'Time off',
             self::ViewTravel, self::ReopenTravelExpenses => 'Travel',
+            self::ViewPerformanceEvaluations => 'Performance',
             self::ViewDirectory, self::ViewProjects, self::ManageProjects, self::ManageClients, self::ManageDepartments => 'Organization',
             self::ManageRoles, self::ManageCompany => 'Administration',
         };
@@ -75,7 +78,8 @@ enum Permission: string
             self::ViewTimeOff,
             self::ManagePaidDays,
             self::ViewTravel,
-            self::ReopenTravelExpenses => true,
+            self::ReopenTravelExpenses,
+            self::ViewPerformanceEvaluations => true,
             default => false,
         };
     }
@@ -131,5 +135,17 @@ enum Permission: string
     public static function seeingTravel(): array
     {
         return [self::ViewTravel, self::ReopenTravelExpenses];
+    }
+
+    /**
+     * The Permissions that let someone read an Employee's Performance
+     * Evaluations without writing them. The one list the policy, the
+     * Performance Evaluations page and the flags use.
+     *
+     * @return list<Permission>
+     */
+    public static function seeingPerformanceEvaluations(): array
+    {
+        return [self::ViewPerformanceEvaluations];
     }
 }

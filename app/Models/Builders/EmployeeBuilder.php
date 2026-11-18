@@ -135,6 +135,23 @@ class EmployeeBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to the Employees whose Performance Evaluations the
+     * given Employee may open from the Performance Evaluations page: those
+     * whose effective Manager they are, and those a Permission for reading
+     * them (Permission::seeingPerformanceEvaluations()) reaches, leaving
+     * out the viewer, whose own are on My Performance Evaluations.
+     */
+    public function withPerformanceEvaluationsVisibleTo(Employee $viewer): static
+    {
+        return $this->scoped(function () use ($viewer): void {
+            $this->whereKeyNot($viewer->id)
+                ->where(fn (EmployeeBuilder $visible) => $visible
+                    ->whereIn('employees.id', Employee::query()->effectivelyManagedBy($viewer)->select('employees.id'))
+                    ->orWhere(fn (EmployeeBuilder $reached) => $viewer->limitToReachOf($reached, Permission::seeingPerformanceEvaluations())));
+        });
+    }
+
+    /**
      * Limit the query to Employees with something only their Manager can
      * settle: Pending Work Entries, Time Off, Travel Requests or Travel
      * Expenses to decide, or an Open Performance Evaluation to complete.
