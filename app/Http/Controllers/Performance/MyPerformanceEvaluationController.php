@@ -18,14 +18,15 @@ class MyPerformanceEvaluationController extends Controller
 {
     /**
      * Show the Employee's Performance Evaluations by year, newest first,
-     * with their state, how many Goals each holds and, once Completed,
-     * the Outcome of the whole.
+     * with their state, how many Goals each holds, how many of them are
+     * At Risk while Open and, once Completed, the Outcome of the whole.
      */
     public function __invoke(#[CurrentUser] Employee $actor): Response
     {
         return Inertia::render('performance-evaluations/Mine', [
             'evaluations' => $actor->performanceEvaluations()
                 ->withCount('goals')
+                ->withAtRiskGoalsCount()
                 ->orderByDesc('year')
                 ->get()
                 ->map(fn (PerformanceEvaluation $evaluation): array => [
@@ -33,6 +34,7 @@ class MyPerformanceEvaluationController extends Controller
                     'year' => $evaluation->year,
                     'state' => $evaluation->state->value,
                     'goals_count' => $evaluation->goals_count,
+                    'at_risk_count' => $evaluation->openAtRiskGoalsCount(),
                     'outcome' => $evaluation->completedOutcome()?->value,
                 ])
                 ->all(),

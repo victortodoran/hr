@@ -47,8 +47,8 @@ it('shows every Employee only their own Performance Evaluations, newest first, w
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/Mine')
             ->where('evaluations', [
-                ['id' => $current->id, 'year' => 2026, 'state' => 'open', 'goals_count' => 2, 'outcome' => null],
-                ['id' => $older->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 0, 'outcome' => null],
+                ['id' => $current->id, 'year' => 2026, 'state' => 'open', 'goals_count' => 2, 'at_risk_count' => 0, 'outcome' => null],
+                ['id' => $older->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 0, 'at_risk_count' => 0, 'outcome' => null],
             ]));
 });
 
@@ -105,7 +105,7 @@ it('lists, for the year, the Employees the viewer effectively manages who work t
             ->where('year', 2026)
             ->where('years', [2026, 2025, 2024, 2023, 2022, 2021, 2020])
             ->where('employees.data', [
-                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3, 'outcome' => null], 'can_start' => false],
+                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3, 'at_risk_count' => 0, 'outcome' => null], 'can_start' => false],
                 ['id' => $dan->id, 'name' => 'Dan', 'evaluation' => null, 'can_start' => true],
             ]));
 });

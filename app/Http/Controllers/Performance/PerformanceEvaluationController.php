@@ -44,7 +44,7 @@ class PerformanceEvaluationController extends Controller
             'employees' => PageWithin::paginate(Employee::query()
                 ->withPerformanceEvaluationsVisibleTo($actor)
                 ->employedDuring($year)
-                ->with(['performanceEvaluations' => fn ($evaluations) => $evaluations->where('year', $year)->withCount('goals')]) // @pest-mutate-ignore (eager loading only saves queries; the row reads the same year either way)
+                ->with(['performanceEvaluations' => fn ($evaluations) => $evaluations->where('year', $year)->withCount('goals')->withAtRiskGoalsCount()]) // @pest-mutate-ignore (eager loading only saves queries; the row reads the same year either way)
                 ->orderBy('name')
                 ->orderBy('id'), 25)
                 ->withQueryString()
@@ -58,6 +58,7 @@ class PerformanceEvaluationController extends Controller
                             'id' => $evaluation->id,
                             'state' => $evaluation->state->value,
                             'goals_count' => $evaluation->goals_count,
+                            'at_risk_count' => $evaluation->openAtRiskGoalsCount(),
                             'outcome' => $evaluation->completedOutcome()?->value,
                         ],
                         'can_start' => $evaluation === null && $year === today()->year && $actor->can('create', [PerformanceEvaluation::class, $employee]),

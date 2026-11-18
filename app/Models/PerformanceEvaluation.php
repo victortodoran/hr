@@ -4,8 +4,10 @@ namespace App\Models;
 
 use App\Enums\Outcome;
 use App\Enums\PerformanceEvaluationState;
+use App\Models\Builders\PerformanceEvaluationBuilder;
 use Database\Factories\PerformanceEvaluationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,8 +33,10 @@ use Illuminate\Support\Carbon;
  * @property-read Employee $employee
  * @property-read Collection<int, Goal> $goals
  * @property-read int|null $goals_count
+ * @property-read int|null $at_risk_goals_count
  */
 #[Fillable(['year'])] // @pest-mutate-ignore (class attributes never show as covered)
+#[UseEloquentBuilder(PerformanceEvaluationBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
 class PerformanceEvaluation extends Model
 {
     /** @use HasFactory<PerformanceEvaluationFactory> */
@@ -84,6 +88,15 @@ class PerformanceEvaluation extends Model
     public function completedOutcome(): ?Outcome
     {
         return $this->isCompleted() ? $this->outcome : null;
+    }
+
+    /**
+     * How many of its Goals are At Risk as the lists show it: only while
+     * Open, from at_risk_goals_count.
+     */
+    public function openAtRiskGoalsCount(): int
+    {
+        return $this->isCompleted() ? 0 : (int) $this->at_risk_goals_count;
     }
 
     /**
