@@ -42,7 +42,7 @@ Point it at this doc for the rest.
    To see a page with data, sign in on hr.test as a demo user from `DemoSeeder`. Run `migrate:fresh --seed` only inside a worktree, on its own dev database; in the main checkout it wipes the shared `hr` database, so ask first.
 3. Write feature tests through HTTP and Inertia prop assertions. When a change is mostly UI (a page, dialog, tab or layout), also add or extend a browser test in `tests/Browser` that opens it and asserts no JavaScript errors; browser tests run against built assets, so run `npm run build` before running one on its own.
 4. Run `npm run build` when routes or controllers changed (`composer ci:check` also builds first), `vendor/bin/pint --dirty --format agent` after PHP edits, and `npm run check:fix` after JS or Vue edits.
-5. `composer ci:check` passes.
+5. `composer ci:check` passes. Run it on the committed, clean tree and the push hook won't rerun the checks on the commit they passed on.
 6. When the demo should show the feature, update the DemoSeeder and its test.
 7. Commit in the repo's style: subject line, wrapped body saying what and why, `Closes #<n>`, then the attribution line.
 8. Run the code review as `CLAUDE.md` says, fix real findings, and recommit.

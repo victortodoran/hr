@@ -6,8 +6,12 @@
 
 zero=0000000000000000000000000000000000000000
 sends_commits=false
+stamp=$(cat "$(bin/ci-stamp.sh path)" 2>/dev/null)
+all_stamped=true
 while read -r local_ref local_sha remote_ref remote_sha; do
-    [ "$local_sha" != "$zero" ] && sends_commits=true
+    [ "$local_sha" = "$zero" ] && continue
+    sends_commits=true
+    [ "$local_sha" = "$stamp" ] || all_stamped=false
 done
 # Deleting a remote branch sends no code.
 [ "$sends_commits" = true ] || exit 0
@@ -15,6 +19,12 @@ done
 if ! git diff --quiet HEAD; then
     echo 'pre-push: commit or stash your changes first, so the checks run on what is pushed.'
     exit 1
+fi
+
+# ci:check stamps a commit only after passing on it with a clean tree.
+if [ "$all_stamped" = true ] && [ -z "$(git status --porcelain)" ]; then
+    echo "pre-push: composer ci:check already passed on $(git rev-parse --short "$stamp"); skipping the checks."
+    exit 0
 fi
 
 composer ci:check || exit 1
