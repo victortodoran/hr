@@ -75,6 +75,7 @@
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
+            "bin/ci-stamp.sh start",
             "npm run check",
             "@lint:callbacks",
             "@lint:migrations",
@@ -84,7 +85,8 @@
             "@lint:browser-tests",
             "npm run build -- --logLevel warn",
             "npm run types:check",
-            "@test"
+            "@test",
+            "bin/ci-stamp.sh pass"
         ],
         "lint:callbacks": "bin/lint-callbacks.sh",
         "lint:migrations": "bin/lint-migrations.sh",
