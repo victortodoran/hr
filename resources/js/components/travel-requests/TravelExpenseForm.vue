@@ -2,6 +2,7 @@
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import TravelExpenseController from '@/actions/App/Http/Controllers/Travel/TravelExpenseController';
+import TravelExpenseReceiptController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReceiptController';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
@@ -24,9 +25,9 @@ import type {
 
 /**
  * Records a Travel Expense on a Travel Request, or, given one, changes it.
- * A new one always needs its receipt; a change keeps the receipt unless a
- * new file is chosen. Saving and cancelling both lead back to the Travel
- * Request's page.
+ * A new one always needs its receipt; a change shows the current receipt
+ * and keeps it unless a new file is chosen to replace it. Saving and
+ * cancelling both lead back to the Travel Request's page.
  */
 const props = defineProps<{
     today: string;
@@ -105,9 +106,11 @@ function save(): void {
                 <InputError :message="form.errors.amount" />
             </div>
         </div>
-        <div class="grid gap-2">
+        <div class="relative grid gap-2">
             <Label for="travel-expense-category">Category</Label>
             <Select
+                name="category"
+                required
                 :model-value="form.category"
                 @update:model-value="
                     form.category = $event
@@ -141,8 +144,20 @@ function save(): void {
             />
             <InputError :message="form.errors.description" />
         </div>
+        <div v-if="expense" class="grid gap-2 text-sm">
+            <p class="font-medium">Current receipt</p>
+            <a
+                :href="TravelExpenseReceiptController.show.url(expense.id)"
+                target="_blank"
+                rel="noopener"
+                class="w-fit underline underline-offset-4"
+                >Open the receipt</a
+            >
+        </div>
         <div class="grid gap-2">
-            <Label for="travel-expense-receipt">Receipt</Label>
+            <Label for="travel-expense-receipt">{{
+                isChange ? 'Replace receipt' : 'Receipt'
+            }}</Label>
             <input
                 id="travel-expense-receipt"
                 type="file"
@@ -153,7 +168,7 @@ function save(): void {
             />
             <p class="text-xs text-muted-foreground">
                 A JPG, PNG or PDF of up to 10 MB.<template v-if="isChange">
-                    Choose a file only to replace the receipt.</template
+                    Leave it empty to keep the current receipt.</template
                 >
             </p>
             <InputError :message="form.errors.receipt" />

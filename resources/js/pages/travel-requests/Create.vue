@@ -89,9 +89,11 @@ function request(): void {
         />
 
         <form class="space-y-6" @submit.prevent="request">
-            <div class="grid gap-2">
+            <div class="relative grid gap-2">
                 <Label for="travel-assignment">Assignment</Label>
                 <Select
+                    name="assignment_id"
+                    required
                     :model-value="form.assignment_id"
                     @update:model-value="
                         form.assignment_id = $event ? String($event) : ''

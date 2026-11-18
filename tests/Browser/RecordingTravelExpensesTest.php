@@ -64,6 +64,49 @@ it('adds an expense with its receipt to an Approved Travel Request opened from i
     Storage::disk(TravelExpense::RECEIPT_DISK)->assertExists($expense->receipt_path);
 });
 
+it('keeps the expense form from being sent while no category is chosen', function () {
+    $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
+    $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+    $receipt = tempnam(sys_get_temp_dir(), 'receipt').'.pdf';
+    file_put_contents($receipt, '%PDF-1.4 hotel');
+
+    actingAs($cara);
+
+    $page = visit(route('travel-requests.expenses.create', $berlin))
+        ->fill('#travel-expense-paid-on', '2026-12-05')
+        ->fill('#travel-expense-amount', '1990')
+        ->fill('#travel-expense-description', 'Hotel, three nights')
+        ->attach('#travel-expense-receipt', $receipt)
+        ->click('button[type="submit"]')
+        ->assertPathIs("/travel-requests/{$berlin->id}/expenses/create")
+        ->assertNoJavaScriptErrors();
+
+    expect($page->script('document.querySelector(\'select[name="category"]\').validity.valueMissing'))->toBeTrue();
+    expect(TravelExpense::query()->exists())->toBeFalse();
+});
+
+it('shows the current receipt when changing an expense, and saves a new file chosen to replace it', function () {
+    $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
+    $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+    $expense = TravelExpense::factory()->for($berlin)->create(['paid_on' => '2026-12-04']);
+    Storage::disk(TravelExpense::RECEIPT_DISK)->put($expense->receipt_path, '%PDF-1.4 old');
+    $receipt = tempnam(sys_get_temp_dir(), 'receipt').'.pdf';
+    file_put_contents($receipt, '%PDF-1.4 new');
+
+    actingAs($cara);
+
+    visit(route('travel-requests.expenses.edit', ['travelRequest' => $berlin, 'travelExpense' => $expense]))
+        ->assertSee('Current receipt')
+        ->assertSeeLink('Open the receipt')
+        ->attach('#travel-expense-receipt', $receipt)
+        ->click('Save')
+        ->assertSee('Travel Expense changed.')
+        ->assertPathIs("/travel-requests/{$berlin->id}")
+        ->assertNoJavaScriptErrors();
+
+    expect($expense->fresh()?->receipt_path)->not->toBe($expense->receipt_path);
+});
+
 it('filters the Travel Expenses page to Approved expenses, then reopens one and locks another', function () {
     $finn = employeeWith([Permission::ReopenTravelExpenses->value => Scope::Everyone, Permission::LockTravelExpenses->value => null], ['name' => 'Finn']);
     $cara = Employee::factory()->create(['name' => 'Cara']);

@@ -69,6 +69,25 @@ it('leaves the request travel page for the Travel list without making a Travel R
     expect(TravelRequest::query()->exists())->toBeFalse();
 });
 
+it('keeps the request travel form from being sent while no Assignment is chosen', function () {
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara']);
+    assignmentOf($cara);
+
+    actingAs($cara);
+
+    $page = visit(route('travel-requests.create'))
+        ->fill('#travel-destination', 'Berlin')
+        ->fill('#travel-first-date', '2026-12-03')
+        ->fill('#travel-last-date', '2026-12-05')
+        ->fill('#travel-purpose', 'Relaunch workshop')
+        ->click('Request')
+        ->assertPathIs('/travel-requests/create')
+        ->assertNoJavaScriptErrors();
+
+    expect($page->script('document.querySelector(\'select[name="assignment_id"]\').validity.valueMissing'))->toBeTrue();
+    expect(TravelRequest::query()->exists())->toBeFalse();
+});
+
 it('stacks each Travel Request row on a phone without scrolling sideways', function () {
     $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara']);
     TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
