@@ -77,6 +77,14 @@ it('lets the Employee and their effective Manager write Comments, shown oldest f
             ->where('canComment', true));
 });
 
+it('keeps the line breaks a Comment is written with', function () {
+    [, , $cara, $goal] = goalCommentLine();
+
+    actingAs($cara)->post(commentRoute($goal), ['body' => "Friday works.\nI'll bring a plan B."]);
+
+    expect($goal->comments()->sole()->body)->toBe("Friday works.\nI'll bring a plan B.");
+});
+
 it('requires a Comment\'s text', function () {
     [, , $cara, $goal] = goalCommentLine();
 

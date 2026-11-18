@@ -35,9 +35,10 @@ it('lets the Manager and the Employee talk on a Goal, and warns how many Comment
 
     visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
         ->assertSee('Auth is late, let\'s talk Friday.')
-        ->fill('#goal-comment', 'Friday works.')
+        ->fill('#goal-comment', "Friday works.\nI'll bring a plan B.")
         ->click('internal:role=button[name="Comment"s]')
         ->assertSee('Friday works.')
+        ->assertSee('I\'ll bring a plan B.')
         ->assertNoJavaScriptErrors();
 
     actingAs($ben);

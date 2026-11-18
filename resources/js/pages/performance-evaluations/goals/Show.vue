@@ -10,8 +10,8 @@ import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -198,7 +198,7 @@ setLayoutProps({
                         }}</span>
                         · {{ formatDateTime(comment.written_at) }}
                     </p>
-                    <p>{{ comment.body }}</p>
+                    <p class="whitespace-pre-line">{{ comment.body }}</p>
                 </li>
             </ol>
             <EmptyState
@@ -221,7 +221,7 @@ setLayoutProps({
             >
                 <div class="grid min-w-0 flex-1 gap-2">
                     <Label for="goal-comment" class="sr-only">Comment</Label>
-                    <Input
+                    <Textarea
                         id="goal-comment"
                         name="body"
                         placeholder="Write a Comment"
