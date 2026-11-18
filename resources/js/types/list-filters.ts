@@ -1,4 +1,4 @@
-import type { WorkEntryPeriod } from './work-entry';
+import type { Period } from './period';
 
 /**
  * A list's filters across Employees, as the server resolved them, on the
@@ -7,7 +7,7 @@ import type { WorkEntryPeriod } from './work-entry';
  * Period; a Project and a state, null for any.
  */
 export type ListFilters<State extends string> = {
-    period: WorkEntryPeriod;
+    period: Period;
     employee: number | 'all' | null;
     project: number | null;
     state: State | null;

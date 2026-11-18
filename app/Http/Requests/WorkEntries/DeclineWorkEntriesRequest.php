@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\WorkEntries;
 
+use App\Support\SelectedIds;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
@@ -16,7 +17,7 @@ class DeclineWorkEntriesRequest extends SelectedWorkEntriesRequest
     public function rules(): array
     {
         return [
-            ...self::idRules(),
+            ...SelectedIds::rules(),
             'decline_reason' => ['required', 'string', 'max:1000'],
         ];
     }

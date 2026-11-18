@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MonthPicker from '@/components/MonthPicker.vue';
 import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
-import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
+import PeriodNavigation from '@/components/PeriodNavigation.vue';
 import WorkEntryCalendar from '@/components/work-entries/WorkEntryCalendar.vue';
 import WorkEntryList from '@/components/work-entries/WorkEntryList.vue';
 import WorkEntrySummary from '@/components/work-entries/WorkEntrySummary.vue';
@@ -22,7 +22,7 @@ import type {
     WorkEntryCalendarWeek,
     WorkEntryDay,
     WorkEntriesTab,
-    WorkEntryPeriod,
+    Period,
     WorkEntryWeek,
 } from '@/types';
 
@@ -35,7 +35,7 @@ import type {
 const props = defineProps<{
     tab: WorkEntriesTab;
     employee: Choice;
-    period: WorkEntryPeriod;
+    period: Period;
     today: string;
     days?: WorkEntryDay[];
     weeks?: WorkEntryWeek[];

@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import PeriodNavigation from '@/components/work-entries/PeriodNavigation.vue';
+import PeriodNavigation from '@/components/PeriodNavigation.vue';
 import type {
     Choice,
     EmployeeWithCount,

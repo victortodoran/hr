@@ -17,7 +17,7 @@ class SelectedWorkEntriesRequest extends FormRequest
      */
     public function rules(): array
     {
-        return self::idRules();
+        return SelectedIds::rules();
     }
 
     /**
@@ -45,16 +45,6 @@ class SelectedWorkEntriesRequest extends FormRequest
     public function outcome(string $done, int $skipped): string
     {
         return SelectedIds::outcome($done, $skipped);
-    }
-
-    /**
-     * A non-empty list of Work Entry IDs.
-     *
-     * @return array<string, array<int, string>>
-     */
-    public static function idRules(): array
-    {
-        return SelectedIds::rules();
     }
 
     /**

@@ -42,18 +42,6 @@ export type WorkEntryRecord = {
 };
 
 /**
- * The days the Work Entries week page shows: a week from Monday to Sunday,
- * a calendar month, or a custom period, from and to as YYYY-MM-DD.
- */
-export type WorkEntryPeriod = {
-    mode: 'week' | 'month' | 'custom';
-    from: string;
-    to: string;
-    /** The URL query asking for the Period, kept when saving or deleting. */
-    query: Record<string, string>;
-};
-
-/**
  * One ISO week of the Period: its number, the first and last of its days
  * within the Period, and their hours.
  */
