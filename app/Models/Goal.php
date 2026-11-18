@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Something an Employee's Manager asks them to achieve during the year of
@@ -74,27 +73,5 @@ class Goal extends Model
     public function progressChanges(): HasMany
     {
         return $this->hasMany(ProgressChange::class)->latest('id');
-    }
-
-    /**
-     * Change its Progress, keeping the change with who made it and the
-     * Progress before. Setting the Progress it already has keeps nothing.
-     */
-    public function changeProgress(Progress $progress, Employee $changedBy): void
-    {
-        DB::transaction(function () use ($progress, $changedBy): void {
-            $previous = self::query()->lockForUpdate()->findOrFail($this->id)->progress;
-
-            if ($previous === $progress) {
-                return;
-            }
-
-            $this->progressChanges()->create([
-                'changed_by_id' => $changedBy->id,
-                'previous_progress' => $previous,
-                'progress' => $progress,
-            ]);
-            $this->forceFill(['progress' => $progress])->save();
-        });
     }
 }

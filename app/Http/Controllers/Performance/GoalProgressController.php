@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Performance;
 
+use App\Actions\ChangeGoalProgress;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\GoalProgressRequest;
 use App\Models\Employee;
@@ -18,12 +19,14 @@ use Inertia\Inertia;
  */
 class GoalProgressController extends Controller
 {
+    public function __construct(private readonly ChangeGoalProgress $changeGoalProgress) {}
+
     /**
      * Change the Goal's Progress.
      */
     public function update(GoalProgressRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): RedirectResponse
     {
-        $goal->changeProgress($request->progress(), $actor);
+        $this->changeGoalProgress->change($goal, $request->progress(), $actor);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Progress changed.')]);
 

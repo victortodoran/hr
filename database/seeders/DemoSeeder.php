@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Actions\AddEmployee;
 use App\Actions\AssessPerformanceEvaluation;
 use App\Actions\ChangeAccess;
+use App\Actions\ChangeGoalProgress;
 use App\Actions\InstallCompany;
 use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\Outcome;
@@ -70,6 +71,7 @@ class DemoSeeder extends Seeder
         private InstallCompany $installCompany,
         private AddEmployee $addEmployee,
         private ChangeAccess $changeAccess,
+        private ChangeGoalProgress $changeGoalProgress,
         private UpdateTrimmingAssignments $updateTrimmingAssignments,
         private AssessPerformanceEvaluation $assessPerformanceEvaluation,
     ) {}
@@ -506,9 +508,8 @@ class DemoSeeder extends Seeder
             $goal->forceFill(['created_at' => $givenAt])->save();
 
             foreach ($changes as $position => [$progress, $changedBy]) {
-                $goal->changeProgress($progress, $changedBy);
-                $goal->progressChanges()->firstOrFail()
-                    ->forceFill(['created_at' => $givenAt->addDays(intdiv($days * ($position + 1), count($changes) + 1))->addHours($position + 1)])
+                $this->changeGoalProgress->change($goal, $progress, $changedBy)
+                    ?->forceFill(['created_at' => $givenAt->addDays(intdiv($days * ($position + 1), count($changes) + 1))->addHours($position + 1)])
                     ->save();
             }
         }

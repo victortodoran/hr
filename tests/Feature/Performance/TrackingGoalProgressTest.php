@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\AssessPerformanceEvaluation;
+use App\Actions\ChangeGoalProgress;
 use App\Enums\Outcome;
 use App\Enums\Permission;
 use App\Enums\Progress;
@@ -20,7 +21,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(GoalController::class, GoalProgressController::class, GoalProgressRequest::class, PerformanceEvaluationController::class, PerformanceEvaluationPolicy::class, Goal::class, ProgressChange::class, Progress::class);
+covers(ChangeGoalProgress::class, GoalController::class, GoalProgressController::class, GoalProgressRequest::class, PerformanceEvaluationController::class, PerformanceEvaluationPolicy::class, Goal::class, ProgressChange::class, Progress::class);
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
@@ -192,4 +193,13 @@ it('shows each Goal\'s Progress on the Performance Evaluation\'s page, to the Em
     actingAs($cara)->get(route('performance-evaluations.show', $goal->performanceEvaluation))
         ->assertInertia(fn (Assert $page) => $page
             ->where('evaluation.goals', fn (Collection $goals): bool => $goals->pluck('progress')->all() === ['at-risk']));
+});
+
+it('lets the next Manager up change Progress once the Employee\'s Manager has left', function () {
+    [$ana, $ben, , $goal] = goalProgressLine();
+    $ben->update(['leaving_date' => '2026-10-31']);
+
+    actingAs($ana)->put(progressRoute($goal), ['progress' => 'on-track'])->assertRedirect(goalRoute($goal));
+
+    expect($goal->fresh()?->progress)->toBe(Progress::OnTrack);
 });
