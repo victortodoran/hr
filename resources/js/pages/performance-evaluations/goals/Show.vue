@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { Form, Head, setLayoutProps } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+import { MessageSquare } from '@lucide/vue';
+import GoalCommentController from '@/actions/App/Http/Controllers/Performance/GoalCommentController';
 import GoalProgressController from '@/actions/App/Http/Controllers/Performance/GoalProgressController';
 import DataTable from '@/components/DataTable.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -22,6 +26,7 @@ import { index, show } from '@/routes/performance-evaluations';
 import { show as showGoal } from '@/routes/performance-evaluations/goals';
 import type {
     BreadcrumbItem,
+    GoalComment,
     GoalRecord,
     PerformanceEvaluationSummary,
     Progress,
@@ -32,18 +37,22 @@ import type {
 /**
  * One Goal on its own page: its title, description and Progress, and
  * every change to the Progress, newest first, back to Not Started when it
- * was given. The Employee and their effective Manager change the Progress
- * while the Performance Evaluation is Open; anyone else who can see it
- * reads it.
+ * was given, and the thread of Comments on it, oldest first. The
+ * Employee and their effective Manager change the Progress and write
+ * Comments while the Performance Evaluation is Open; anyone else who can
+ * see it reads them.
  */
 const props = defineProps<{
     evaluation: PerformanceEvaluationSummary;
     goal: GoalRecord;
     history: ProgressChange[];
+    comments: GoalComment[];
     /** Whether the Performance Evaluation is the viewer's own. */
     isOwn: boolean;
     /** Whether the viewer may change the Goal's Progress. */
     canChangeProgress: boolean;
+    /** Whether the viewer may write Comments on the Goal. */
+    canComment: boolean;
 }>();
 
 /** The Progress chosen in the form, the Goal's own until changed. */
@@ -173,6 +182,56 @@ setLayoutProps({
                 <InputError class="w-full" :message="errors.progress" />
             </Form>
             <StatusBadge v-else :state="goal.progress" />
+        </section>
+
+        <section class="space-y-2">
+            <h2 class="text-sm font-medium">Comments</h2>
+            <ol v-if="comments.length > 0" class="space-y-3">
+                <li
+                    v-for="comment in comments"
+                    :key="comment.id"
+                    class="space-y-0.5 text-sm"
+                >
+                    <p class="text-muted-foreground">
+                        <span class="font-medium text-foreground">{{
+                            comment.author
+                        }}</span>
+                        · {{ formatDateTime(comment.written_at) }}
+                    </p>
+                    <p class="whitespace-pre-line">{{ comment.body }}</p>
+                </li>
+            </ol>
+            <EmptyState
+                v-else
+                :icon="MessageSquare"
+                :message="`What ${evaluation.employee.name} and their Manager write about this Goal appears here.`"
+            />
+            <Form
+                v-if="canComment"
+                v-bind="
+                    GoalCommentController.store.form({
+                        performanceEvaluation: evaluation.id,
+                        goal: goal.id,
+                    })
+                "
+                reset-on-success
+                :options="{ preserveScroll: true }"
+                class="flex flex-wrap items-start gap-2"
+                v-slot="{ errors, processing }"
+            >
+                <div class="grid min-w-0 flex-1 gap-2">
+                    <Label for="goal-comment" class="sr-only">Comment</Label>
+                    <Input
+                        id="goal-comment"
+                        name="body"
+                        placeholder="Write a Comment"
+                        maxlength="5000"
+                        required
+                    />
+                    <InputError :message="errors.body" />
+                </div>
+                <SubmitButton :processing="processing">Comment</SubmitButton>
+            </Form>
         </section>
 
         <section class="space-y-2">

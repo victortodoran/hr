@@ -13,6 +13,7 @@ use App\Http\Controllers\Employees\EmployeeController;
 use App\Http\Controllers\Employees\EmployeeInvitationController;
 use App\Http\Controllers\Employees\TeamController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Performance\GoalCommentController;
 use App\Http\Controllers\Performance\GoalController;
 use App\Http\Controllers\Performance\GoalProgressController;
 use App\Http\Controllers\Performance\MyPerformanceEvaluationController;
@@ -140,6 +141,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('performance-evaluations/{performanceEvaluation}', [PerformanceEvaluationController::class, 'show'])->middleware('can:view,performanceEvaluation')->name('performance-evaluations.show');
     Route::get('performance-evaluations/{performanceEvaluation}/goals/{goal}', [GoalController::class, 'show'])->middleware('can:view,performanceEvaluation')->scopeBindings()->whereNumber('goal')->name('performance-evaluations.goals.show');
     Route::put('performance-evaluations/{performanceEvaluation}/goals/{goal}/progress', [GoalProgressController::class, 'update'])->middleware('can:changeProgress,performanceEvaluation')->scopeBindings()->name('performance-evaluations.goals.progress.update');
+    Route::post('performance-evaluations/{performanceEvaluation}/goals/{goal}/comments', [GoalCommentController::class, 'store'])->middleware('can:comment,performanceEvaluation')->scopeBindings()->name('performance-evaluations.goals.comments.store');
     Route::post('performance-evaluations/{performanceEvaluation}/reopening', [PerformanceEvaluationReopeningController::class, 'store'])->middleware('can:reopen,performanceEvaluation')->name('performance-evaluations.reopening.store');
     Route::middleware('can:edit,performanceEvaluation')->scopeBindings()->group(function () {
         Route::get('performance-evaluations/{performanceEvaluation}/goals/create', [GoalController::class, 'create'])->name('performance-evaluations.goals.create');

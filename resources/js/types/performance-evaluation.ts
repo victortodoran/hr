@@ -61,6 +61,8 @@ export type Goal = {
  */
 export type AssessedGoal = Goal & {
     progress: Progress;
+    /** How many Comments it has, which go with it when it is removed. */
+    comments_count: number;
     outcome: Outcome | null;
 };
 
@@ -108,4 +110,16 @@ export type PerformanceEvaluationSummary = {
     id: number;
     year: number;
     employee: Choice;
+};
+
+/**
+ * A short written message on a Goal, with its author and when it was
+ * written.
+ */
+export type GoalComment = {
+    id: number;
+    body: string;
+    author: string;
+    /** When it was written, as an ISO 8601 date and time. */
+    written_at: string;
 };

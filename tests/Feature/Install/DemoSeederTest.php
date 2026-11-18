@@ -12,6 +12,7 @@ use App\Models\AccessLogEntry;
 use App\Models\Assignment;
 use App\Models\Builders\AssignmentBuilder;
 use App\Models\Client;
+use App\Models\Comment;
 use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
@@ -137,6 +138,19 @@ it('gives this year\'s Goals a mix of Progress, each with the history that led t
         ->and($goals->every(fn (Goal $goal): bool => $goal->progress === ($goal->progressChanges->first()->progress ?? Progress::NotStarted)
             && $goal->progressChanges->every(fn (ProgressChange $change): bool => $goal->created_at !== null && $change->created_at->betweenIncluded($goal->created_at, now())
                 && app(PerformanceEvaluationPolicy::class)->changeProgress($change->changedBy, $goal->performanceEvaluation))))->toBeTrue();
+});
+
+it('gives a few of this year\'s Goals a thread of Comments from both the Employee and their Manager', function () {
+    seed(DemoSeeder::class);
+
+    $commented = Goal::query()->has('comments')->with('comments.author', 'performanceEvaluation.employee')->get();
+
+    expect($commented->count())->toBeGreaterThanOrEqual(2)
+        ->and($commented->every(fn (Goal $goal): bool => $goal->performanceEvaluation->year === today()->year
+            && $goal->comments->pluck('author_id')->unique()->count() >= 2
+            && $goal->comments->contains('author_id', $goal->performanceEvaluation->employee_id)
+            && $goal->comments->every(fn (Comment $comment): bool => app(PerformanceEvaluationPolicy::class)->comment($comment->author, $goal->performanceEvaluation)
+                && $goal->created_at !== null && $comment->created_at->betweenIncluded($goal->created_at, now()))))->toBeTrue();
 });
 
 it('gives some Employees a Completed Performance Evaluation for last year, with an Outcome on every Goal and on the whole', function () {

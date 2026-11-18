@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Performance;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\GoalRequest;
+use App\Models\Comment;
 use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
@@ -18,7 +19,7 @@ use Inertia\Response;
  * effective Manager gives, changes or removes, while it is Open. Saving
  * and removing lead back to the Performance Evaluation's page. Each Goal
  * has its own page, open to everyone who can see the Evaluation, with
- * its Progress and every change to it.
+ * its Progress and every change to it, and its Comments.
  */
 class GoalController extends Controller
 {
@@ -46,7 +47,8 @@ class GoalController extends Controller
 
     /**
      * Show the Goal with its Progress and every change to it, newest
-     * first, and whether the viewer may change the Progress.
+     * first, and its Comments, oldest first, and whether the viewer may
+     * change the Progress and write Comments.
      */
     public function show(PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): Response
     {
@@ -65,8 +67,17 @@ class GoalController extends Controller
                     'changed_at' => $change->created_at->toIso8601String(),
                 ])
                 ->all(),
+            'comments' => $goal->comments()->with('author:id,name')->get()
+                ->map(fn (Comment $comment): array => [
+                    'id' => $comment->id,
+                    'body' => $comment->body,
+                    'author' => $comment->author->name,
+                    'written_at' => $comment->created_at->toIso8601String(),
+                ])
+                ->all(),
             'isOwn' => $performanceEvaluation->employee_id === $actor->id,
             'canChangeProgress' => $actor->can('changeProgress', $performanceEvaluation),
+            'canComment' => $actor->can('comment', $performanceEvaluation),
         ]);
     }
 
