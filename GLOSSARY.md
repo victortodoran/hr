@@ -155,15 +155,23 @@ The yearly look at how one Employee did over one calendar year, holding the Goal
 _Avoid_: Review, performance review, appraisal, assessment, evaluation cycle
 
 **Goal**:
-Something an Employee's Manager asks them to achieve during the year of one Performance Evaluation, with a title and a description, as in "Ben gave Cara the Goal of leading the Relaunch API work". Every Goal belongs to exactly one Performance Evaluation and to no Assignment or Project. Only the Employee's Manager gives, changes or removes Goals (while that Manager has left, the next Manager up who hasn't), and only while the Performance Evaluation is Open. No Role can grant it, and no Employee sets their own. The Employee sees their Goals as soon as they are given.
+Something an Employee's Manager asks them to achieve during the year of one Performance Evaluation, with a title and a description, as in "Ben gave Cara the Goal of leading the Relaunch API work". Every Goal belongs to exactly one Performance Evaluation and to no Assignment or Project. Only the Employee's Manager gives, changes or removes Goals (while that Manager has left, the next Manager up who hasn't), and only while the Performance Evaluation is Open. No Role can grant it, and no Employee sets their own. The Employee sees their Goals as soon as they are given. Changing a Goal's Progress or writing a Comment on it is not changing the Goal.
 _Avoid_: Objective, OKR, KPI, target
+
+**Progress**:
+How far along a Goal is during the year, from a fixed list the HR system defines: Not Started, On Track, At Risk or Done, as in "Cara's Relaunch API Goal is At Risk". Companies can't add their own. Every Goal starts Not Started. The Employee and their Manager (while that Manager has left, the next Manager up who hasn't) can both change it while the Performance Evaluation is Open, and every change is kept with who made it and when. Done means the work is finished, not how well it went: that is the Outcome, and a Performance Evaluation can be Completed whatever its Goals' Progress.
+_Avoid_: Status, percent complete, check-in
+
+**Comment**:
+A short written message on a Goal, part of the running conversation between the Employee and their Manager about it, as in "Ben commented on Cara's Relaunch API Goal: auth is late, let's talk Friday". Only the Employee and their Manager (while that Manager has left, the next Manager up who hasn't) write Comments, and only while the Performance Evaluation is Open. Everyone who can see the Performance Evaluation reads them as soon as they are written. A Comment is never changed or removed on its own; a correction is another Comment. Removing a Goal removes its Comments and its Progress history with it.
+_Avoid_: Note, feedback, remark
 
 **Outcome**:
 How well a Goal, or a Performance Evaluation as a whole, was achieved, from a fixed list the HR system defines: Not Met, Partly Met, Met or Exceeded. Companies can't add their own. The Manager gives one to every Goal and one to the Performance Evaluation, with a written summary, before Completing it. The Employee sees them only once it is Completed.
 _Avoid_: Rating, score, grade, result
 
 **Open**:
-The state of a Performance Evaluation that has not been Completed yet, or that was Reopened. Its Goals can still be given, changed or removed, and its Outcomes are not yet shown to the Employee.
+The state of a Performance Evaluation that has not been Completed yet, or that was Reopened. Its Goals can still be given, changed or removed, their Progress changed and Comments written, and its Outcomes are not yet shown to the Employee.
 _Avoid_: Draft, in progress, active
 
 **Completed**:
