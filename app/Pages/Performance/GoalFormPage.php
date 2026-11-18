@@ -4,7 +4,7 @@ namespace App\Pages\Performance;
 
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
-use App\Support\PerformanceEvaluationSummary;
+use App\Support\PerformanceEvaluationHeading;
 
 /**
  * The forms for giving a Goal and changing one, as the props they render:
@@ -21,7 +21,7 @@ final class GoalFormPage
     public static function create(PerformanceEvaluation $performanceEvaluation): array
     {
         return [
-            'evaluation' => PerformanceEvaluationSummary::of($performanceEvaluation),
+            'evaluation' => PerformanceEvaluationHeading::of($performanceEvaluation),
         ];
     }
 
@@ -34,7 +34,7 @@ final class GoalFormPage
     public static function edit(PerformanceEvaluation $performanceEvaluation, Goal $goal, bool $returnsToGoal): array
     {
         return [
-            'evaluation' => PerformanceEvaluationSummary::of($performanceEvaluation),
+            'evaluation' => PerformanceEvaluationHeading::of($performanceEvaluation),
             'goal' => $goal->only('id', 'title', 'description'),
             'returnsToGoal' => $returnsToGoal,
         ];

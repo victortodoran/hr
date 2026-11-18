@@ -7,7 +7,7 @@ use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
 use App\Models\ProgressChange;
-use App\Support\PerformanceEvaluationSummary;
+use App\Support\PerformanceEvaluationHeading;
 
 /**
  * A Goal's own page as the props it renders: the Goal with its Progress
@@ -25,7 +25,7 @@ final class GoalPage
     public static function props(PerformanceEvaluation $performanceEvaluation, Goal $goal, Employee $actor): array
     {
         return [
-            'evaluation' => PerformanceEvaluationSummary::of($performanceEvaluation),
+            'evaluation' => PerformanceEvaluationHeading::of($performanceEvaluation),
             'goal' => [
                 ...$goal->only('id', 'title', 'description'),
                 'progress' => $goal->progress->value,
