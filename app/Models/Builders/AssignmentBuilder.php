@@ -73,6 +73,17 @@ class AssignmentBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to Assignments not ended before the day: with no end
+     * date, or ending on it or later.
+     */
+    public function notEndedBefore(CarbonInterface $day): static
+    {
+        return $this->scoped(function () use ($day): void {
+            $this->where(fn (Builder $open) => $open->whereNull('end_date')->orWhereDate('end_date', '>=', $day));
+        });
+    }
+
+    /**
      * Order Assignments by their Employee's name, then from the earliest.
      */
     public function orderByEmployeeName(): static

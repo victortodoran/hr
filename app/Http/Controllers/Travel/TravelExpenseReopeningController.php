@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Travel;
 
-use App\Enums\Permission;
-use App\Enums\TravelExpenseState;
+use App\Actions\ReopenTravelExpenses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Travel\SelectedTravelExpensesRequest;
 use App\Models\Employee;
-use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
@@ -28,16 +26,11 @@ class TravelExpenseReopeningController extends Controller
      * with no Manager waits for them to correct it, which Approves it again
      * at once. The rest are skipped, and the toast says how many of each.
      */
-    public function store(TravelRequest $travelRequest, #[CurrentUser] Employee $actor, SelectedTravelExpensesRequest $request): RedirectResponse
+    public function store(TravelRequest $travelRequest, #[CurrentUser] Employee $actor, SelectedTravelExpensesRequest $request, ReopenTravelExpenses $reopenTravelExpenses): RedirectResponse
     {
         $ids = $request->ids();
 
-        $reopened = TravelExpense::query()
-            ->ofEmployees(Employee::query()->reopenableBy($actor, Permission::ReopenTravelExpenses))
-            ->where('travel_request_id', $travelRequest->id)
-            ->whereKey($ids)
-            ->approved()
-            ->update(['state' => TravelExpenseState::Pending, 'approved_by' => null, 'approved_at' => null]);
+        $reopened = $reopenTravelExpenses->reopen($actor, $travelRequest, $ids);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => $request->outcome(
             trans_choice('{0} No Travel Expenses reopened|{1} 1 Travel Expense reopened|[2,*] :count Travel Expenses reopened', $reopened),

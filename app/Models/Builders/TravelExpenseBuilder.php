@@ -3,6 +3,7 @@
 namespace App\Models\Builders;
 
 use App\Enums\TravelExpenseState;
+use App\Models\Employee;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Support\Period;
@@ -33,6 +34,29 @@ class TravelExpenseBuilder extends ModelBuilder
     {
         return $this->scoped(function (): void {
             $this->where($this->qualifyColumn('state'), TravelExpenseState::Approved);
+        });
+    }
+
+    /**
+     * Limit the query to the Travel Expenses the actor may approve or
+     * decline: Pending ones of the Employees whose effective Manager they
+     * are, so never their own.
+     */
+    public function decidableBy(Employee $actor): static
+    {
+        return $this->scoped(function () use ($actor): void {
+            $this->pending()->ofEmployees(Employee::query()->effectivelyManagedBy($actor));
+        });
+    }
+
+    /**
+     * Limit the query to the Travel Expenses whose amount counts towards
+     * a total: all but the Declined ones.
+     */
+    public function notDeclined(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('state'), '!=', TravelExpenseState::Declined);
         });
     }
 
