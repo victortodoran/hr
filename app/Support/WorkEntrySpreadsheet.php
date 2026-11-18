@@ -3,7 +3,7 @@
 namespace App\Support;
 
 use App\Enums\SpreadsheetFormat;
-use App\Models\Employee;
+use App\Models\Builders\WorkEntryBuilder;
 use App\Models\WorkEntry;
 use DateTimeInterface;
 use OpenSpout\Common\Entity\Cell;
@@ -25,21 +25,14 @@ class WorkEntrySpreadsheet
     ];
 
     /**
-     * The Work Entries the Work Entries page lists for the viewer under the
-     * filters, oldest first like the page, as a download named after the
-     * Period, such as "work-entries-2026-11-01-to-2026-11-30.csv".
-     *
-     * @param  array{period: Period, employee: int|'all'|null, project: int|null, state: string|null}  $filters
+     * The Work Entries, in the query's order, as a download named after the
+     * Period, such as "work-entries-2026-11-01-to-2026-11-30.csv". The query
+     * needs each Work Entry's Employee, Project, Client, approver and decliner
+     * loaded.
      */
-    public static function download(Employee $viewer, array $filters, SpreadsheetFormat $format): StreamedResponse
+    public static function download(WorkEntryBuilder $entries, SpreadsheetFormat $format, Period $period): StreamedResponse
     {
-        $period = $filters['period'];
         $name = sprintf('work-entries-%s-to-%s.%s', $period->from->toDateString(), $period->to->toDateString(), $format->value);
-        $entries = WorkEntry::query()
-            ->listedFor($viewer, $filters)
-            ->with(['assignment.employee:id,name', 'assignment.project:id,name,client_id', 'assignment.project.client:id,name', 'approver:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same rows)
-            ->orderBy('date')
-            ->orderBy('id');
 
         return response()->streamDownload(function () use ($entries, $format): void {
             $writer = $format->writer();

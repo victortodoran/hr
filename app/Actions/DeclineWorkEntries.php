@@ -23,9 +23,8 @@ class DeclineWorkEntries
     public function decline(Employee $actor, array $ids, string $reason): int
     {
         return WorkEntry::query()
-            ->ofEmployees(Employee::query()->effectivelyManagedBy($actor))
+            ->decidableBy($actor)
             ->whereKey($ids)
-            ->pending()
             ->update([
                 'state' => WorkEntryState::Declined,
                 'declined_by' => $actor->id,

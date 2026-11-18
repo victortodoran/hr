@@ -49,6 +49,18 @@ class WorkEntryBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to the Work Entries the actor may approve or decline:
+     * Pending ones of the Employees whose effective Manager they are, so
+     * never their own.
+     */
+    public function decidableBy(Employee $actor): static
+    {
+        return $this->scoped(function () use ($actor): void {
+            $this->pending()->ofEmployees(Employee::query()->effectivelyManagedBy($actor));
+        });
+    }
+
+    /**
      * Limit the query to the Work Entries whose hours count: all but the
      * Declined ones.
      */

@@ -29,7 +29,7 @@ final class WeekPage
     public static function props(Employee $actor, Employee $employee, Period $period, WorkEntriesTab $tab, bool $canManage, bool $canDelete): array
     {
         $entries = $employee->workEntries()
-            ->whereBetween('work_entries.date', [$period->from->toDateString(), $period->to->toDateString()])
+            ->filteredBy(['period' => $period])
             ->with(['assignment.project:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
             ->orderBy('work_entries.date')
             ->orderBy('work_entries.id')

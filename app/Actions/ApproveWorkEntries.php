@@ -22,9 +22,8 @@ class ApproveWorkEntries
     public function approve(Employee $actor, array $ids): int
     {
         return WorkEntry::query()
-            ->ofEmployees(Employee::query()->effectivelyManagedBy($actor))
+            ->decidableBy($actor)
             ->whereKey($ids)
-            ->pending()
             ->update(['state' => WorkEntryState::Approved, 'approved_by' => $actor->id, 'approved_at' => now()]);
     }
 }
