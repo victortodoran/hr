@@ -105,16 +105,14 @@ class WorkEntryBuilder extends ModelBuilder
 
     /**
      * Limit the query to the Work Entries of the given Employees, on any of
-     * their Assignments, given as a query or by ID.
-     *
-     * @param  EmployeeBuilder|array<int, int|string>  $employees
+     * their Assignments.
      */
-    public function ofEmployees(EmployeeBuilder|array $employees): static
+    public function ofEmployees(EmployeeBuilder $employees): static
     {
         return $this->scoped(function () use ($employees): void {
             $this->whereIn('assignment_id', Assignment::query()
                 ->select('id')
-                ->whereIn('employee_id', $employees instanceof EmployeeBuilder ? $employees->select('employees.id') : $employees));
+                ->whereIn('employee_id', $employees->select('employees.id')));
         });
     }
 

@@ -67,15 +67,12 @@ class TimeOffBuilder extends ModelBuilder
     }
 
     /**
-     * Limit the query to the Time Off of the given Employees, given as a
-     * query or by ID.
-     *
-     * @param  EmployeeBuilder|array<int, int|string>  $employees
+     * Limit the query to the Time Off of the given Employees.
      */
-    public function ofEmployees(EmployeeBuilder|array $employees): static
+    public function ofEmployees(EmployeeBuilder $employees): static
     {
         return $this->scoped(function () use ($employees): void {
-            $this->whereIn($this->qualifyColumn('employee_id'), $employees instanceof EmployeeBuilder ? $employees->select('employees.id') : $employees);
+            $this->whereIn($this->qualifyColumn('employee_id'), $employees->select('employees.id'));
         });
     }
 }

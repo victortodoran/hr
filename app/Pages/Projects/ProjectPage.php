@@ -5,6 +5,7 @@ namespace App\Pages\Projects;
 use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Project;
+use App\Support\TeamMember;
 
 /**
  * A Project's page as the props it renders: the Project and its team.
@@ -32,14 +33,7 @@ final class ProjectPage
                 ->with('employee:id,name')
                 ->orderByEmployeeName()
                 ->get()
-                ->map(fn (Assignment $assignment): array => [
-                    'id' => $assignment->id,
-                    'employee' => $assignment->employee->only('id', 'name'),
-                    'job_title' => $assignment->job_title,
-                    'start_date' => $assignment->start_date->toDateString(),
-                    'end_date' => $assignment->end_date?->toDateString(),
-                    'capacity' => $assignment->capacity,
-                ]),
+                ->map(fn (Assignment $assignment): array => TeamMember::of($assignment)),
         ];
     }
 }

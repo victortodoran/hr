@@ -2,7 +2,6 @@
 
 namespace App\Pages\Access;
 
-use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Models\Employee;
 use App\Models\Role;
@@ -94,9 +93,9 @@ final class RolesPage
                 ])
                 ->all(),
             'employees' => Employee::query()
+                ->notFormer()
                 ->orderBy('name')
                 ->get(['id', 'name', 'start_date', 'leaving_date'])
-                ->reject(fn (Employee $employee): bool => $employee->employmentStatus() === EmploymentStatus::Former)
                 ->map(fn (Employee $employee): array => ['id' => $employee->id, 'name' => $employee->name, 'status' => $employee->employmentStatus()->value])
                 ->values()
                 ->all(),

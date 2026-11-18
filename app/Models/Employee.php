@@ -416,19 +416,19 @@ class Employee extends Authenticatable implements MustVerifyEmail
         return [
             'workEntries' => WorkEntry::query()
                 ->pending()
-                ->ofEmployees($decidedFor)
+                ->ofEmployees(self::query()->whereKey($decidedFor))
                 ->count(),
             'timeOff' => TimeOff::query()
                 ->pending()
-                ->ofEmployees($decidedFor)
+                ->ofEmployees(self::query()->whereKey($decidedFor))
                 ->count(),
             'travelRequests' => TravelRequest::query()
                 ->pending()
-                ->ofEmployees($decidedFor)
+                ->ofEmployees(self::query()->whereKey($decidedFor))
                 ->count(),
             'travelExpenses' => TravelExpense::query()
                 ->pending()
-                ->ofEmployees($decidedFor)
+                ->ofEmployees(self::query()->whereKey($decidedFor))
                 ->count(),
         ];
     }

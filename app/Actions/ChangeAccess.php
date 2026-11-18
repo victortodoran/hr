@@ -156,6 +156,15 @@ class ChangeAccess
     {
         $role->employees()->findOrFail($employee->id);
 
+        $this->take($actor, $role, $employee);
+    }
+
+    /**
+     * Take the Role away from an Employee known to hold it, recorded in the
+     * Access Log.
+     */
+    private function take(Employee $actor, Role $role, Employee $employee): void
+    {
         DB::transaction(function () use ($actor, $role, $employee): void {
             $someoneCouldManageRoles = $this->someoneCanManageRoles();
             $role->employees()->detach($employee);
@@ -207,7 +216,7 @@ class ChangeAccess
         Employee::query()->whereKey(array_diff($holders, $current))->orderBy('id')->get()
             ->each(fn (Employee $employee) => $this->giveRole($actor, $role, $employee));
         Employee::query()->whereKey(array_diff($current, $holders))->orderBy('id')->get()
-            ->each(fn (Employee $employee) => $this->takeRole($actor, $role, $employee));
+            ->each(fn (Employee $employee) => $this->take($actor, $role, $employee));
     }
 
     /**

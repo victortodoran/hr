@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Models\Project;
+use App\Support\TeamMember;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -39,14 +40,7 @@ final class ClientPage
                     'name' => $project->name,
                     ...$project->dates(),
                     'team' => $project->assignments
-                        ->map(fn (Assignment $assignment): array => [
-                            'id' => $assignment->id,
-                            'employee' => $assignment->employee->only('id', 'name'),
-                            'job_title' => $assignment->job_title,
-                            'start_date' => $assignment->start_date->toDateString(),
-                            'end_date' => $assignment->end_date?->toDateString(),
-                            'capacity' => $assignment->capacity,
-                        ])
+                        ->map(fn (Assignment $assignment): array => TeamMember::of($assignment))
                         ->all(),
                 ]),
         ];
