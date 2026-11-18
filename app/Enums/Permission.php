@@ -121,16 +121,15 @@ enum Permission: string
     }
 
     /**
-     * The Permissions that let someone see an Employee's Travel Expenses
-     * and their receipts across Employees, on the Travel Expenses page:
-     * you can always see what you can act on. The one list the policy, the
-     * list and the flags use. View travel also shows them, on the
-     * Employee's page only, so it isn't among these.
+     * The Permissions that let someone see an Employee's Travel Requests,
+     * their Travel Expenses and the receipts: viewing travel, or reopening
+     * Travel Expenses, as you can always see what you can act on. The one
+     * list the policies, the Travel Requests page and the flags use.
      *
      * @return list<Permission>
      */
-    public static function seeingTravelExpenses(): array
+    public static function seeingTravel(): array
     {
-        return [self::ReopenTravelExpenses];
+        return [self::ViewTravel, self::ReopenTravelExpenses];
     }
 }

@@ -16,11 +16,12 @@ import type {
 } from '@/types';
 
 /**
- * Filters for the Work Entries page, and the Travel Expenses page, which
- * lists Travel Expenses the same way: a Period, a week, a month or a custom
- * one, never after today; one Employee with Work Entries in it, each
- * offered with how many, or any Employee; a
- * Project they have Work Entries on, or any; and a state, or any. Shows what
+ * Filters for the Work Entries page, and the Travel Requests page, which
+ * lists Travel Requests the same way: a Period, a week, a month or a custom
+ * one, never after today unless `allowFuture` is set; one Employee with
+ * Work Entries in it, each offered with how many, or any Employee; a
+ * Project they have Work Entries on, or any; and a state, or any, from
+ * `states` when given. Shows what
  * the server resolved, and emits the query string to reload the list with
  * whenever one changes. Changing the Period or state keeps "Any Employee"
  * but otherwise lets the server pick the first Employee; changing anything
@@ -29,22 +30,30 @@ import type {
  * shows that Project, without "Any Project" to choose; both list the same
  * Work Entries, so the filter itself stays as it was.
  */
-const props = defineProps<{
-    filters: WorkEntryListFilters;
-    today: string;
-    employees: EmployeeWithWorkEntries[];
-    projects: Choice[];
-}>();
+const props = withDefaults(
+    defineProps<{
+        filters: Omit<WorkEntryListFilters, 'state'> & { state: string | null };
+        today: string;
+        employees: EmployeeWithWorkEntries[];
+        projects: Choice[];
+        /** The states to filter by; a Work Entry's when not given. */
+        states?: { value: string; label: string }[];
+        /** Lets the Period go past today, for what is planned ahead. */
+        allowFuture?: boolean;
+    }>(),
+    {
+        states: (): { value: WorkEntryState; label: string }[] => [
+            { value: 'pending', label: 'Pending' },
+            { value: 'approved', label: 'Approved' },
+            { value: 'declined', label: 'Declined' },
+        ],
+        allowFuture: false,
+    },
+);
 
 const emit = defineEmits<{
     change: [query: Record<string, string>];
 }>();
-
-const states: { value: WorkEntryState; label: string }[] = [
-    { value: 'pending', label: 'Pending' },
-    { value: 'approved', label: 'Approved' },
-    { value: 'declined', label: 'Declined' },
-];
 
 function query(
     changes: Partial<Record<'employee' | 'project' | 'state', string>> & {
@@ -100,7 +109,7 @@ function chooseProject(project: unknown): void {
         <PeriodNavigation
             :period="filters.period"
             :today="today"
-            no-future
+            :no-future="!allowFuture"
             @change="choosePeriod"
         />
         <div class="flex flex-wrap items-center gap-3">

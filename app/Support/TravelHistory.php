@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\Permission;
 use App\Enums\TravelExpenseState;
 use App\Enums\TravelRequestState;
 use App\Models\Employee;
@@ -107,17 +108,20 @@ final class TravelHistory
     /**
      * The Travel Expenses of a Travel Request that takes them, in the order
      * they were paid, with the total of those not Declined in the company
-     * currency, and whether the actor may change each and record more.
+     * currency, and whether the actor may change each, reopen it and
+     * record more. Reopening is for an Approved one of an Employee the
+     * actor's reopen Scope covers, never their own.
      *
-     * @return array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, can_change: bool}>, total: string, can_create: bool}
+     * @return array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, can_change: bool, can_reopen: bool}>, total: string, can_create: bool}
      */
     private static function expenses(TravelRequest $travelRequest, Currency $currency, Employee $actor): array
     {
         $travelExpenses = $travelRequest->travelExpenses()->orderBy('paid_on')->orderBy('id')->get();
+        $reopensForEmployee = Employee::query()->reopenableBy($actor, Permission::ReopenTravelExpenses)->whereKey($travelRequest->employee_id)->exists();
 
         return [
             'items' => $travelExpenses
-                ->map(function (TravelExpense $travelExpense) use ($travelRequest, $currency, $actor): array {
+                ->map(function (TravelExpense $travelExpense) use ($travelRequest, $currency, $actor, $reopensForEmployee): array {
                     $travelExpense->setRelation('travelRequest', $travelRequest);
 
                     return [
@@ -129,6 +133,7 @@ final class TravelHistory
                         'state' => $travelExpense->state->value,
                         'decline_reason' => $travelExpense->decline_reason,
                         'can_change' => $actor->can('update', $travelExpense),
+                        'can_reopen' => $reopensForEmployee && $travelExpense->state === TravelExpenseState::Approved,
                     ];
                 })
                 ->all(),

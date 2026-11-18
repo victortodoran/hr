@@ -108,6 +108,8 @@ export type TravelExpenseRecord = {
     decline_reason: string | null;
     /** Whether the viewer may change or delete it: only the Employee, while Pending or Declined. */
     can_change: boolean;
+    /** Whether the viewer may reopen it: Approved, and their reopen Scope covers the Employee, never their own. */
+    can_reopen: boolean;
 };
 
 /** The Travel Expenses of one Travel Request, with their total. */
@@ -187,28 +189,27 @@ export type TravelExpensesToApprove = {
     }[];
 };
 
-/** The Travel Expenses page's filters, as on the Work Entries page. */
-export type TravelExpenseListFilters = Omit<WorkEntryListFilters, 'state'> & {
-    state: TravelExpenseState | null;
+/** The Travel Requests page's filters, as on the Work Entries page. */
+export type TravelRequestListFilters = Omit<WorkEntryListFilters, 'state'> & {
+    state: TravelRequestState | null;
 };
 
 /**
- * A Travel Expense on the Travel Expenses page, across Employees, with who
- * approved it, and whether the viewer may reopen it.
+ * A Travel Request on the Travel Requests page, across Employees, with a
+ * summary of its Travel Expenses.
  */
-export type ListedTravelExpense = {
+export type ListedTravelRequest = {
     id: number;
-    paid_on: string;
     employee: { id: number; name: string };
     project: string;
     destination: string;
-    category: TravelExpenseCategory;
-    description: string;
-    /** Already shown in the company currency, such as "RON 1,990.00". */
-    amount: string;
-    state: TravelExpenseState;
-    /** Who approved it and when; nobody for an Employee with no Manager, approved at once. */
-    approved: { by: string | null; on: string } | null;
-    decline_reason: string | null;
-    can_reopen: boolean;
+    first_date: string;
+    last_date: string;
+    state: TravelRequestState;
+    /**
+     * The total of its Travel Expenses that aren't Declined, already shown
+     * in the company currency, and how many are Pending; none when it has
+     * no Travel Expenses.
+     */
+    expenses: { total: string; pending: number } | null;
 };

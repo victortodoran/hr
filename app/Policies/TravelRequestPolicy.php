@@ -18,16 +18,24 @@ class TravelRequestPolicy
     /**
      * Seeing a Travel Request on its own page, as Travel Expenses are seen
      * (TravelExpensePolicy::view): the Employee whose Travel Request it is,
-     * whoever view travel or one of the Permissions for seeing Travel
-     * Expenses across Employees (Permission::seeingTravelExpenses())
-     * reaches the Employee for, and their effective Manager while they can
-     * decide it.
+     * whoever one of the Permissions for seeing travel
+     * (Permission::seeingTravel()) reaches the Employee for, and their
+     * effective Manager while they can decide it.
      */
     public function view(Employee $actor, TravelRequest $travelRequest): bool
     {
         return $travelRequest->employee_id === $actor->id
-            || $actor->reachesThrough([Permission::ViewTravel, ...Permission::seeingTravelExpenses()], $travelRequest->employee)
+            || $actor->reachesThrough(Permission::seeingTravel(), $travelRequest->employee)
             || $this->decide($actor, $travelRequest);
+    }
+
+    /**
+     * The Travel Requests page, across Employees, is for someone who sees
+     * the travel of anyone besides themselves.
+     */
+    public function viewList(Employee $actor): bool
+    {
+        return $actor->seesOthersTravel();
     }
 
     /**

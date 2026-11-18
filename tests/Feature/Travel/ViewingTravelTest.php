@@ -158,8 +158,8 @@ it('shows Cara\'s Travel Request page in full, with its Travel Expenses and noth
                 'state' => 'approved', 'decided_by' => $berlin->decider?->name, 'decline_reason' => null, 'can_cancel' => false,
                 'expenses' => [
                     'items' => [
-                        ['id' => $hotel->id, 'paid_on' => '2026-12-04', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'pending', 'decline_reason' => null, 'can_change' => false],
-                        ['id' => $dinner->id, 'paid_on' => '2026-12-05', 'category' => 'meals', 'description' => 'Dinner', 'amount' => "RON\u{a0}50.00", 'state' => 'declined', 'decline_reason' => 'Company card', 'can_change' => false],
+                        ['id' => $hotel->id, 'paid_on' => '2026-12-04', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'pending', 'decline_reason' => null, 'can_change' => false, 'can_reopen' => false],
+                        ['id' => $dinner->id, 'paid_on' => '2026-12-05', 'category' => 'meals', 'description' => 'Dinner', 'amount' => "RON\u{a0}50.00", 'state' => 'declined', 'decline_reason' => 'Company card', 'can_change' => false, 'can_reopen' => false],
                     ],
                     'total' => "RON\u{a0}1,990.00",
                     'can_create' => false,

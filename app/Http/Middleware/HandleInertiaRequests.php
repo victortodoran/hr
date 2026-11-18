@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\Permission;
 use App\Models\Employee;
-use App\Models\TravelExpense;
+use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -59,7 +59,7 @@ class HandleInertiaRequests extends Middleware
                     && ($employee->widestScopeFor(Permission::ViewEmployeeRecords)?->coversOthers() ?? false),
                 'canSeeWorkEntries' => fn (): bool => $employee instanceof Employee && $employee->canSeeWorkEntries(),
                 'canSeeWorkEntryList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', WorkEntry::class),
-                'canSeeTravelExpenseList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', TravelExpense::class),
+                'canSeeTravelRequestList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', TravelRequest::class),
                 'canSeeTeam' => fn (): bool => $asManagerOnce()['hasDirectReports'],
                 'canSeeApprovals' => fn (): bool => $asManagerOnce()['managesAnyone'],
                 'approvalsWaiting' => fn (): int => $asManagerOnce()['waiting'],

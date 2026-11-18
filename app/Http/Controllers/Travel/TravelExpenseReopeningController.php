@@ -13,7 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
 /**
- * Reopening Travel Expenses from the Travel Expenses page: sending Approved
+ * Reopening Travel Expenses from their Travel Request's page: sending Approved
  * ones back to Pending so the Employee can correct them, after which their
  * Manager approves them again. Only a Role that grants reopening reopens
  * them; being the Manager is not enough, and nobody reopens their own.

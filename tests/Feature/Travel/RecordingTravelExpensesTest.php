@@ -111,8 +111,8 @@ it('lists the expenses of a Travel Request that takes them on its page, in the o
             ->component('travel-requests/Show')
             ->where('travelRequest.expenses', [
                 'items' => [
-                    ['id' => $train->id, 'paid_on' => '2026-12-03', 'category' => 'transport', 'description' => 'Train', 'amount' => "RON\u{a0}250.50", 'state' => 'approved', 'decline_reason' => null, 'can_change' => false],
-                    ['id' => $hotel->id, 'paid_on' => '2026-12-05', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'declined', 'decline_reason' => 'Book through travel desk', 'can_change' => true],
+                    ['id' => $train->id, 'paid_on' => '2026-12-03', 'category' => 'transport', 'description' => 'Train', 'amount' => "RON\u{a0}250.50", 'state' => 'approved', 'decline_reason' => null, 'can_change' => false, 'can_reopen' => false],
+                    ['id' => $hotel->id, 'paid_on' => '2026-12-05', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'declined', 'decline_reason' => 'Book through travel desk', 'can_change' => true, 'can_reopen' => false],
                 ],
                 'total' => "RON\u{a0}250.50",
                 'can_create' => true,

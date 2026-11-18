@@ -24,13 +24,13 @@ use App\Http\Controllers\TimeOff\TimeOffPreviewController;
 use App\Http\Controllers\Travel\TravelExpenseApprovalController;
 use App\Http\Controllers\Travel\TravelExpenseController;
 use App\Http\Controllers\Travel\TravelExpenseDeclineController;
-use App\Http\Controllers\Travel\TravelExpenseListController;
 use App\Http\Controllers\Travel\TravelExpenseReceiptController;
 use App\Http\Controllers\Travel\TravelExpenseReopeningController;
 use App\Http\Controllers\Travel\TravelRequestApprovalController;
 use App\Http\Controllers\Travel\TravelRequestCancellationController;
 use App\Http\Controllers\Travel\TravelRequestController;
 use App\Http\Controllers\Travel\TravelRequestDeclineController;
+use App\Http\Controllers\Travel\TravelRequestListController;
 use App\Http\Controllers\WorkEntries\ApprovalController;
 use App\Http\Controllers\WorkEntries\ReopeningController;
 use App\Http\Controllers\WorkEntries\WorkEntryController;
@@ -42,6 +42,7 @@ use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\TravelExpense;
+use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
@@ -108,6 +109,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::get('travel-requests', [TravelRequestController::class, 'index'])->name('travel-requests.index');
+    Route::get('travel-requests/all', [TravelRequestListController::class, 'index'])->middleware('can:viewList,'.TravelRequest::class)->name('travel-request-list.index');
     Route::get('travel-requests/create', [TravelRequestController::class, 'create'])->name('travel-requests.create');
     Route::post('travel-requests', [TravelRequestController::class, 'store'])->name('travel-requests.store');
     Route::get('travel-requests/{travelRequest}', [TravelRequestController::class, 'show'])->middleware('can:view,travelRequest')->name('travel-requests.show');
@@ -117,7 +119,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('travel-requests/{travelRequest}/expenses/{travelExpense}/edit', [TravelExpenseController::class, 'edit'])->middleware('can:update,travelExpense')->scopeBindings()->name('travel-requests.expenses.edit');
     Route::put('travel-expenses/{travelExpense}', [TravelExpenseController::class, 'update'])->middleware('can:update,travelExpense')->name('travel-expenses.update');
     Route::delete('travel-expenses/{travelExpense}', [TravelExpenseController::class, 'destroy'])->middleware('can:delete,travelExpense')->name('travel-expenses.destroy');
-    Route::get('travel-expenses', [TravelExpenseListController::class, 'index'])->middleware('can:viewList,'.TravelExpense::class)->name('travel-expense-list.index');
     Route::post('travel-expenses/reopenings', [TravelExpenseReopeningController::class, 'store'])->middleware('can:reopen,'.TravelExpense::class)->name('travel-expenses.reopenings.store');
     Route::get('travel-expenses/{travelExpense}/receipt', [TravelExpenseReceiptController::class, 'show'])->middleware('can:view,travelExpense')->name('travel-expenses.receipt.show');
     Route::middleware('can:decide,travelRequest')->group(function () {
