@@ -13,7 +13,8 @@ use Inertia\Inertia;
 /**
  * Completing a Performance Evaluation: its Manager saves the Outcomes and
  * summary and closes it, once it has Goals and every Goal, the whole and
- * the summary are given. Nothing on it can be changed after that.
+ * the summary are given. It can't be changed after that unless it's
+ * Reopened.
  */
 class PerformanceEvaluationCompletionController extends Controller
 {

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Performance;
 
-use App\Enums\PerformanceEvaluationState;
+use App\Actions\AssessPerformanceEvaluation;
 use App\Http\Controllers\Controller;
 use App\Models\PerformanceEvaluation;
 use Illuminate\Http\RedirectResponse;
@@ -17,12 +17,14 @@ use Inertia\Inertia;
  */
 class PerformanceEvaluationReopeningController extends Controller
 {
+    public function __construct(private readonly AssessPerformanceEvaluation $assess) {}
+
     /**
      * Send the Completed Performance Evaluation back to Open.
      */
     public function store(PerformanceEvaluation $performanceEvaluation): RedirectResponse
     {
-        $performanceEvaluation->forceFill(['state' => PerformanceEvaluationState::Open, 'completed_at' => null])->save();
+        $this->assess->reopen($performanceEvaluation);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Performance Evaluation reopened.')]);
 

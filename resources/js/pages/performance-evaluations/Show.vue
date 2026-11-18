@@ -183,6 +183,7 @@ setLayoutProps({
                 :title="`Reopen ${evaluation.employee.name}'s ${evaluation.year} Performance Evaluation?`"
                 :description="`It goes back to Open, keeping its Goals, Outcomes and summary, so their Manager can correct it and Complete it again. ${evaluation.employee.name} doesn't see the Outcomes until then.`"
                 confirm-label="Reopen"
+                dismiss-label="Keep it Completed"
             >
                 <template #trigger>
                     <Button variant="outline">Reopen</Button>
@@ -330,7 +331,8 @@ setLayoutProps({
             </div>
             <p class="text-sm text-muted-foreground">
                 {{ evaluation.employee.name }} sees the Outcomes and summary
-                once you complete it. After that, nothing on it can change.
+                once you complete it. After that, it can't change unless it's
+                Reopened.
             </p>
             <div class="flex flex-wrap gap-2">
                 <SubmitButton
@@ -351,8 +353,8 @@ setLayoutProps({
                             >
                             <DialogDescription
                                 >{{ evaluation.employee.name }} sees the
-                                Outcomes and summary, and nothing on it can
-                                change after that.</DialogDescription
+                                Outcomes and summary, and it can't change after
+                                that unless it's Reopened.</DialogDescription
                             >
                         </DialogHeader>
                         <DialogFooter class="gap-2">
