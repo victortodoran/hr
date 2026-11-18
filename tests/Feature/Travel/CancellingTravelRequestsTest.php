@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CancelTravelRequest;
 use App\Enums\TravelRequestState;
 use App\Http\Controllers\Travel\TravelRequestCancellationController;
 use App\Models\CompanySettings;
@@ -10,7 +11,7 @@ use App\Policies\TravelRequestPolicy;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(TravelRequestCancellationController::class, TravelRequestPolicy::class, TravelRequest::class);
+covers(CancelTravelRequest::class, TravelRequestCancellationController::class, TravelRequestPolicy::class, TravelRequest::class);
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
@@ -58,6 +59,21 @@ it('refuses cancelling a Declined or already Cancelled Travel Request', function
 
     expect($travelRequest->refresh()->state)->toBe(TravelRequestState::from($state));
 })->with(['declined', 'cancelled']);
+
+it('leaves a Travel Request no longer cancellable since the policy check as it was', function (array $change, string $now) {
+    $travelRequest = carasTravelRequest();
+    TravelRequest::query()->findOrFail($travelRequest->id)->forceFill($change)->save();
+    $stored = TravelRequest::query()->findOrFail($travelRequest->id)->getAttributes();
+    travelTo($now);
+
+    expect(app(CancelTravelRequest::class)->cancel($travelRequest))->toBeFalse();
+
+    expect(TravelRequest::query()->findOrFail($travelRequest->id)->getAttributes())->toBe($stored);
+})->with([
+    'declined since' => [fn () => ['state' => TravelRequestState::Declined, 'decided_by' => Employee::factory()->create()->id, 'decided_at' => now(), 'decline_reason' => 'Not that week.'], '2026-12-01 10:00'],
+    'cancelled since' => [fn () => ['state' => TravelRequestState::Cancelled, 'cancelled_at' => now()], '2026-12-01 10:00'],
+    'started since' => [fn () => [], '2026-12-03 00:00'],
+]);
 
 it('refuses cancelling someone else\'s Travel Request, even as an Employee with no Manager', function () {
     $travelRequest = carasTravelRequest();

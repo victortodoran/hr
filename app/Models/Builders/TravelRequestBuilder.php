@@ -38,6 +38,18 @@ class TravelRequestBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to Travel Requests their Employee may still cancel:
+     * standing, and starting after today. The query form of
+     * TravelRequest::isCancellable(), so the two change together.
+     */
+    public function cancellable(): static
+    {
+        return $this->scoped(function (): void {
+            $this->standing()->whereDate($this->qualifyColumn('first_date'), '>', today());
+        });
+    }
+
+    /**
      * Limit the query to Travel Requests with at least one date from the
      * first to the last date given.
      */

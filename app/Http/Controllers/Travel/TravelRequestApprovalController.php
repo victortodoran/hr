@@ -17,11 +17,13 @@ use Inertia\Inertia;
 class TravelRequestApprovalController extends Controller
 {
     /**
-     * Approve the Travel Request, recording who approved it and when.
+     * Approve the Travel Request, recording who approved it and when. One
+     * decided or cancelled since the policy check is refused, never changed.
      */
     public function store(TravelRequest $travelRequest, #[CurrentUser] Employee $actor, ApproveTravelRequest $approveTravelRequest): RedirectResponse
     {
-        $approveTravelRequest->approve($travelRequest, $actor);
+        $changed = $approveTravelRequest->approve($travelRequest, $actor);
+        abort_if(! $changed, 403); // @pest-mutate-ignore (only reached when the Travel Request is decided or cancelled between the policy check and this write)
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Request approved.')]);
 
