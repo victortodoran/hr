@@ -37,7 +37,7 @@ function carasCompletedEvaluation(): array
 }
 
 it('lets someone with reopen performance evaluations send a Completed one back to Open, keeping what was written', function () {
-    [$ben, $cara, $evaluation] = carasCompletedEvaluation();
+    [$ben, , $evaluation] = carasCompletedEvaluation();
     $rae = employeeWith([Permission::ReopenPerformanceEvaluations->value => Scope::Everyone], ['name' => 'Rae']);
 
     actingAs($rae)->get(route('performance-evaluations.index'))

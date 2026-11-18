@@ -129,7 +129,7 @@ it('refuses to decline without a reason or a selection', function (array $form, 
     'no selection' => [['ids' => []], 'ids', 'Select at least one Work Entry.'],
 ]);
 
-it('shows a Declined Work Entry with who declined it and why, open to change or delete, its hours counted nowhere', function () {
+it('shows a Declined Work Entry with who declined it and why, open to change or delete, its hours left out of the week\'s totals', function () {
     ['ben' => $ben, 'cara' => $cara] = benAndCara();
     $relaunch = assignmentOf($cara);
     $internal = assignmentOf($cara, 'Internal');
