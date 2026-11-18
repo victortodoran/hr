@@ -46,7 +46,7 @@ it('shows an Employee who manages Roles every Role with its Permissions, Scopes 
 it('offers every Permission with the Scopes it can carry, in its group', function () {
     actingAs(employeeWhoManagesRoles())->get(route('roles.index'))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('permissions', 20)
+            ->has('permissions', 21)
             ->where('permissions.0', ['value' => 'view-employee-records', 'label' => 'View employee records', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Employees'])
             ->where('permissions.6', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Work entries'])
             ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Work entries'])
@@ -55,9 +55,10 @@ it('offers every Permission with the Scopes it can carry, in its group', functio
             ->where('permissions.10', ['value' => 'manage-paid-days', 'label' => 'Manage paid days', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Time off'])
             ->where('permissions.11', ['value' => 'view-travel', 'label' => 'View travel', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Travel'])
             ->where('permissions.12', ['value' => 'reopen-travel-expenses', 'label' => 'Reopen travel expenses', 'scopes' => ['reports', 'everyone'], 'group' => 'Travel'])
-            ->where('permissions.18', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => [], 'group' => 'Administration'])
+            ->where('permissions.13', ['value' => 'view-performance-evaluations', 'label' => 'View performance evaluations', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Performance'])
+            ->where('permissions.19', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => [], 'group' => 'Administration'])
             ->where('permissions', fn (Collection $permissions): bool => ! $permissions->contains('value', 'approve-work-entries'))
-            ->where('permissions', fn (Collection $permissions): bool => $permissions->pluck('group')->unique()->values()->all() === ['Employees', 'Assignments', 'Pay', 'Work entries', 'Time off', 'Travel', 'Organization', 'Administration'])
+            ->where('permissions', fn (Collection $permissions): bool => $permissions->pluck('group')->unique()->values()->all() === ['Employees', 'Assignments', 'Pay', 'Work entries', 'Time off', 'Travel', 'Performance', 'Organization', 'Administration'])
             ->etc(),
         );
 });

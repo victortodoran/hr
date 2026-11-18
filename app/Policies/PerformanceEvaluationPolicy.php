@@ -2,12 +2,14 @@
 
 namespace App\Policies;
 
+use App\Enums\Permission;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
 
 /**
  * Who may act on Performance Evaluations. Every Employee sees their own
- * with no Permission needed. Only the Employee's effective Manager starts
+ * with no Permission needed, and view performance evaluations lets others
+ * read them, never write them. Only the Employee's effective Manager starts
  * one, gives, changes or removes its Goals, gives their Outcomes and
  * Completes it: no Role grants that, and
  * since nobody is their own effective Manager, nobody sets their own.
@@ -17,22 +19,26 @@ class PerformanceEvaluationPolicy
     /**
      * The Performance Evaluations page is for Employees who are the
      * effective Manager of anyone, Former Employees included, since a
-     * Former Employee's Evaluation can still be written. It needs no
-     * Permission.
+     * Former Employee's Evaluation can still be written, and for anyone a
+     * Permission for reading Performance Evaluations lets read someone
+     * else's.
      */
     public function viewList(Employee $actor): bool
     {
-        return $actor->managesAnyone();
+        return $actor->managesAnyone()
+            || $actor->reachesOthersThrough(Permission::seeingPerformanceEvaluations());
     }
 
     /**
      * Seeing a Performance Evaluation on its own page: the Employee whose
-     * Evaluation it is, and their effective Manager.
+     * Evaluation it is, their effective Manager, and whoever a Permission
+     * for reading Performance Evaluations reaches the Employee for.
      */
     public function view(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
         return $performanceEvaluation->employee_id === $actor->id
-            || $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee);
+            || $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee)
+            || $actor->reachesThrough(Permission::seeingPerformanceEvaluations(), $performanceEvaluation->employee);
     }
 
     /**

@@ -27,8 +27,9 @@ defineOptions({
 });
 
 /**
- * For one year, the Employees the viewer effectively manages, each with
- * that year's Performance Evaluation, or a way to start it.
+ * For one year, the Employees the viewer effectively manages or may read
+ * the Performance Evaluations of, each with that year's Performance
+ * Evaluation, or a way to start it for those they manage.
  */
 const props = defineProps<{
     year: number;
@@ -57,7 +58,7 @@ function showYear(year: unknown): void {
     <PageContainer width="wide">
         <Heading
             title="Performance Evaluations"
-            description="The Goals you give the Employees you are the Manager of"
+            description="The Evaluations you write for the Employees you are the Manager of, and those you may read"
         />
 
         <div class="flex flex-wrap gap-2">
@@ -123,7 +124,7 @@ function showYear(year: unknown): void {
             <template #empty>
                 <EmptyState
                     :icon="Target"
-                    :message="`The Employees you are the Manager of in ${year} appear here.`"
+                    :message="`The Employees whose ${year} Evaluations you write or may read appear here.`"
                 />
             </template>
         </DataTable>

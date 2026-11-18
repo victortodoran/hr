@@ -16,30 +16,32 @@ use Inertia\Response;
 
 /**
  * The Performance Evaluations page, where a Manager starts and writes the
- * Performance Evaluations of the Employees they effectively manage, and
- * the page of each Performance Evaluation.
+ * Performance Evaluations of the Employees they effectively manage and
+ * anyone view performance evaluations lets read them reads them, and the
+ * page of each Performance Evaluation.
  */
 class PerformanceEvaluationController extends Controller
 {
     /**
-     * Show, for one year, the Employees the viewer effectively manages who
-     * work for the company on some day of it, Former Employees included,
-     * by name, each with that year's Performance Evaluation if they have
-     * one and whether the viewer may start it. The years to choose from run
-     * back from the current one to the earliest Start Date among the
-     * Employees the viewer effectively manages.
+     * Show, for one year, the Employees whose Performance Evaluations the
+     * viewer may open here (those they effectively manage, and those view
+     * performance evaluations reaches) who work for the company on some
+     * day of it, Former Employees included, by name, each with that year's
+     * Performance Evaluation if they have one and whether the viewer may
+     * start it. The years to choose from run back from the current one to
+     * the earliest Start Date among those Employees.
      */
     public function index(PerformanceEvaluationListRequest $request, #[CurrentUser] Employee $actor): Response
     {
         $year = $request->year();
-        $firstStart = Employee::query()->effectivelyManagedBy($actor)->min('start_date');
+        $firstStart = Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->min('start_date');
         $years = range(today()->year, min(today()->year, $firstStart === null ? today()->year : CarbonImmutable::parse($firstStart)->year));
 
         return Inertia::render('performance-evaluations/Index', [
             'year' => $year,
             'years' => $years,
             'employees' => PageWithin::paginate(Employee::query()
-                ->effectivelyManagedBy($actor)
+                ->withPerformanceEvaluationsVisibleTo($actor)
                 ->employedDuring($year)
                 ->with(['performanceEvaluations' => fn ($evaluations) => $evaluations->where('year', $year)->withCount('goals')]) // @pest-mutate-ignore (eager loading only saves queries; the row reads the same year either way)
                 ->orderBy('name')
