@@ -5,6 +5,7 @@ namespace App\Models\Builders;
 use App\Enums\Permission;
 use App\Models\Assignment;
 use App\Models\Employee;
+use App\Support\Period;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -56,6 +57,18 @@ class AssignmentBuilder extends ModelBuilder
         return $this->scoped(function () use ($day): void {
             $this->whereDate('start_date', '<=', $day)
                 ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $day));
+        });
+    }
+
+    /**
+     * Limit the query to Assignments running on at least one day of the
+     * Period: started by its last day and not ended before its first.
+     */
+    public function runningDuring(Period $period): static
+    {
+        return $this->scoped(function () use ($period): void {
+            $this->whereDate('start_date', '<=', $period->to)
+                ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>=', $period->from));
         });
     }
 

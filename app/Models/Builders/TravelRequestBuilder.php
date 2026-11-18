@@ -16,6 +16,17 @@ use Illuminate\Database\Eloquent\Builder;
 class TravelRequestBuilder extends ModelBuilder
 {
     /**
+     * Limit the query to Pending Travel Requests, which wait for the
+     * Employee's Manager to approve or decline them.
+     */
+    public function pending(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('state'), TravelRequestState::Pending);
+        });
+    }
+
+    /**
      * Limit the query to Travel Requests that still stand: Pending or
      * Approved.
      */

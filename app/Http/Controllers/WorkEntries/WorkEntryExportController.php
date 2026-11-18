@@ -5,8 +5,7 @@ namespace App\Http\Controllers\WorkEntries;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\WorkEntryExportRequest;
 use App\Models\Employee;
-use App\Models\WorkEntry;
-use App\Support\WorkEntrySpreadsheet;
+use App\Pages\WorkEntries\WorkEntryListPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -22,13 +21,6 @@ class WorkEntryExportController extends Controller
      */
     public function show(#[CurrentUser] Employee $actor, WorkEntryExportRequest $request): StreamedResponse
     {
-        $filters = $request->filters();
-        $entries = WorkEntry::query()
-            ->listedFor($actor, $filters)
-            ->with(['assignment.employee:id,name', 'assignment.project:id,name,client_id', 'assignment.project.client:id,name', 'approver:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same rows)
-            ->orderBy('date')
-            ->orderBy('id');
-
-        return WorkEntrySpreadsheet::download($entries, $request->spreadsheetFormat(), $filters['period']);
+        return WorkEntryListPage::download($actor, $request->filters(), $request->spreadsheetFormat());
     }
 }

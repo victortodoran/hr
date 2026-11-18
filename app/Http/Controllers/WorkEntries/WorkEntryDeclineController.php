@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\WorkEntries;
 
-use App\Enums\WorkEntryState;
+use App\Actions\DeclineWorkEntries;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\DeclineWorkEntriesRequest;
 use App\Models\Employee;
-use App\Models\WorkEntry;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -23,20 +22,11 @@ class WorkEntryDeclineController extends Controller
      * they are. Each records who declined it, when and why. The rest are
      * skipped, and the toast says how many of each.
      */
-    public function store(#[CurrentUser] Employee $actor, DeclineWorkEntriesRequest $request): RedirectResponse
+    public function store(#[CurrentUser] Employee $actor, DeclineWorkEntriesRequest $request, DeclineWorkEntries $declineWorkEntries): RedirectResponse
     {
         $ids = $request->ids();
 
-        $declined = WorkEntry::query()
-            ->ofEmployees(Employee::query()->effectivelyManagedBy($actor))
-            ->whereKey($ids)
-            ->where('state', WorkEntryState::Pending)
-            ->update([
-                'state' => WorkEntryState::Declined,
-                'declined_by' => $actor->id,
-                'declined_at' => now(),
-                'decline_reason' => $request->reason(),
-            ]);
+        $declined = $declineWorkEntries->decline($actor, $ids, $request->reason());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => $request->outcome(
             trans_choice('{0} No Work Entries declined|{1} 1 Work Entry declined|[2,*] :count Work Entries declined', $declined),

@@ -14,6 +14,17 @@ use Carbon\CarbonInterface;
 class TimeOffBuilder extends ModelBuilder
 {
     /**
+     * Limit the query to Pending Time Off, which waits for the Employee's
+     * Manager to approve or decline it.
+     */
+    public function pending(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('state'), TimeOffState::Pending);
+        });
+    }
+
+    /**
      * Limit the query to Time Off that still stands: Pending or Approved.
      */
     public function standing(): static
@@ -31,6 +42,16 @@ class TimeOffBuilder extends ModelBuilder
     {
         return $this->scoped(function () use ($first, $last): void {
             $this->whereDate('first_date', '<=', $last)->whereDate('last_date', '>=', $first);
+        });
+    }
+
+    /**
+     * Limit the query to the Time Off of the given Employees.
+     */
+    public function ofEmployees(EmployeeBuilder $employees): static
+    {
+        return $this->scoped(function () use ($employees): void {
+            $this->whereIn($this->qualifyColumn('employee_id'), $employees->select('employees.id'));
         });
     }
 }

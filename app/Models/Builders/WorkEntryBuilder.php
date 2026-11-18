@@ -18,6 +18,49 @@ use Illuminate\Database\Eloquent\Builder;
 class WorkEntryBuilder extends ModelBuilder
 {
     /**
+     * Limit the query to Pending Work Entries, which wait for the Employee's
+     * effective Manager to approve or decline them.
+     */
+    public function pending(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('state'), WorkEntryState::Pending);
+        });
+    }
+
+    /**
+     * Limit the query to Approved Work Entries, which can be reopened.
+     */
+    public function approved(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('state'), WorkEntryState::Approved);
+        });
+    }
+
+    /**
+     * Limit the query to Declined Work Entries, whose hours count nowhere.
+     */
+    public function declined(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('state'), WorkEntryState::Declined);
+        });
+    }
+
+    /**
+     * Limit the query to the Work Entries the actor may approve or decline:
+     * Pending ones of the Employees whose effective Manager they are, so
+     * never their own.
+     */
+    public function decidableBy(Employee $actor): static
+    {
+        return $this->scoped(function () use ($actor): void {
+            $this->pending()->ofEmployees(Employee::query()->effectivelyManagedBy($actor));
+        });
+    }
+
+    /**
      * Limit the query to the Work Entries whose hours count: all but the
      * Declined ones.
      */
