@@ -58,13 +58,13 @@ trait HasAccess
     }
 
     /**
-     * Whether the Employee sees Travel Expenses of anyone besides themselves
-     * across Employees: one of the Permissions for seeing them reaches
-     * beyond themselves.
+     * Whether the Employee sees the Travel Requests of anyone besides
+     * themselves across Employees: one of the Permissions for seeing travel
+     * reaches beyond themselves.
      */
-    public function seesOthersTravelExpenses(): bool
+    public function seesOthersTravel(): bool
     {
-        return $this->reachesOthersThrough(Permission::seeingTravelExpenses());
+        return $this->reachesOthersThrough(Permission::seeingTravel());
     }
 
     /**

@@ -19,8 +19,8 @@ export type Auth = {
     canSeeWorkEntries: boolean;
     /** Whether the signed-in Employee may see Work Entries of anyone besides themselves, for the Work Entries page. */
     canSeeWorkEntryList: boolean;
-    /** Whether the signed-in Employee may see Travel Expenses of anyone besides themselves, for the Travel Expenses page. */
-    canSeeTravelExpenseList: boolean;
+    /** Whether the signed-in Employee may see the travel of anyone besides themselves, for the Travel Requests page. */
+    canSeeTravelRequestList: boolean;
     /** Whether the signed-in Employee has Direct Reports, for the Team page. */
     canSeeTeam: boolean;
     /** Whether the signed-in Employee may open the Approvals page. */

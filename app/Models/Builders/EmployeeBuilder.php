@@ -122,14 +122,14 @@ class EmployeeBuilder extends ModelBuilder
     }
 
     /**
-     * Limit the query to the Employees whose Travel Expenses the given
-     * Employee may see across Employees, through the Permissions that show
-     * them (Permission::seeingTravelExpenses()).
+     * Limit the query to the Employees whose travel the given Employee may
+     * see across Employees, through the Permissions that show it
+     * (Permission::seeingTravel()).
      */
-    public function withTravelExpensesVisibleTo(Employee $viewer): static
+    public function withTravelVisibleTo(Employee $viewer): static
     {
         return $this->scoped(function () use ($viewer): void {
-            $viewer->limitToReachOf($this, Permission::seeingTravelExpenses());
+            $viewer->limitToReachOf($this, Permission::seeingTravel());
         });
     }
 

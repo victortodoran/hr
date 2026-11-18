@@ -7,7 +7,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * The Travel Expenses selected on the Approvals page or the Travel Expenses
+ * The Travel Expenses selected on the Approvals page or a Travel Request's
  * page, by ID, for approving or reopening them all at once.
  */
 class SelectedTravelExpensesRequest extends FormRequest

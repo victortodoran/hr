@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { Receipt } from '@lucide/vue';
+import { computed } from 'vue';
 import TravelExpenseController from '@/actions/App/Http/Controllers/Travel/TravelExpenseController';
 import TravelExpenseReceiptController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReceiptController';
+import TravelExpenseReopeningController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReopeningController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import SelectionBar from '@/components/SelectionBar.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useBulkSelection } from '@/composables/useBulkSelection';
 import { formatDate } from '@/lib/dates';
 import { travelExpenseCategories } from '@/lib/travel-expenses';
 import { create, edit } from '@/routes/travel-requests/expenses';
@@ -16,19 +22,34 @@ import type { TableColumn, TravelExpenses } from '@/types';
 /**
  * The Travel Expenses of one Travel Request on its page, with their total,
  * "Add expense" beside it, and Edit and Delete on each while the flags
- * allow, which they only do for the Employee themselves.
+ * allow, which they only do for the Employee themselves. Someone who may
+ * reopen its Approved ones ticks them and reopens them together.
  */
-defineProps<{
+const props = defineProps<{
     travelRequestId: number;
     expenses: TravelExpenses;
 }>();
 
-const columns: TableColumn[] = [
+const reopenable = computed(() =>
+    props.expenses.items.filter((expense) => expense.can_reopen),
+);
+
+const canReopen = computed(() => reopenable.value.length > 0);
+
+const { selected, isSelected, toggle, clear, processing, submit } =
+    useBulkSelection(() => reopenable.value);
+
+function reopen(): void {
+    submit(TravelExpenseReopeningController.store.url(props.travelRequestId));
+}
+
+const columns = computed<TableColumn[]>(() => [
+    ...(canReopen.value ? [{ key: 'select', label: 'Select' }] : []),
     { key: 'expense', label: 'Expense' },
     { key: 'paid_on', label: 'Paid', minor: true },
     { key: 'amount', label: 'Amount', align: 'end' },
     { key: 'state', label: 'State', align: 'end' },
-];
+]);
 </script>
 
 <template>
@@ -44,7 +65,27 @@ const columns: TableColumn[] = [
                 <Link :href="create(travelRequestId)">Add expense</Link>
             </Button>
         </div>
+        <SelectionBar v-if="canReopen" :count="selected.length" @clear="clear">
+            <template #actions>
+                <SubmitButton
+                    variant="outline"
+                    :processing="processing"
+                    type="button"
+                    :disabled="selected.length === 0"
+                    @click="reopen"
+                    >Reopen</SubmitButton
+                >
+            </template>
+        </SelectionBar>
         <DataTable :columns="columns" :rows="expenses.items">
+            <template #cell-select="{ row }">
+                <Checkbox
+                    v-if="row.can_reopen"
+                    :model-value="isSelected(row.id)"
+                    :aria-label="`Select the ${travelExpenseCategories[row.category]} expense paid on ${formatDate(row.paid_on)}`"
+                    @update:model-value="toggle(row.id, $event === true)"
+                />
+            </template>
             <template #cell-expense="{ row }">
                 <p>
                     <span class="font-medium">{{

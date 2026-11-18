@@ -9,7 +9,7 @@ import {
     FolderKanban,
     House,
     Plane,
-    Receipt,
+    Luggage,
     Landmark,
     Network,
     ShieldCheck,
@@ -41,7 +41,7 @@ import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import { index as team } from '@/routes/team';
 import { index as timeOff } from '@/routes/time-off';
-import { index as travelExpenseList } from '@/routes/travel-expense-list';
+import { index as travelRequestList } from '@/routes/travel-request-list';
 import { index as travelRequests } from '@/routes/travel-requests';
 import { index as workEntries } from '@/routes/work-entries';
 import { index as workEntryList } from '@/routes/work-entry-list';
@@ -82,12 +82,12 @@ const manageItems = computed<NavItem[]>(() => [
     ...(auth.value.canSeeWorkEntryList
         ? [{ title: 'Work Entries', href: workEntryList(), icon: Clock }]
         : []),
-    ...(auth.value.canSeeTravelExpenseList
+    ...(auth.value.canSeeTravelRequestList
         ? [
               {
-                  title: 'Travel Expenses',
-                  href: travelExpenseList(),
-                  icon: Receipt,
+                  title: 'Travel Requests',
+                  href: travelRequestList(),
+                  icon: Luggage,
               },
           ]
         : []),
