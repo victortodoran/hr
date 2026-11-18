@@ -83,8 +83,11 @@ jobs:
           composer install --no-interaction --no-progress
           npm ci
 
+      # No --with-deps: the runner image already has the libraries Chromium
+      # needs, and the flag's apt step fetched fonts from Ubuntu mirrors that
+      # sometimes took minutes. Add a single package here if a test needs one.
       - name: Install Playwright's Chromium for browser tests
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: Prepare application
         run: |
