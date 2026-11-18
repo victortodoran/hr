@@ -48,7 +48,7 @@
     "scripts-descriptions": {
         "lint:callbacks": "Fails when a Collection callback is a built-in with an optional second parameter, such as map(intval(...)): Collections pass the key as that argument.",
         "lint:migrations": "Fails when the branch changes a migration already on main; add a new migration instead.",
-        "lint:folders": "Fails when a controller or form request sits directly in app/Http/Controllers or app/Http/Requests instead of an area folder.",
+        "lint:folders": "Fails when a controller, form request or Page class sits directly in app/Http/Controllers, app/Http/Requests or app/Pages instead of an area folder.",
         "lint:scopes": "Fails when a model declares query scopes; reusable queries go in the model's builder in app/Models/Builders.",
         "lint:builders": "Fails when a public builder method in app/Models/Builders doesn't start with return $this->scoped(...).",
         "lint:browser-tests": "Fails when a browser test in tests/Browser still calls screenshot(), debug() or pause().",

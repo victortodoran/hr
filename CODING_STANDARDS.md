@@ -8,11 +8,13 @@ When a diff changes a term's meaning in `GLOSSARY.md`, every use of that term mu
 
 ## Where code goes
 
-List each piece of a diff that sits in the wrong layer.
+List each piece of a diff that sits in the wrong layer. These hold from the first caller.
 
-- A named query on a model (anything that would otherwise be a query scope) is a method on its builder in `app/Models/Builders`, even with one caller; a one-off chain of conditions stays where it is used, until a second place needs it.
-- A write that changes several models, or that more than one controller makes, is an Action (`app/Actions`).
-- Shaping models into page props stays in the controller; once it holds most of the controller, or another page needs the same shape, it moves to `app/Support` (see `PayHistory`, `ReportingChain`).
+- A controller method stays light: it authorizes, reads its form request, makes one call per job (a Page, an Action, or a plain create, update or delete), flashes the toast and returns the response. It never runs a query or builds an array of props itself.
+- Every Inertia page's props, its queries and their shaping, come from a Page class in `app/Pages`, in the controller's area folder (`app/Pages/WorkEntries/ApprovalsPage.php` for `Controllers/WorkEntries/ApprovalController`). A Create and an Edit form share one class (`TravelExpenseFormPage::create()`, `::edit()`). Page methods are static, as in `EmployeePage`.
+- `app/Support` holds only shapes more than one page shares and value objects, such as `PayHistory`, `ReportingChain`, `Currency` and `Period`.
+- A query condition a glossary term would name (Pending, Open, effectively managed by, of an Employee) is a method on the model's builder in `app/Models/Builders`. Ordering, eager loading, `select` and paging stay inline.
+- Every write is an Action (`app/Actions`) injected into the controller, except a single create, update or delete of a route-bound model straight from validated input. A state change, a guard on state, a file, several models or a transaction always makes it an Action.
 - A form request sits in the area folder of the controller that uses it.
 
 ## UI
