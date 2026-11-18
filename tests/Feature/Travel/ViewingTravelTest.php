@@ -235,7 +235,7 @@ it('shows anyone\'s Travel Request pages and receipts to Ana with view travel fo
 
 it('leads the breadcrumbs to Cara\'s page for a viewer who may also see her record', function () {
     $viewer = employeeWith([Permission::ViewTravel->value => Scope::Everyone, Permission::ViewEmployeeRecords->value => Scope::Everyone]);
-    $hotel = berlinTripWithHotel(Employee::factory()->create());
+    $hotel = berlinTripWithHotel(Employee::factory()->create(['name' => 'Cara']));
 
     actingAs($viewer)->get(route('travel-requests.show', $hotel->travelRequest))
         ->assertInertia(fn (Assert $page) => $page->where('canViewEmployee', true));

@@ -80,7 +80,8 @@ it('never offers to reopen one\'s own expenses, nor those of an Employee the reo
 
     actingAs($rae)->get(route('travel-requests.show', $own->travel_request_id))
         ->assertInertia(fn (Assert $page) => $page->where('travelRequest.expenses.items.0.can_reopen', false));
-    actingAs(employeeWith([Permission::ReopenTravelExpenses->value => Scope::Reports, Permission::ViewTravel->value => Scope::Everyone]))->get(route('travel-requests.show', $outsider->travel_request_id))
+    $reopenerOfReports = employeeWith([Permission::ReopenTravelExpenses->value => Scope::Reports, Permission::ViewTravel->value => Scope::Everyone]);
+    actingAs($reopenerOfReports)->get(route('travel-requests.show', $outsider->travel_request_id))
         ->assertInertia(fn (Assert $page) => $page->where('travelRequest.expenses.items.0.can_reopen', false));
 });
 

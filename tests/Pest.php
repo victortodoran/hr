@@ -78,6 +78,18 @@ function employeeWhoManagesRoles(string $role = 'Admin'): Employee
 }
 
 /**
+ * An Employee holding the Admin Role, which holds every Permission with
+ * the everyone Scope.
+ */
+function employeeHoldingAdmin(): Employee
+{
+    $admin = Employee::factory()->create();
+    $admin->roles()->attach(Role::factory()->admin()->create());
+
+    return $admin;
+}
+
+/**
  * Ben, whose own Manager is Ada, ready to be given Reports of his own whose
  * Work Entries and Time Off he decides. No Role is involved.
  */

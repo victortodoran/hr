@@ -11,7 +11,6 @@ use App\Http\Requests\Performance\AssessmentRequest;
 use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
-use App\Models\Role;
 use App\Policies\PerformanceEvaluationPolicy;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -132,7 +131,7 @@ it('refuses Outcomes and Completing to anyone but the effective Manager, the Emp
     [$ben, $cara, $evaluation, $api, $mentoring] = carasEvaluation();
     $form = assessmentForm([$api->id => 'exceeded', $mentoring->id => 'exceeded'], 'exceeded', 'My best year.');
 
-    foreach ([$cara, Employee::query()->where('name', 'Ada')->sole(), Employee::factory()->hasAttached(Role::factory()->admin())->create()] as $other) {
+    foreach ([$cara, Employee::query()->where('name', 'Ada')->sole(), employeeHoldingAdmin()] as $other) {
         actingAs($other)->put(route('performance-evaluations.assessment.update', $evaluation), $form)->assertForbidden();
         actingAs($other)->post(route('performance-evaluations.completion.store', $evaluation), $form)->assertForbidden();
     }

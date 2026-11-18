@@ -10,7 +10,7 @@ class ProfileUpdateTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_employees_can_neither_change_their_own_name_or_email_nor_delete_their_account(): void
+    public function test_employees_cannot_change_their_own_name_or_email(): void
     {
         $employee = Employee::factory()->create(['name' => 'Cara Lane', 'email' => 'cara@acme.test']);
 
@@ -21,16 +21,23 @@ class ProfileUpdateTest extends TestCase
             ])
             ->assertMethodNotAllowed();
 
+        $employee->refresh();
+
+        $this->assertSame('Cara Lane', $employee->name);
+        $this->assertSame('cara@acme.test', $employee->email);
+    }
+
+    public function test_employees_cannot_delete_their_own_account(): void
+    {
+        $employee = Employee::factory()->create();
+
         $this->actingAs($employee)
             ->delete('/settings/profile', [
                 'password' => 'password',
             ])
             ->assertMethodNotAllowed();
 
-        $employee->refresh();
-
-        $this->assertSame('Cara Lane', $employee->name);
-        $this->assertSame('cara@acme.test', $employee->email);
         $this->assertAuthenticatedAs($employee);
+        $this->assertNotNull($employee->fresh());
     }
 }
