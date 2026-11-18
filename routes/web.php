@@ -14,6 +14,7 @@ use App\Http\Controllers\Employees\EmployeeInvitationController;
 use App\Http\Controllers\Employees\TeamController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Performance\GoalController;
+use App\Http\Controllers\Performance\GoalProgressController;
 use App\Http\Controllers\Performance\MyPerformanceEvaluationController;
 use App\Http\Controllers\Performance\PerformanceEvaluationAssessmentController;
 use App\Http\Controllers\Performance\PerformanceEvaluationCompletionController;
@@ -137,6 +138,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('performance-evaluations', [PerformanceEvaluationController::class, 'index'])->middleware('can:viewList,'.PerformanceEvaluation::class)->name('performance-evaluations.index');
     Route::post('employees/{employee}/performance-evaluations', [PerformanceEvaluationController::class, 'store'])->middleware('can:create,'.PerformanceEvaluation::class.',employee')->name('employees.performance-evaluations.store');
     Route::get('performance-evaluations/{performanceEvaluation}', [PerformanceEvaluationController::class, 'show'])->middleware('can:view,performanceEvaluation')->name('performance-evaluations.show');
+    Route::get('performance-evaluations/{performanceEvaluation}/goals/{goal}', [GoalController::class, 'show'])->middleware('can:view,performanceEvaluation')->scopeBindings()->whereNumber('goal')->name('performance-evaluations.goals.show');
+    Route::put('performance-evaluations/{performanceEvaluation}/goals/{goal}/progress', [GoalProgressController::class, 'update'])->middleware('can:changeProgress,performanceEvaluation')->scopeBindings()->name('performance-evaluations.goals.progress.update');
     Route::post('performance-evaluations/{performanceEvaluation}/reopening', [PerformanceEvaluationReopeningController::class, 'store'])->middleware('can:reopen,performanceEvaluation')->name('performance-evaluations.reopening.store');
     Route::middleware('can:edit,performanceEvaluation')->scopeBindings()->group(function () {
         Route::get('performance-evaluations/{performanceEvaluation}/goals/create', [GoalController::class, 'create'])->name('performance-evaluations.goals.create');

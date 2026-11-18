@@ -11,6 +11,11 @@ export type PerformanceEvaluationState = 'open' | 'completed';
 export type Outcome = 'not-met' | 'partly-met' | 'met' | 'exceeded';
 
 /**
+ * How far along a Goal is during the year.
+ */
+export type Progress = 'not-started' | 'on-track' | 'at-risk' | 'done';
+
+/**
  * One of the signed-in Employee's own Performance Evaluations on My
  * Performance Evaluations.
  */
@@ -51,11 +56,31 @@ export type Goal = {
 };
 
 /**
- * A Goal on its Performance Evaluation's page, with its Outcome when the
- * viewer may see it and one has been given.
+ * A Goal on its Performance Evaluation's page, with its Progress, and its
+ * Outcome when the viewer may see it and one has been given.
  */
 export type AssessedGoal = Goal & {
+    progress: Progress;
     outcome: Outcome | null;
+};
+
+/**
+ * A Goal on its own page, with its Progress and the day it was given.
+ */
+export type GoalRecord = Goal & {
+    progress: Progress;
+    given_at: string;
+};
+
+/**
+ * One change to a Goal's Progress: to what, from what, by whom and when.
+ */
+export type ProgressChange = {
+    progress: Progress;
+    previous_progress: Progress;
+    changed_by: string;
+    /** When it was changed, as an ISO 8601 date and time. */
+    changed_at: string;
 };
 
 /**

@@ -2,7 +2,9 @@
  * Every state the status badge can show. Pending, Approved and Declined are
  * Work Entry and Travel Expense states; Pending, Approved, Declined and
  * Cancelled are Time Off and Travel Request states; Upcoming is a Future
- * Employee, who hasn't started yet.
+ * Employee, who hasn't started yet; Open and Completed are Performance
+ * Evaluation states; Not Started, On Track, At Risk and Done are a Goal's
+ * Progress.
  */
 export type StatusBadgeState =
     | 'pending'
@@ -11,4 +13,8 @@ export type StatusBadgeState =
     | 'cancelled'
     | 'upcoming'
     | 'open'
-    | 'completed';
+    | 'completed'
+    | 'not-started'
+    | 'on-track'
+    | 'at-risk'
+    | 'done';

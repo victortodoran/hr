@@ -10,6 +10,19 @@ export function formatDate(date: string): string {
 }
 
 /**
+ * A moment as people read it, such as "5 Jan 2026, 14:30".
+ */
+export function formatDateTime(dateTime: string): string {
+    return new Date(dateTime).toLocaleString(undefined, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+/**
  * A period as people read it, such as "5 Jan 2026 – no end date".
  */
 export function formatPeriod(start: string, end: string | null): string {

@@ -1,0 +1,45 @@
+<?php
+
+use App\Enums\Progress;
+use App\Http\Controllers\Performance\GoalController;
+use App\Http\Controllers\Performance\GoalProgressController;
+use App\Http\Controllers\Performance\PerformanceEvaluationController;
+use App\Models\Employee;
+use App\Models\Goal;
+use App\Models\PerformanceEvaluation;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\travelTo;
+
+covers(PerformanceEvaluationController::class, GoalController::class, GoalProgressController::class);
+
+beforeEach(fn () => travelTo('2026-12-01 09:00'));
+
+it('opens a Goal from its Performance Evaluation, changes its Progress, and the Manager reads the history', function () {
+    $ben = managerBen();
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
+    $evaluation = PerformanceEvaluation::factory()->of($cara)->create();
+    $goal = Goal::factory()->for($evaluation)->create(['title' => 'Lead the Checkout API']);
+
+    actingAs($cara);
+
+    visit(route('performance-evaluations.show', $evaluation))
+        ->assertSee('Not Started')
+        ->click('internal:role=link[name="Lead the Checkout API"s]')
+        ->assertSee('The Goal was given')
+        ->click('#goal-progress')
+        ->click('internal:role=option[name="At Risk"s]')
+        ->click('Save Progress')
+        ->assertSee('Progress changed.')
+        ->assertSee('Cara changed it from Not Started')
+        ->assertNoJavaScriptErrors();
+
+    actingAs($ben);
+
+    visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
+        ->assertSee('Cara changed it from Not Started')
+        ->assertSee('At Risk')
+        ->assertNoJavaScriptErrors();
+
+    expect($goal->fresh()?->progress)->toBe(Progress::AtRisk);
+});

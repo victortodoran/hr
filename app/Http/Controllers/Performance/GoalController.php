@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Performance;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\GoalRequest;
+use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
+use App\Models\ProgressChange;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,7 +16,9 @@ use Inertia\Response;
 /**
  * The Goals of a Performance Evaluation, which only the Employee's
  * effective Manager gives, changes or removes, while it is Open. Saving
- * and removing lead back to the Performance Evaluation's page.
+ * and removing lead back to the Performance Evaluation's page. Each Goal
+ * has its own page, open to everyone who can see the Evaluation, with
+ * its Progress and every change to it.
  */
 class GoalController extends Controller
 {
@@ -37,6 +42,32 @@ class GoalController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal given.')]);
 
         return to_route('performance-evaluations.show', $performanceEvaluation);
+    }
+
+    /**
+     * Show the Goal with its Progress and every change to it, newest
+     * first, and whether the viewer may change the Progress.
+     */
+    public function show(PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): Response
+    {
+        return Inertia::render('performance-evaluations/goals/Show', [
+            'evaluation' => $this->evaluationSummary($performanceEvaluation),
+            'goal' => [
+                ...$goal->only('id', 'title', 'description'),
+                'progress' => $goal->progress->value,
+                'given_at' => $goal->created_at?->toDateString(),
+            ],
+            'history' => $goal->progressChanges()->with('changedBy:id,name')->get()
+                ->map(fn (ProgressChange $change): array => [
+                    'progress' => $change->progress->value,
+                    'previous_progress' => $change->previous_progress->value,
+                    'changed_by' => $change->changedBy->name,
+                    'changed_at' => $change->created_at->toIso8601String(),
+                ])
+                ->all(),
+            'isOwn' => $performanceEvaluation->employee_id === $actor->id,
+            'canChangeProgress' => $actor->can('changeProgress', $performanceEvaluation),
+        ]);
     }
 
     /**

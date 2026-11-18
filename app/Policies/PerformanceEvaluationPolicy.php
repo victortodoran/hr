@@ -14,6 +14,8 @@ use App\Models\PerformanceEvaluation;
  * one, gives, changes or removes its Goals, gives their Outcomes and
  * Completes it: no Role grants that, and
  * since nobody is their own effective Manager, nobody sets their own.
+ * The Employee and their effective Manager both change its Goals'
+ * Progress while it is Open.
  */
 class PerformanceEvaluationPolicy
 {
@@ -67,6 +69,18 @@ class PerformanceEvaluationPolicy
     {
         return $performanceEvaluation->state->isEditable()
             && $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee);
+    }
+
+    /**
+     * Changing the Progress of its Goals: the Employee whose Evaluation it
+     * is and their effective Manager, only while it is Open. No Role
+     * grants it, so readers see the Progress without changing it.
+     */
+    public function changeProgress(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
+    {
+        return $performanceEvaluation->state->isEditable()
+            && ($performanceEvaluation->employee_id === $actor->id
+                || $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee));
     }
 
     /**

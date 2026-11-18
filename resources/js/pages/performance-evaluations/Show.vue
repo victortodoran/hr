@@ -37,7 +37,11 @@ import { formatDate } from '@/lib/dates';
 import { outcomes } from '@/lib/outcomes';
 import { index as mine } from '@/routes/my-performance-evaluations';
 import { index, show } from '@/routes/performance-evaluations';
-import { create, edit } from '@/routes/performance-evaluations/goals';
+import {
+    create,
+    edit,
+    show as showGoal,
+} from '@/routes/performance-evaluations/goals';
 import type {
     BreadcrumbItem,
     Outcome,
@@ -46,7 +50,8 @@ import type {
 } from '@/types';
 
 /**
- * One Performance Evaluation with its Goals. Only the Employee's effective
+ * One Performance Evaluation with its Goals, each with its Progress and a
+ * link to its own page. Only the Employee's effective
  * Manager is offered to give, change or remove Goals and to give their
  * Outcomes, the Outcome of the whole and a summary, saving them bit by bit
  * and then Completing it, while it is Open. Anyone else reads the Goals,
@@ -131,6 +136,7 @@ const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
 
 const columns: TableColumn[] = [
     { key: 'goal', label: 'Goal' },
+    { key: 'progress', label: 'Progress' },
     ...(props.canSeeOutcomes ? [{ key: 'outcome', label: 'Outcome' }] : []),
     ...(props.canEdit
         ? [{ key: 'actions', label: 'Actions', align: 'end' as const }]
@@ -195,10 +201,22 @@ setLayoutProps({
             <h2 class="text-sm font-medium">Goals</h2>
             <DataTable :columns="columns" :rows="evaluation.goals">
                 <template #cell-goal="{ row }">
-                    <p class="font-medium">{{ row.title }}</p>
+                    <Link
+                        :href="
+                            showGoal({
+                                performanceEvaluation: evaluation.id,
+                                goal: row.id,
+                            })
+                        "
+                        class="font-medium underline-offset-4 hover:underline"
+                        >{{ row.title }}</Link
+                    >
                     <p class="whitespace-pre-line text-muted-foreground">
                         {{ row.description }}
                     </p>
+                </template>
+                <template #cell-progress="{ row }">
+                    <StatusBadge :state="row.progress" />
                 </template>
                 <template #cell-outcome="{ row }">
                     <Select

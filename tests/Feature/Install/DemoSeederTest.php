@@ -3,6 +3,7 @@
 use App\Enums\EmploymentStatus;
 use App\Enums\PerformanceEvaluationState;
 use App\Enums\Permission;
+use App\Enums\Progress;
 use App\Enums\TimeOffState;
 use App\Enums\TravelExpenseState;
 use App\Enums\TravelRequestState;
@@ -17,12 +18,14 @@ use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PayEntry;
 use App\Models\PerformanceEvaluation;
+use App\Models\ProgressChange;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\TimeOff;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
+use App\Policies\PerformanceEvaluationPolicy;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -123,6 +126,17 @@ it('gives some Employees with a Manager an Open Performance Evaluation for this 
         ->and($evaluations->every(fn (PerformanceEvaluation $evaluation): bool => $evaluation->goals_count >= 2 && $evaluation->goals_count <= 4
             && ! $evaluation->employee->hasNoManager()))->toBeTrue()
         ->and(Employee::query()->whereNotNull('manager_id')->whereDoesntHave('performanceEvaluations')->exists())->toBeTrue();
+});
+
+it('gives this year\'s Goals a mix of Progress, each with the history that led to it, at least one At Risk', function () {
+    seed(DemoSeeder::class);
+
+    $goals = Goal::query()->whereHas('performanceEvaluation', fn ($evaluations) => $evaluations->where('year', today()->year))->with('progressChanges', 'performanceEvaluation')->get();
+
+    expect($goals->pluck('progress')->unique()->sort()->values()->all())->toEqualCanonicalizing([Progress::NotStarted, Progress::OnTrack, Progress::AtRisk, Progress::Done])
+        ->and($goals->every(fn (Goal $goal): bool => $goal->progress === ($goal->progressChanges->first()->progress ?? Progress::NotStarted)
+            && $goal->progressChanges->every(fn (ProgressChange $change): bool => $goal->created_at !== null && $change->created_at->betweenIncluded($goal->created_at, now())
+                && app(PerformanceEvaluationPolicy::class)->changeProgress($change->changedBy, $goal->performanceEvaluation))))->toBeTrue();
 });
 
 it('gives some Employees a Completed Performance Evaluation for last year, with an Outcome on every Goal and on the whole', function () {
