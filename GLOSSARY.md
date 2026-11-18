@@ -41,7 +41,7 @@ An Employee one level below another in the reporting line: one whose Manager the
 _Avoid_: Direct, team member, subordinate
 
 **Reporting Chain**:
-An Employee's place in the reporting line: their Manager, that Manager's Manager, and so on up to an Employee with no Manager, then the Employee themselves, then the Employees they are the Manager of. It reaches only one level down, not to every Report.
+An Employee's place in the reporting line: their Manager, that Manager's Manager, and so on up to an Employee with no Manager, then the Employee themselves, then the Employees they are the Manager of. It reaches only one level down, not to every Report. Every Employee can always see their own, on My Page, whatever their Roles.
 _Avoid_: Hierarchy, org path, chain of command, management line
 
 ### Organisation

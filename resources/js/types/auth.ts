@@ -13,8 +13,6 @@ export type Auth = {
     employee: Employee;
     /** Company-wide Permissions the signed-in Employee holds. */
     can: string[];
-    /** Whether the signed-in Employee may open their own Employee page. */
-    canSeeOwnPage: boolean;
     /** Whether the Employees list holds more than the signed-in Employee. */
     canListEmployees: boolean;
     /** Whether the signed-in Employee may see any Work Entries, for My Work Entries. */

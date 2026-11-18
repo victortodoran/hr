@@ -70,6 +70,27 @@ it('refuses an Employee\'s page to a viewer who may see none of their record, As
         ->assertForbidden();
 });
 
+it('always opens My Page to an Employee with no Roles, with their Reporting Chain but not their record, and still refuses them anyone else\'s page', function () {
+    $top = Employee::factory()->create(['name' => 'Ada']);
+    $ana = Employee::factory()->create(['name' => 'Ana', 'manager_id' => $top->id]);
+    Assignment::factory()->internal()->for($ana)->create(['job_title' => 'Accountant']);
+    $cara = Employee::factory()->reportingTo($ana)->create(['name' => 'Cara']);
+
+    actingAs($ana)->get(route('employees.show', ['employee' => $ana, 'tab' => 'time-off']))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('employee', ['id' => $ana->id, 'name' => 'Ana', 'job_title' => 'Accountant'])
+            ->where('tabs', ['overview'])
+            ->where('tab', 'overview')
+            ->where('record', null)
+            ->where('standing', null)
+            ->where('reportingChain.above.0.name', 'Ada')
+            ->where('reportingChain.employee.link', 'employee')
+            ->where('reportingChain.below.0.name', 'Cara'),
+        );
+    actingAs($ana)->get(route('employees.show', $cara))->assertForbidden();
+    actingAs($ana)->get(route('employees.show', $top))->assertForbidden();
+});
+
 /*
  * Dana (top)
  * ├── Ben ── Cara ── Dev
@@ -88,8 +109,13 @@ it('lets Scope decide whose record an Employee may see', function (Scope $scope,
     ];
 
     foreach ($people as $name => $employee) {
-        actingAs($ben)->get(route('employees.show', $employee))
-            ->assertStatus(in_array($name, $visible, true) ? 200 : 403);
+        $response = actingAs($ben)->get(route('employees.show', $employee));
+
+        if ($name === 'Ben') {
+            $response->assertOk()->assertInertia(fn (Assert $page) => $page->where('record', fn ($record) => ($record !== null) === in_array('Ben', $visible, true)));
+        } else {
+            $response->assertStatus(in_array($name, $visible, true) ? 200 : 403);
+        }
     }
 })->with([
     'own' => [Scope::Own, ['Ben']],

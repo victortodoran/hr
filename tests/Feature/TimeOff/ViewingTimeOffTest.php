@@ -111,7 +111,12 @@ it('lets someone with the reports Scope see the Time Off of their Reports only',
     ];
 
     foreach ($people as $name => $employee) {
-        actingAs($ben)->get(route('employees.show', $employee))
-            ->assertStatus(in_array($name, ['Cara', 'Dev'], true) ? 200 : 403);
+        $response = actingAs($ben)->get(route('employees.show', $employee));
+
+        if ($name === 'Ben') {
+            $response->assertOk()->assertInertia(fn (Assert $page) => $page->where('tabs', ['overview']));
+        } else {
+            $response->assertStatus(in_array($name, ['Cara', 'Dev'], true) ? 200 : 403);
+        }
     }
 });

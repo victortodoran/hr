@@ -81,8 +81,13 @@ it('lets Scope decide whose Assignments an Employee may see', function (Scope $s
     ];
 
     foreach ($people as $name => $employee) {
-        actingAs($ben)->get(route('employees.show', ['employee' => $employee, 'tab' => 'assignments']))
-            ->assertStatus(in_array($name, $visible, true) ? 200 : 403);
+        $response = actingAs($ben)->get(route('employees.show', ['employee' => $employee, 'tab' => 'assignments']));
+
+        if ($name === 'Ben') {
+            $response->assertOk()->assertInertia(fn (Assert $page) => $page->where('tab', in_array('Ben', $visible, true) ? 'assignments' : 'overview'));
+        } else {
+            $response->assertStatus(in_array($name, $visible, true) ? 200 : 403);
+        }
     }
 })->with([
     'own' => [Scope::Own, ['Ben']],

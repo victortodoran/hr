@@ -107,7 +107,7 @@ it('links each member to their Employee page when the viewer may open it, and to
     actingAs($ben)->get(route('directory.show', $ben))
         ->assertInertia(fn (Assert $page) => $page
             ->where('reportingChain.above.0.link', 'directory')
-            ->where('reportingChain.employee.link', 'directory')
+            ->where('reportingChain.employee.link', 'employee')
             ->where('reportingChain.below.0.link', 'employee'));
 });
 
