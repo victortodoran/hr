@@ -356,8 +356,8 @@ class DemoSeeder extends Seeder
      * behind him and a handful ahead, on Relaunch and his Internal
      * Assignment, in every state, with Travel Expenses in every state on
      * those that take them. The older ones are Approved; the latest still
-     * wait for her. None shares a day with his Time
-     * Off, four weeks from this Monday.
+     * wait for her. None shares a day with his Time Off, four weeks from
+     * this Monday.
      */
     private function bensTravel(Assignment $relaunch, Assignment $internal, Employee $ana, CarbonInterface $thisMonday, CarbonInterface $today): void
     {

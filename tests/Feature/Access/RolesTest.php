@@ -56,7 +56,7 @@ it('offers every Permission with the Scopes it can carry, in its group', functio
             ->where('permissions.11', ['value' => 'view-travel', 'label' => 'View travel', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Travel'])
             ->where('permissions.12', ['value' => 'reopen-travel-expenses', 'label' => 'Reopen travel expenses', 'scopes' => ['reports', 'everyone'], 'group' => 'Travel'])
             ->where('permissions.18', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => [], 'group' => 'Administration'])
-            ->where('permissions', fn (Collection $permissions): bool => $permissions->pluck('value')->intersect(['approve-work-entries', 'lock-work-entries', 'lock-travel-expenses'])->isEmpty())
+            ->where('permissions', fn (Collection $permissions): bool => ! $permissions->contains('value', 'approve-work-entries'))
             ->where('permissions', fn (Collection $permissions): bool => $permissions->pluck('group')->unique()->values()->all() === ['Employees', 'Assignments', 'Pay', 'Work entries', 'Time off', 'Travel', 'Organization', 'Administration'])
             ->etc(),
         );

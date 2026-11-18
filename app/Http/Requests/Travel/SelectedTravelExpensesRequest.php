@@ -8,7 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * The Travel Expenses selected on the Approvals page or the Travel Expenses
- * page, by ID, for approving, reopening or locking them all at once.
+ * page, by ID, for approving or reopening them all at once.
  */
 class SelectedTravelExpensesRequest extends FormRequest
 {

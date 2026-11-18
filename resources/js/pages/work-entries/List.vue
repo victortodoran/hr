@@ -37,7 +37,8 @@ defineOptions({
 
 /**
  * Work Entries of the Employees the viewer may see, a Period and an Employee
- * at a time, or every Employee at once, with reopening the selected ones. Approving happens on Approvals.
+ * at a time, or every Employee at once, with reopening the selected ones.
+ * Approving happens on Approvals.
  */
 const props = defineProps<{
     filters: WorkEntryListFilters;
