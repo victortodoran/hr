@@ -35,6 +35,16 @@ class TimeOffBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to Paid Time Off, which uses the Employee's Paid Days.
+     */
+    public function paid(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('is_paid'), true);
+        });
+    }
+
+    /**
      * Limit the query to Time Off with at least one date from the first to
      * the last date given.
      */

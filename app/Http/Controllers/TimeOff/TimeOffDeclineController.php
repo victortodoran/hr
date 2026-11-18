@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\TimeOff;
 
+use App\Actions\DeclineTimeOff;
 use App\Enums\ApprovalsTab;
-use App\Enums\TimeOffState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TimeOff\TimeOffDeclineRequest;
 use App\Models\Employee;
@@ -21,14 +21,9 @@ class TimeOffDeclineController extends Controller
      * Decline the Time Off, recording who declined it, when and why. It is
      * kept on record, uses no Paid Days and the Employee sees the reason.
      */
-    public function store(TimeOffDeclineRequest $request, TimeOff $timeOff, #[CurrentUser] Employee $actor): RedirectResponse
+    public function store(TimeOffDeclineRequest $request, TimeOff $timeOff, #[CurrentUser] Employee $actor, DeclineTimeOff $declineTimeOff): RedirectResponse
     {
-        $timeOff->forceFill([
-            'state' => TimeOffState::Declined,
-            'decided_by' => $actor->id,
-            'decided_at' => now(),
-            'decline_reason' => $request->reason(),
-        ])->save();
+        $declineTimeOff->decline($actor, $timeOff, $request->reason());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Time Off declined.')]);
 

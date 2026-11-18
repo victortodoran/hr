@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\TimeOff;
 
-use App\Enums\TimeOffState;
+use App\Actions\RequestTimeOff;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TimeOff\TimeOffRequest;
 use App\Models\Employee;
-use App\Models\TimeOff;
+use App\Pages\TimeOff\TimeOffFormPage;
+use App\Pages\TimeOff\TimeOffPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -26,20 +27,7 @@ class TimeOffController extends Controller
      */
     public function index(#[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('time-off/Index', [
-            'year' => today()->year,
-            'paidDaysLeft' => $actor->paidDaysLeftIn(today()->year),
-            'timeOff' => $actor->timeOff()
-                ->with('decider:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
-                ->orderByDesc('first_date')
-                ->orderByDesc('id')
-                ->get()
-                ->map(fn (TimeOff $timeOff): array => [
-                    ...$timeOff->details(),
-                    'can_cancel' => $actor->can('cancel', $timeOff),
-                ])
-                ->all(),
-        ]);
+        return Inertia::render('time-off/Index', TimeOffPage::props($actor));
     }
 
     /**
@@ -48,9 +36,7 @@ class TimeOffController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('time-off/Create', [
-            'today' => today()->toDateString(),
-        ]);
+        return Inertia::render('time-off/Create', TimeOffFormPage::create());
     }
 
     /**
@@ -58,15 +44,9 @@ class TimeOffController extends Controller
      * Manager decides, except for an Employee with no Manager, whose Time Off
      * is Approved at once with nobody deciding.
      */
-    public function store(TimeOffRequest $request, #[CurrentUser] Employee $actor): RedirectResponse
+    public function store(TimeOffRequest $request, #[CurrentUser] Employee $actor, RequestTimeOff $requestTimeOff): RedirectResponse
     {
-        $timeOff = $actor->timeOff()->make($request->timeOff());
-
-        if ($actor->hasNoManager()) {
-            $timeOff->forceFill(['state' => TimeOffState::Approved, 'decided_at' => now()]);
-        }
-
-        $timeOff->save();
+        $requestTimeOff->request($actor, $request->timeOff());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Time Off requested.')]);
 
