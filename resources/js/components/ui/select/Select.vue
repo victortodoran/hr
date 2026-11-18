@@ -5,8 +5,8 @@ import { SelectRoot, useForwardPropsEmits } from "reka-ui"
 /**
  * A dropdown. Given a `name` inside a form, reka renders a hidden native
  * select that joins the browser's validation, so `required` stops an empty
- * submit; the wrapper anchors the browser's message beside the dropdown
- * instead of the page's top-left corner.
+ * submit. Whenever a `name` is given, a positioned wrapper anchors the
+ * browser's message beside the dropdown instead of the page's top-left.
  */
 const props = defineProps<SelectRootProps>()
 const emits = defineEmits<SelectRootEmits>()
