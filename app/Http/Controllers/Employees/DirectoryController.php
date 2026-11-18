@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Employees;
 
 use App\Enums\EmploymentStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Employees\DirectoryListRequest;
 use App\Models\Employee;
 use App\Pages\Employees\DirectoryListPage;
 use App\Pages\Employees\DirectoryPage;
 use Illuminate\Container\Attributes\CurrentUser;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,11 +23,9 @@ class DirectoryController extends Controller
      * Show current Employees by name, with their internal Job Title,
      * optionally searched by part of a name.
      */
-    public function index(Request $request): Response
+    public function index(DirectoryListRequest $request): Response
     {
-        $search = $request->validate(['search' => ['nullable', 'string', 'max:255']])['search'] ?? '';
-
-        return Inertia::render('directory/Index', DirectoryListPage::props($search));
+        return Inertia::render('directory/Index', DirectoryListPage::props($request->search()));
     }
 
     /**

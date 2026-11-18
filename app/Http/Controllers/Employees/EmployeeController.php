@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Employees;
 use App\Actions\AddEmployee;
 use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\EmployeePageTab;
-use App\Enums\EmploymentStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Employees\EmployeeListRequest;
 use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Employee;
 use App\Pages\Employees\EmployeeFormPage;
@@ -15,7 +15,6 @@ use App\Pages\Employees\EmployeePage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,18 +28,9 @@ class EmployeeController extends Controller
      * List the Employees whose record the viewer may see, optionally
      * narrowed to one status or part of a name.
      */
-    public function index(#[CurrentUser] Employee $actor, Request $request): Response
+    public function index(#[CurrentUser] Employee $actor, EmployeeListRequest $request): Response
     {
-        $filters = $request->validate([
-            'search' => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', Rule::enum(EmploymentStatus::class)],
-        ]);
-
-        return Inertia::render('employees/Index', EmployeeListPage::props(
-            $actor,
-            $filters['search'] ?? '',
-            isset($filters['status']) ? EmploymentStatus::from($filters['status']) : null,
-        ));
+        return Inertia::render('employees/Index', EmployeeListPage::props($actor, $request->search(), $request->status()));
     }
 
     /**
