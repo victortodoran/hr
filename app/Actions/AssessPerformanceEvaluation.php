@@ -4,68 +4,84 @@ namespace App\Actions;
 
 use App\Enums\Outcome;
 use App\Enums\PerformanceEvaluationState;
+use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Saves the Manager's Outcomes for a Performance Evaluation's Goals, its
- * overall Outcome and its summary, all in one transaction, and, when
- * asked, Completes it, or Reopens it once Completed.
+ * Saves the Manager's Outcome for one of a Performance Evaluation's Goals,
+ * or its overall Outcome and its summary, and, when asked, Completes it,
+ * or Reopens it once Completed.
  */
 class AssessPerformanceEvaluation
 {
     /**
-     * Save the assessment as given and return true: a Goal sent with no
-     * Outcome has its Outcome cleared, and a Goal not sent keeps the one
-     * it had. Return false, saving nothing, when the Performance
-     * Evaluation was Completed since the policy check.
-     *
-     * @param  array<int, Outcome|null>  $goalOutcomes  Each Goal's Outcome, by Goal ID
+     * Give the Goal the Outcome, or clear it with null, and return true.
+     * Return false, saving nothing, when its Performance Evaluation was
+     * Completed since the policy check. The Evaluation is locked first, so
+     * a Complete either sees the Outcome or refuses it, and the Goal is
+     * written as a query, so the Outcome sent is saved even when it matches
+     * the one loaded before a save from another tab.
      */
-    public function save(PerformanceEvaluation $evaluation, array $goalOutcomes, ?Outcome $outcome, ?string $summary): bool
+    public function giveGoalOutcome(Goal $goal, ?Outcome $outcome): bool
     {
-        return DB::transaction(function () use ($evaluation, $goalOutcomes, $outcome, $summary): bool {
-            $locked = $this->lockWhileOpen($evaluation);
-
-            if ($locked === null) {
+        return DB::transaction(function () use ($goal, $outcome): bool {
+            if ($this->lockWhileOpen($goal->performance_evaluation_id) === null) {
                 return false;
             }
 
-            $this->write($locked, $goalOutcomes, $outcome, $summary);
+            Goal::query()->whereKey($goal->id)->update(['outcome' => $outcome]);
 
             return true;
         });
     }
 
     /**
-     * Save the assessment, Complete the Performance Evaluation and return
-     * true, or refuse, saving nothing, while it has no Goals or still
-     * lacks an Outcome somewhere or its summary. Return false, saving
-     * nothing, when it was Completed since the policy check. Its Goals are
-     * read while it is locked, so a Goal given at the same time is either
-     * seen here or refused.
-     *
-     * @param  array<int, Outcome|null>  $goalOutcomes  Each Goal's Outcome, by Goal ID
-     *
-     * @throws ValidationException
+     * Save the Outcome of the whole and the summary as given, either of
+     * them empty, and return true. Return false, saving nothing, when the
+     * Performance Evaluation was Completed since the policy check.
      */
-    public function complete(PerformanceEvaluation $evaluation, array $goalOutcomes, ?Outcome $outcome, ?string $summary): bool
+    public function save(PerformanceEvaluation $evaluation, ?Outcome $outcome, ?string $summary): bool
     {
-        return DB::transaction(function () use ($evaluation, $goalOutcomes, $outcome, $summary): bool {
-            $locked = $this->lockWhileOpen($evaluation);
+        return DB::transaction(function () use ($evaluation, $outcome, $summary): bool {
+            $locked = $this->lockWhileOpen($evaluation->id);
 
             if ($locked === null) {
                 return false;
             }
 
-            $goalIds = $locked->goals()->pluck('id');
+            $this->write($locked, $outcome, $summary);
 
-            if ($goalIds->isEmpty()) {
+            return true;
+        });
+    }
+
+    /**
+     * Save the Outcome of the whole and the summary, Complete the
+     * Performance Evaluation and return true, or refuse, saving nothing,
+     * while it has no Goals, a Goal still lacks an Outcome, or the whole
+     * lacks its Outcome or summary. Return false, saving nothing, when it
+     * was Completed since the policy check. Its Goals are read while it is
+     * locked, so a Goal or Goal Outcome given at the same time is either
+     * seen here or refused.
+     *
+     * @throws ValidationException
+     */
+    public function complete(PerformanceEvaluation $evaluation, ?Outcome $outcome, ?string $summary): bool
+    {
+        return DB::transaction(function () use ($evaluation, $outcome, $summary): bool {
+            $locked = $this->lockWhileOpen($evaluation->id);
+
+            if ($locked === null) {
+                return false;
+            }
+
+            if (! $locked->goals()->exists()) {
                 throw ValidationException::withMessages(['outcome' => __('Give at least one Goal before completing.')]);
             }
 
-            $isReady = $goalIds->every(fn (int $id): bool => ($goalOutcomes[$id] ?? null) !== null)
+            $isReady = ! $locked->goals()->whereNull('outcome')->exists()
                 && $outcome !== null
                 && filled($summary);
 
@@ -73,7 +89,7 @@ class AssessPerformanceEvaluation
                 throw ValidationException::withMessages(['outcome' => __('Give every Goal and the whole an Outcome, and write a summary, before completing.')]);
             }
 
-            $this->write($locked, $goalOutcomes, $outcome, $summary);
+            $this->write($locked, $outcome, $summary);
             $locked->forceFill(['state' => PerformanceEvaluationState::Completed, 'completed_at' => now()])->save();
 
             return true;
@@ -97,22 +113,13 @@ class AssessPerformanceEvaluation
      * loaded earlier, saves every value sent even when it matches what
      * was loaded before another save.
      */
-    private function lockWhileOpen(PerformanceEvaluation $evaluation): ?PerformanceEvaluation
+    private function lockWhileOpen(int $evaluationId): ?PerformanceEvaluation
     {
-        return PerformanceEvaluation::query()->whereKey($evaluation->id)->open()->lockForUpdate()->first();
+        return PerformanceEvaluation::query()->whereKey($evaluationId)->open()->lockForUpdate()->first();
     }
 
-    /**
-     * @param  array<int, Outcome|null>  $goalOutcomes
-     */
-    private function write(PerformanceEvaluation $evaluation, array $goalOutcomes, ?Outcome $outcome, ?string $summary): void
+    private function write(PerformanceEvaluation $evaluation, ?Outcome $outcome, ?string $summary): void
     {
-        foreach ($evaluation->goals()->get() as $goal) {
-            if (array_key_exists($goal->id, $goalOutcomes)) {
-                $goal->forceFill(['outcome' => $goalOutcomes[$goal->id]])->save();
-            }
-        }
-
         $evaluation->forceFill(['outcome' => $outcome, 'summary' => $summary])->save();
     }
 }

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { Form, Head, router, setLayoutProps, useForm } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
-import { Check, MessageSquare } from '@lucide/vue';
-import { toast } from 'vue-sonner';
+import { Form, Head, setLayoutProps, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { MessageSquare } from '@lucide/vue';
 import GoalController from '@/actions/App/Http/Controllers/Performance/GoalController';
 import GoalCommentController from '@/actions/App/Http/Controllers/Performance/GoalCommentController';
 import GoalProgressController from '@/actions/App/Http/Controllers/Performance/GoalProgressController';
@@ -11,6 +10,7 @@ import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import SavedTick from '@/components/SavedTick.vue';
 import GoalFields from '@/components/performance-evaluations/GoalFields.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -24,6 +24,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import { goalRemovalWarning } from '@/lib/goals';
 import { progresses } from '@/lib/progress';
@@ -72,85 +73,18 @@ const goalRoute = {
     goal: props.goal.id,
 };
 
-/** The Progress showing in the dropdown, the Goal's own until another is picked. */
-const chosenProgress = ref<Progress>(props.goal.progress);
-
-watch(
-    () => props.goal.progress,
-    (progress) => (chosenProgress.value = progress),
-);
-
-/** Whether a picked Progress is being saved. */
-const savingProgress = ref(false);
-
-/** Whether the brief "Saved" tick shows beside the dropdown. */
-const progressSaved = ref(false);
-
-let hideSavedTick: ReturnType<typeof setTimeout> | undefined;
-
-onBeforeUnmount(() => clearTimeout(hideSavedTick));
-
-/**
- * Save the picked Progress straight away. When saving fails, for
- * example because the Performance Evaluation was Completed meanwhile,
- * the dropdown goes back to the Goal's Progress and a toast says why.
- */
-function saveProgress(progress: Progress): void {
-    if (progress === props.goal.progress) {
-        return;
-    }
-
-    chosenProgress.value = progress;
-
-    const refuse = (message: string): void => {
-        chosenProgress.value = props.goal.progress;
-        toast.error(message);
-    };
-
-    router.put(
-        GoalProgressController.update.url(goalRoute),
-        { progress },
-        {
-            preserveScroll: true,
-            onStart: () => {
-                savingProgress.value = true;
-                progressSaved.value = false;
-            },
-            onFinish: () => (savingProgress.value = false),
-            onSuccess: () => {
-                progressSaved.value = true;
-                clearTimeout(hideSavedTick);
-                hideSavedTick = setTimeout(
-                    () => (progressSaved.value = false),
-                    2000,
-                );
-            },
-            onError: (errors) =>
-                refuse(errors.progress ?? 'The Progress wasn’t saved.'),
-            onHttpException: (response) => {
-                if (response.status !== 403) {
-                    refuse('The Progress wasn’t saved. Try again.');
-
-                    return false;
-                }
-
-                refuse(
-                    'The Progress wasn’t saved: you can’t change it any more, as the Performance Evaluation may have been Completed.',
-                );
-                router.reload();
-
-                return false;
-            },
-            onNetworkError: () => {
-                refuse(
-                    'The Progress wasn’t saved: the connection failed. Try again.',
-                );
-
-                return false;
-            },
-        },
-    );
-}
+/** The Progress dropdown, which saves what is picked straight away. */
+const {
+    chosen: chosenProgress,
+    saving: savingProgress,
+    justSaved: progressSaved,
+    save: saveProgress,
+} = useSaveOnPick<Progress>({
+    saved: () => props.goal.progress,
+    url: () => GoalProgressController.update.url(goalRoute),
+    field: 'progress',
+    label: 'Progress',
+});
 
 /** Whether the Goal's title and description show as fields. */
 const editing = ref(props.startsEditing);
@@ -321,15 +255,7 @@ setLayoutProps({
                         >
                     </SelectContent>
                 </Select>
-                <span
-                    class="inline-flex items-center gap-1 text-sm text-muted-foreground"
-                    aria-live="polite"
-                >
-                    <template v-if="progressSaved">
-                        <Check class="size-4" aria-hidden="true" />
-                        Saved
-                    </template>
-                </span>
+                <SavedTick :shown="progressSaved" />
             </div>
             <StatusBadge v-else :state="goal.progress" />
         </section>

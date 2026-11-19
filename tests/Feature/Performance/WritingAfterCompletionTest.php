@@ -50,10 +50,9 @@ it('saves no assessment on an Evaluation Completed since it was loaded', functio
     [, , $evaluation, $goal] = evaluationLoadedWhileOpen();
     completeSinceLoaded($evaluation);
 
-    $saved = app(AssessPerformanceEvaluation::class)->save($evaluation, [$goal->id => Outcome::NotMet], Outcome::NotMet, 'Rewritten.');
+    $saved = app(AssessPerformanceEvaluation::class)->save($evaluation, Outcome::NotMet, 'Rewritten.');
 
     expect($saved)->toBeFalse()
-        ->and($goal->fresh()?->outcome)->toBe(Outcome::Met)
         ->and($evaluation->fresh()?->outcome)->toBe(Outcome::Met)
         ->and($evaluation->fresh()?->summary)->toBe('Good year.');
 });
@@ -62,12 +61,22 @@ it('completes no Evaluation again once Completed since it was loaded, keeping th
     [, , $evaluation, $goal] = evaluationLoadedWhileOpen();
     completeSinceLoaded($evaluation);
 
-    $completed = app(AssessPerformanceEvaluation::class)->complete($evaluation, [$goal->id => Outcome::NotMet], Outcome::NotMet, 'Rewritten.');
+    $completed = app(AssessPerformanceEvaluation::class)->complete($evaluation, Outcome::NotMet, 'Rewritten.');
 
     expect($completed)->toBeFalse()
         ->and($goal->fresh()?->outcome)->toBe(Outcome::Met)
         ->and($evaluation->fresh()?->summary)->toBe('Good year.')
         ->and($evaluation->fresh()?->completed_at?->toDateTimeString())->toBe('2026-12-01 08:59:00');
+});
+
+it('gives no Goal an Outcome on an Evaluation Completed since it was loaded', function () {
+    [, , $evaluation, $goal] = evaluationLoadedWhileOpen();
+    completeSinceLoaded($evaluation);
+
+    $given = app(AssessPerformanceEvaluation::class)->giveGoalOutcome($goal, Outcome::NotMet);
+
+    expect($given)->toBeFalse()
+        ->and($goal->fresh()?->outcome)->toBe(Outcome::Met);
 });
 
 it('gives no Goal on an Evaluation Completed since it was loaded', function () {
@@ -123,8 +132,17 @@ it('saves the Outcome and summary sent even when they match what was loaded befo
     [, , $evaluation] = evaluationLoadedWhileOpen();
     PerformanceEvaluation::query()->whereKey($evaluation->id)->update(['outcome' => Outcome::NotMet, 'summary' => 'Other tab.']);
 
-    app(AssessPerformanceEvaluation::class)->save($evaluation, [], Outcome::Met, 'Good year.');
+    app(AssessPerformanceEvaluation::class)->save($evaluation, Outcome::Met, 'Good year.');
 
     expect($evaluation->fresh()?->outcome)->toBe(Outcome::Met)
         ->and($evaluation->fresh()?->summary)->toBe('Good year.');
+});
+
+it('saves the Goal\'s Outcome sent even when it matches what was loaded before a save from another tab', function () {
+    [, , , $goal] = evaluationLoadedWhileOpen();
+    Goal::query()->whereKey($goal->id)->update(['outcome' => Outcome::NotMet]);
+
+    app(AssessPerformanceEvaluation::class)->giveGoalOutcome($goal, Outcome::Met);
+
+    expect($goal->fresh()?->outcome)->toBe(Outcome::Met);
 });

@@ -10,10 +10,10 @@ use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
 /**
- * Completing a Performance Evaluation: its Manager saves the Outcomes and
- * summary and closes it, once it has Goals and every Goal, the whole and
- * the summary are given. It can't be changed after that unless it's
- * Reopened.
+ * Completing a Performance Evaluation: its Manager saves the Outcome of
+ * the whole and the summary and closes it, once it has Goals and every
+ * Goal, the whole and the summary are given. It can't be changed after
+ * that unless it's Reopened.
  */
 class PerformanceEvaluationCompletionController extends Controller
 {
@@ -26,7 +26,7 @@ class PerformanceEvaluationCompletionController extends Controller
      */
     public function store(AssessmentRequest $request, PerformanceEvaluation $performanceEvaluation): RedirectResponse
     {
-        $completed = $this->assess->complete($performanceEvaluation, $request->goalOutcomes(), $request->outcome(), $request->summary());
+        $completed = $this->assess->complete($performanceEvaluation, $request->outcome(), $request->summary());
         abort_if(! $completed, 403); // @pest-mutate-ignore (only reached when the Performance Evaluation is Completed between the policy check and this write)
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Performance Evaluation completed.')]);

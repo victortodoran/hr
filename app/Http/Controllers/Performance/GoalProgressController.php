@@ -14,7 +14,8 @@ use Illuminate\Http\RedirectResponse;
 /**
  * Changing a Goal's Progress, which the Employee and their effective
  * Manager both do while the Performance Evaluation is Open. Every change
- * is kept, and saving leads back to the Goal's page.
+ * is kept, and saving leads back to the page it was changed on: the
+ * Goal's own or its Performance Evaluation's.
  */
 class GoalProgressController extends Controller
 {
@@ -29,6 +30,6 @@ class GoalProgressController extends Controller
     {
         $this->changeGoalProgress->change($goal, $request->progress(), $actor);
 
-        return to_route('performance-evaluations.goals.show', [$performanceEvaluation, $goal]);
+        return back(fallback: route('performance-evaluations.goals.show', [$performanceEvaluation, $goal]));
     }
 }
