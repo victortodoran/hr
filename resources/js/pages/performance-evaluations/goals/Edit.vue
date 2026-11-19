@@ -50,12 +50,12 @@ setLayoutProps({
 </script>
 
 <template>
-    <Head title="Change Goal" />
+    <Head :title="`Change ${goal.title}`" />
 
     <PageContainer width="narrow">
         <Heading
-            title="Change Goal"
-            :description="`${evaluation.employee.name} · ${evaluation.year} Performance Evaluation`"
+            :title="`Change ${goal.title}`"
+            :description="`For the ${evaluation.year} Performance Evaluation.`"
         />
 
         <GoalForm
