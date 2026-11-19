@@ -44,7 +44,8 @@ it('lets the Manager and the Employee talk on a Goal, and warns how many Comment
     actingAs($ben);
 
     visit(route('performance-evaluations.show', $evaluation))
-        ->click('internal:role=button[name="Remove Lead the Checkout API"s]')
+        ->click('internal:role=button[name="More for Lead the Checkout API"s]')
+        ->click('internal:role=menuitem[name="Remove Lead the Checkout API"s]')
         ->assertSee('Its 2 Comments are removed with it.')
         ->click('internal:role=dialog >> internal:role=button[name="Remove Goal"s]')
         ->assertSee('Goal removed.')

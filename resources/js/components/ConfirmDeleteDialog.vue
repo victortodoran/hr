@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,9 @@ import type { RouteFormDefinition } from '@/wayfinder';
  * also used before withdrawing something for good, such as cancelling a
  * Travel Request. The `trigger` slot is the button that opens it, a plain
  * "Delete" unless given; the dialog closes once the request succeeds, and
- * shows the refusal when it doesn't.
+ * shows the refusal when it doesn't. Opened from elsewhere, such as a menu
+ * item that would unmount a trigger inside it, it takes `v-model:open` and
+ * `without-trigger` instead.
  */
 withDefaults(
     defineProps<{
@@ -35,16 +36,23 @@ withDefaults(
         confirmLabel?: string;
         /** The button that closes the dialog without going ahead. */
         dismissLabel?: string;
+        /** Leaves out the trigger, for a dialog opened through `v-model:open`. */
+        withoutTrigger?: boolean;
     }>(),
-    { errorBag: undefined, confirmLabel: 'Delete', dismissLabel: 'Cancel' },
+    {
+        errorBag: undefined,
+        confirmLabel: 'Delete',
+        dismissLabel: 'Cancel',
+        withoutTrigger: false,
+    },
 );
 
-const open = ref(false);
+const open = defineModel<boolean>('open', { default: false });
 </script>
 
 <template>
     <Dialog v-model:open="open">
-        <DialogTrigger as-child>
+        <DialogTrigger v-if="!withoutTrigger" as-child>
             <slot name="trigger">
                 <Button variant="ghost" size="sm" class="text-destructive"
                     >Delete</Button

@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import { Target } from '@lucide/vue';
-import GoalController from '@/actions/App/Http/Controllers/Performance/GoalController';
+import { Plus, Target } from '@lucide/vue';
 import PerformanceEvaluationAssessmentController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationAssessmentController';
 import PerformanceEvaluationCompletionController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationCompletionController';
 import PerformanceEvaluationReopeningController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationReopeningController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
-import DataTable from '@/components/DataTable.vue';
-import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import GoalCard from '@/components/performance-evaluations/GoalCard.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
     Dialog,
     DialogClose,
@@ -33,26 +33,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { getInitials } from '@/composables/useInitials';
 import { formatDate } from '@/lib/dates';
-import { goalRemovalWarning } from '@/lib/goals';
 import { outcomes } from '@/lib/outcomes';
 import { index as mine } from '@/routes/my-performance-evaluations';
 import { index, show } from '@/routes/performance-evaluations';
-import {
-    create,
-    edit,
-    show as showGoal,
-} from '@/routes/performance-evaluations/goals';
+import { create } from '@/routes/performance-evaluations/goals';
 import type {
     BreadcrumbItem,
     Outcome,
     PerformanceEvaluationRecord,
-    TableColumn,
 } from '@/types';
 
 /**
- * One Performance Evaluation with its Goals, each with its Progress and a
- * link to its own page. Only the Employee's effective
+ * One Performance Evaluation with its Goals as cards, each with its
+ * Progress, its Comment count and a link to its own page. Only the
+ * Employee's effective
  * Manager is offered to give, change or remove Goals and to give their
  * Outcomes, the Outcome of the whole and a summary, saving them bit by bit
  * and then Completing it, while it is Open. Anyone else reads the Goals,
@@ -135,14 +131,8 @@ const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
           },
       ];
 
-const columns: TableColumn[] = [
-    { key: 'goal', label: 'Goal' },
-    { key: 'progress', label: 'Progress' },
-    ...(props.canSeeOutcomes ? [{ key: 'outcome', label: 'Outcome' }] : []),
-    ...(props.canEdit
-        ? [{ key: 'actions', label: 'Actions', align: 'end' as const }]
-        : []),
-];
+/** What the Goals' empty state calls the Employee. */
+const firstName = props.evaluation.employee.name.trim().split(/\s+/u)[0];
 
 const title = props.isOwn
     ? String(props.evaluation.year)
@@ -160,25 +150,33 @@ setLayoutProps({
     <Head :title="`Performance Evaluation · ${title}`" />
 
     <PageContainer width="wide">
-        <header class="flex flex-wrap items-start justify-between gap-4">
-            <div class="flex min-w-0 flex-col gap-1">
-                <h1 class="text-xl font-semibold tracking-tight">
-                    {{ evaluation.employee.name }}
-                    <span class="font-normal text-muted-foreground"
-                        >· {{ evaluation.year }} Performance Evaluation</span
+        <header class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex min-w-0 items-center gap-4">
+                <Avatar class="size-14 rounded-full" aria-hidden="true">
+                    <AvatarFallback class="rounded-full text-lg font-medium">{{
+                        getInitials(evaluation.employee.name)
+                    }}</AvatarFallback>
+                </Avatar>
+                <div class="flex min-w-0 flex-col gap-1">
+                    <h1 class="text-2xl font-semibold tracking-tight">
+                        {{ evaluation.employee.name }}
+                    </h1>
+                    <div
+                        class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground"
                     >
-                </h1>
-                <div
-                    class="flex items-center gap-2 text-sm text-muted-foreground"
-                >
-                    <StatusBadge :state="evaluation.state" />
-                    <span v-if="evaluation.completed_at"
-                        >on {{ formatDate(evaluation.completed_at) }}</span
-                    >
+                        <span
+                            >{{ evaluation.year }} Performance Evaluation</span
+                        >
+                        <span aria-hidden="true">·</span>
+                        <StatusBadge :state="evaluation.state" />
+                        <span v-if="evaluation.completed_at"
+                            >on {{ formatDate(evaluation.completed_at) }}</span
+                        >
+                    </div>
                 </div>
             </div>
-            <Button v-if="canEdit" as-child>
-                <Link :href="create(evaluation.id)">Give a Goal</Link>
+            <Button v-if="canEdit && evaluation.goals.length > 0" as-child>
+                <Link :href="create(evaluation.id)"><Plus />Give a Goal</Link>
             </Button>
             <ConfirmDeleteDialog
                 v-if="canReopen"
@@ -198,42 +196,119 @@ setLayoutProps({
             </ConfirmDeleteDialog>
         </header>
 
-        <section class="space-y-2">
-            <h2 class="text-sm font-medium">Goals</h2>
-            <DataTable :columns="columns" :rows="evaluation.goals">
-                <template #cell-goal="{ row }">
-                    <Link
-                        :href="
-                            showGoal({
-                                performanceEvaluation: evaluation.id,
-                                goal: row.id,
-                            })
-                        "
-                        class="font-medium underline-offset-4 hover:underline"
-                        >{{ row.title }}</Link
-                    >
-                    <p class="whitespace-pre-line text-muted-foreground">
-                        {{ row.description }}
+        <Card
+            v-if="!canEdit && canSeeOutcomes && evaluation.outcome"
+            class="flex-row flex-wrap gap-7 bg-muted/50 p-7 shadow-none"
+        >
+            <div class="flex shrink-0 flex-col gap-2 sm:w-44">
+                <h2
+                    class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                >
+                    The year as a whole
+                </h2>
+                <p class="text-3xl font-semibold tracking-tight">
+                    {{ outcomes[evaluation.outcome] }}
+                </p>
+            </div>
+            <div
+                v-if="evaluation.summary"
+                class="flex min-w-0 flex-[1_1_20rem] flex-col gap-2"
+            >
+                <h3
+                    class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                >
+                    Summary
+                </h3>
+                <p class="text-sm/relaxed whitespace-pre-line">
+                    {{ evaluation.summary }}
+                </p>
+            </div>
+        </Card>
+
+        <section class="flex flex-col gap-3.5" aria-labelledby="goals-heading">
+            <h2
+                id="goals-heading"
+                class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+            >
+                Goals<template v-if="evaluation.goals.length > 0">
+                    · {{ evaluation.goals.length }}</template
+                >
+            </h2>
+
+            <template v-if="evaluation.goals.length > 0">
+                <GoalCard
+                    v-for="(goal, position) in evaluation.goals"
+                    :key="goal.id"
+                    v-model:outcome="assessment.goalOutcomes[goal.id]"
+                    :goal="goal"
+                    :number="position + 1"
+                    :performance-evaluation-id="evaluation.id"
+                    :can-edit="canEdit"
+                    :can-see-outcomes="canSeeOutcomes"
+                />
+                <Link
+                    v-if="canEdit"
+                    :href="create(evaluation.id)"
+                    class="flex items-center gap-2.5 rounded-xl border-[1.5px] border-dashed px-6 py-4 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+                    ><Plus class="size-4" aria-hidden="true" />Give another
+                    Goal</Link
+                >
+            </template>
+
+            <div
+                v-else
+                class="flex flex-col items-center gap-3.5 rounded-xl border-[1.5px] border-dashed px-6 py-14 text-center"
+            >
+                <span
+                    class="inline-flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground"
+                >
+                    <Target class="size-5.5" aria-hidden="true" />
+                </span>
+                <div class="flex max-w-sm flex-col gap-1">
+                    <p class="font-semibold">No Goals yet</p>
+                    <p class="text-sm/normal text-muted-foreground">
+                        <template v-if="isOwn"
+                            >The Goals your Manager gives you for this year
+                            appear here.</template
+                        >
+                        <template v-else
+                            >The Goals you give {{ firstName }} for
+                            {{ evaluation.year }} appear here.
+                            {{ firstName }} sees each one as soon as you give
+                            it.</template
+                        >
                     </p>
-                </template>
-                <template #cell-progress="{ row }">
-                    <StatusBadge :state="row.progress" />
-                </template>
-                <template #cell-outcome="{ row }">
+                </div>
+                <Button v-if="canEdit" as-child class="mt-1.5">
+                    <Link :href="create(evaluation.id)"
+                        ><Plus />Give the first Goal</Link
+                    >
+                </Button>
+            </div>
+        </section>
+
+        <Card v-if="canEdit && evaluation.goals.length > 0" class="p-6">
+            <form class="flex flex-col gap-5" @submit.prevent="saveAssessment">
+                <div class="flex flex-col gap-1">
+                    <h2 class="text-lg font-semibold">The year as a whole</h2>
+                    <p class="text-sm text-muted-foreground">
+                        {{ evaluation.employee.name }} sees the Outcomes and
+                        summary once you complete it. After that, it can't
+                        change unless it's Reopened.
+                    </p>
+                </div>
+                <div class="grid gap-2">
+                    <Label for="evaluation-outcome">Outcome</Label>
                     <Select
-                        v-if="canEdit"
-                        :name="`goals[${row.id}][outcome]`"
-                        :model-value="assessment.goalOutcomes[row.id] ?? ''"
+                        name="outcome"
+                        :model-value="assessment.outcome"
                         @update:model-value="
-                            assessment.goalOutcomes[row.id] = $event
+                            assessment.outcome = $event
                                 ? ($event as Outcome)
                                 : ''
                         "
                     >
-                        <SelectTrigger
-                            class="w-36"
-                            :aria-label="`Outcome of ${row.title}`"
-                        >
+                        <SelectTrigger id="evaluation-outcome" class="w-48">
                             <SelectValue placeholder="Not given" />
                         </SelectTrigger>
                         <SelectContent>
@@ -245,174 +320,60 @@ setLayoutProps({
                             >
                         </SelectContent>
                     </Select>
-                    <span v-else-if="row.outcome">{{
-                        outcomes[row.outcome]
-                    }}</span>
-                    <span v-else class="text-muted-foreground">—</span>
-                </template>
-                <template #cell-actions="{ row }">
-                    <div class="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" as-child>
-                            <Link
-                                :href="
-                                    edit({
-                                        performanceEvaluation: evaluation.id,
-                                        goal: row.id,
-                                    })
-                                "
-                                :aria-label="`Change ${row.title}`"
-                                >Change</Link
-                            >
-                        </Button>
-                        <ConfirmDeleteDialog
-                            :form="
-                                GoalController.destroy.form({
-                                    performanceEvaluation: evaluation.id,
-                                    goal: row.id,
-                                })
-                            "
-                            :title="`Remove “${row.title}”?`"
-                            :description="
-                                goalRemovalWarning(row.comments_count)
-                            "
-                            confirm-label="Remove Goal"
-                            :error-bag="`goal-${row.id}`"
-                        >
-                            <template #trigger>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    class="text-destructive"
-                                    :aria-label="`Remove ${row.title}`"
-                                    >Remove</Button
-                                >
-                            </template>
-                        </ConfirmDeleteDialog>
-                    </div>
-                </template>
-                <template #empty>
-                    <EmptyState
-                        :icon="Target"
-                        :message="
-                            isOwn
-                                ? 'The Goals your Manager gives you for this year appear here.'
-                                : 'The Goals you give for this year appear here.'
-                        "
+                    <InputError :message="assessment.errors.outcome" />
+                </div>
+                <div class="grid gap-2">
+                    <Label for="evaluation-summary">Summary</Label>
+                    <Textarea
+                        id="evaluation-summary"
+                        v-model="assessment.summary"
+                        placeholder="How the year went, in a few sentences"
+                        maxlength="5000"
+                        class="min-h-30"
+                    />
+                    <InputError :message="assessment.errors.summary" />
+                </div>
+                <div class="flex flex-wrap justify-end gap-2 border-t pt-4">
+                    <SubmitButton
+                        variant="outline"
+                        :processing="assessment.processing"
+                        >Save Outcomes</SubmitButton
                     >
-                        <template v-if="canEdit" #action>
-                            <Button as-child variant="outline">
-                                <Link :href="create(evaluation.id)"
-                                    >Give a Goal</Link
+                    <Dialog v-model:open="confirmingCompletion">
+                        <DialogTrigger as-child>
+                            <Button type="button">Complete</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader class="space-y-3">
+                                <DialogTitle
+                                    >Complete {{ evaluation.employee.name }}'s
+                                    {{ evaluation.year }} Performance
+                                    Evaluation?</DialogTitle
                                 >
-                            </Button>
-                        </template>
-                    </EmptyState>
-                </template>
-            </DataTable>
-        </section>
-
-        <form
-            v-if="canEdit && evaluation.goals.length > 0"
-            class="space-y-4"
-            @submit.prevent="saveAssessment"
-        >
-            <h2 class="text-sm font-medium">The year as a whole</h2>
-            <div class="grid gap-2">
-                <Label for="evaluation-outcome">Outcome</Label>
-                <Select
-                    name="outcome"
-                    :model-value="assessment.outcome"
-                    @update:model-value="
-                        assessment.outcome = $event ? ($event as Outcome) : ''
-                    "
-                >
-                    <SelectTrigger id="evaluation-outcome" class="w-44">
-                        <SelectValue placeholder="Not given" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="(label, outcome) in outcomes"
-                            :key="outcome"
-                            :value="outcome"
-                            >{{ label }}</SelectItem
-                        >
-                    </SelectContent>
-                </Select>
-                <InputError :message="assessment.errors.outcome" />
-            </div>
-            <div class="grid gap-2">
-                <Label for="evaluation-summary">Summary</Label>
-                <Textarea
-                    id="evaluation-summary"
-                    v-model="assessment.summary"
-                    placeholder="How the year went, in a few sentences"
-                    maxlength="5000"
-                />
-                <InputError :message="assessment.errors.summary" />
-            </div>
-            <p class="text-sm text-muted-foreground">
-                {{ evaluation.employee.name }} sees the Outcomes and summary
-                once you complete it. After that, it can't change unless it's
-                Reopened.
-            </p>
-            <div class="flex flex-wrap gap-2">
-                <SubmitButton
-                    variant="outline"
-                    :processing="assessment.processing"
-                    >Save Outcomes</SubmitButton
-                >
-                <Dialog v-model:open="confirmingCompletion">
-                    <DialogTrigger as-child>
-                        <Button type="button">Complete</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader class="space-y-3">
-                            <DialogTitle
-                                >Complete {{ evaluation.employee.name }}'s
-                                {{ evaluation.year }} Performance
-                                Evaluation?</DialogTitle
-                            >
-                            <DialogDescription
-                                >{{ evaluation.employee.name }} sees the
-                                Outcomes and summary, and it can't change after
-                                that unless it's Reopened.</DialogDescription
-                            >
-                        </DialogHeader>
-                        <DialogFooter class="gap-2">
-                            <DialogClose as-child>
-                                <Button type="button" variant="secondary"
-                                    >Keep writing</Button
+                                <DialogDescription
+                                    >{{ evaluation.employee.name }} sees the
+                                    Outcomes and summary, and it can't change
+                                    after that unless it's
+                                    Reopened.</DialogDescription
                                 >
-                            </DialogClose>
-                            <SubmitButton
-                                type="button"
-                                :processing="assessment.processing"
-                                @click="complete"
-                                >Complete</SubmitButton
-                            >
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </div>
-        </form>
-
-        <section
-            v-else-if="canSeeOutcomes && evaluation.outcome"
-            class="space-y-2"
-        >
-            <h2 class="text-sm font-medium">The year as a whole</h2>
-            <dl class="grid gap-4 text-sm sm:grid-cols-2">
-                <div>
-                    <dt class="text-muted-foreground">Outcome</dt>
-                    <dd>{{ outcomes[evaluation.outcome] }}</dd>
+                            </DialogHeader>
+                            <DialogFooter class="gap-2">
+                                <DialogClose as-child>
+                                    <Button type="button" variant="secondary"
+                                        >Keep writing</Button
+                                    >
+                                </DialogClose>
+                                <SubmitButton
+                                    type="button"
+                                    :processing="assessment.processing"
+                                    @click="complete"
+                                    >Complete</SubmitButton
+                                >
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
-                <div class="sm:col-span-2">
-                    <dt class="text-muted-foreground">Summary</dt>
-                    <dd class="whitespace-pre-line">
-                        {{ evaluation.summary }}
-                    </dd>
-                </div>
-            </dl>
-        </section>
+            </form>
+        </Card>
     </PageContainer>
 </template>
