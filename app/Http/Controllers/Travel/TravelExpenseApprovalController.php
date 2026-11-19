@@ -12,7 +12,8 @@ use Inertia\Inertia;
 
 /**
  * Lets an effective Manager approve Pending Travel Expenses from the
- * Approvals page, one or several at once.
+ * Approvals page, one or several at once, or from their Travel Request's
+ * page.
  */
 class TravelExpenseApprovalController extends Controller
 {

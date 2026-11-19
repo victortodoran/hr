@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Form, Link } from '@inertiajs/vue3';
 import { Receipt } from '@lucide/vue';
 import { computed } from 'vue';
+import TravelExpenseApprovalController from '@/actions/App/Http/Controllers/Travel/TravelExpenseApprovalController';
 import TravelExpenseController from '@/actions/App/Http/Controllers/Travel/TravelExpenseController';
+import TravelExpenseDeclineController from '@/actions/App/Http/Controllers/Travel/TravelExpenseDeclineController';
 import TravelExpenseReceiptController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReceiptController';
 import TravelExpenseReopeningController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReopeningController';
+import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -22,8 +25,10 @@ import type { TableColumn, TravelExpenses } from '@/types';
 /**
  * The Travel Expenses of one Travel Request on its page, with their total,
  * "Add expense" beside it, and Edit and Delete on each while the flags
- * allow, which they only do for the Employee themselves. Someone who may
- * reopen its Approved ones ticks them and reopens them together.
+ * allow, which they only do for the Employee themselves. Their effective
+ * Manager approves or declines each Pending one, as on the Approvals page.
+ * Someone who may reopen its Approved ones ticks them and reopens them
+ * together.
  */
 const props = defineProps<{
     travelRequestId: number;
@@ -120,6 +125,34 @@ const columns = computed<TableColumn[]>(() => [
             <template #cell-state="{ row }">
                 <div class="flex flex-wrap items-center justify-end gap-1">
                     <StatusBadge :state="row.state" />
+                    <template v-if="row.can_decide">
+                        <Form
+                            v-bind="
+                                TravelExpenseApprovalController.store.form()
+                            "
+                            :options="{ preserveScroll: true }"
+                            v-slot="{ processing }"
+                        >
+                            <input type="hidden" name="ids[]" :value="row.id" />
+                            <SubmitButton
+                                :processing="processing"
+                                variant="outline"
+                                size="sm"
+                                >Approve</SubmitButton
+                            >
+                        </Form>
+                        <DeclineSelectedDialog
+                            :ids="[row.id]"
+                            :action="TravelExpenseDeclineController.store()"
+                            :noun="{
+                                one: 'Travel Expense',
+                                many: 'Travel Expenses',
+                            }"
+                            description="The Employee sees the reason under it on their Travel page, and can change or delete it. A declined expense isn't paid back."
+                            placeholder="The receipt doesn't show the amount"
+                            size="sm"
+                        />
+                    </template>
                     <template v-if="row.can_change">
                         <Button variant="ghost" size="sm" as-child>
                             <Link

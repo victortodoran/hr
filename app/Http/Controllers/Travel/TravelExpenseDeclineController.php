@@ -12,7 +12,8 @@ use Inertia\Inertia;
 
 /**
  * Lets an effective Manager decline Pending Travel Expenses from the
- * Approvals page, one or several at once with one reason.
+ * Approvals page, one or several at once with one reason, or from their
+ * Travel Request's page.
  */
 class TravelExpenseDeclineController extends Controller
 {

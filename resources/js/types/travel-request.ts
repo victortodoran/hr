@@ -81,6 +81,8 @@ export type TravelRequestRecord = {
     /** Why it was declined; only a Declined Travel Request has one. */
     decline_reason: string | null;
     can_cancel: boolean;
+    /** Whether the viewer may approve or decline it: its Employee's effective Manager, while Pending. */
+    can_decide: boolean;
     /** Only for a Travel Request that takes Travel Expenses: Approved, or Approved before it was Cancelled. */
     expenses: TravelExpenses | null;
 };
@@ -108,6 +110,8 @@ export type TravelExpenseRecord = {
     decline_reason: string | null;
     /** Whether the viewer may change or delete it: only the Employee, while Pending or Declined. */
     can_change: boolean;
+    /** Whether the viewer may approve or decline it: its Employee's effective Manager, while Pending. */
+    can_decide: boolean;
     /** Whether the viewer may reopen it: Approved, and their reopen Scope covers the Employee, never their own. */
     can_reopen: boolean;
 };

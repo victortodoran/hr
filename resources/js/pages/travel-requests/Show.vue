@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { Head, setLayoutProps } from '@inertiajs/vue3';
+import { Form, Head, setLayoutProps } from '@inertiajs/vue3';
+import TravelRequestApprovalController from '@/actions/App/Http/Controllers/Travel/TravelRequestApprovalController';
 import TravelRequestCancellationController from '@/actions/App/Http/Controllers/Travel/TravelRequestCancellationController';
+import TravelRequestDeclineController from '@/actions/App/Http/Controllers/Travel/TravelRequestDeclineController';
+import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import TravelExpenseList from '@/components/travel-requests/TravelExpenseList.vue';
 import { Button } from '@/components/ui/button';
 import { formatDateRange } from '@/lib/dates';
@@ -13,8 +17,10 @@ import { index, show } from '@/routes/travel-requests';
 import type { BreadcrumbItem, Choice, TravelRequestRecord } from '@/types';
 
 /**
- * One Travel Request in full with its Travel Expenses. Only the Employee
- * themselves is ever offered anything to do here; anyone else sees it.
+ * One Travel Request in full with its Travel Expenses. The Employee
+ * themselves may cancel it and record and change its Travel Expenses; their
+ * effective Manager approves or declines it, and its Pending Travel
+ * Expenses, here as on the Approvals page; anyone else sees it.
  */
 const props = defineProps<{
     travelRequest: TravelRequestRecord;
@@ -73,6 +79,32 @@ setLayoutProps({
                     <StatusBadge :state="travelRequest.state" />
                     <span>{{ formatDays(travelRequest.days) }}</span>
                 </div>
+            </div>
+            <div
+                v-if="travelRequest.can_decide"
+                class="flex flex-wrap items-center gap-2"
+            >
+                <Form
+                    v-bind="
+                        TravelRequestApprovalController.store.form(
+                            travelRequest.id,
+                        )
+                    "
+                    :options="{ preserveScroll: true }"
+                    v-slot="{ processing }"
+                >
+                    <SubmitButton :processing="processing"
+                        >Approve</SubmitButton
+                    >
+                </Form>
+                <DeclineSelectedDialog
+                    :action="
+                        TravelRequestDeclineController.store(travelRequest.id)
+                    "
+                    :noun="{ one: 'Travel Request', many: 'Travel Requests' }"
+                    description="It stays on record as Declined, and the Employee sees the reason on their Travel page."
+                    placeholder="The release is that week"
+                />
             </div>
             <ConfirmDeleteDialog
                 v-if="travelRequest.can_cancel"
