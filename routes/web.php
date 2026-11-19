@@ -147,7 +147,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('can:edit,performanceEvaluation')->scopeBindings()->group(function () {
         Route::get('performance-evaluations/{performanceEvaluation}/goals/create', [GoalController::class, 'create'])->name('performance-evaluations.goals.create');
         Route::post('performance-evaluations/{performanceEvaluation}/goals', [GoalController::class, 'store'])->name('performance-evaluations.goals.store');
-        Route::get('performance-evaluations/{performanceEvaluation}/goals/{goal}/edit', [GoalController::class, 'edit'])->name('performance-evaluations.goals.edit');
         Route::put('performance-evaluations/{performanceEvaluation}/goals/{goal}', [GoalController::class, 'update'])->name('performance-evaluations.goals.update');
         Route::delete('performance-evaluations/{performanceEvaluation}/goals/{goal}', [GoalController::class, 'destroy'])->name('performance-evaluations.goals.destroy');
         Route::put('performance-evaluations/{performanceEvaluation}/assessment', [PerformanceEvaluationAssessmentController::class, 'update'])->name('performance-evaluations.assessment.update');

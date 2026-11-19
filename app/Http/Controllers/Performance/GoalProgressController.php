@@ -10,12 +10,12 @@ use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
 
 /**
  * Changing a Goal's Progress, which the Employee and their effective
  * Manager both do while the Performance Evaluation is Open. Every change
- * is kept, and saving leads back to the Goal's page.
+ * is kept, and saving leads back to the Goal's page, which saves as soon
+ * as a Progress is picked and shows its own brief tick rather than a toast.
  */
 class GoalProgressController extends Controller
 {
@@ -29,8 +29,6 @@ class GoalProgressController extends Controller
     public function update(GoalProgressRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): RedirectResponse
     {
         $this->changeGoalProgress->change($goal, $request->progress(), $actor);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Progress changed.')]);
 
         return to_route('performance-evaluations.goals.show', [$performanceEvaluation, $goal]);
     }

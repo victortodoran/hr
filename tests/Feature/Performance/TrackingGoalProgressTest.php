@@ -217,19 +217,12 @@ it('offers Change and Remove on the Goal\'s page only to the effective Manager w
     actingAs($ben)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', false));
 });
 
-it('leads back to the Goal\'s page after changing it from there, and to the Evaluation otherwise', function () {
+it('changes the Goal on its own page and leads back there, with no separate page for changing it', function () {
     [, $ben, , $goal] = goalProgressLine();
-    $update = route('performance-evaluations.goals.update', [$goal->performanceEvaluation, $goal]);
 
-    actingAs($ben)->get(route('performance-evaluations.goals.edit', [$goal->performanceEvaluation, $goal, 'from' => 'goal']))
-        ->assertInertia(fn (Assert $page) => $page->where('returnsToGoal', true));
-    actingAs($ben)->get(route('performance-evaluations.goals.edit', [$goal->performanceEvaluation, $goal]))
-        ->assertInertia(fn (Assert $page) => $page->where('returnsToGoal', false));
+    actingAs($ben)->get(route('performance-evaluations.goals.show', [$goal->performanceEvaluation, $goal]).'/edit')->assertNotFound();
 
-    actingAs($ben)->put($update, ['title' => 'Lead the Payments API', 'description' => 'Own it.', 'from' => 'goal'])
+    actingAs($ben)->put(route('performance-evaluations.goals.update', [$goal->performanceEvaluation, $goal]), ['title' => 'Lead the Payments API', 'description' => 'Own it.'])
         ->assertRedirect(goalRoute($goal));
-    actingAs($ben)->put($update, ['title' => 'Lead the Payments API', 'description' => 'Own it.'])
-        ->assertRedirect(route('performance-evaluations.show', $goal->performanceEvaluation));
-    actingAs($ben)->put($update, ['title' => 'Lead the Payments API', 'description' => 'Own it.', 'from' => 'elsewhere'])
-        ->assertSessionHasErrors('from');
+    expect($goal->fresh()?->only('title', 'description'))->toBe(['title' => 'Lead the Payments API', 'description' => 'Own it.']);
 });
