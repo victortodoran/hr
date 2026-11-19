@@ -15,11 +15,10 @@ final class PerformanceEvaluationPage
     /**
      * The Performance Evaluation with its Goals, and whether the viewer may
      * give, change or remove them and their Outcomes, and change their
-     * Progress. Outcomes and the
-     * summary are left out for anyone but the effective Manager until it is
-     * Completed. Whether it is the viewer's own sets where its breadcrumbs
-     * lead: the Performance page, or the Performance Evaluations page for
-     * the year.
+     * Progress. Outcomes and the summary are left out for anyone but the
+     * effective Manager until it is Completed. Whether it is the viewer's
+     * own sets where its breadcrumbs lead: the Performance page, or the
+     * Performance Evaluations page for the year.
      *
      * @return array<string, mixed>
      */

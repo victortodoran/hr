@@ -19,8 +19,8 @@ class PerformanceEvaluationAssessmentController extends Controller
 
     /**
      * Save the Outcome of the whole and the summary as given, either
-     * still empty. One
-     * Completed since the policy check is refused, never changed.
+     * still empty. One Completed since the policy check is refused, never
+     * changed.
      */
     public function update(AssessmentRequest $request, PerformanceEvaluation $performanceEvaluation): RedirectResponse
     {
