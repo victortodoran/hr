@@ -24,10 +24,9 @@ final class PerformanceEvaluationListPage
      * included, or, for the current or the next year, are still due one, by
      * name, optionally narrowed to part of a name, one state, or one
      * Employee, given back when the viewer may open theirs here and ignored
-     * otherwise. Each comes with that
-     * Performance Evaluation, or with whether the viewer may create it. The
-     * years to choose from run back from the next one to the earliest Start
-     * Date among those Employees.
+     * otherwise. Each comes with that Performance Evaluation, or with
+     * whether the viewer may create it. The years to choose from run back
+     * from the next one to the earliest Start Date among those Employees.
      *
      * @return array<string, mixed>
      */
