@@ -132,6 +132,39 @@ it('removes Pay dated after an Assignment\'s new end when it is ended earlier by
     expect(payDatesOf($assignment))->toBe(['2026-01-05', '2026-04-30']);
 });
 
+it('moves the Pay in force on an Assignment\'s later start to it and removes older Pay', function () {
+    $assignment = Assignment::factory()
+        ->for(Employee::factory()->startedLongAgo())
+        ->for(Project::factory()->state(['start_date' => '2026-01-05']))
+        ->create(['start_date' => '2026-01-05', 'end_date' => null]);
+    foreach (['2026-01-05', '2026-02-01', '2026-02-10', '2026-03-01'] as $day) {
+        PayEntry::factory()->for($assignment)->create(['effective_from' => $day]);
+    }
+
+    actingAs(managerOfAssignments())
+        ->patch(route('assignments.update', $assignment), [
+            'job_title' => 'Developer',
+            'start_date' => '2026-02-15',
+            'end_date' => null,
+            'capacity' => 60,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect(payDatesOf($assignment))->toBe(['2026-02-15', '2026-03-01']);
+});
+
+it('moves the Internal Assignment\'s Pay to a later Start Date with it', function () {
+    $cara = Employee::factory()->create(['start_date' => '2024-01-01', 'manager_id' => fn () => Employee::factory()->create()->id]);
+    $internal = Assignment::factory()->internal()->for($cara)->create();
+    PayEntry::factory()->for($internal)->createMany([['effective_from' => '2024-01-01'], ['effective_from' => '2024-09-01'], ['effective_from' => '2025-03-01']]);
+
+    actingAs(employeeWhoManagesEmployees())
+        ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['start_date' => '2024-10-01']))
+        ->assertSessionHasNoErrors();
+
+    expect(payDatesOf($internal))->toBe(['2024-10-01', '2025-03-01']);
+});
+
 /**
  * An Employee with a Manager, their Internal Assignment, an Assignment to a
  * Project and someone else's Assignment, each with Pay from 1 January and

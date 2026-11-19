@@ -21,12 +21,12 @@ final class PerformanceEvaluationListPage
      * The Employees whose Performance Evaluations the viewer may open here
      * (those they effectively manage, and those one of the Permissions for
      * reading them reaches) who have one for the year, Former Employees
-     * included, or are still due one, by name, optionally narrowed to part
-     * of a name, one state, or one Employee, given back when the viewer may
-     * open theirs here and ignored otherwise. Each comes with that
-     * Performance Evaluation, or with whether the viewer may create it. The
-     * years to choose from run back from the next one to the earliest Start
-     * Date among those Employees.
+     * included, or, for the current or the next year, are still due one, by
+     * name, optionally narrowed to part of a name, one state, or one
+     * Employee, given back when the viewer may open theirs here and ignored
+     * otherwise. Each comes with that Performance Evaluation, or with
+     * whether the viewer may create it. The years to choose from run back
+     * from the next one to the earliest Start Date among those Employees.
      *
      * @return array<string, mixed>
      */

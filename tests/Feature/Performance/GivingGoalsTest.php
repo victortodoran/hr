@@ -111,7 +111,7 @@ it('lists, for the year, the Employees the viewer effectively manages, with thei
             ]));
 });
 
-it('shows another year with the Employees who have an Evaluation for it, Former Employees included, and those with None yet, too late to create', function () {
+it('shows a past year with only the Employees who have an Evaluation for it, Former Employees included, too late to create', function () {
     $ben = managerBen();
     $cara = caraReportingTo($ben);
     $ola = Employee::factory()->reportingTo($ben)->create(['name' => 'Ola', 'start_date' => '2020-01-06', 'leaving_date' => '2025-12-31']);
@@ -122,7 +122,6 @@ it('shows another year with the Employees who have an Evaluation for it, Former 
         ->assertInertia(fn (Assert $page) => $page
             ->where('year', 2025)
             ->where('employees.data', [
-                ['id' => $cara->id, 'name' => 'Cara', 'can_create' => false, 'evaluation' => null],
                 ['id' => $ola->id, 'name' => 'Ola', 'can_create' => false, 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null]],
             ]));
 });

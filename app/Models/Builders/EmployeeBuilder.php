@@ -206,11 +206,19 @@ class EmployeeBuilder extends ModelBuilder
     /**
      * Limit the query to Employees whose Performance Evaluation for the year
      * is still to be created: they have a Manager, aren't Former today,
-     * work for the company on some day of the year and have none for it.
+     * work for the company on some day of the year and have none for it;
+     * nobody unless it is the current or the next year, since a past year's
+     * missing Performance Evaluations can no longer be created.
      */
     public function withNoPerformanceEvaluationYetFor(int $year): static
     {
         return $this->scoped(function () use ($year): void {
+            if (! in_array($year, PerformanceEvaluation::creatableYears(), true)) {
+                $this->whereRaw('false');
+
+                return;
+            }
+
             $this->whereNotNull('manager_id')
                 ->notFormer()
                 ->awaitingPerformanceEvaluationFor($year);

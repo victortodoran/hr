@@ -223,7 +223,7 @@ it('refuses to delete a Project that has Assignments', function () {
 
     actingAs(employeeWith([Permission::ManageProjects->value => null]))
         ->delete(route('projects.destroy', $project))
-        ->assertSessionHasErrors(['project' => 'Relaunch has Assignments, so it can\'t be deleted. Set an end date instead.']);
+        ->assertSessionHasErrors(['project' => 'Relaunch has Assignments, so it can\'t be deleted. Set an end date instead, or delete the Assignments on it that have no Work Entries or Travel Requests.']);
 
     expect(Project::query()->whereKey($project->id)->exists())->toBeTrue();
 });

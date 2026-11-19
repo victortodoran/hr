@@ -78,6 +78,20 @@ it('shows a reader None yet without Create, and an Outcome only once Completed',
     ]);
 });
 
+it('lists only the Employees with an Evaluation for a past year, without None yet rows', function () {
+    [$ben, , $dan] = evaluationsListLine();
+    PerformanceEvaluation::factory()->of($dan)->create(['year' => 2025]);
+
+    assertEvaluationsListRows($ben, ['year' => '2025'], [
+        ['Dan', 'open', null, false],
+    ]);
+    assertEvaluationsListRows($ben, ['year' => '2027'], [
+        ['Cara', 'none-yet', null, true],
+        ['Dan', 'none-yet', null, true],
+        ['Eva', 'none-yet', null, true],
+    ]);
+});
+
 it('narrows the list to one state and to part of a name', function (array $query, array $expected) {
     [$ben] = evaluationsListLine();
 
