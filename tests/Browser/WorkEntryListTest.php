@@ -174,6 +174,7 @@ it('shows the total above the list, with Status in its own column, and fits a ph
         ->resize(360, 800)
         ->assertSee('Cara')
         ->assertSee('Approved')
+        ->assertSee('Wrong Project')
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertScript('[...document.querySelectorAll("table")].every((table) => table.parentElement.scrollWidth <= table.parentElement.clientWidth)', true)
         ->assertNoJavaScriptErrors();

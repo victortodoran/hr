@@ -20,14 +20,13 @@ export type EmployeeWithCount = {
     count: number;
 };
 
-/** A state a list can be filtered by, as people read it. */
-export type StateChoice<State extends string = string> = {
-    value: State;
-    label: string;
-};
-
 /** A choice in one of a list's dropdowns, as people read it. */
 export type FilterChoice = {
     value: string;
     label: string;
+};
+
+/** A state a list can be filtered by, as people read it. */
+export type StateChoice<State extends string = string> = FilterChoice & {
+    value: State;
 };

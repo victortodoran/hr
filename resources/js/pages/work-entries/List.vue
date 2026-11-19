@@ -70,7 +70,8 @@ const states: StateChoice<WorkEntryState>[] = [
 /**
  * The list's columns: a checkbox when the viewer can reopen, then Day,
  * Employee, Description, Project, Status and Hours. On a phone a row keeps
- * the checkbox, Day, Employee and Hours, with the Status under the name.
+ * the checkbox, Day, Employee and Hours, with the Status, and why it was
+ * Declined, under the name.
  */
 const columns = computed<TableColumn[]>(() => [
     ...(props.canReopen ? [{ key: 'select', label: 'Select' }] : []),
@@ -226,6 +227,11 @@ function weekOf(entry: ListedWorkEntry): string {
                     >
                     <div class="mt-1 sm:hidden">
                         <StatusBadge :state="row.state" />
+                        <span
+                            v-if="row.declined"
+                            class="mt-1 block text-xs text-status-declined-foreground"
+                            >{{ row.declined.reason }}</span
+                        >
                     </div>
                 </template>
                 <template #cell-description="{ row }">
