@@ -9,6 +9,7 @@ use App\Http\Controllers\Travel\TravelExpenseApprovalController;
 use App\Http\Controllers\Travel\TravelExpenseDeclineController;
 use App\Http\Controllers\Travel\TravelRequestDeclineController;
 use App\Http\Controllers\WorkEntries\ApprovalController;
+use App\Http\Controllers\WorkEntries\WorkEntryDeclineController;
 use App\Models\CompanySettings;
 use App\Models\TimeOff;
 use App\Models\TravelExpense;
@@ -19,7 +20,7 @@ use Carbon\CarbonImmutable;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(ApprovalController::class, TimeOffApprovalController::class, TravelRequestDeclineController::class, TravelExpenseApprovalController::class, TravelExpenseDeclineController::class);
+covers(ApprovalController::class, WorkEntryDeclineController::class, TimeOffApprovalController::class, TravelRequestDeclineController::class, TravelExpenseApprovalController::class, TravelExpenseDeclineController::class);
 
 beforeEach(function () {
     travelTo('2026-12-01 09:00');
@@ -70,7 +71,7 @@ it('keeps Work Entries ticked on one page when moving to the next, approving the
         ->assertSee('26–26 of 26')
         ->click('main table tbody tr:first-child [role="checkbox"]')
         ->assertSee('2 selected')
-        ->click('Approve')
+        ->click('internal:role=button[name="Approve"s]')
         ->assertSee('0 selected')
         ->assertSee('Total of all 24 matching')
         ->assertDontSee('None are waiting')
@@ -120,12 +121,12 @@ it('lets a Manager approve two Travel Expenses together and decline another with
         ->click('main table tbody tr:nth-child(1) [role="checkbox"]')
         ->click('main table tbody tr:nth-child(2) [role="checkbox"]')
         ->assertSee('2 selected')
-        ->click('Approve')
+        ->click('internal:role=button[name="Approve"s]')
         ->assertSee('2 Travel Expenses approved.')
         ->assertSee('Taxi')
         ->assertDontSee('Hotel')
         ->click('main table tbody tr:first-child [role="checkbox"]')
-        ->click('Decline…')
+        ->click('internal:role=button[name="Decline…"s]')
         ->fill('#decline-reason', 'The taxi isn\'t on the receipt.')
         ->click('internal:role=dialog >> internal:role=button[name="Decline"s]')
         ->assertSee('1 Travel Expense declined.')
@@ -135,4 +136,70 @@ it('lets a Manager approve two Travel Expenses together and decline another with
     expect($flight->refresh()->state)->toBe(TravelExpenseState::Approved);
     expect($hotel->refresh()->state)->toBe(TravelExpenseState::Approved);
     expect($taxi->refresh()->state)->toBe(TravelExpenseState::Declined);
+});
+
+it('lets a Manager approve one Work Entry and decline another from their rows, keeping the rest ticked, and fits a phone', function () {
+    $ben = managerBen();
+    $cara = recorder(['manager_id' => $ben->id]);
+    $relaunch = assignmentOf($cara);
+    $review = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'description' => 'Reviewing the API']);
+    $interviews = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-11', 'description' => 'Interviews']);
+    $checkout = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-12', 'description' => 'Checkout API']);
+
+    actingAs($ben);
+
+    visit(route('approvals.index'))
+        ->click("[aria-label=\"Select Cara's Work Entry on Nov 10, 2026\"]")
+        ->click("[aria-label=\"Select Cara's Work Entry on Nov 12, 2026\"]")
+        ->assertSee('2 selected')
+        ->click("internal:role=button[name=\"Approve Cara's Work Entry on Nov 10, 2026\"s]")
+        ->assertSee('1 Work Entry approved.')
+        ->assertDontSee('Reviewing the API')
+        ->assertSee('1 selected')
+        ->click("internal:role=button[name=\"Decline Cara's Work Entry on Nov 11, 2026\"s]")
+        ->assertSee('Decline 1 Work Entry?')
+        ->fill('#decline-reason', 'Interviews go on Internal, not Acme')
+        ->click('internal:role=dialog >> internal:role=button[name="Decline"s]')
+        ->assertSee('1 Work Entry declined.')
+        ->assertDontSee('Interviews')
+        ->assertSee('Checkout API')
+        ->assertSee('1 selected')
+        ->assertSee('Total of all 1 matching')
+        ->resize(360, 800)
+        ->assertScript('[...document.querySelectorAll("main table")].every((table) => table.parentElement.scrollWidth <= table.parentElement.clientWidth)', true)
+        ->assertNoJavaScriptErrors();
+
+    expect($review->refresh()->state)->toBe(WorkEntryState::Approved)
+        ->and($interviews->refresh()->state)->toBe(WorkEntryState::Declined)
+        ->and($interviews->decline_reason)->toBe('Interviews go on Internal, not Acme')
+        ->and($checkout->refresh()->state)->toBe(WorkEntryState::Pending);
+});
+
+it('lets a Manager approve one Travel Expense and decline another from their rows, which fit a phone', function () {
+    CompanySettings::factory()->create(['currency' => 'RON']);
+    $ben = managerBen();
+    $cara = recorder(['manager_id' => $ben->id, 'name' => 'Cara']);
+    $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-11-23', 'last_date' => '2026-11-25']);
+    $flight = TravelExpense::factory()->for($berlin)->create(['paid_on' => '2026-11-20', 'description' => 'Flight']);
+    $taxi = TravelExpense::factory()->for($berlin)->create(['paid_on' => '2026-11-26', 'description' => 'Taxi']);
+
+    actingAs($ben);
+
+    visit(route('approvals.index', ['tab' => 'travel-expenses']))
+        ->click('main table tbody tr:nth-child(1) [aria-label^="Approve "]')
+        ->assertSee('1 Travel Expense approved.')
+        ->assertDontSee('Flight')
+        ->resize(360, 800)
+        ->assertScript('[...document.querySelectorAll("main table")].every((table) => table.parentElement.scrollWidth <= table.parentElement.clientWidth)', true)
+        ->click('main table tbody tr:nth-child(1) [aria-label^="Decline "]')
+        ->assertSee('Decline 1 Travel Expense?')
+        ->fill('#decline-reason', 'The taxi isn\'t on the receipt.')
+        ->click('internal:role=dialog >> internal:role=button[name="Decline"s]')
+        ->assertSee('1 Travel Expense declined.')
+        ->assertSee('None is waiting')
+        ->assertNoJavaScriptErrors();
+
+    expect($flight->refresh()->state)->toBe(TravelExpenseState::Approved)
+        ->and($taxi->refresh()->state)->toBe(TravelExpenseState::Declined)
+        ->and($taxi->decline_reason)->toBe('The taxi isn\'t on the receipt.');
 });

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Form } from '@inertiajs/vue3';
 import { Receipt } from '@lucide/vue';
 import { computed } from 'vue';
 import TravelExpenseApprovalController from '@/actions/App/Http/Controllers/Travel/TravelExpenseApprovalController';
@@ -18,7 +19,8 @@ import type { TableColumn, TravelExpensesToApprove } from '@/types';
 /**
  * The Travel Expenses tab of the Approvals page: the Pending Travel Expenses
  * of the Employees the viewer manages, grouped by Travel Request, each with
- * its receipt, and approving or declining the selected ones.
+ * its receipt, each approved or declined from its row, or the selected ones
+ * together.
  */
 const props = defineProps<{
     toApprove: TravelExpensesToApprove[];
@@ -28,7 +30,8 @@ const columns: TableColumn[] = [
     { key: 'select', label: 'Select' },
     { key: 'paid_on', label: 'Paid', minor: true },
     { key: 'expense', label: 'Expense' },
-    { key: 'amount', label: 'Amount', align: 'end' },
+    { key: 'amount', label: 'Amount', align: 'end', minor: true },
+    { key: 'answer', label: 'Answer', align: 'end' },
 ];
 
 const allExpenses = computed(() =>
@@ -37,6 +40,14 @@ const allExpenses = computed(() =>
 
 const { selected, isSelected, toggle, clear, processing, submit } =
     useBulkSelection(() => allExpenses.value);
+
+/** Whose Travel Expense a row is and what for, naming its checkbox and buttons. */
+function describe(
+    travelRequest: TravelExpensesToApprove,
+    expense: TravelExpensesToApprove['expenses'][number],
+): string {
+    return `${travelRequest.employee.name}'s ${travelExpenseCategories[expense.category]} expense paid on ${formatDate(expense.paid_on)}`;
+}
 
 function isGroupSelected(travelRequest: TravelExpensesToApprove): boolean {
     return travelRequest.expenses.every((expense) => isSelected(expense.id));
@@ -113,7 +124,7 @@ function approve(): void {
                 <template #cell-select="{ row }">
                     <Checkbox
                         :model-value="isSelected(row.id)"
-                        :aria-label="`Select ${travelRequest.employee.name}'s ${travelExpenseCategories[row.category]} expense paid on ${formatDate(row.paid_on)}`"
+                        :aria-label="`Select ${describe(travelRequest, row)}`"
                         @update:model-value="toggle(row.id, $event === true)"
                     />
                 </template>
@@ -131,6 +142,9 @@ function approve(): void {
                             · {{ formatDate(row.paid_on) }}</span
                         >
                         <span class="block">{{ row.description }}</span>
+                        <span class="block tabular-nums sm:hidden">{{
+                            row.amount
+                        }}</span>
                         <a
                             :href="
                                 TravelExpenseReceiptController.show.url(row.id)
@@ -146,6 +160,40 @@ function approve(): void {
                     <span class="whitespace-nowrap tabular-nums">{{
                         row.amount
                     }}</span>
+                </template>
+                <template #cell-answer="{ row }">
+                    <div class="flex flex-wrap items-center justify-end gap-1">
+                        <Form
+                            v-bind="
+                                TravelExpenseApprovalController.store.form()
+                            "
+                            :options="{ preserveScroll: true }"
+                            v-slot="{ processing: approving }"
+                            @success="toggle(row.id, false)"
+                        >
+                            <input type="hidden" name="ids[]" :value="row.id" />
+                            <SubmitButton
+                                :processing="approving"
+                                variant="outline"
+                                size="sm"
+                                :aria-label="`Approve ${describe(travelRequest, row)}`"
+                                >Approve</SubmitButton
+                            >
+                        </Form>
+                        <DeclineSelectedDialog
+                            :ids="[row.id]"
+                            :action="TravelExpenseDeclineController.store()"
+                            :noun="{
+                                one: 'Travel Expense',
+                                many: 'Travel Expenses',
+                            }"
+                            description="The Employee sees the reason under it on their Travel page, and can change or delete it. A declined expense isn't paid back."
+                            placeholder="The receipt doesn't show the amount"
+                            size="sm"
+                            :accessible-name="`Decline ${describe(travelRequest, row)}`"
+                            @declined="toggle(row.id, false)"
+                        />
+                    </div>
                 </template>
             </DataTable>
         </section>
