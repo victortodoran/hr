@@ -5,6 +5,7 @@ import EmployeeInvitationController from '@/actions/App/Http/Controllers/Employe
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { edit, show } from '@/routes/employees';
 import type { Choice, EmployeeRecord, ManagerChoice } from '@/types';
@@ -28,11 +29,14 @@ setLayoutProps({
 <template>
     <Head :title="employee.name" />
 
-    <div class="flex max-w-xl flex-col gap-8 p-4">
-        <div class="flex items-start justify-between gap-4">
-            <Heading :title="employee.name" description="Employee record" />
-            <EmploymentStatusBadge :status="employee.status" />
-        </div>
+    <PageContainer width="narrow">
+        <Heading :title="employee.name">
+            <template #description>
+                <span>Employee record</span>
+                <span aria-hidden="true">·</span>
+                <EmploymentStatusBadge :status="employee.status" />
+            </template>
+        </Heading>
 
         <div
             v-if="reportsNeedingAManager.length > 0"
@@ -90,5 +94,5 @@ setLayoutProps({
                 <SubmitButton :processing="processing">Save</SubmitButton>
             </div>
         </Form>
-    </div>
+    </PageContainer>
 </template>

@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { Plus, Target } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -69,17 +70,11 @@ function showYear(year: unknown): void {
     <Head title="Performance Evaluations" />
 
     <PageContainer width="wide">
-        <header class="flex flex-wrap items-end justify-between gap-4">
-            <div class="flex flex-col gap-1">
-                <h1 class="text-2xl font-semibold tracking-tight">
-                    Performance Evaluations
-                </h1>
-                <p class="text-sm text-muted-foreground">
-                    The Evaluations you write for the Employees you are the
-                    Manager of, and those you may read
-                </p>
-            </div>
-            <div class="flex flex-wrap gap-2">
+        <Heading
+            title="Performance Evaluations"
+            description="The Evaluations you write for the Employees you are the Manager of, and those you may read"
+        >
+            <template #actions>
                 <Select
                     :model-value="String(props.year)"
                     @update:model-value="showYear"
@@ -102,8 +97,8 @@ function showYear(year: unknown): void {
                         New Evaluation
                     </Link>
                 </Button>
-            </div>
-        </header>
+            </template>
+        </Heading>
 
         <DataTable
             :columns="columns"

@@ -85,9 +85,8 @@ setLayoutProps({
     <Head :title="project.name" />
 
     <PageContainer width="wide">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <Heading :title="project.name" :description="summary()" />
-            <div v-if="canManage && !editing" class="flex gap-2">
+        <Heading :title="project.name" :description="summary()">
+            <template v-if="canManage && !editing" #actions>
                 <Button variant="outline" @click="startEditing">Change</Button>
                 <ConfirmDeleteDialog
                     :form="ProjectController.destroy.form(project.id)"
@@ -100,8 +99,8 @@ setLayoutProps({
                         >
                     </template>
                 </ConfirmDeleteDialog>
-            </div>
-        </div>
+            </template>
+        </Heading>
 
         <Card v-if="editing" class="max-w-2xl px-6 py-5">
             <form class="space-y-6" @submit.prevent="saveProject">

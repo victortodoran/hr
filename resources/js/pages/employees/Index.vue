@@ -72,15 +72,16 @@ const searchEmployees = useDebounceFn(reloadList, 300);
     <Head title="Employees" />
 
     <PageContainer width="wide">
-        <div class="flex items-start justify-between gap-4">
-            <Heading
-                title="Employees"
-                description="Everyone whose record you may see: future, current and former"
-            />
-            <Button v-if="canAdd" as-child>
-                <Link :href="create()">Add Employee</Link>
-            </Button>
-        </div>
+        <Heading
+            title="Employees"
+            description="Everyone whose record you may see: future, current and former"
+        >
+            <template v-if="canAdd" #actions>
+                <Button as-child>
+                    <Link :href="create()">Add Employee</Link>
+                </Button>
+            </template>
+        </Heading>
 
         <div class="flex flex-wrap gap-3">
             <Input

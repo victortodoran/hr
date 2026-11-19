@@ -3,6 +3,7 @@ import { Form, Head } from '@inertiajs/vue3';
 import EmployeeController from '@/actions/App/Http/Controllers/Employees/EmployeeController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import Heading from '@/components/Heading.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Input } from '@/components/ui/input';
@@ -26,7 +27,7 @@ defineProps<{
 <template>
     <Head title="Add Employee" />
 
-    <div class="flex max-w-xl flex-col gap-8 p-4">
+    <PageContainer width="narrow">
         <Heading
             title="Add Employee"
             description="They'll get an email inviting them to set a password"
@@ -66,5 +67,5 @@ defineProps<{
                 >
             </div>
         </Form>
-    </div>
+    </PageContainer>
 </template>

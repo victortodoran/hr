@@ -125,7 +125,7 @@ const guard = useUnsavedChanges(
 <template>
     <Head :title="title" />
 
-    <PageContainer>
+    <PageContainer width="wide">
         <Heading
             :title="title"
             :description="`Hours ${employee.name} worked`"

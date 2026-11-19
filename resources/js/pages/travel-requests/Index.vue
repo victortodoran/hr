@@ -22,15 +22,16 @@ defineProps<{
     <Head title="Travel" />
 
     <PageContainer width="wide">
-        <div class="flex items-start justify-between gap-4">
-            <Heading
-                title="Travel"
-                description="Your travel for work and what you paid for it"
-            />
-            <Button as-child>
-                <Link :href="create()">Request travel</Link>
-            </Button>
-        </div>
+        <Heading
+            title="Travel"
+            description="Your travel for work and what you paid for it"
+        >
+            <template #actions>
+                <Button as-child>
+                    <Link :href="create()">Request travel</Link>
+                </Button>
+            </template>
+        </Heading>
 
         <TravelRequestList
             :travel-requests="travelRequests"

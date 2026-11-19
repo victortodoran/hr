@@ -98,18 +98,19 @@ watchEffect(() => {
     <Head :title="title === 'Roles' ? 'Roles' : `${title} · Roles`" />
 
     <PageContainer width="wide">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <Heading
-                title="Roles"
-                description="What each Role allows, and who holds it"
-            />
-            <Button v-if="mode !== 'create'" class="min-h-11" as-child>
-                <Link :href="create()" preserve-state preserve-scroll>
-                    <Plus class="size-4" aria-hidden="true" />
-                    New Role
-                </Link>
-            </Button>
-        </div>
+        <Heading
+            title="Roles"
+            description="What each Role allows, and who holds it"
+        >
+            <template v-if="mode !== 'create'" #actions>
+                <Button class="min-h-11" as-child>
+                    <Link :href="create()" preserve-state preserve-scroll>
+                        <Plus class="size-4" aria-hidden="true" />
+                        New Role
+                    </Link>
+                </Button>
+            </template>
+        </Heading>
 
         <div class="grid items-start gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
             <RoleList

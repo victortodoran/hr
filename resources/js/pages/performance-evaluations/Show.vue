@@ -7,11 +7,11 @@ import PerformanceEvaluationReopeningController from '@/actions/App/Http/Control
 import PerformanceEvaluationSummaryController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationSummaryController';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import InputError from '@/components/InputError.vue';
+import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import GoalCard from '@/components/performance-evaluations/GoalCard.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -32,7 +32,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { getInitials } from '@/composables/useInitials';
 import { formatDate } from '@/lib/dates';
 import { outcomes } from '@/lib/outcomes';
 import { index as mine } from '@/routes/my-performance-evaluations';
@@ -144,6 +143,11 @@ const title = props.isOwn
     ? String(props.evaluation.year)
     : `${props.evaluation.employee.name} · ${props.evaluation.year}`;
 
+/** The page's title: whose Evaluation, and for which year. */
+const heading = props.isOwn
+    ? `Your ${props.evaluation.year} Performance Evaluation`
+    : `${props.evaluation.employee.name}'s ${props.evaluation.year} Performance Evaluation`;
+
 setLayoutProps({
     breadcrumbs: [
         ...leadingBreadcrumbs,
@@ -156,51 +160,37 @@ setLayoutProps({
     <Head :title="`Performance Evaluation · ${title}`" />
 
     <PageContainer width="wide">
-        <header class="flex flex-wrap items-center justify-between gap-4">
-            <div class="flex min-w-0 items-center gap-4">
-                <Avatar class="size-14 rounded-full" aria-hidden="true">
-                    <AvatarFallback class="rounded-full text-lg font-medium">{{
-                        getInitials(evaluation.employee.name)
-                    }}</AvatarFallback>
-                </Avatar>
-                <div class="flex min-w-0 flex-col gap-1">
-                    <h1 class="text-2xl font-semibold tracking-tight">
-                        {{ evaluation.employee.name }}
-                    </h1>
-                    <div
-                        class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground"
+        <Heading :title="heading">
+            <template #description>
+                <StatusBadge :state="evaluation.state" />
+                <span v-if="evaluation.completed_at"
+                    >on {{ formatDate(evaluation.completed_at) }}</span
+                >
+            </template>
+            <template v-if="isAssessing || canReopen" #actions>
+                <Button v-if="isAssessing" as-child>
+                    <Link :href="create(evaluation.id)"
+                        ><Plus />Give a Goal</Link
                     >
-                        <span
-                            >{{ evaluation.year }} Performance Evaluation</span
-                        >
-                        <span aria-hidden="true">·</span>
-                        <StatusBadge :state="evaluation.state" />
-                        <span v-if="evaluation.completed_at"
-                            >on {{ formatDate(evaluation.completed_at) }}</span
-                        >
-                    </div>
-                </div>
-            </div>
-            <Button v-if="isAssessing" as-child>
-                <Link :href="create(evaluation.id)"><Plus />Give a Goal</Link>
-            </Button>
-            <ConfirmDialog
-                v-if="canReopen"
-                :form="
-                    PerformanceEvaluationReopeningController.store.form(
-                        evaluation.id,
-                    )
-                "
-                :title="`Reopen ${evaluation.employee.name}'s ${evaluation.year} Performance Evaluation?`"
-                :description="`It goes back to Open so it can be corrected. Its Goals, Outcomes and summary stay, but ${evaluation.employee.name} won't see the Outcomes until it's Completed again.`"
-                confirm-label="Reopen"
-                dismiss-label="Keep it Completed"
-            >
-                <template #trigger>
-                    <Button variant="outline">Reopen</Button>
-                </template>
-            </ConfirmDialog>
-        </header>
+                </Button>
+                <ConfirmDialog
+                    v-if="canReopen"
+                    :form="
+                        PerformanceEvaluationReopeningController.store.form(
+                            evaluation.id,
+                        )
+                    "
+                    :title="`Reopen ${evaluation.employee.name}'s ${evaluation.year} Performance Evaluation?`"
+                    :description="`It goes back to Open so it can be corrected. Its Goals, Outcomes and summary stay, but ${evaluation.employee.name} won't see the Outcomes until it's Completed again.`"
+                    confirm-label="Reopen"
+                    dismiss-label="Keep it Completed"
+                >
+                    <template #trigger>
+                        <Button variant="outline">Reopen</Button>
+                    </template>
+                </ConfirmDialog>
+            </template>
+        </Heading>
 
         <Card
             v-if="!isAssessing && canSeeOutcomes && evaluation.outcome"
