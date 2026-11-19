@@ -38,18 +38,18 @@ function storedGoals(PerformanceEvaluation $evaluation): array
     return $evaluation->goals()->get()->map(fn (Goal $goal): array => $goal->only('title', 'description'))->all();
 }
 
-it('shows every Employee only their own Performance Evaluations, newest first, with their Goal counts', function () {
+it('shows every Employee only their own past Performance Evaluations, newest first, with their Goal counts', function () {
     $cara = caraReportingTo(managerBen());
-    $older = PerformanceEvaluation::factory()->of($cara)->create(['year' => 2025]);
-    $current = PerformanceEvaluation::factory()->of($cara)->has(Goal::factory()->count(2))->create(['year' => 2026]);
-    PerformanceEvaluation::factory()->create();
+    $older = PerformanceEvaluation::factory()->of($cara)->create(['year' => 2024]);
+    $newer = PerformanceEvaluation::factory()->of($cara)->has(Goal::factory()->count(2))->create(['year' => 2025]);
+    PerformanceEvaluation::factory()->create(['year' => 2025]);
 
     actingAs($cara)->get(route('my-performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/Mine')
             ->where('evaluations', [
-                ['id' => $current->id, 'year' => 2026, 'state' => 'open', 'goals_count' => 2, 'at_risk_goals_count' => 0, 'outcome' => null],
-                ['id' => $older->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null],
+                ['id' => $newer->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 2, 'at_risk_goals_count' => 0, 'outcome' => null],
+                ['id' => $older->id, 'year' => 2024, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null],
             ]));
 });
 

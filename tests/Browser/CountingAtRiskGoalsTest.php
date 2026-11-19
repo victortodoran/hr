@@ -14,7 +14,7 @@ covers(PerformanceEvaluationController::class, MyPerformanceEvaluationController
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
-it('shows the At Risk count beside an Open Evaluation on both lists', function () {
+it('shows the At Risk count beside an Open Evaluation on both lists, the Employee\'s once it is a past year', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
     Goal::factory()->for(PerformanceEvaluation::factory()->of($cara))->create(['progress' => Progress::AtRisk]);
@@ -26,6 +26,7 @@ it('shows the At Risk count beside an Open Evaluation on both lists', function (
         ->assertNoJavaScriptErrors();
 
     actingAs($cara);
+    travelTo('2027-01-04 09:00');
 
     visit(route('my-performance-evaluations.index'))
         ->assertSee('1 At Risk')

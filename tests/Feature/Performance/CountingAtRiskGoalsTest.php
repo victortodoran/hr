@@ -68,8 +68,9 @@ it('shows a reader the same counts on the rows they already see', function () {
     assertAtRiskCountsOnList($eve, ['Cara' => 2, 'Lia' => 0]);
 });
 
-it('counts the Employee\'s own At Risk Goals on My Performance Evaluations', function () {
+it('counts the Employee\'s own At Risk Goals of a past year on My Performance Evaluations', function () {
     [, $cara] = atRiskLine();
+    travelTo('2027-01-04 09:00');
 
     actingAs($cara)->get(route('my-performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page->where('evaluations.0.at_risk_goals_count', 2));
@@ -89,6 +90,7 @@ it('never counts At Risk Goals on a Completed Evaluation', function () {
     app(AssessPerformanceEvaluation::class)->complete($caras, Outcome::PartlyMet);
 
     assertAtRiskCountsOnList($ben, ['Cara' => 0]);
+    travelTo('2027-01-04 09:00');
     actingAs($cara)->get(route('my-performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page->where('evaluations.0.at_risk_goals_count', 0));
 });

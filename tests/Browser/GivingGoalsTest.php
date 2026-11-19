@@ -50,7 +50,6 @@ it('creates a Report\'s Performance Evaluation, gives, changes and removes a Goa
 
     visit(route('my-performance-evaluations.index'))
         ->assertSee('2026')
-        ->click('2026')
         ->assertSee('Lead the Payments API')
         ->assertDontSee('Give a Goal')
         ->assertNoJavaScriptErrors();

@@ -17,9 +17,9 @@ use Inertia\Response;
 class MyPerformanceEvaluationController extends Controller
 {
     /**
-     * Show the Employee's Performance Evaluations by year, newest first,
-     * with their state, how many Goals each holds, how many of them are
-     * At Risk while Open and, once Completed, the Outcome of the whole.
+     * Show the Employee's Performance Evaluation for this year as its own
+     * page does, with its Goals and their Progress, and their others below
+     * by year, newest first.
      */
     public function __invoke(#[CurrentUser] Employee $actor): Response
     {
