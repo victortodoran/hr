@@ -214,7 +214,7 @@ setLayoutProps({
                 <p class="whitespace-pre-line">{{ goal.description }}</p>
             </div>
             <div v-if="canEdit" class="flex gap-2">
-                <Button variant="outline" @click="startEditing">Edit</Button>
+                <Button variant="outline" @click="startEditing">Change</Button>
                 <ConfirmDeleteDialog
                     :form="GoalController.destroy.form(goalRoute)"
                     :title="`Remove “${goal.title}”?`"
