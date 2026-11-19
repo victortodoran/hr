@@ -49,7 +49,9 @@ function newEmployeeDetails(array $overrides = []): array
 it('adds an Employee, invites them to set a password and lands on their Employee page', function () {
     $details = newEmployeeDetails();
 
-    $response = actingAs(employeeWhoManagesEmployees())->post(route('employees.store'), $details);
+    $hr = employeeWith([Permission::ManageEmployees->value => null, Permission::ViewEmployeeRecords->value => Scope::Everyone]);
+
+    $response = actingAs($hr)->post(route('employees.store'), $details);
 
     $cara = Employee::query()->where('email', 'cara@acme.test')->sole();
     $response->assertRedirect(route('employees.show', $cara))
@@ -62,6 +64,12 @@ it('adds an Employee, invites them to set a password and lands on their Employee
         ->and($cara->hasPendingInvitation())->toBeTrue();
 
     Notification::assertSentTo($cara, Invitation::class);
+});
+
+it('goes back to the add form after adding an Employee the actor may not see', function () {
+    actingAs(employeeWhoManagesEmployees())->post(route('employees.store'), newEmployeeDetails())
+        ->assertRedirect(route('employees.create'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Employee added. An invitation has been sent to cara@acme.test.']);
 });
 
 it('puts the new Employee on the Internal Project for their whole period of work, with the Job Title given and 0% capacity', function (?string $leavingDate) {

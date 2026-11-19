@@ -43,18 +43,21 @@ class EmployeeController extends Controller
 
     /**
      * Add an Employee and invite them to set their password, then show
-     * their Employee page.
+     * their Employee page, or, when the actor may add Employees but not see
+     * this one, the form to add another.
      */
     public function store(#[CurrentUser] Employee $actor, EmployeeRequest $request, AddEmployee $addEmployee): RedirectResponse
     {
-        /** @var array{name: string, email: string, department_id: int, manager_id: int, start_date: string, job_title: string} $details */
+        /** @var array{name: string, email: string, department_id: int, manager_id: int|null, start_date: string, leaving_date?: string|null, job_title: string} $details */
         $details = $request->validated();
 
         $employee = $addEmployee->add($actor, $details);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Employee added. An invitation has been sent to :email.', ['email' => $employee->email])]);
 
-        return to_route('employees.show', $employee);
+        return $actor->can('view', $employee)
+            ? to_route('employees.show', $employee)
+            : to_route('employees.create');
     }
 
     /**
