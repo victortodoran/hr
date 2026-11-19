@@ -52,6 +52,17 @@ class PerformanceEvaluation extends Model
     ];
 
     /**
+     * The years a Manager may create a Performance Evaluation for: the
+     * current one and the next.
+     *
+     * @return array{int, int}
+     */
+    public static function creatableYears(): array
+    {
+        return [today()->year, today()->year + 1];
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

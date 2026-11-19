@@ -1,11 +1,11 @@
 <?php
 
-use App\Enums\PerformanceEvaluationState;
 use App\Http\Controllers\Performance\GoalController;
 use App\Http\Controllers\Performance\MyPerformanceEvaluationController;
 use App\Http\Controllers\Performance\PerformanceEvaluationController;
 use App\Http\Requests\Performance\GoalRequest;
 use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
+use App\Http\Requests\Performance\PerformanceEvaluationRequest;
 use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
@@ -15,7 +15,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(MyPerformanceEvaluationController::class, PerformanceEvaluationController::class, GoalController::class, GoalRequest::class, PerformanceEvaluationListRequest::class, PerformanceEvaluationPolicy::class, PerformanceEvaluation::class);
+covers(MyPerformanceEvaluationController::class, PerformanceEvaluationController::class, GoalController::class, GoalRequest::class, PerformanceEvaluationListRequest::class, PerformanceEvaluationRequest::class, PerformanceEvaluationPolicy::class, PerformanceEvaluation::class);
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
@@ -90,108 +90,59 @@ it('offers the Performance Evaluations page only to Employees who effectively ma
     actingAs($cara)->get(route('performance-evaluations.index'))->assertForbidden();
 });
 
-it('lists, for the year, the Employees the viewer effectively manages who work that year, with their Evaluation or whether it can be started', function () {
+it('lists, for the year, the Employees the viewer effectively manages who have an Evaluation for it, and offers creating one', function () {
     $ben = managerBen();
     $cara = caraReportingTo($ben);
-    $dan = Employee::factory()->reportingTo($ben)->create(['name' => 'Dan', 'start_date' => '2026-12-14']);
-    Employee::factory()->reportingTo($ben)->create(['name' => 'Gus', 'start_date' => '2027-01-04']);
-    Employee::factory()->reportingTo($ben)->create(['name' => 'Ola', 'start_date' => '2020-01-06', 'leaving_date' => '2025-12-31']);
-    Employee::factory()->startedLongAgo()->create(['name' => 'Zed']);
+    Employee::factory()->reportingTo($ben)->create(['name' => 'Dan', 'start_date' => '2026-12-14']);
+    $zed = Employee::factory()->startedLongAgo()->create(['name' => 'Zed']);
+    PerformanceEvaluation::factory()->of($zed)->create();
     $evaluation = PerformanceEvaluation::factory()->of($cara)->has(Goal::factory()->count(3))->create();
 
     actingAs($ben)->get(route('performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/Index')
             ->where('year', 2026)
-            ->where('years', [2026, 2025, 2024, 2023, 2022, 2021, 2020])
+            ->where('years', [2027, 2026, 2025])
+            ->where('canCreate', true)
             ->where('employees.data', [
-                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3, 'at_risk_goals_count' => 0, 'outcome' => null], 'can_start' => false],
-                ['id' => $dan->id, 'name' => 'Dan', 'evaluation' => null, 'can_start' => true],
+                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3, 'at_risk_goals_count' => 0, 'outcome' => null]],
             ]));
 });
 
-it('shows an earlier year with the Employees who worked that year, and offers no start for it', function () {
+it('shows another year with the Employees who have an Evaluation for it, Former Employees included', function () {
     $ben = managerBen();
     $cara = caraReportingTo($ben);
     $ola = Employee::factory()->reportingTo($ben)->create(['name' => 'Ola', 'start_date' => '2020-01-06', 'leaving_date' => '2025-12-31']);
+    $evaluation = PerformanceEvaluation::factory()->of($ola)->create(['year' => 2025]);
     PerformanceEvaluation::factory()->of($cara)->create(['year' => 2024]);
 
     actingAs($ben)->get(route('performance-evaluations.index', ['year' => 2025]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('year', 2025)
-            ->where('years', [2026, 2025, 2024, 2023, 2022, 2021, 2020])
             ->where('employees.data', [
-                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => null, 'can_start' => false],
-                ['id' => $ola->id, 'name' => 'Ola', 'evaluation' => null, 'can_start' => false],
+                ['id' => $ola->id, 'name' => 'Ola', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null]],
             ]));
 });
 
-it('refuses a year still to come on the Performance Evaluations page', function () {
+it('shows next year on the Performance Evaluations page, and refuses the year after', function () {
     $ben = managerBen();
-    caraReportingTo($ben);
+    $evaluation = PerformanceEvaluation::factory()->of(caraReportingTo($ben))->create(['year' => 2027]);
 
-    actingAs($ben)->get(route('performance-evaluations.index', ['year' => 2027]))->assertSessionHasErrors('year');
+    actingAs($ben)->get(route('performance-evaluations.index', ['year' => 2027]))
+        ->assertInertia(fn (Assert $page) => $page->where('year', 2027)->where('employees.data.0.evaluation.id', $evaluation->id));
+    actingAs($ben)->get(route('performance-evaluations.index', ['year' => 2028]))->assertSessionHasErrors('year');
 });
 
 it('lists the Reports of a Manager who has left under the next Manager up', function () {
     $ana = Employee::factory()->startedLongAgo()->create(['name' => 'Ana']);
     $ben = Employee::factory()->startedLongAgo()->reportingTo($ana)->create(['name' => 'Ben', 'leaving_date' => '2026-10-31']);
     $cara = caraReportingTo($ben);
+    PerformanceEvaluation::factory()->of($ben)->create();
 
     actingAs($ana)->get(route('performance-evaluations.index'))
-        ->assertInertia(fn (Assert $page) => $page->count('employees.data', 2)->where('employees.data.0.name', 'Ben')->where('employees.data.1.name', 'Cara'));
-    actingAs($ana)->post(route('employees.performance-evaluations.store', $cara))->assertRedirect();
-});
-
-it('lets the effective Manager start an Employee\'s Performance Evaluation for this year, Open with no Goals', function () {
-    $ben = managerBen();
-    $cara = caraReportingTo($ben);
-
-    actingAs($ben)->post(route('employees.performance-evaluations.store', $cara))
-        ->assertRedirect(route('performance-evaluations.show', PerformanceEvaluation::query()->sole()))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Performance Evaluation started.']);
-
-    $evaluation = PerformanceEvaluation::query()->sole();
-    expect($evaluation->employee_id)->toBe($cara->id)
-        ->and($evaluation->year)->toBe(2026)
-        ->and($evaluation->state)->toBe(PerformanceEvaluationState::Open)
-        ->and($evaluation->goals()->count())->toBe(0);
-});
-
-it('refuses starting a second Performance Evaluation for the same year', function () {
-    $ben = managerBen();
-    $cara = caraReportingTo($ben);
-    PerformanceEvaluation::factory()->of($cara)->create();
-
-    actingAs($ben)->post(route('employees.performance-evaluations.store', $cara))->assertForbidden();
-    expect(PerformanceEvaluation::query()->count())->toBe(1);
-});
-
-it('refuses starting a Performance Evaluation for anyone but the effective Manager, the Employee included', function (Closure $actor) {
-    $ben = managerBen();
-    $cara = caraReportingTo($ben);
-
-    actingAs($actor($ben, $cara))->post(route('employees.performance-evaluations.store', $cara))->assertForbidden();
-    expect(PerformanceEvaluation::query()->exists())->toBeFalse();
-})->with([
-    'the Employee themselves' => [fn (Employee $ben, Employee $cara) => $cara],
-    'their Manager\'s Manager' => [fn (Employee $ben, Employee $cara) => Employee::query()->where('name', 'Ada')->sole()],
-    'an Admin' => [fn (Employee $ben, Employee $cara) => employeeHoldingAdmin()],
-]);
-
-it('lets the effective Manager start this year\'s Performance Evaluation for a Future Employee who starts this year', function () {
-    $ben = managerBen();
-    $dan = Employee::factory()->reportingTo($ben)->create(['start_date' => '2026-12-14']);
-
-    actingAs($ben)->post(route('employees.performance-evaluations.store', $dan))->assertRedirect();
-    expect($dan->performanceEvaluations()->sole()->year)->toBe(2026);
-});
-
-it('refuses starting this year\'s Performance Evaluation for a Future Employee who starts next year', function () {
-    $ben = managerBen();
-    $gus = Employee::factory()->reportingTo($ben)->create(['start_date' => '2027-01-04']);
-
-    actingAs($ben)->post(route('employees.performance-evaluations.store', $gus))->assertForbidden();
+        ->assertInertia(fn (Assert $page) => $page->count('employees.data', 1)->where('employees.data.0.name', 'Ben'));
+    actingAs($ana)->post(route('performance-evaluations.store'), ['year' => 2026, 'employee_id' => $cara->id])->assertRedirect();
+    expect($cara->performanceEvaluations()->sole()->year)->toBe(2026);
 });
 
 it('lets the effective Manager give, change and remove Goals while the Evaluation is Open', function () {
