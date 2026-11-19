@@ -11,6 +11,10 @@ const props = defineProps<{
     evaluation: PerformanceEvaluationSummary;
 }>();
 
+/** The Employee's first name, taken as the first word of their name. */
+const firstName = props.evaluation.employee.name.trim().split(/\s+/)[0];
+const title = `Give ${firstName} a Goal`;
+
 setLayoutProps({
     breadcrumbs: [
         {
@@ -27,12 +31,12 @@ setLayoutProps({
 </script>
 
 <template>
-    <Head title="Give a Goal" />
+    <Head :title="title" />
 
     <PageContainer width="narrow">
         <Heading
-            title="Give a Goal"
-            :description="`${evaluation.employee.name} · ${evaluation.year} Performance Evaluation`"
+            :title="title"
+            :description="`For the ${evaluation.year} Performance Evaluation. ${firstName} sees it as soon as you give it.`"
         />
 
         <GoalForm :evaluation-id="evaluation.id" />
