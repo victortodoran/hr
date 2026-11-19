@@ -4,7 +4,7 @@ import TravelRequestApprovalController from '@/actions/App/Http/Controllers/Trav
 import TravelRequestCancellationController from '@/actions/App/Http/Controllers/Travel/TravelRequestCancellationController';
 import TravelRequestDeclineController from '@/actions/App/Http/Controllers/Travel/TravelRequestDeclineController';
 import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
-import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -106,7 +106,7 @@ setLayoutProps({
                     placeholder="The release is that week"
                 />
             </div>
-            <ConfirmDeleteDialog
+            <ConfirmDialog
                 v-if="travelRequest.can_cancel"
                 :form="
                     TravelRequestCancellationController.store.form(
@@ -119,11 +119,9 @@ setLayoutProps({
                 dismiss-label="Keep it"
             >
                 <template #trigger>
-                    <Button variant="outline" class="text-destructive"
-                        >Cancel travel</Button
-                    >
+                    <Button variant="outline">Cancel travel</Button>
                 </template>
-            </ConfirmDeleteDialog>
+            </ConfirmDialog>
         </header>
 
         <dl class="grid gap-4 text-sm sm:grid-cols-2">

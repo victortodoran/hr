@@ -9,6 +9,7 @@ import TravelExpenseReceiptController from '@/actions/App/Http/Controllers/Trave
 import TravelExpenseReopeningController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReopeningController';
 import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
@@ -41,12 +42,9 @@ const reopenable = computed(() =>
 
 const canReopen = computed(() => reopenable.value.length > 0);
 
-const { selected, isSelected, toggle, clear, processing, submit } =
-    useBulkSelection(() => reopenable.value);
-
-function reopen(): void {
-    submit(TravelExpenseReopeningController.store.url(props.travelRequestId));
-}
+const { selected, isSelected, toggle, clear } = useBulkSelection(
+    () => reopenable.value,
+);
 
 const columns = computed<TableColumn[]>(() => [
     ...(canReopen.value ? [{ key: 'select', label: 'Select' }] : []),
@@ -72,14 +70,36 @@ const columns = computed<TableColumn[]>(() => [
         </div>
         <SelectionBar v-if="canReopen" :count="selected.length" @clear="clear">
             <template #actions>
-                <SubmitButton
-                    variant="outline"
-                    :processing="processing"
-                    type="button"
-                    :disabled="selected.length === 0"
-                    @click="reopen"
-                    >Reopen</SubmitButton
+                <ConfirmDialog
+                    :form="
+                        TravelExpenseReopeningController.store.form(
+                            travelRequestId,
+                        )
+                    "
+                    :title="`Reopen ${selected.length === 1 ? '1 Travel Expense' : `${selected.length} Travel Expenses`}?`"
+                    :description="
+                        selected.length === 1
+                            ? 'It goes back to Pending so it can be corrected.'
+                            : 'They go back to Pending so they can be corrected.'
+                    "
+                    confirm-label="Reopen"
+                    @success="clear"
                 >
+                    <input
+                        v-for="id in selected"
+                        :key="id"
+                        type="hidden"
+                        name="ids[]"
+                        :value="id"
+                    />
+                    <template #trigger>
+                        <Button
+                            variant="outline"
+                            :disabled="selected.length === 0"
+                            >Reopen</Button
+                        >
+                    </template>
+                </ConfirmDialog>
             </template>
         </SelectionBar>
         <DataTable :columns="columns" :rows="expenses.items">

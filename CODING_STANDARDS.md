@@ -28,6 +28,7 @@ One line per rule; list each place a diff breaks one.
 - A dropdown (`Select`) whose field the server requires carries `name` and `required`, so the browser stops an empty submit.
 - Submit buttons show a spinner while saving (`SubmitButton`).
 - Every delete asks for confirmation (`ConfirmDeleteDialog`).
+- Every Reopen and Cancel asks first in the plain confirm dialog (`ConfirmDialog`), saying what happens; red stays for deletes.
 - Lists use the shared table (`DataTable`) and mark their minor columns, so a row fits on a phone without scrolling sideways; no hand-written `<table>`s or bordered `ul` lists. The exceptions are the Work Entries List (`WorkEntryList`), whose week rows, folded runs of days and inline forms `DataTable` doesn't support, and a thread of messages, each an author, a time and its text, such as the Comments on a Goal, which stacks as a plain list; the Goals on a Performance Evaluation's page, which read as numbered cards (`GoalCard`); and a Goal's History beside its Comments, a timeline of Progress changes, each a dot in its status colour, who made it and when; all still stack on a phone instead of scrolling.
 - Every list has an empty state (`EmptyState`): an icon, a sentence saying what belongs there, and its action only when the page's permission flag allows it. The Goal cards' dashed "No Goals yet" box follows the same rule in the cards' own style.
 - Tabs (`@/components/ui/tabs`) are kept in the URL, and only the open tab's data loads.

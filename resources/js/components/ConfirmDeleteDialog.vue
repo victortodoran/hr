@@ -17,8 +17,8 @@ import type { RouteFormDefinition } from '@/wayfinder';
 
 /**
  * Asks before deleting something, the one such question across the app,
- * also used before withdrawing something for good, such as cancelling a
- * Travel Request. The `trigger` slot is the button that opens it, a plain
+ * in red; a step that only changes state, such as reopening or cancelling,
+ * asks through `ConfirmDialog` instead. The `trigger` slot is the button that opens it, a plain
  * "Delete" unless given; the dialog closes once the request succeeds, and
  * shows the refusal when it doesn't. Opened from elsewhere, such as a menu
  * item that would unmount a trigger inside it, it takes `v-model:open` and
@@ -26,7 +26,7 @@ import type { RouteFormDefinition } from '@/wayfinder';
  */
 withDefaults(
     defineProps<{
-        /** Where the delete, or other request asked about, is sent, from a Wayfinder `.form()`. */
+        /** Where the delete is sent, from a Wayfinder `.form()`. */
         form: RouteFormDefinition<'post'>;
         title: string;
         description: string;
