@@ -5,6 +5,7 @@ use App\Enums\Scope;
 use App\Enums\TravelExpenseCategory;
 use App\Enums\TravelExpenseState;
 use App\Http\Controllers\Travel\TravelExpenseController;
+use App\Http\Controllers\Travel\TravelExpenseExportController;
 use App\Http\Controllers\Travel\TravelExpenseReopeningController;
 use App\Http\Controllers\Travel\TravelRequestListController;
 use App\Models\CompanySettings;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(TravelExpenseController::class, TravelRequestListController::class, TravelExpenseReopeningController::class);
+covers(TravelExpenseController::class, TravelRequestListController::class, TravelExpenseReopeningController::class, TravelExpenseExportController::class);
 
 beforeEach(function () {
     travelTo('2026-12-10 09:00');
@@ -136,4 +137,18 @@ it('finds a Travel Request on the Travel Requests page by its state, then reopen
 
     expect($toReopen->refresh()->state)->toBe(TravelExpenseState::Pending)
         ->and($stillApproved->refresh()->state)->toBe(TravelExpenseState::Approved);
+});
+
+it('offers the Approved Travel Expenses of the Employee shown on the Travel Requests page as a file', function () {
+    $cara = Employee::factory()->create(['name' => 'Cara']);
+    TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+
+    actingAs(employeeWith([Permission::ViewTravel->value => Scope::Everyone]));
+
+    visit(route('travel-request-list.index', ['employee' => $cara->id]))
+        ->assertSee('Berlin')
+        ->click('Export expenses')
+        ->assertAttributeContains('internal:role=menuitem[name="CSV"s]', 'href', "/travel-expenses/export?month=2026-12&employee={$cara->id}&format=csv")
+        ->assertAttributeContains('internal:role=menuitem[name="Excel"s]', 'href', "/travel-expenses/export?month=2026-12&employee={$cara->id}&format=xlsx")
+        ->assertNoJavaScriptErrors();
 });

@@ -7,12 +7,6 @@ use App\Http\Requests\WorkEntries\WorkEntryExportRequest;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Models\WorkEntry;
-use Illuminate\Testing\TestResponse;
-use OpenSpout\Reader\CSV\Reader as CsvReader;
-use OpenSpout\Reader\ReaderInterface;
-use OpenSpout\Reader\SheetIteratorInterface;
-use OpenSpout\Reader\XLSX\Reader as XlsxReader;
-use Symfony\Component\HttpFoundation\Response;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
@@ -22,56 +16,6 @@ covers(WorkEntryExportController::class, WorkEntryExportRequest::class);
 beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
-
-/**
- * The cell values of a downloaded CSV file, header first, as text.
- *
- * @param  TestResponse<Response>  $response
- * @return list<array<int, mixed>>
- */
-function csvRows(TestResponse $response): array
-{
-    return downloadedRows($response, new CsvReader);
-}
-
-/**
- * The cell values of a downloaded Excel file's first sheet, header first.
- *
- * @param  TestResponse<Response>  $response
- * @return list<array<int, mixed>>
- */
-function xlsxRows(TestResponse $response): array
-{
-    return downloadedRows($response, new XlsxReader);
-}
-
-/**
- * The rows of the downloaded file's first sheet, read back with the reader.
- *
- * @param  TestResponse<Response>  $response
- *
- * @template TSheets of SheetIteratorInterface
- *
- * @param  ReaderInterface<TSheets>  $reader
- * @return list<array<int, mixed>>
- */
-function downloadedRows(TestResponse $response, ReaderInterface $reader): array
-{
-    $path = tempnam(sys_get_temp_dir(), 'export');
-    file_put_contents($path, $response->streamedContent());
-    $reader->open($path);
-    $rows = [];
-    foreach ($reader->getSheetIterator() as $sheet) {
-        foreach ($sheet->getRowIterator() as $row) {
-            $rows[] = $row->toArray();
-        }
-        break;
-    }
-    $reader->close();
-    unlink($path);
-
-    return $rows;
-}
 
 it('downloads the matching Work Entries as a CSV file, one row each with every column', function () {
     $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone], ['name' => 'Dan']);

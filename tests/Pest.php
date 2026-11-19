@@ -7,6 +7,12 @@ use App\Models\Employee;
 use App\Models\Project;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use OpenSpout\Reader\CSV\Reader as CsvReader;
+use OpenSpout\Reader\ReaderInterface;
+use OpenSpout\Reader\SheetIteratorInterface;
+use OpenSpout\Reader\XLSX\Reader as XlsxReader;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Browser\BrowserTestCase;
 use Tests\TestCase;
 
@@ -165,4 +171,54 @@ function assignmentOf(Employee $employee, string $project = 'Relaunch', array $a
 function workEntryForm(Assignment $assignment, array $changes = []): array
 {
     return ['assignment_id' => $assignment->id, 'date' => '2026-11-10', 'hours' => '3', 'description' => 'Reviewing the API', ...$changes];
+}
+
+/**
+ * The cell values of a downloaded CSV file, header first, as text.
+ *
+ * @param  TestResponse<Response>  $response
+ * @return list<array<int, mixed>>
+ */
+function csvRows(TestResponse $response): array
+{
+    return downloadedRows($response, new CsvReader);
+}
+
+/**
+ * The cell values of a downloaded Excel file's first sheet, header first.
+ *
+ * @param  TestResponse<Response>  $response
+ * @return list<array<int, mixed>>
+ */
+function xlsxRows(TestResponse $response): array
+{
+    return downloadedRows($response, new XlsxReader);
+}
+
+/**
+ * The rows of the downloaded file's first sheet, read back with the reader.
+ *
+ * @param  TestResponse<Response>  $response
+ *
+ * @template TSheets of SheetIteratorInterface
+ *
+ * @param  ReaderInterface<TSheets>  $reader
+ * @return list<array<int, mixed>>
+ */
+function downloadedRows(TestResponse $response, ReaderInterface $reader): array
+{
+    $path = tempnam(sys_get_temp_dir(), 'export');
+    file_put_contents($path, $response->streamedContent());
+    $reader->open($path);
+    $rows = [];
+    foreach ($reader->getSheetIterator() as $sheet) {
+        foreach ($sheet->getRowIterator() as $row) {
+            $rows[] = $row->toArray();
+        }
+        break;
+    }
+    $reader->close();
+    unlink($path);
+
+    return $rows;
 }
