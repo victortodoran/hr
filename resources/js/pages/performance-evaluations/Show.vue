@@ -78,6 +78,7 @@ const summary = useSaveOnPick<string | null>({
         PerformanceEvaluationSummaryController.update.url(props.evaluation.id),
     field: 'summary',
     label: 'summary',
+    keepsChosenOnFailure: true,
 });
 
 function saveSummary(): void {
@@ -330,6 +331,7 @@ setLayoutProps({
                 <Label for="evaluation-outcome">Outcome</Label>
                 <Select
                     name="outcome"
+                    required
                     :model-value="pickedOutcome"
                     :disabled="!isReadyToComplete || completion.processing"
                     @update:model-value="askToComplete($event as Outcome)"

@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\AssessPerformanceEvaluation;
 use App\Enums\Outcome;
 use App\Enums\PerformanceEvaluationState;
 use App\Enums\Permission;
@@ -39,7 +40,7 @@ it('shows the Manager the kept Outcome after a Reopen, and Completes it again wh
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
     $evaluation = PerformanceEvaluation::factory()->of($cara)->completed()->create();
-    $evaluation->forceFill(['state' => PerformanceEvaluationState::Open, 'completed_at' => null])->save();
+    app(AssessPerformanceEvaluation::class)->reopen($evaluation);
 
     actingAs($ben);
 
