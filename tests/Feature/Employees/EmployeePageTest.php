@@ -8,6 +8,7 @@ use App\Models\Assignment;
 use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\PerformanceEvaluation;
 use App\Pages\Employees\EmployeePage;
 use App\Policies\EmployeePolicy;
 use App\Support\ReportingChain;
@@ -15,6 +16,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\travelTo;
 
 covers(EmployeeController::class, EmployeePolicy::class, DirectoryController::class, ReportingChain::class, EmployeePage::class);
 
@@ -275,6 +277,7 @@ it('opens Overview when no tab, or an unknown one, is asked for', function (arra
  * Ada ── Ben ── Cara
  */
 it('links the Overview to the Work, Travel and Performance lists only where the viewer may see the Employee on them', function (Closure $viewer, string $whose, array $expected) {
+    travelTo('2026-11-13 09:00');
     $ada = Employee::factory()->create(['name' => 'Ada']);
     $ben = Employee::factory()->reportingTo($ada)->create(['name' => 'Ben']);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
@@ -285,11 +288,25 @@ it('links the Overview to the Work, Travel and Performance lists only where the 
     actingAs($actor)->get(route('employees.show', $employee))->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('seeAlso', $expected));
 })->with([
-    'one who sees everyone\'s Work Entries' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]), 'cara', ['work' => true, 'travel' => false, 'performance' => false]],
-    'one who sees everyone\'s travel' => [fn () => employeeWith([Permission::ViewTravel->value => Scope::Everyone]), 'cara', ['work' => false, 'travel' => true, 'performance' => false]],
-    'one who reads everyone\'s Evaluations' => [fn () => employeeWith([Permission::ViewPerformanceEvaluations->value => Scope::Everyone]), 'cara', ['work' => false, 'travel' => false, 'performance' => true]],
-    'her Manager, seeing his Reports\' Work Entries and travel' => [fn (Employee $ben) => tap($ben, fn () => giveRole($ben, [Permission::ViewWorkEntries->value => Scope::Reports, Permission::ViewTravel->value => Scope::Reports])), 'cara', ['work' => true, 'travel' => true, 'performance' => true]],
-    'one whose Scope stops at their Reports, on someone else' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Reports, Permission::ViewTravel->value => Scope::Reports, Permission::ViewPerformanceEvaluations->value => Scope::Reports], ['manager_id' => Employee::factory()->create()->id]), 'ben', ['work' => false, 'travel' => false, 'performance' => false]],
-    'one who sees everyone\'s, on their own page, where their own Evaluations are not listed' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone, Permission::ViewTravel->value => Scope::Everyone, Permission::ViewPerformanceEvaluations->value => Scope::Everyone]), 'themselves', ['work' => true, 'travel' => true, 'performance' => false]],
-    'one who sees only their own, on their own page' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Own, Permission::ViewTravel->value => Scope::Own]), 'themselves', ['work' => false, 'travel' => false, 'performance' => false]],
+    'one who sees everyone\'s Work Entries' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]), 'cara', ['work' => true, 'travel' => false, 'performance' => null]],
+    'one who sees everyone\'s travel' => [fn () => employeeWith([Permission::ViewTravel->value => Scope::Everyone]), 'cara', ['work' => false, 'travel' => true, 'performance' => null]],
+    'one who reads everyone\'s Evaluations' => [fn () => employeeWith([Permission::ViewPerformanceEvaluations->value => Scope::Everyone]), 'cara', ['work' => false, 'travel' => false, 'performance' => 2026]],
+    'her Manager, seeing his Reports\' Work Entries and travel' => [fn (Employee $ben) => tap($ben, fn () => giveRole($ben, [Permission::ViewWorkEntries->value => Scope::Reports, Permission::ViewTravel->value => Scope::Reports])), 'cara', ['work' => true, 'travel' => true, 'performance' => 2026]],
+    'one whose Scope stops at their Reports, on someone else' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Reports, Permission::ViewTravel->value => Scope::Reports, Permission::ViewPerformanceEvaluations->value => Scope::Reports], ['manager_id' => Employee::factory()->create()->id]), 'ben', ['work' => false, 'travel' => false, 'performance' => null]],
+    'one who sees everyone\'s, on their own page, where their own Evaluations are not listed' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone, Permission::ViewTravel->value => Scope::Everyone, Permission::ViewPerformanceEvaluations->value => Scope::Everyone]), 'themselves', ['work' => true, 'travel' => true, 'performance' => null]],
+    'one who sees only their own, on their own page' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Own, Permission::ViewTravel->value => Scope::Own]), 'themselves', ['work' => false, 'travel' => false, 'performance' => null]],
 ]);
+
+it('links a Former Employee\'s Overview to the year of their latest Performance Evaluation, and to the current one when they have none', function () {
+    travelTo('2026-11-13 09:00');
+    $gone = Employee::factory()->former()->create();
+    $none = Employee::factory()->former()->create();
+    PerformanceEvaluation::factory()->of($gone)->completed()->create(['year' => 2024]);
+    PerformanceEvaluation::factory()->of($gone)->completed()->create(['year' => 2025]);
+    $reader = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ViewPerformanceEvaluations->value => Scope::Everyone]);
+
+    actingAs($reader)->get(route('employees.show', $gone))
+        ->assertInertia(fn (Assert $page) => $page->where('seeAlso.performance', 2025));
+    actingAs($reader)->get(route('employees.show', $none))
+        ->assertInertia(fn (Assert $page) => $page->where('seeAlso.performance', 2026));
+});

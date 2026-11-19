@@ -92,7 +92,7 @@ final class EmployeePage
      * unless they have left, and which lists across Employees the viewer
      * may open filtered to them.
      *
-     * @return array{record: array<string, mixed>|null, reportsNeedingAManager: array<int, array{id: int, name: string}>, reportingChain: array<string, mixed>|null, seeAlso: array{work: bool, travel: bool, performance: bool}}
+     * @return array{record: array<string, mixed>|null, reportsNeedingAManager: array<int, array{id: int, name: string}>, reportingChain: array<string, mixed>|null, seeAlso: array{work: bool, travel: bool, performance: int|null}}
      */
     private static function overviewTab(Employee $actor, Employee $employee, bool $canViewRecord): array
     {
@@ -108,20 +108,40 @@ final class EmployeePage
      * Which lists across Employees the viewer may open with the Employee
      * listed on them: the Work Entries and Travel Requests pages when the
      * viewer may open them and see the Employee's Work Entries or travel
-     * there, and the Performance Evaluations page when the Employee's are
-     * among those the viewer may open there, which never includes the
-     * viewer's own.
+     * there, and the Performance Evaluations page, as the year to open it
+     * on, when the Employee's are among those the viewer may open there,
+     * which never includes the viewer's own: the current year, or for a
+     * Former Employee, who is no longer due one, the year of their latest.
      *
-     * @return array{work: bool, travel: bool, performance: bool}
+     * @return array{work: bool, travel: bool, performance: int|null}
      */
     private static function seeAlso(Employee $actor, Employee $employee): array
     {
+        $canOpenEvaluations = $actor->can('viewList', PerformanceEvaluation::class)
+            && Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->whereKey($employee->id)->exists();
+
         return [
             'work' => $actor->can('viewList', WorkEntry::class) && $actor->can('viewAny', [WorkEntry::class, $employee]),
             'travel' => $actor->can('viewList', TravelRequest::class) && $actor->reachesThrough(Permission::seeingTravel(), $employee),
-            'performance' => $actor->can('viewList', PerformanceEvaluation::class)
-                && Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->whereKey($employee->id)->exists(),
+            'performance' => $canOpenEvaluations ? self::evaluationsYear($employee) : null,
         ];
+    }
+
+    /**
+     * The year the Performance Evaluations page shows the Employee for: the
+     * current one, or for a Former Employee the year of their latest
+     * Performance Evaluation, as the list only shows them for a year they
+     * have one.
+     */
+    private static function evaluationsYear(Employee $employee): int
+    {
+        if ($employee->employmentStatus() !== EmploymentStatus::Former) {
+            return today()->year;
+        }
+
+        $latest = $employee->performanceEvaluations()->max('year');
+
+        return $latest === null ? today()->year : (int) $latest;
     }
 
     /**

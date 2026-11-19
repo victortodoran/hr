@@ -122,7 +122,8 @@ it('removes an Employee\'s Manager by choosing No Manager', function () {
     expect($cara->refresh()->manager_id)->toBeNull();
 });
 
-it('links an Employee\'s Overview to their Work Entries and Performance Evaluations, each list opening narrowed to them', function () {
+it('links an Employee\'s Overview to their Work Entries, Travel Requests and Performance Evaluations, each list opening narrowed to them', function () {
+    CompanySettings::factory()->create();
     $ana = Employee::factory()->create(['name' => 'Ana Popescu']);
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ana)->create(['name' => 'Cara Lane']);
     $bea = Employee::factory()->startedLongAgo()->reportingTo($ana)->create(['name' => 'Bea Dunn']);
@@ -132,13 +133,19 @@ it('links an Employee\'s Overview to their Work Entries and Performance Evaluati
         Permission::ViewEmployeeRecords->value => Scope::Everyone,
         Permission::ViewWorkEntries->value => Scope::Everyone,
         Permission::ViewPerformanceEvaluations->value => Scope::Everyone,
+        Permission::ViewTravel->value => Scope::Everyone,
     ]);
 
     actingAs($viewer);
 
     visit(route('employees.show', $cara))
+        ->click('internal:role=link[name="Travel →"s]')
+        ->assertPathIs(route('travel-request-list.index', absolute: false))
+        ->assertSeeIn('[aria-label="Employee"]', 'Cara Lane (0)')
+        ->assertNoJavaScriptErrors();
+
+    visit(route('employees.show', $cara))
         ->assertSee('See also')
-        ->assertDontSee('Travel →')
         ->click('internal:role=link[name="Work →"s]')
         ->assertPathIs(route('work-entry-list.index', absolute: false))
         ->assertQueryStringHas('employee', (string) $cara->id)

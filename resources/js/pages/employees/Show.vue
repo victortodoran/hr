@@ -100,23 +100,24 @@ function openTab(tab: string | number): void {
  * Employee, each only where the viewer may see them there.
  */
 const seeAlsoLinks = computed(() => {
-    const query = { query: { employee: props.employee.id } };
+    const employee = props.employee.id;
+    const year = props.seeAlso?.performance;
 
     return [
         {
             label: 'Work',
             shown: props.seeAlso?.work,
-            href: workEntryList(query),
+            href: workEntryList({ query: { employee } }),
         },
         {
             label: 'Travel',
             shown: props.seeAlso?.travel,
-            href: travelRequestList(query),
+            href: travelRequestList({ query: { employee } }),
         },
         {
             label: 'Performance',
-            shown: props.seeAlso?.performance,
-            href: performanceEvaluationList(query),
+            shown: year != null,
+            href: performanceEvaluationList({ query: { employee, year } }),
         },
     ].filter((link) => link.shown);
 });

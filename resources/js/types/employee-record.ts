@@ -40,7 +40,8 @@ export type EmployeePageRecord = {
 export type EmployeeSeeAlso = {
     work: boolean;
     travel: boolean;
-    performance: boolean;
+    /** The year to open the Performance Evaluations list on, null when hidden. */
+    performance: number | null;
 };
 
 /**
