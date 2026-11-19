@@ -84,6 +84,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('employees/{employee}/assignments', [AssignmentController::class, 'store'])->middleware('can:create,'.Assignment::class.',employee')->name('employees.assignments.store');
     Route::patch('assignments/{assignment}', [AssignmentController::class, 'update'])->middleware('can:update,assignment')->name('assignments.update');
+    Route::delete('assignments/{assignment}', [AssignmentController::class, 'destroy'])->middleware('can:delete,assignment')->name('assignments.destroy');
 
     Route::middleware('can:managePayOn,assignment')->group(function () {
         Route::post('assignments/{assignment}/pay', [PayEntryController::class, 'store'])->name('assignments.pay.store');

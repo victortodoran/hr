@@ -5,9 +5,11 @@ use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Http\Controllers\Employees\EmployeeController;
 use App\Http\Controllers\Travel\TravelRequestController;
+use App\Models\Assignment;
 use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;
+use App\Models\WorkEntry;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
@@ -78,6 +80,29 @@ it('drops an Assignment edit that was cancelled, so reopening shows what is save
     $relaunch->refresh();
     expect($relaunch->capacity)->toBe(100)
         ->and($relaunch->job_title)->toBe('Lead Developer');
+});
+
+it('deletes an unused Assignment after asking, and offers no Delete on one with Work Entries', function () {
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara Lane']);
+    $mistake = assignmentOf($cara, 'Relaunch');
+    $worked = assignmentOf($cara, 'Data Audit');
+    WorkEntry::factory()->for($worked)->create();
+
+    actingAs(employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+        Permission::ManageAssignments->value => Scope::Everyone,
+    ]));
+
+    visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
+        ->assertMissing('[aria-label="Delete the Assignment to Data Audit"]')
+        ->click('[aria-label="Delete the Assignment to Relaunch"]')
+        ->assertSee('Delete the Assignment to Relaunch?')
+        ->click('internal:role=button[name="Delete"s]')
+        ->assertSee('Assignment deleted.')
+        ->assertDontSeeIn('[data-test="assignment"]', 'Relaunch')
+        ->assertNoJavaScriptErrors();
+
+    expect(Assignment::query()->whereKey($mistake->id)->exists())->toBeFalse();
 });
 
 it('removes an Employee\'s Manager by choosing No Manager', function () {

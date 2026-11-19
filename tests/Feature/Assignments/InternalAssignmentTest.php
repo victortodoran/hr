@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\DeleteAssignment;
 use App\Actions\UpdateTrimmingAssignments;
 use App\Enums\Permission;
 use App\Enums\Scope;
@@ -13,7 +14,7 @@ use App\Rules\AssignmentsFit;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(AssignmentController::class, AssignmentRequest::class, EmployeeRequest::class, UpdateTrimmingAssignments::class, AssignmentsFit::class, Assignment::class, Employee::class);
+covers(AssignmentController::class, DeleteAssignment::class, AssignmentRequest::class, EmployeeRequest::class, UpdateTrimmingAssignments::class, AssignmentsFit::class, Assignment::class, Employee::class);
 
 beforeEach(fn () => travelTo('2026-03-01 09:00'));
 
@@ -110,12 +111,12 @@ it('still requires a Job Title and a Capacity on other Assignments', function ()
         ->assertSessionHasErrors(['job_title' => 'The Job Title field is required.', 'capacity' => 'The Capacity field is required.']);
 });
 
-it('offers no way to delete the Internal Assignment', function () {
+it('refuses to delete the Internal Assignment', function () {
     $internal = internallyAssigned()->internalAssignment()->sole();
 
     actingAs(employeeWith([Permission::ManageAssignments->value => Scope::Everyone]))
-        ->delete(route('assignments.update', $internal))
-        ->assertMethodNotAllowed();
+        ->delete(route('assignments.destroy', $internal))
+        ->assertSessionHasErrors(['assignment' => 'The Internal Assignment can\'t be deleted.']);
 
     expect(Assignment::query()->whereKey($internal->id)->exists())->toBeTrue();
 });

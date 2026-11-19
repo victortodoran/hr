@@ -124,7 +124,8 @@ function submit(): void {
                         any other Assignment's.
                     </DialogDescription>
                     <DialogDescription v-else-if="assignment">
-                        Set an end date to end the Assignment early.
+                        Set an end date to end the Assignment early. Pay set to
+                        take effect after the end date is removed.
                     </DialogDescription>
                 </DialogHeader>
 

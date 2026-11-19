@@ -109,4 +109,29 @@ class Assignment extends Model
     {
         return $this->project->is_internal;
     }
+
+    /**
+     * Whether the Assignment can be deleted, its Pay with it: never the
+     * Internal Assignment, and only while it has no Work Entries or Travel
+     * Requests. Once it has any, it can only be ended.
+     */
+    public function canBeDeleted(): bool
+    {
+        return ! $this->isInternal()
+            && ! $this->workEntries()->exists()
+            && ! $this->travelRequests()->exists();
+    }
+
+    /**
+     * Remove the Pay changes dated after the Assignment's end, so its Pay
+     * stays inside it once its end moves earlier.
+     */
+    public function dropPayAfterEnd(): void
+    {
+        if ($this->end_date === null) {
+            return;
+        }
+
+        $this->payEntries()->whereDate('effective_from', '>', $this->end_date)->delete();
+    }
 }
