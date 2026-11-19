@@ -35,6 +35,8 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, PayEntry> $payEntries
  * @property-read Collection<int, WorkEntry> $workEntries
  * @property-read Collection<int, TravelRequest> $travelRequests
+ * @property-read bool $work_entries_exists Only when loaded with withExists()
+ * @property-read bool $travel_requests_exists Only when loaded with withExists()
  */
 #[Fillable(['project_id', 'job_title', 'start_date', 'end_date', 'capacity'])] // @pest-mutate-ignore (class attributes never show as covered)
 #[UseEloquentBuilder(AssignmentBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
@@ -108,5 +110,33 @@ class Assignment extends Model
     public function isInternal(): bool
     {
         return $this->project->is_internal;
+    }
+
+    /**
+     * Whether the Assignment can be deleted, its Pay with it: never the
+     * Internal Assignment, and only while it has no Work Entries or Travel
+     * Requests. Once it has any, it can only be ended. Reads
+     * `withExists(['workEntries', 'travelRequests'])` when the query loaded
+     * it, so a list asks once rather than per Assignment.
+     */
+    public function canBeDeleted(): bool
+    {
+        $hasWorkEntries = $this->hasAttribute('work_entries_exists') ? $this->work_entries_exists : $this->workEntries()->exists();
+        $hasTravelRequests = $this->hasAttribute('travel_requests_exists') ? $this->travel_requests_exists : $this->travelRequests()->exists();
+
+        return ! $this->isInternal() && ! $hasWorkEntries && ! $hasTravelRequests;
+    }
+
+    /**
+     * Remove the Pay changes dated after the Assignment's end, so its Pay
+     * stays inside it once its end moves earlier.
+     */
+    public function dropPayAfterEnd(): void
+    {
+        if ($this->end_date === null) {
+            return;
+        }
+
+        $this->payEntries()->whereDate('effective_from', '>', $this->end_date)->delete();
     }
 }

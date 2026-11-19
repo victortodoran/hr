@@ -40,6 +40,16 @@ class AssignmentPolicy
     }
 
     /**
+     * Deleting an Assignment needs manage assignments for its Employee, as
+     * changing it does. Whether it can be deleted at all is the Assignment's
+     * own rule (Assignment::canBeDeleted()), refused with a reason.
+     */
+    public function delete(Employee $actor, Assignment $assignment): bool
+    {
+        return $this->update($actor, $assignment);
+    }
+
+    /**
      * Seeing the Pay on an Employee's Assignments needs view pay for them,
      * or manage pay, since managing Pay means seeing it.
      */

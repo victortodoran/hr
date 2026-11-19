@@ -2,7 +2,9 @@
 import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
 import { CalendarDays, FolderKanban, TriangleAlert } from '@lucide/vue';
 import { computed } from 'vue';
+import AssignmentController from '@/actions/App/Http/Controllers/Assignments/AssignmentController';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import EmployeePageSection from '@/components/employees/EmployeePageSection.vue';
@@ -98,11 +100,11 @@ const hasActions = computed(() => props.canManage || props.canViewPay);
  */
 const assignmentGrid = computed(() => {
     if (props.canViewPay) {
-        return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_minmax(0,1.1fr)_7.5rem]';
+        return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_minmax(0,1.1fr)_11rem]';
     }
 
     if (props.canManage) {
-        return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_7.5rem]';
+        return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_11rem]';
     }
 
     return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem]';
@@ -431,6 +433,26 @@ setLayoutProps({
                                         :projects="projects"
                                         :assignment="assignment"
                                     />
+                                    <ConfirmDeleteDialog
+                                        v-if="assignment.can_delete"
+                                        :form="
+                                            AssignmentController.destroy.form(
+                                                assignment.id,
+                                            )
+                                        "
+                                        :title="`Delete the Assignment to ${assignment.project.name}?`"
+                                        description="Its Pay is deleted with it. This can't be undone."
+                                    >
+                                        <template #trigger>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                class="text-destructive"
+                                                :aria-label="`Delete the Assignment to ${assignment.project.name}`"
+                                                >Delete</Button
+                                            >
+                                        </template>
+                                    </ConfirmDeleteDialog>
                                 </div>
                             </li>
                         </ul>

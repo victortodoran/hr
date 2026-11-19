@@ -101,12 +101,12 @@ final class EmployeePage
      * a currency is given, and the Projects they can be put on, to those
      * who may manage their Assignments.
      *
-     * @return array{assignments: array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, has_ended: bool, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>, projects: array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>}
+     * @return array{assignments: array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, has_ended: bool, can_delete: bool, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>, projects: array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>}
      */
     private static function assignmentsTab(Employee $employee, ?Currency $currency, bool $canManage): array
     {
         return [
-            'assignments' => self::assignments($employee, $currency),
+            'assignments' => self::assignments($employee, $currency, $canManage),
             'projects' => $canManage ? self::openProjects() : [],
         ];
     }
@@ -191,14 +191,16 @@ final class EmployeePage
     /**
      * The Employee's Assignments, earliest first, each with its Pay history
      * when a currency is given, which only happens for viewers allowed to see
-     * the Employee's Pay.
+     * the Employee's Pay, and whether each can be deleted, for viewers who
+     * may manage the Employee's Assignments.
      *
-     * @return array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, has_ended: bool, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>
+     * @return array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, has_ended: bool, can_delete: bool, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>
      */
-    private static function assignments(Employee $employee, ?Currency $currency): array
+    private static function assignments(Employee $employee, ?Currency $currency, bool $canManage): array
     {
         return $employee->assignments()
             ->with('project.client')
+            ->when($canManage, fn (Builder $query) => $query->withExists(['workEntries', 'travelRequests']))
             ->when($currency !== null, fn (Builder $query) => $query->with(['payEntries' => fn (HasMany $entries) => $entries->orderByDesc('effective_from')]))
             ->orderBy('start_date')
             ->orderBy('id')
@@ -216,6 +218,7 @@ final class EmployeePage
                 'end_date' => $assignment->end_date?->toDateString(),
                 'capacity' => $assignment->capacity,
                 'has_ended' => $assignment->end_date !== null && $assignment->end_date->isBefore(today()),
+                'can_delete' => $canManage && $assignment->canBeDeleted(),
                 ...($currency === null ? [] : ['pay' => self::payHistory($assignment, $currency)]),
             ])
             ->all();

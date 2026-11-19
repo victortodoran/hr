@@ -15,6 +15,11 @@ export type AssignmentRecord = {
     capacity: number;
     /** Whether the Assignment ended before today. */
     has_ended: boolean;
+    /**
+     * Whether the viewer may delete it: never the Internal Assignment, and
+     * only while it has no Work Entries or Travel Requests.
+     */
+    can_delete: boolean;
     /** The Pay history, newest first; only sent to viewers who may see it. */
     pay?: PayEntryRecord[];
 };

@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\Assignment;
 use App\Models\Employee;
+use App\Models\PayEntry;
 use App\Models\Project;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,10 +14,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * Saves an Employee or a Project and, in the same transaction, trims its
  * Assignments to end by its last day (a Leaving Date or a Project end date),
- * so nobody appears to work after leaving or on a finished Project. An
- * Employee's Internal Assignment always takes their Start Date and Leaving
- * Date. Validation has already refused a last day before any other
- * Assignment starts.
+ * so nobody appears to work after leaving or on a finished Project, and
+ * removes their Pay changes dated after that day. An Employee's Internal
+ * Assignment always takes their Start Date and Leaving Date. Validation has
+ * already refused a last day before any other Assignment starts.
  */
 class UpdateTrimmingAssignments
 {
@@ -52,8 +53,13 @@ class UpdateTrimmingAssignments
             return;
         }
 
-        $assignments
+        $assignments->clone()
             ->where(fn (Builder $running) => $running->whereNull('end_date')->orWhereDate('end_date', '>', $lastDay))
             ->update(['end_date' => $lastDay->toDateString()]);
+
+        PayEntry::query()
+            ->whereIn('assignment_id', $assignments->select('id'))
+            ->whereDate('effective_from', '>', $lastDay)
+            ->delete();
     }
 }
