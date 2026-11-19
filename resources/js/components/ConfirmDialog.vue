@@ -29,17 +29,12 @@ withDefaults(
         form: RouteFormDefinition<'post'>;
         title: string;
         description: string;
-        /** Keeps this dialog's errors apart when several share a page. */
-        errorBag?: string;
         /** The button that goes ahead. */
         confirmLabel: string;
         /** The button that closes the dialog without going ahead. */
         dismissLabel?: string;
     }>(),
-    {
-        errorBag: undefined,
-        dismissLabel: 'Cancel',
-    },
+    { dismissLabel: 'Cancel' },
 );
 
 const emit = defineEmits<{
@@ -62,7 +57,6 @@ function succeeded(): void {
         <DialogContent>
             <Form
                 v-bind="form"
-                :error-bag="errorBag"
                 :options="{ preserveScroll: true }"
                 class="space-y-6"
                 @success="succeeded"
