@@ -16,7 +16,7 @@ use function Pest\Laravel\actingAs;
 
 covers(RoleHolderController::class, GiveRoleRequest::class, RoleController::class, ChangeAccess::class, AccessLogEntry::class);
 
-it('lets an Employee who manages Roles give a Role, and the widest Scope across Roles wins', function () {
+it('lets an Employee who manages Roles give a Role, and its Scope combines with those of the Roles already held', function () {
     $admin = employeeWhoManagesRoles();
     $ben = Employee::factory()->create();
     $cara = Employee::factory()->reportingTo(Employee::factory()->create())->create();

@@ -5,7 +5,6 @@ namespace App\Models\Builders;
 use App\Enums\EmploymentStatus;
 use App\Enums\PerformanceEvaluationState;
 use App\Enums\Permission;
-use App\Enums\Scope;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
 use Carbon\CarbonInterface;
@@ -89,21 +88,13 @@ class EmployeeBuilder extends ModelBuilder
     /**
      * Limit the query to the Employees whose Work Entries, or Travel
      * Expenses, the given Employee may reopen through the reopen Permission
-     * given: those its Scope covers, never themselves. Being someone's
+     * given: those its Scopes cover, never themselves. Being someone's
      * Manager doesn't count, so without the Permission it's nobody.
      */
     public function reopenableBy(Employee $reopener, Permission $reopen): static
     {
         return $this->scoped(function () use ($reopener, $reopen): void {
-            $scope = $reopener->widestScopeFor($reopen);
-
-            if ($scope === null) {
-                $this->whereRaw('false');
-
-                return;
-            }
-
-            $scope->limit($this, $reopener);
+            $reopener->limitToReachOf($this, [$reopen]);
             $this->whereKeyNot($reopener->id);
         });
     }

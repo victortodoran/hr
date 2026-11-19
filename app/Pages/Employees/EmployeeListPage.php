@@ -4,7 +4,6 @@ namespace App\Pages\Employees;
 
 use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
-use App\Enums\Scope;
 use App\Models\Builders\EmployeeBuilder;
 use App\Models\Employee;
 
@@ -23,11 +22,8 @@ final class EmployeeListPage
      */
     public static function props(Employee $actor, string $search, ?EmploymentStatus $status): array
     {
-        /** @var Scope $scope the policy only lets in viewers who hold view employee records */
-        $scope = $actor->widestScopeFor(Permission::ViewEmployeeRecords);
-
         $employees = Employee::query()
-            ->where(fn (EmployeeBuilder $query) => $scope->limit($query, $actor))
+            ->where(fn (EmployeeBuilder $query) => $actor->limitToReachOf($query, [Permission::ViewEmployeeRecords]))
             ->when($status, fn (EmployeeBuilder $query, EmploymentStatus $status) => $query->inEmploymentStatus($status))
             ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
             ->withEffectiveManager()

@@ -266,7 +266,7 @@ it('offers the Employee\'s Assignments that run during the week', function () {
     ]));
 });
 
-it('lets someone see the week of an Employee their Scope covers, as not their own, with Assignments to add to only when they may', function (array $grants, bool $canManage) {
+it('lets someone see the week of an Employee their Scopes cover, as not their own, with Assignments to add to only when they may', function (array $grants, bool $canManage) {
     $top = Employee::factory()->create(['name' => 'Ada']);
     $ben = employeeWith($grants, ['name' => 'Ben', 'manager_id' => $top->id]);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);

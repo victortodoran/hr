@@ -89,29 +89,35 @@ trait HasAccess
     }
 
     /**
-     * How far a Permission reaches for the Employee: the widest Scope their
-     * Roles give for one about Employees, Everyone for a company-wide one
-     * they hold, or null when no Role grants it.
+     * How far a Permission reaches for the Employee: every Scope their Roles
+     * give for one about Employees, combined (own and reports together cover
+     * themselves and their Reports), everyone for a company-wide one they
+     * hold, or none when no Role grants it.
+     *
+     * @return list<Scope>
      */
-    public function reachOf(Permission $permission): ?Scope
+    public function reachOf(Permission $permission): array
     {
         if ($permission->isScoped()) {
-            return $this->widestScopeFor($permission);
+            return array_values($this->grantsOf($permission)
+                ->map(fn (RolePermission $grant): ?Scope => $grant->scope)
+                ->filter()
+                ->uniqueStrict()
+                ->all());
         }
 
-        return $this->holds($permission) ? Scope::Everyone : null;
+        return $this->holds($permission) ? [Scope::Everyone] : [];
     }
 
     /**
-     * Whether any of the Permissions reaches the target Employee.
+     * Whether any of the Permissions reaches the target Employee through any
+     * Scope it has for the Employee.
      *
      * @param  list<Permission>  $permissions
      */
     public function reachesThrough(array $permissions, Employee $target): bool
     {
-        return collect($permissions)->contains(
-            fn (Permission $permission): bool => $this->reachOf($permission)?->covers($this, $target) ?? false,
-        );
+        return $this->scopesGivenFor($permissions)->contains(fn (Scope $scope): bool => $scope->covers($this, $target));
     }
 
     /**
@@ -121,36 +127,24 @@ trait HasAccess
      */
     public function reachesOthersThrough(array $permissions): bool
     {
-        return collect($permissions)->contains(
-            fn (Permission $permission): bool => $this->reachOf($permission)?->coversOthers() ?? false,
-        );
+        return $this->scopesGivenFor($permissions)->contains(fn (Scope $scope): bool => $scope->coversOthers());
     }
 
     /**
      * Limit a query of Employees to those any of the Permissions reaches for
-     * the Employee: the query counterpart of reachesThrough().
+     * the Employee: the query counterpart of reachesThrough(). Nobody, when
+     * none of them is granted.
      *
      * @param  list<Permission>  $permissions
      */
     public function limitToReachOf(EmployeeBuilder $employees, array $permissions): void
     {
-        $scopes = collect($permissions)
-            ->map(fn (Permission $permission): ?Scope => $this->reachOf($permission))
-            ->filter();
+        $scopes = $this->scopesGivenFor($permissions);
 
         $employees->where(function (EmployeeBuilder $covered) use ($scopes): void {
             $covered->whereRaw('false');
             $scopes->each(fn (Scope $scope) => $covered->orWhere(fn (EmployeeBuilder $employee) => $scope->limit($employee, $this)));
         });
-    }
-
-    /**
-     * The widest Scope the Employee's Roles give them for a Permission about
-     * Employees, or null when no Role grants it.
-     */
-    public function widestScopeFor(Permission $permission): ?Scope
-    {
-        return Scope::widest($this->grantsOf($permission)->pluck('scope')->filter());
     }
 
     /**
@@ -198,6 +192,19 @@ trait HasAccess
     public function forgetAccess(): void
     {
         $this->unsetRelation('roles');
+    }
+
+    /**
+     * Every Scope the Employee's Roles give for any of the Permissions.
+     *
+     * @param  list<Permission>  $permissions
+     * @return Collection<int, Scope>
+     */
+    private function scopesGivenFor(array $permissions): Collection
+    {
+        return collect($permissions)
+            ->flatMap(fn (Permission $permission): array => $this->reachOf($permission))
+            ->values();
     }
 
     /**

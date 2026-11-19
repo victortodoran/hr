@@ -15,11 +15,11 @@ class EmployeePolicy
 {
     /**
      * Listing Employees needs view employee records with any Scope; the list
-     * then holds only the Employees that Scope covers.
+     * then holds only the Employees those Scopes cover.
      */
     public function viewAny(Employee $actor): bool
     {
-        return $actor->widestScopeFor(Permission::ViewEmployeeRecords) !== null;
+        return $actor->holds(Permission::ViewEmployeeRecords);
     }
 
     /**
