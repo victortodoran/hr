@@ -4,6 +4,7 @@ import { Clock } from '@lucide/vue';
 import { computed } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
+import NeedsAttentionCard from '@/components/home/NeedsAttentionCard.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
@@ -25,6 +26,7 @@ import type {
     ApprovalsWaiting,
     HoursThisMonth,
     HoursThisYear,
+    NeedsAttention,
     PaidDaysLeft,
     TimeOffDetails,
 } from '@/types';
@@ -46,8 +48,8 @@ const props = defineProps<{
     paidDaysLeft: PaidDaysLeft;
     /** The next Pending or Approved Time Off that hasn't ended. */
     nextTimeOff: TimeOffDetails | null;
-    /** Declined Time Off still to come; null when there is none. */
-    declinedAhead: TimeOffDetails[] | null;
+    /** What of the Employee's was declined; null when nothing is. */
+    needsAttention: NeedsAttention | null;
     /** What waits for the Employee to decide; null when nothing does. */
     waitingForYou: ApprovalsWaiting | null;
 }>();
@@ -68,6 +70,12 @@ const thisMonthsWorkEntries = computed(() =>
         />
 
         <div class="grid gap-4 sm:grid-cols-2">
+            <NeedsAttentionCard
+                v-if="needsAttention !== null"
+                :needs-attention="needsAttention"
+                class="sm:col-span-2"
+            />
+
             <Card v-if="waitingForYou !== null" class="sm:col-span-2">
                 <CardHeader>
                     <CardTitle>Waiting for you</CardTitle>
@@ -231,26 +239,6 @@ const thisMonthsWorkEntries = computed(() =>
                 :hours-this-year="hoursThisYear"
                 class="sm:col-span-2"
             />
-
-            <Card v-if="declinedAhead !== null" class="sm:col-span-2">
-                <CardHeader>
-                    <CardTitle>Declined ahead</CardTitle>
-                    <CardDescription
-                        >Time Off still to come that your Manager
-                        declined</CardDescription
-                    >
-                </CardHeader>
-                <CardContent class="space-y-3 text-sm">
-                    <div
-                        v-for="declined in declinedAhead"
-                        :key="declined.id"
-                        class="space-y-1"
-                    >
-                        <StatusBadge state="declined" />
-                        <TimeOffSummary :time-off="declined" />
-                    </div>
-                </CardContent>
-            </Card>
         </div>
     </PageContainer>
 </template>

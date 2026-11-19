@@ -94,3 +94,22 @@ it('tells an Employee with no hours this month or year that none count yet, each
         ->assertScript("[...document.querySelectorAll('a')].filter((link) => link.textContent.includes('Open Work')).map((link) => new URL(link.href).searchParams.get('month')).join()", '2026-11,2026-11')
         ->assertNoJavaScriptErrors();
 });
+
+it('shows an Employee what of theirs was declined on Home, opening a Work Entry\'s week from it', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara, 'Relaunch');
+    WorkEntry::factory()->for($relaunch)->declined(reason: 'Split by task')->create(['date' => '2026-11-10', 'minutes' => 90]);
+    TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-12-21', 'last_date' => '2026-12-21', 'decline_reason' => 'Launch week']);
+
+    actingAs($cara);
+
+    visit(route('landing'))
+        ->resize(390, 844)
+        ->assertSee('Needs your attention')
+        ->assertSee('Split by task')
+        ->assertSee('Launch week')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('internal:role=link[name=/Relaunch/]')
+        ->assertQueryStringHas('week', '2026-11-10')
+        ->assertNoJavaScriptErrors();
+});
