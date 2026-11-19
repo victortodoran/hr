@@ -240,7 +240,7 @@ it('shows the Employee no Outcome or summary until Completed, while the Manager 
     actingAs($ben)->get(route('performance-evaluations.goals.show', [$evaluation, $api]))
         ->assertInertia(fn (Assert $page) => $page->where('canSeeOutcomes', true)->where('goal.outcome', 'met'));
     actingAs($cara)->get(route('my-performance-evaluations.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('evaluations.0.outcome', null));
+        ->assertInertia(fn (Assert $page) => $page->where('current.evaluation.outcome', null)->where('current.evaluation.summary', null));
 
     actingAs($ben)->put(goalOutcomeRoute($mentoring), ['outcome' => 'exceeded']);
     actingAs($ben)->put(summaryRoute($evaluation), ['summary' => 'A great year.']);
@@ -256,7 +256,7 @@ it('shows the Employee no Outcome or summary until Completed, while the Manager 
     actingAs($cara)->get(route('performance-evaluations.goals.show', [$evaluation, $api]))
         ->assertInertia(fn (Assert $page) => $page->where('canSeeOutcomes', true)->where('goal.outcome', 'met'));
     actingAs($cara)->get(route('my-performance-evaluations.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('evaluations.0.state', 'completed')->where('evaluations.0.outcome', 'exceeded'));
+        ->assertInertia(fn (Assert $page) => $page->where('current.evaluation.state', 'completed')->where('current.evaluation.outcome', 'exceeded'));
     actingAs($ben)->get(route('performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page->where('employees.data.0.evaluation.outcome', 'exceeded'));
 });

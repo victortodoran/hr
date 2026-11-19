@@ -31,6 +31,24 @@ export type OwnPerformanceEvaluation = {
 };
 
 /**
+ * A Performance Evaluation as its own page shows it, with what the viewer
+ * may do there.
+ */
+export type PerformanceEvaluationView = {
+    evaluation: PerformanceEvaluationRecord;
+    /** Whether the Performance Evaluation is the viewer's own. */
+    isOwn: boolean;
+    /** Whether the viewer may give, change or remove its Goals and their Outcomes, and Complete it. */
+    canEdit: boolean;
+    /** Whether the viewer may change its Goals' Progress. */
+    canChangeProgress: boolean;
+    /** Whether the viewer sees its Outcomes and summary. */
+    canSeeOutcomes: boolean;
+    /** Whether the viewer may send it, Completed, back to Open for its Manager to correct. */
+    canReopen: boolean;
+};
+
+/**
  * One Employee on the Performance Evaluations page, with their Performance
  * Evaluation for the year shown.
  */
