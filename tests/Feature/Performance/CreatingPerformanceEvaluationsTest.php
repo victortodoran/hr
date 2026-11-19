@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CreatePerformanceEvaluation;
 use App\Enums\PerformanceEvaluationState;
 use App\Http\Controllers\Performance\PerformanceEvaluationController;
 use App\Http\Requests\Performance\PerformanceEvaluationRequest;
@@ -7,12 +8,13 @@ use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
 use App\Pages\Performance\PerformanceEvaluationFormPage;
 use App\Policies\PerformanceEvaluationPolicy;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(PerformanceEvaluationController::class, PerformanceEvaluationRequest::class, PerformanceEvaluationFormPage::class, PerformanceEvaluationPolicy::class);
+covers(CreatePerformanceEvaluation::class, PerformanceEvaluationController::class, PerformanceEvaluationRequest::class, PerformanceEvaluationFormPage::class, PerformanceEvaluationPolicy::class);
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
@@ -105,6 +107,15 @@ it('refuses creating a Performance Evaluation for anyone but the effective Manag
     'an Admin' => [fn (Employee $ben, Employee $cara) => employeeHoldingAdmin()],
 ]);
 
+it('keeps from someone who doesn\'t manage the Employee whether they have an Evaluation for the year', function () {
+    $ben = managerBen();
+    $cara = caraForANewEvaluation($ben);
+    PerformanceEvaluation::factory()->of($cara)->create(['year' => 2026]);
+
+    actingAs(Employee::factory()->startedLongAgo()->create())->post(route('performance-evaluations.store'), ['year' => 2026, 'employee_id' => $cara->id])
+        ->assertSessionHasErrors(['employee_id' => 'Choose one of the people you\'re the Manager of who work here in 2026.']);
+});
+
 it('refuses a year the Employee doesn\'t work for the company in', function () {
     $ben = managerBen();
     $gus = Employee::factory()->reportingTo($ben)->create(['start_date' => '2027-01-04']);
@@ -118,4 +129,13 @@ it('refuses a year the Employee doesn\'t work for the company in', function () {
 it('refuses an Employee who doesn\'t exist', function () {
     actingAs(managerBen())->post(route('performance-evaluations.store'), ['year' => 2026, 'employee_id' => 999999])
         ->assertSessionHasErrors(['employee_id' => 'Choose one of the people you\'re the Manager of.']);
+});
+
+it('refuses with a validation error a Performance Evaluation created for the year since the form was checked', function () {
+    $cara = caraForANewEvaluation(managerBen());
+    PerformanceEvaluation::factory()->of($cara)->create(['year' => 2026]);
+
+    expect(fn () => app(CreatePerformanceEvaluation::class)->create($cara, 2026))
+        ->toThrow(ValidationException::class, 'Cara already has a 2026 Performance Evaluation.');
+    expect($cara->performanceEvaluations()->count())->toBe(1);
 });

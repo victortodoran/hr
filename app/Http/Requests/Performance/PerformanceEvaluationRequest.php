@@ -16,6 +16,9 @@ use Illuminate\Validation\Validator;
  */
 class PerformanceEvaluationRequest extends FormRequest
 {
+    /** The Employee asked for, once looked up. */
+    private ?Employee $employee = null;
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -28,9 +31,10 @@ class PerformanceEvaluationRequest extends FormRequest
     }
 
     /**
-     * Once both fields are valid on their own, refuse an Employee who
-     * already has a Performance Evaluation for the year, or whom the
-     * signed-in Employee may not create one for.
+     * Once both fields are valid on their own, refuse an Employee the
+     * signed-in Employee may not create one for that year, saying so when
+     * it is because one they manage already has it. Whether someone they
+     * don't manage has one stays hidden.
      *
      * @return array<int, callable(Validator): void>
      */
@@ -44,15 +48,19 @@ class PerformanceEvaluationRequest extends FormRequest
             $employee = $this->employee();
             $year = $this->year();
 
-            if ($employee->performanceEvaluations()->where('year', $year)->exists()) {
+            if ($this->actor()->can('create', [PerformanceEvaluation::class, $employee, $year])) {
+                return;
+            }
+
+            $managesThem = Employee::query()->effectivelyManagedBy($this->actor())->whereKey($employee->id)->exists();
+
+            if ($managesThem && $employee->performanceEvaluations()->where('year', $year)->exists()) {
                 $validator->errors()->add('employee_id', __(':name already has a :year Performance Evaluation.', ['name' => $employee->name, 'year' => $year]));
 
                 return;
             }
 
-            if ($this->actor()->cannot('create', [PerformanceEvaluation::class, $employee, $year])) {
-                $validator->errors()->add('employee_id', __('Choose one of the people you\'re the Manager of who work here in :year.', ['year' => $year]));
-            }
+            $validator->errors()->add('employee_id', __('Choose one of the people you\'re the Manager of who work here in :year.', ['year' => $year]));
         }];
     }
 
@@ -69,7 +77,7 @@ class PerformanceEvaluationRequest extends FormRequest
      */
     public function employee(): Employee
     {
-        return Employee::query()->findOrFail($this->integer('employee_id'));
+        return $this->employee ??= Employee::query()->findOrFail($this->integer('employee_id'));
     }
 
     /**

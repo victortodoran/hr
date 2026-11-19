@@ -22,6 +22,7 @@ it('creates a Report\'s Performance Evaluation, gives, changes and removes a Goa
     visit(route('performance-evaluations.index'))
         ->click('internal:role=link[name="New Evaluation"s] >> nth=0')
         ->assertSee('New Performance Evaluation')
+        ->assertNoJavaScriptErrors()
         ->assertSee("Only the people you're the Manager of who don't have a 2026 Evaluation yet.")
         ->click('2027')
         ->assertSee("Only the people you're the Manager of who don't have a 2027 Evaluation yet.")

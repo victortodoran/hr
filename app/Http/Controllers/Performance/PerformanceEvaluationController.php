@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Performance;
 
+use App\Actions\CreatePerformanceEvaluation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
 use App\Http\Requests\Performance\PerformanceEvaluationRequest;
@@ -51,9 +52,9 @@ class PerformanceEvaluationController extends Controller
      * Create the Employee's Performance Evaluation for the chosen year,
      * Open and with no Goals yet, and open its page.
      */
-    public function store(PerformanceEvaluationRequest $request): RedirectResponse
+    public function store(PerformanceEvaluationRequest $request, CreatePerformanceEvaluation $createPerformanceEvaluation): RedirectResponse
     {
-        $evaluation = $request->employee()->performanceEvaluations()->create(['year' => $request->year()]);
+        $evaluation = $createPerformanceEvaluation->create($request->employee(), $request->year());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Performance Evaluation created.')]);
 
