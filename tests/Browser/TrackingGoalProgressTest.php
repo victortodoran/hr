@@ -32,13 +32,13 @@ it('opens a Goal from its Performance Evaluation, changes its Progress, and the 
         ->click('#goal-progress')
         ->click('internal:role=option[name="At Risk"s]')
         ->assertSee('Saved')
-        ->assertSee('Cara changed it from Not Started')
+        ->assertSee('Cara · from Not Started')
         ->assertNoJavaScriptErrors();
 
     actingAs($ben);
 
     visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
-        ->assertSee('Cara changed it from Not Started')
+        ->assertSee('Cara · from Not Started')
         ->assertSee('At Risk')
         ->assertNoJavaScriptErrors();
 
@@ -59,7 +59,7 @@ it('changes a Goal\'s Progress from its card, kept in the Goal\'s history', func
         ->assertSee('Saved')
         ->assertMissing('[aria-label="Outcome of Lead the Checkout API"]')
         ->click('internal:role=link[name="Lead the Checkout API"s]')
-        ->assertSee('Cara changed it from Not Started')
+        ->assertSee('Cara · from Not Started')
         ->assertNoJavaScriptErrors();
 
     expect($goal->fresh()?->progress)->toBe(Progress::OnTrack);

@@ -73,6 +73,7 @@ it('starts every Goal Not Started, with no history', function () {
                 'title' => 'Lead the Checkout API',
                 'description' => 'Own its design.',
                 'progress' => 'not-started',
+                'outcome' => null,
                 'given_at' => '2026-03-01',
             ])
             ->where('evaluation', ['id' => $goal->performance_evaluation_id, 'year' => 2026, 'employee' => ['id' => $cara->id, 'name' => 'Cara']])

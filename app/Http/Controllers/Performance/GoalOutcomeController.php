@@ -11,8 +11,8 @@ use Illuminate\Http\RedirectResponse;
 
 /**
  * Giving, changing or clearing one Goal's Outcome, which the effective
- * Manager does from its card while the Performance Evaluation is Open.
- * Saving leads back to the Performance Evaluation's page.
+ * Manager does from its card or its own page while the Performance
+ * Evaluation is Open. Saving leads back to the page it was given on.
  */
 class GoalOutcomeController extends Controller
 {
@@ -28,6 +28,6 @@ class GoalOutcomeController extends Controller
         $given = $this->assess->giveGoalOutcome($goal, $request->outcome());
         abort_if(! $given, 403); // @pest-mutate-ignore (only reached when the Performance Evaluation is Completed between the policy check and this write)
 
-        return to_route('performance-evaluations.show', $performanceEvaluation);
+        return back(fallback: route('performance-evaluations.show', $performanceEvaluation));
     }
 }

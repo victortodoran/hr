@@ -1,4 +1,4 @@
-import type { StatusBadgeState } from '@/types';
+import type { Progress, StatusBadgeState } from '@/types';
 
 /**
  * Each state's name as people read it.
@@ -37,3 +37,21 @@ export const statusColours: Record<StatusBadgeState, string> = {
     'at-risk': 'bg-status-attention text-status-attention-foreground',
     done: 'bg-status-closed text-status-closed-foreground',
 };
+
+/**
+ * Each Progress's dot on a Goal's History timeline: the strong shade of
+ * its status colour in statusColours.
+ */
+export const progressDotColours: Record<Progress, string> = {
+    'not-started': 'bg-status-upcoming-foreground',
+    'on-track': 'bg-status-approved-foreground',
+    'at-risk': 'bg-status-attention-foreground',
+    done: 'bg-status-closed-foreground',
+};
+
+/**
+ * The classes that draw a small Select trigger as a status pill, like a
+ * StatusBadge; add the state's colour from statusColours.
+ */
+export const statusPillTrigger =
+    'gap-1 rounded-full border-0 px-2.5 py-0.5 text-xs font-medium shadow-none data-[size=sm]:h-6 [&_svg]:opacity-70 [&_svg:not([class*=size-])]:size-3.5';

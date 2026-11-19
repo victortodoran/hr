@@ -96,3 +96,23 @@ it('puts a Goal\'s Outcome back with a toast saying why when the Evaluation was 
 
     expect($goal->fresh()?->outcome)->toBe(Outcome::Met);
 });
+
+it('gives a Goal its Outcome from the Goal\'s own page, staying on it', function () {
+    $ben = managerBen();
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
+    $evaluation = PerformanceEvaluation::factory()->of($cara)->create();
+    $goal = Goal::factory()->for($evaluation)->create(['title' => 'Lead the Checkout API']);
+
+    actingAs($ben);
+
+    visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
+        ->assertSeeIn('[aria-label="Outcome"]', 'Not given')
+        ->click('[aria-label="Outcome"]')
+        ->click('internal:role=option[name="Met"s]')
+        ->assertSee('Saved')
+        ->assertSee('The Goal was given')
+        ->assertSeeIn('[aria-label="Outcome"]', 'Met')
+        ->assertNoJavaScriptErrors();
+
+    expect($goal->fresh()?->outcome)->toBe(Outcome::Met);
+});

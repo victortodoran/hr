@@ -75,7 +75,8 @@ it('lets the Manager give, change and clear one Goal\'s Outcome, leaving the res
     expect($api->refresh()->outcome)->toBe(Outcome::Met)
         ->and($mentoring->refresh()->outcome)->toBe(Outcome::Exceeded);
 
-    actingAs($ben)->put(goalOutcomeRoute($api), ['outcome' => 'partly-met'])->assertRedirect();
+    actingAs($ben)->from(route('performance-evaluations.goals.show', [$evaluation, $api]))->put(goalOutcomeRoute($api), ['outcome' => 'partly-met'])
+        ->assertRedirect(route('performance-evaluations.goals.show', [$evaluation, $api]));
     expect($api->refresh()->outcome)->toBe(Outcome::PartlyMet);
 
     actingAs($ben)->put(goalOutcomeRoute($api), ['outcome' => null])->assertRedirect();
@@ -233,6 +234,10 @@ it('shows the Employee no Outcome or summary until Completed, while the Manager 
             ->where('evaluation.goals.0.outcome', 'met')
             ->where('evaluation.outcome', null)
             ->where('evaluation.summary', 'Draft.'));
+    actingAs($cara)->get(route('performance-evaluations.goals.show', [$evaluation, $api]))
+        ->assertInertia(fn (Assert $page) => $page->where('canSeeOutcomes', false)->where('goal.outcome', null));
+    actingAs($ben)->get(route('performance-evaluations.goals.show', [$evaluation, $api]))
+        ->assertInertia(fn (Assert $page) => $page->where('canSeeOutcomes', true)->where('goal.outcome', 'met'));
     actingAs($cara)->get(route('my-performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page->where('evaluations.0.outcome', null));
 
@@ -247,6 +252,8 @@ it('shows the Employee no Outcome or summary until Completed, while the Manager 
             ->where('evaluation.outcome', 'exceeded')
             ->where('evaluation.summary', 'A great year.')
             ->where('evaluation.completed_at', '2026-12-01'));
+    actingAs($cara)->get(route('performance-evaluations.goals.show', [$evaluation, $api]))
+        ->assertInertia(fn (Assert $page) => $page->where('canSeeOutcomes', true)->where('goal.outcome', 'met'));
     actingAs($cara)->get(route('my-performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page->where('evaluations.0.state', 'completed')->where('evaluations.0.outcome', 'exceeded'));
     actingAs($ben)->get(route('performance-evaluations.index'))

@@ -6,15 +6,17 @@ import GoalController from '@/actions/App/Http/Controllers/Performance/GoalContr
 import GoalCommentController from '@/actions/App/Http/Controllers/Performance/GoalCommentController';
 import GoalProgressController from '@/actions/App/Http/Controllers/Performance/GoalProgressController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
-import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import SavedTick from '@/components/SavedTick.vue';
 import GoalFields from '@/components/performance-evaluations/GoalFields.vue';
+import GoalOutcomeSelect from '@/components/performance-evaluations/GoalOutcomeSelect.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -24,10 +26,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { getInitials } from '@/composables/useInitials';
 import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import { goalRemovalWarning } from '@/lib/goals';
+import { outcomes } from '@/lib/outcomes';
 import { progresses } from '@/lib/progress';
+import {
+    progressDotColours,
+    statusColours,
+    statusPillTrigger,
+} from '@/lib/status';
 import { index as mine } from '@/routes/my-performance-evaluations';
 import { index, show } from '@/routes/performance-evaluations';
 import { show as showGoal } from '@/routes/performance-evaluations/goals';
@@ -38,18 +47,19 @@ import type {
     PerformanceEvaluationSummary,
     Progress,
     ProgressChange,
-    TableColumn,
 } from '@/types';
 
 /**
- * One Goal on its own page: its title, description and Progress, and
- * every change to the Progress, newest first, back to Not Started when it
- * was given, and the thread of Comments on it, oldest first. The
- * Employee and their effective Manager change the Progress and write
- * Comments while the Performance Evaluation is Open; anyone else who can
- * see it reads them. Picking a Progress saves it straight away. Their
- * effective Manager also changes the Goal's title and description here,
- * opened straight into the fields with `?editing=1`, or removes it.
+ * One Goal on its own page: its title and description with the thread of
+ * Comments on it, oldest first, and beside them its Progress, its Outcome
+ * and every change to the Progress, newest first, back to Not Started when
+ * it was given. The Employee and their effective Manager change the
+ * Progress and write Comments while the Performance Evaluation is Open;
+ * anyone else who can see it reads them. Their effective Manager also
+ * gives, changes or clears its Outcome, and changes the Goal's title and
+ * description here, opened straight into the fields with `?editing=1`, or
+ * removes it; anyone else who may see Outcomes reads the one given.
+ * Picking a Progress or an Outcome saves it straight away.
  */
 const props = defineProps<{
     evaluation: PerformanceEvaluationSummary;
@@ -62,8 +72,10 @@ const props = defineProps<{
     canChangeProgress: boolean;
     /** Whether the viewer may write Comments on the Goal. */
     canComment: boolean;
-    /** Whether the viewer may change or remove the Goal itself. */
+    /** Whether the viewer may change or remove the Goal itself and give its Outcome, which means they also see it. */
     canEdit: boolean;
+    /** Whether the viewer sees its Outcome. */
+    canSeeOutcomes: boolean;
     /** Whether it opens with the title and description as fields (`?editing=1`). */
     startsEditing: boolean;
 }>();
@@ -74,12 +86,7 @@ const goalRoute = {
 };
 
 /** The Progress dropdown, which saves what is picked straight away. */
-const {
-    chosen: chosenProgress,
-    saving: savingProgress,
-    justSaved: progressSaved,
-    save: saveProgress,
-} = useSaveOnPick<Progress>({
+const progress = useSaveOnPick<Progress>({
     saved: () => props.goal.progress,
     url: () => GoalProgressController.update.url(goalRoute),
     field: 'progress',
@@ -132,7 +139,7 @@ const historyRows = computed<HistoryRow[]>(() => [
     ...props.history.map((change, position) => ({
         key: `change-${position}`,
         progress: change.progress,
-        description: `${change.changed_by} changed it from ${progresses[change.previous_progress]}`,
+        description: `${change.changed_by} · from ${progresses[change.previous_progress]}`,
         when: formatDateTime(change.changed_at),
     })),
     {
@@ -143,11 +150,17 @@ const historyRows = computed<HistoryRow[]>(() => [
     },
 ]);
 
-const historyColumns: TableColumn[] = [
-    { key: 'progress', label: 'Progress' },
-    { key: 'description', label: 'Change' },
-    { key: 'when', label: 'When', minor: true },
-];
+/** How many History lines show until the viewer asks for all of them. */
+const historyPreviewLength = 5;
+
+/** Whether every History line shows, not just the latest few. */
+const showingAllHistory = ref(false);
+
+const shownHistoryRows = computed(() =>
+    showingAllHistory.value
+        ? historyRows.value
+        : historyRows.value.slice(0, historyPreviewLength),
+);
 
 const evaluationTitle = props.isOwn
     ? String(props.evaluation.year)
@@ -176,44 +189,17 @@ setLayoutProps({
     <Head :title="`Goal · ${goal.title}`" />
 
     <PageContainer width="wide">
-        <form
-            v-if="editing"
-            class="flex flex-col gap-4"
-            @submit.prevent="saveGoal"
-        >
-            <div class="flex flex-col gap-1">
-                <h1 class="sr-only">{{ goal.title }}</h1>
-                <p class="text-sm text-muted-foreground">
-                    {{ evaluation.employee.name }} · {{ evaluation.year }}
-                    Performance Evaluation
-                </p>
-            </div>
-            <GoalFields
-                v-model:title="goalForm.title"
-                v-model:description="goalForm.description"
-                :errors="goalForm.errors"
-            />
-            <div class="flex gap-2">
-                <SubmitButton :processing="goalForm.processing"
-                    >Save Goal</SubmitButton
-                >
-                <Button type="button" variant="ghost" @click="cancelEditing"
-                    >Cancel</Button
-                >
-            </div>
-        </form>
-        <header v-else class="flex flex-wrap items-start justify-between gap-4">
-            <div class="flex min-w-0 flex-col gap-1">
-                <h1 class="text-xl font-semibold tracking-tight">
+        <header class="flex flex-wrap items-start justify-between gap-4">
+            <div class="flex min-w-0 flex-col gap-1.5">
+                <h1 class="text-2xl font-semibold tracking-tight">
                     {{ goal.title }}
                 </h1>
                 <p class="text-sm text-muted-foreground">
                     {{ evaluation.employee.name }} · {{ evaluation.year }}
                     Performance Evaluation
                 </p>
-                <p class="whitespace-pre-line">{{ goal.description }}</p>
             </div>
-            <div v-if="canEdit" class="flex gap-2">
+            <div v-if="canEdit && !editing" class="flex gap-2">
                 <Button variant="outline" @click="startEditing">Change</Button>
                 <ConfirmDeleteDialog
                     :form="GoalController.destroy.form(goalRoute)"
@@ -231,97 +217,226 @@ setLayoutProps({
             </div>
         </header>
 
-        <section class="space-y-2">
-            <h2 class="text-sm font-medium">Progress</h2>
-            <div
-                v-if="canChangeProgress"
-                class="flex flex-wrap items-center gap-2"
-            >
-                <Label for="goal-progress" class="sr-only">Progress</Label>
-                <Select
-                    :model-value="chosenProgress"
-                    :disabled="savingProgress"
-                    @update:model-value="saveProgress($event as Progress)"
-                >
-                    <SelectTrigger id="goal-progress" class="w-40">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="(label, progress) in progresses"
-                            :key="progress"
-                            :value="progress"
-                            >{{ label }}</SelectItem
-                        >
-                    </SelectContent>
-                </Select>
-                <SavedTick :shown="progressSaved" />
-            </div>
-            <StatusBadge v-else :state="goal.progress" />
-        </section>
-
-        <section class="space-y-2">
-            <h2 class="text-sm font-medium">Comments</h2>
-            <ol v-if="comments.length > 0" class="space-y-3">
-                <li
-                    v-for="comment in comments"
-                    :key="comment.id"
-                    class="space-y-0.5 text-sm"
-                >
-                    <p class="text-muted-foreground">
-                        <span class="font-medium text-foreground">{{
-                            comment.author
-                        }}</span>
-                        · {{ formatDateTime(comment.written_at) }}
+        <div class="flex flex-wrap items-start gap-6">
+            <div class="flex min-w-0 flex-[999_1_28rem] flex-col gap-8">
+                <Card v-if="editing" class="px-6 py-5">
+                    <form
+                        class="flex flex-col gap-4"
+                        @submit.prevent="saveGoal"
+                    >
+                        <GoalFields
+                            v-model:title="goalForm.title"
+                            v-model:description="goalForm.description"
+                            :errors="goalForm.errors"
+                        />
+                        <div class="flex gap-2">
+                            <SubmitButton :processing="goalForm.processing"
+                                >Save Goal</SubmitButton
+                            >
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                @click="cancelEditing"
+                                >Cancel</Button
+                            >
+                        </div>
+                    </form>
+                </Card>
+                <Card v-else class="gap-2 px-6 py-5">
+                    <h2
+                        class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                    >
+                        What achieving it looks like
+                    </h2>
+                    <p class="text-[0.95rem]/relaxed whitespace-pre-line">
+                        {{ goal.description }}
                     </p>
-                    <p class="whitespace-pre-line">{{ comment.body }}</p>
-                </li>
-            </ol>
-            <EmptyState
-                v-else
-                :icon="MessageSquare"
-                :message="`What ${evaluation.employee.name} and their Manager write about this Goal appears here.`"
-            />
-            <Form
-                v-if="canComment"
-                v-bind="GoalCommentController.store.form(goalRoute)"
-                reset-on-success
-                :options="{ preserveScroll: true }"
-                class="flex flex-wrap items-start gap-2"
-                v-slot="{ errors, processing }"
-            >
-                <div class="grid min-w-0 flex-1 gap-2">
-                    <Label for="goal-comment" class="sr-only">Comment</Label>
-                    <Textarea
-                        id="goal-comment"
-                        name="body"
-                        placeholder="Write a Comment"
-                        maxlength="5000"
-                        required
-                    />
-                    <InputError :message="errors.body" />
-                </div>
-                <SubmitButton :processing="processing">Comment</SubmitButton>
-            </Form>
-        </section>
+                </Card>
 
-        <section class="space-y-2">
-            <h2 class="text-sm font-medium">History</h2>
-            <DataTable
-                :columns="historyColumns"
-                :rows="historyRows"
-                :row-key="(row) => row.key"
+                <section class="flex flex-col gap-4" aria-labelledby="comments">
+                    <h2
+                        id="comments"
+                        class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                    >
+                        Comments · {{ comments.length }}
+                    </h2>
+                    <ol v-if="comments.length > 0" class="flex flex-col gap-4">
+                        <li
+                            v-for="comment in comments"
+                            :key="comment.id"
+                            class="flex gap-3"
+                        >
+                            <Avatar class="size-8 shrink-0">
+                                <AvatarFallback class="text-xs font-semibold">{{
+                                    getInitials(comment.author)
+                                }}</AvatarFallback>
+                            </Avatar>
+                            <div class="flex min-w-0 flex-col gap-0.5 text-sm">
+                                <p>
+                                    <span class="font-semibold">{{
+                                        comment.author
+                                    }}</span>
+                                    <span class="text-muted-foreground">
+                                        ·
+                                        {{
+                                            formatDateTime(comment.written_at)
+                                        }}</span
+                                    >
+                                </p>
+                                <p class="whitespace-pre-line">
+                                    {{ comment.body }}
+                                </p>
+                            </div>
+                        </li>
+                    </ol>
+                    <EmptyState
+                        v-else
+                        :icon="MessageSquare"
+                        :message="`What ${evaluation.employee.name} and their Manager write about this Goal appears here.`"
+                    />
+                    <Form
+                        v-if="canComment"
+                        v-bind="GoalCommentController.store.form(goalRoute)"
+                        reset-on-success
+                        :options="{ preserveScroll: true }"
+                        v-slot="{ errors, processing }"
+                    >
+                        <Card class="gap-0 overflow-hidden p-0">
+                            <Label for="goal-comment" class="sr-only"
+                                >Comment</Label
+                            >
+                            <Textarea
+                                id="goal-comment"
+                                name="body"
+                                placeholder="Write a Comment"
+                                maxlength="5000"
+                                required
+                                class="min-h-20 resize-none rounded-none border-0 shadow-none focus-visible:ring-0"
+                            />
+                            <div class="flex justify-end px-2 pb-2">
+                                <SubmitButton size="sm" :processing="processing"
+                                    >Comment</SubmitButton
+                                >
+                            </div>
+                        </Card>
+                        <InputError class="mt-2" :message="errors.body" />
+                    </Form>
+                </section>
+            </div>
+
+            <aside
+                class="w-full flex-[1_1_16rem] sm:max-w-xs"
+                aria-label="Progress, Outcome and History"
             >
-                <template #cell-progress="{ row }">
-                    <StatusBadge :state="row.progress" />
-                </template>
-                <template #cell-description="{ row }">
-                    {{ row.description }}
-                    <span class="block text-muted-foreground sm:hidden">{{
-                        row.when
-                    }}</span>
-                </template>
-            </DataTable>
-        </section>
+                <Card class="gap-5 p-5">
+                    <section class="flex flex-col gap-2">
+                        <h2
+                            class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                        >
+                            Progress
+                        </h2>
+                        <div
+                            v-if="canChangeProgress"
+                            class="flex items-center gap-2"
+                        >
+                            <Select
+                                :model-value="progress.chosen.value"
+                                :disabled="progress.saving.value"
+                                @update:model-value="
+                                    progress.save($event as Progress)
+                                "
+                            >
+                                <SelectTrigger
+                                    id="goal-progress"
+                                    size="sm"
+                                    aria-label="Progress"
+                                    :class="[
+                                        statusPillTrigger,
+                                        statusColours[progress.chosen.value],
+                                    ]"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem
+                                        v-for="(label, value) in progresses"
+                                        :key="value"
+                                        :value="value"
+                                        >{{ label }}</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+                            <SavedTick :shown="progress.justSaved.value" />
+                        </div>
+                        <StatusBadge v-else :state="goal.progress" />
+                    </section>
+
+                    <section
+                        v-if="canEdit || (canSeeOutcomes && goal.outcome)"
+                        class="flex flex-col gap-2"
+                    >
+                        <h2
+                            class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                        >
+                            Outcome
+                        </h2>
+                        <GoalOutcomeSelect
+                            v-if="canEdit"
+                            :outcome="goal.outcome"
+                            :performance-evaluation-id="evaluation.id"
+                            :goal-id="goal.id"
+                            label="Outcome"
+                        />
+                        <span
+                            v-else-if="goal.outcome"
+                            class="inline-flex w-fit rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                            >{{ outcomes[goal.outcome] }}</span
+                        >
+                    </section>
+
+                    <div class="h-px bg-border" aria-hidden="true" />
+
+                    <section class="flex flex-col gap-3">
+                        <h2
+                            class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                        >
+                            History
+                        </h2>
+                        <ol class="ml-1 flex flex-col gap-3.5 border-l pl-4">
+                            <li
+                                v-for="row in shownHistoryRows"
+                                :key="row.key"
+                                class="relative text-sm"
+                            >
+                                <span
+                                    class="absolute top-1.5 -left-[1.3rem] size-2 rounded-full ring-4 ring-card"
+                                    :class="progressDotColours[row.progress]"
+                                    aria-hidden="true"
+                                />
+                                <p class="font-medium">
+                                    {{ progresses[row.progress] }}
+                                </p>
+                                <p class="text-xs text-muted-foreground">
+                                    {{ row.description }} · {{ row.when }}
+                                </p>
+                            </li>
+                        </ol>
+                        <Button
+                            v-if="historyRows.length > historyPreviewLength"
+                            variant="link"
+                            size="sm"
+                            class="h-auto self-start p-0"
+                            @click="showingAllHistory = !showingAllHistory"
+                        >
+                            {{
+                                showingAllHistory
+                                    ? 'Show fewer'
+                                    : `Show all ${historyRows.length} changes`
+                            }}
+                        </Button>
+                    </section>
+                </Card>
+            </aside>
+        </div>
     </PageContainer>
 </template>

@@ -78,10 +78,12 @@ export type AssessedGoal = Goal & {
 };
 
 /**
- * A Goal on its own page, with its Progress and the day it was given.
+ * A Goal on its own page, with its Progress, its Outcome when the viewer
+ * may see it and one has been given, and the day it was given.
  */
 export type GoalRecord = Goal & {
     progress: Progress;
+    outcome: Outcome | null;
     given_at: string;
 };
 
