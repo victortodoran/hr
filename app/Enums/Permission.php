@@ -10,6 +10,7 @@ namespace App\Enums;
 enum Permission: string
 {
     case ViewEmployeeRecords = 'view-employee-records';
+    case AddEmployees = 'add-employees';
     case ManageEmployees = 'manage-employees';
     case ViewAssignments = 'view-assignments';
     case ManageAssignments = 'manage-assignments';
@@ -49,7 +50,7 @@ enum Permission: string
     public function group(): string
     {
         return match ($this) {
-            self::ViewEmployeeRecords, self::ManageEmployees => 'Employees',
+            self::ViewEmployeeRecords, self::AddEmployees, self::ManageEmployees => 'Employees',
             self::ViewAssignments, self::ManageAssignments => 'Assignments',
             self::ViewPay, self::ManagePay => 'Pay',
             self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries => 'Work entries',
@@ -63,12 +64,14 @@ enum Permission: string
 
     /**
      * Whether this Permission is about Employees and so carries a Scope.
-     * The others always apply company-wide.
+     * The others always apply company-wide, adding Employees among them, as
+     * nobody reports to an Employee who isn't there yet.
      */
     public function isScoped(): bool
     {
         return match ($this) {
             self::ViewEmployeeRecords,
+            self::ManageEmployees,
             self::ViewAssignments,
             self::ManageAssignments,
             self::ViewPay,

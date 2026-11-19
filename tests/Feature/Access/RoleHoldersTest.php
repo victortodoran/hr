@@ -145,7 +145,7 @@ it('refuses giving and taking Roles to an Employee who does not manage Roles', f
     $ben = Employee::factory()->create();
     $payroll = Role::factory()->create();
 
-    actingAs(employeeWith([Permission::ManageEmployees->value => null]))
+    actingAs(employeeWhoManagesEmployees())
         ->{$method}($url($payroll, $ben), ['employee_ids' => [$ben->id]])
         ->assertForbidden();
 })->with([

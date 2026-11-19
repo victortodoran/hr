@@ -69,28 +69,30 @@ class EmployeePolicy
     }
 
     /**
-     * Adding an Employee needs manage employees.
+     * Adding an Employee needs add employees, which applies company-wide.
      */
     public function create(Employee $actor): bool
     {
-        return $actor->can(Permission::ManageEmployees->value);
+        return $actor->can(Permission::AddEmployees->value);
     }
 
     /**
-     * Editing any Employee's record needs manage employees.
+     * Editing an Employee's record needs manage employees with a Scope that
+     * covers them.
      */
     public function update(Employee $actor, Employee $employee): bool
     {
-        return $actor->can(Permission::ManageEmployees->value);
+        return $actor->can(Permission::ManageEmployees->value, $employee);
     }
 
     /**
-     * An invitation can be resent only while the Employee has yet to set a
-     * password, and never once they have left.
+     * Resending an invitation needs what editing the Employee's record
+     * needs, and works only while they have yet to set a password, and
+     * never once they have left.
      */
     public function resendInvitation(Employee $actor, Employee $employee): bool
     {
-        return $actor->can(Permission::ManageEmployees->value)
+        return $this->update($actor, $employee)
             && $employee->hasPendingInvitation()
             && $employee->employmentStatus() !== EmploymentStatus::Former;
     }

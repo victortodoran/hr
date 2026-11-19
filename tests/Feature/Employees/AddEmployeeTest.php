@@ -49,7 +49,7 @@ function newEmployeeDetails(array $overrides = []): array
 it('adds an Employee, invites them to set a password and lands on their Employee page', function () {
     $details = newEmployeeDetails();
 
-    $hr = employeeWith([Permission::ManageEmployees->value => null, Permission::ViewEmployeeRecords->value => Scope::Everyone]);
+    $hr = employeeWith([Permission::AddEmployees->value => null, Permission::ViewEmployeeRecords->value => Scope::Everyone]);
 
     $response = actingAs($hr)->post(route('employees.store'), $details);
 
@@ -86,7 +86,7 @@ it('puts the new Employee on the Internal Project for their whole period of work
 })->with(['staying' => null, 'leaving' => '2027-05-31']);
 
 it('shows the new Employee\'s Job Title in the Directory', function () {
-    $hr = employeeWith([Permission::ManageEmployees->value => null, Permission::ViewDirectory->value => null]);
+    $hr = employeeWith([Permission::AddEmployees->value => null, Permission::ViewDirectory->value => null]);
     actingAs($hr)->post(route('employees.store'), newEmployeeDetails(['start_date' => today()->toDateString()]));
 
     actingAs($hr)->get(route('directory.index', ['search' => 'Cara']))
@@ -149,11 +149,24 @@ it('shows the add page with the Departments and possible Managers to choose from
         );
 });
 
-it('refuses adding Employees to anyone without manage employees', function () {
-    $manager = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]);
+it('adds an Employee for anyone with add employees, whatever their Scope for manage employees, landing where they may see the new Employee', function (array $grants, string $redirect) {
+    $response = actingAs(employeeWith([Permission::AddEmployees->value => null, ...$grants]))->post(route('employees.store'), newEmployeeDetails());
+
+    $cara = Employee::query()->where('email', 'cara@acme.test')->sole();
+    $response->assertRedirect($redirect === 'show' ? route('employees.show', $cara) : route('employees.create'));
+})->with([
+    'manage employees for their Reports only' => [[Permission::ManageEmployees->value => Scope::Reports], 'create'],
+    'manage employees and view records for everyone' => [[Permission::ManageEmployees->value => Scope::Everyone, Permission::ViewEmployeeRecords->value => Scope::Everyone], 'show'],
+]);
+
+it('refuses adding Employees to anyone without add employees, even if they manage every Employee', function (array $grants) {
+    $manager = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, ...$grants]);
 
     actingAs($manager)->get(route('employees.create'))->assertForbidden();
     actingAs($manager)->post(route('employees.store'), newEmployeeDetails())->assertForbidden();
 
     expect(Employee::query()->where('email', 'cara@acme.test')->exists())->toBeFalse();
-});
+})->with([
+    'view only' => [[]],
+    'manage employees for everyone' => [[Permission::ManageEmployees->value => Scope::Everyone]],
+]);

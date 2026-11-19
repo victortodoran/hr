@@ -62,7 +62,7 @@ function employeeWith(array $grants, array $attributes = []): Employee
  */
 function employeeWhoManagesEmployees(): Employee
 {
-    return employeeWith([Permission::ManageEmployees->value => null]);
+    return employeeWith([Permission::AddEmployees->value => null, Permission::ManageEmployees->value => Scope::Everyone]);
 }
 
 /**
