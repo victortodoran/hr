@@ -169,6 +169,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::get('projects', [ProjectController::class, 'index'])->middleware('can:viewAny,'.Project::class)->name('projects.index');
+    Route::get('projects/create', [ProjectController::class, 'create'])->middleware('can:create,'.Project::class)->name('projects.create');
     Route::get('projects/{project}', [ProjectController::class, 'show'])->middleware('can:view,project')->name('projects.show');
     Route::post('projects', [ProjectController::class, 'store'])->middleware('can:create,'.Project::class)->name('projects.store');
     Route::patch('projects/{project}', [ProjectController::class, 'update'])->middleware('can:update,project')->name('projects.update');

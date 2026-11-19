@@ -2,7 +2,6 @@
 
 namespace App\Pages\Projects;
 
-use App\Models\Client;
 use App\Models\Project;
 
 /**
@@ -12,12 +11,11 @@ use App\Models\Project;
 final class ProjectListPage
 {
     /**
-     * Every Project, the Internal Project first and the rest by name, with
-     * the Clients a Project can be for when the viewer may manage Projects.
+     * Every Project, the Internal Project first and the rest by name.
      *
      * @return array<string, mixed>
      */
-    public static function props(bool $canManage): array
+    public static function props(): array
     {
         return [
             'projects' => Project::query()
@@ -33,7 +31,6 @@ final class ProjectListPage
                     ...$project->dates(),
                     'is_internal' => $project->is_internal,
                 ]),
-            'clients' => $canManage ? Client::query()->orderBy('name')->get(['id', 'name']) : [],
         ];
     }
 }

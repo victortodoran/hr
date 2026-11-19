@@ -8,7 +8,6 @@ import PerformanceEvaluationSummaryController from '@/actions/App/Http/Controlle
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
-import SavedTick from '@/components/SavedTick.vue';
 import GoalCard from '@/components/performance-evaluations/GoalCard.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -34,7 +33,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { getInitials } from '@/composables/useInitials';
-import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { formatDate } from '@/lib/dates';
 import { outcomes } from '@/lib/outcomes';
 import { index as mine } from '@/routes/my-performance-evaluations';
@@ -52,7 +50,7 @@ import type {
  * and their Manager change each Goal's Progress from its card while it is
  * Open. Only the Employee's effective Manager is offered to give, change
  * or remove Goals and to give their Outcomes, each saved from its card as
- * it is picked, and to write a summary, saved as they leave it, while it
+ * it is picked, and to write a summary, saved with its button, while it
  * is Open. Once every Goal has an Outcome and the summary is written,
  * giving the whole its Outcome Completes it, after asking. Anyone else reads the Goals,
  * and the Outcomes only once it is Completed.
@@ -71,18 +69,14 @@ const props = defineProps<{
     canReopen: boolean;
 }>();
 
-/** The summary, which saves when focus leaves its box. */
-const summary = useSaveOnPick<string | null>({
-    saved: () => props.evaluation.summary,
-    url: () =>
-        PerformanceEvaluationSummaryController.update.url(props.evaluation.id),
-    field: 'summary',
-    label: 'summary',
-    keepsChosenOnFailure: true,
-});
+/** The summary, saved with its button. */
+const summaryForm = useForm({ summary: props.evaluation.summary ?? '' });
 
 function saveSummary(): void {
-    summary.save(summary.chosen.value?.trim() || null);
+    summaryForm.submit(
+        PerformanceEvaluationSummaryController.update(props.evaluation.id),
+        { preserveScroll: true },
+    );
 }
 
 /** Whether every Goal has an Outcome and the summary is written, as saved, so giving the whole its Outcome may Complete it. */
@@ -312,21 +306,25 @@ setLayoutProps({
                     summary, and it can't change unless it's Reopened.
                 </p>
             </div>
-            <div class="grid gap-2">
-                <div class="flex items-center justify-between gap-2">
-                    <Label for="evaluation-summary">Summary</Label>
-                    <SavedTick :shown="summary.justSaved.value" />
-                </div>
+            <form class="grid gap-2" @submit.prevent="saveSummary">
+                <Label for="evaluation-summary">Summary</Label>
                 <Textarea
                     id="evaluation-summary"
-                    :model-value="summary.chosen.value ?? ''"
+                    v-model="summaryForm.summary"
                     placeholder="How the year went, in a few sentences"
                     maxlength="5000"
                     class="min-h-30"
-                    @update:model-value="summary.chosen.value = String($event)"
-                    @blur="saveSummary"
                 />
-            </div>
+                <InputError :message="summaryForm.errors.summary" />
+                <div>
+                    <SubmitButton
+                        variant="outline"
+                        :processing="summaryForm.processing"
+                        :disabled="!summaryForm.isDirty"
+                        >Save summary</SubmitButton
+                    >
+                </div>
+            </form>
             <div class="grid gap-2">
                 <Label for="evaluation-outcome">Outcome</Label>
                 <Select
