@@ -14,8 +14,7 @@ use Illuminate\Http\RedirectResponse;
 /**
  * Changing a Goal's Progress, which the Employee and their effective
  * Manager both do while the Performance Evaluation is Open. Every change
- * is kept, and saving leads back to the Goal's page, which saves as soon
- * as a Progress is picked and shows its own brief tick rather than a toast.
+ * is kept, and saving leads back to the Goal's page.
  */
 class GoalProgressController extends Controller
 {

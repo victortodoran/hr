@@ -14,6 +14,7 @@ use App\Pages\Performance\GoalFormPage;
 use App\Pages\Performance\GoalPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -53,16 +54,17 @@ class GoalController extends Controller
      * Show the Goal with its Progress and every change to it, newest
      * first, and its Comments, oldest first, and whether the viewer may
      * change the Progress, write Comments, and change or remove the Goal.
+     * `?editing=1` opens it with the title and description as fields.
      */
-    public function show(PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): Response
+    public function show(PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor, Request $request): Response
     {
-        return Inertia::render('performance-evaluations/goals/Show', GoalPage::props($performanceEvaluation, $goal, $actor));
+        return Inertia::render('performance-evaluations/goals/Show', GoalPage::props($performanceEvaluation, $goal, $actor, $request->query('editing') === '1'));
     }
 
     /**
      * Change a Goal's title and description, which is done on its own
-     * page, then lead back there. One whose Performance Evaluation was Completed
-     * since the policy check is refused, never changed.
+     * page, then lead back there. One whose Performance Evaluation was
+     * Completed since the policy check is refused, never changed.
      */
     public function update(GoalRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, ChangeGoal $changeGoal): RedirectResponse
     {

@@ -61,7 +61,8 @@ it('puts the Progress back with a toast saying why when the Performance Evaluati
     $page->click('#goal-progress')
         ->click('internal:role=option[name="Done"s]')
         ->assertSee('The Progress wasn’t saved')
-        ->assertSeeIn('#goal-progress', 'Not Started')
+        ->assertMissing('#goal-progress')
+        ->assertSee('Not Started')
         ->assertDontSee('Saved')
         ->assertNoJavaScriptErrors();
 

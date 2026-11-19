@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-    Form,
-    Head,
-    router,
-    setLayoutProps,
-    useForm,
-    usePage,
-} from '@inertiajs/vue3';
+import { Form, Head, router, setLayoutProps, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { Check, MessageSquare } from '@lucide/vue';
 import { toast } from 'vue-sonner';
@@ -70,6 +63,8 @@ const props = defineProps<{
     canComment: boolean;
     /** Whether the viewer may change or remove the Goal itself. */
     canEdit: boolean;
+    /** Whether it opens with the title and description as fields (`?editing=1`). */
+    startsEditing: boolean;
 }>();
 
 const goalRoute = {
@@ -133,11 +128,16 @@ function saveProgress(progress: Progress): void {
             onError: (errors) =>
                 refuse(errors.progress ?? 'The Progress wasn’t saved.'),
             onHttpException: (response) => {
+                if (response.status !== 403) {
+                    refuse('The Progress wasn’t saved. Try again.');
+
+                    return false;
+                }
+
                 refuse(
-                    response.status === 403
-                        ? 'The Progress wasn’t saved: it can’t be changed any more, as the Performance Evaluation may have been Completed. Reload the page to see it.'
-                        : 'The Progress wasn’t saved. Try again.',
+                    'The Progress wasn’t saved: you can’t change it any more, as the Performance Evaluation may have been Completed.',
                 );
+                router.reload();
 
                 return false;
             },
@@ -153,12 +153,7 @@ function saveProgress(progress: Progress): void {
 }
 
 /** Whether the Goal's title and description show as fields. */
-const editing = ref(
-    props.canEdit &&
-        new URLSearchParams(usePage().url.split('?')[1] ?? '').get(
-            'editing',
-        ) === '1',
-);
+const editing = ref(props.startsEditing);
 
 const goalForm = useForm({
     title: props.goal.title,

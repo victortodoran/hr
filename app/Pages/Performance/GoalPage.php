@@ -18,12 +18,16 @@ final class GoalPage
     /**
      * The Goal with its Progress and every change to it, newest first, and
      * its Comments, oldest first, and whether the viewer may change the
-     * Progress, write Comments, and change or remove the Goal.
+     * Progress, write Comments, and change or remove the Goal, and whether
+     * it opens with the title and description as fields, which only
+     * someone who may change it gets.
      *
      * @return array<string, mixed>
      */
-    public static function props(PerformanceEvaluation $performanceEvaluation, Goal $goal, Employee $actor): array
+    public static function props(PerformanceEvaluation $performanceEvaluation, Goal $goal, Employee $actor, bool $editing = false): array
     {
+        $canEdit = $actor->can('edit', $performanceEvaluation);
+
         return [
             'evaluation' => PerformanceEvaluationHeading::of($performanceEvaluation),
             'goal' => [
@@ -50,7 +54,8 @@ final class GoalPage
             'isOwn' => $performanceEvaluation->employee_id === $actor->id,
             'canChangeProgress' => $actor->can('changeProgress', $performanceEvaluation),
             'canComment' => $actor->can('comment', $performanceEvaluation),
-            'canEdit' => $actor->can('edit', $performanceEvaluation),
+            'canEdit' => $canEdit,
+            'startsEditing' => $editing && $canEdit,
         ];
     }
 }

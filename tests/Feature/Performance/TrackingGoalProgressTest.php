@@ -217,6 +217,15 @@ it('offers Change and Remove on the Goal\'s page only to the effective Manager w
     actingAs($ben)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', false));
 });
 
+it('opens the Goal\'s page with its fields showing when asked, only for whoever may change it', function () {
+    [, $ben, $cara, $goal] = goalProgressLine();
+    $editing = route('performance-evaluations.goals.show', [$goal->performanceEvaluation, $goal, 'editing' => '1']);
+
+    actingAs($ben)->get($editing)->assertInertia(fn (Assert $page) => $page->where('startsEditing', true));
+    actingAs($ben)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('startsEditing', false));
+    actingAs($cara)->get($editing)->assertInertia(fn (Assert $page) => $page->where('startsEditing', false));
+});
+
 it('changes the Goal on its own page and leads back there, with no separate page for changing it', function () {
     [, $ben, , $goal] = goalProgressLine();
 
