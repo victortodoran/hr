@@ -59,9 +59,9 @@ final class HomePage
 
     /**
      * What the Employee should look at again, each with the reason it was
-     * declined: their Declined Work Entries (when they can see them), their
-     * Declined Travel Requests and Time Off still to come, and their Declined
-     * Travel Expenses, in that order and each kind by date. A Work Entry or
+     * declined, in this order and each kind by date: their Declined Work
+     * Entries (when they can see them), Travel Requests still to come,
+     * Travel Expenses and Time Off still to come. A Work Entry or
      * Travel Expense leaves once changed or deleted, Time Off and a Travel
      * Request once they have started. Each kind lists at most
      * NEEDS_ATTENTION_LIMIT, the rest counted in `more`; null when there is
@@ -72,7 +72,7 @@ final class HomePage
     private static function needsAttention(Employee $employee): ?array
     {
         $kinds = [
-            ...($employee->canSeeWorkEntries() ? [self::firstOf(
+            ...($employee->canSeeWorkEntries() ? [self::firstFewAndMore(
                 $employee->workEntries()->declined(),
                 'work_entries.date',
                 ['assignment.project:id,name'],
@@ -85,7 +85,7 @@ final class HomePage
                     'decline_reason' => $workEntry->decline_reason,
                 ],
             )] : []),
-            self::firstOf(
+            self::firstFewAndMore(
                 $employee->travelRequests()->declined()->whereDate('first_date', '>', today()),
                 'first_date',
                 [],
@@ -98,7 +98,7 @@ final class HomePage
                     'decline_reason' => $travelRequest->decline_reason,
                 ],
             ),
-            self::firstOf(
+            self::firstFewAndMore(
                 $employee->travelExpenses()->declined(),
                 'travel_expenses.paid_on',
                 ['travelRequest:id,destination'],
@@ -111,7 +111,7 @@ final class HomePage
                     'decline_reason' => $travelExpense->decline_reason,
                 ],
             ),
-            self::firstOf(
+            self::firstFewAndMore(
                 $employee->timeOff()->declined()->whereDate('first_date', '>', today()),
                 'first_date',
                 [],
@@ -140,7 +140,7 @@ final class HomePage
      * @param  callable(TModel): array<string, mixed>  $shape
      * @return array{items: list<array<string, mixed>>, more: int}
      */
-    private static function firstOf(Builder|Relation $query, string $dateColumn, array $with, callable $shape): array
+    private static function firstFewAndMore(Builder|Relation $query, string $dateColumn, array $with, callable $shape): array
     {
         $listed = (clone $query)
             ->with($with) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)

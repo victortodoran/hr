@@ -31,46 +31,42 @@ const columns: TableColumn[] = [
     { key: 'decline_reason', label: 'Reason' },
 ];
 
-/** What the item is, as a row's first column reads. */
-function kindOf(item: NeedsAttentionItem): string {
-    return {
-        'work-entry': 'Work Entry',
-        'travel-request': 'Travel Request',
-        'travel-expense': 'Travel Expense',
-        'time-off': 'Time Off',
-    }[item.kind];
-}
-
-/** Which one it is, such as "10 Nov 2026, Relaunch, 1.5 h". */
-function summaryOf(item: NeedsAttentionItem): string {
-    switch (item.kind) {
-        case 'work-entry':
-            return `${formatDate(item.date)}, ${item.project}, ${formatHours(item.hours)}`;
-        case 'travel-request':
-            return `${item.destination}, ${formatDateRange(item.first_date, item.last_date)}`;
-        case 'travel-expense':
-            return `${item.description} (${item.destination})`;
-        case 'time-off':
-            return formatDateRange(item.first_date, item.last_date);
-    }
-}
-
 /**
- * Where the item can be changed: the Work page on its week, the Travel
- * Request (holding the Travel Expense), or Time Off.
+ * How a row reads and where it leads: what the item is, which one, such as
+ * "10 Nov 2026, Relaunch, 1.5 h", and where it can be changed: the Work
+ * page on its week, the Travel Request (holding the Travel Expense), or
+ * Time Off.
  */
-function linkOf(
-    item: NeedsAttentionItem,
-): NonNullable<InertiaLinkProps['href']> {
+function describe(item: NeedsAttentionItem): {
+    kind: string;
+    summary: string;
+    href: NonNullable<InertiaLinkProps['href']>;
+} {
     switch (item.kind) {
         case 'work-entry':
-            return workEntries({ query: { week: item.date } });
+            return {
+                kind: 'Work Entry',
+                summary: `${formatDate(item.date)}, ${item.project}, ${formatHours(item.hours)}`,
+                href: workEntries({ query: { week: item.date } }),
+            };
         case 'travel-request':
-            return travelRequest(item.id);
+            return {
+                kind: 'Travel Request',
+                summary: `${item.destination}, ${formatDateRange(item.first_date, item.last_date)}`,
+                href: travelRequest(item.id),
+            };
         case 'travel-expense':
-            return travelRequest(item.travel_request_id);
+            return {
+                kind: 'Travel Expense',
+                summary: `${item.description} (${item.destination})`,
+                href: travelRequest(item.travel_request_id),
+            };
         case 'time-off':
-            return timeOff();
+            return {
+                kind: 'Time Off',
+                summary: formatDateRange(item.first_date, item.last_date),
+                href: timeOff(),
+            };
     }
 }
 </script>
@@ -93,19 +89,20 @@ function linkOf(
                     <div class="flex flex-col gap-1">
                         <span class="flex items-center gap-2">
                             <StatusBadge state="declined" />
-                            <span class="font-medium">{{ kindOf(row) }}</span>
+                            <span class="font-medium">{{
+                                describe(row).kind
+                            }}</span>
                         </span>
                         <Link
-                            :href="linkOf(row)"
+                            :href="describe(row).href"
                             class="underline underline-offset-4"
-                            >{{ summaryOf(row) }}</Link
+                            >{{ describe(row).summary }}</Link
                         >
                     </div>
                 </template>
             </DataTable>
             <p v-if="needsAttention.more > 0" class="text-muted-foreground">
-                And {{ needsAttention.more }} more, shown once these are dealt
-                with.
+                And {{ needsAttention.more }} more not shown here.
             </p>
         </CardContent>
     </Card>

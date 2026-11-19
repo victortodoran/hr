@@ -232,8 +232,8 @@ it('lists at most ten of each kind that needs attention, counting the rest', fun
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('needsAttention.items', 11)
-            ->where('needsAttention.items.0.id', $entries[0]->id)
-            ->where('needsAttention.items.9.id', $entries[9]->id)
+            ->where('needsAttention.items.0.id', $entries->first()?->id)
+            ->where('needsAttention.items.9.id', $entries->get(9)?->id)
             ->where('needsAttention.items.10.kind', 'time-off')
             ->where('needsAttention.more', 2),
         );
