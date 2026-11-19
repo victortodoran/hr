@@ -11,7 +11,6 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\Role;
-use App\Models\RolePermission;
 use App\Notifications\Invitation;
 use App\Rules\CurrencyInUse;
 use Illuminate\Support\Facades\Gate;
@@ -126,7 +125,7 @@ it('makes the starter Admin the Admin Role, storing no grants since it always ho
         ->and($admin->permissions()->exists())->toBeFalse();
 });
 
-it('creates the starter Employee Role: directory, plus own records, Assignments, Pay, Time Off and travel, and recording their own Work Entries', function () {
+it('creates the starter Employee Role: directory, plus seeing everything about themselves and recording their own Work Entries', function () {
     install(installOptions())->assertSuccessful();
 
     $cara = Employee::factory()->create();
@@ -134,13 +133,18 @@ it('creates the starter Employee Role: directory, plus own records, Assignments,
     $colleague = Employee::factory()->create();
     $gate = Gate::forUser($cara);
 
-    expect($gate->allows(Permission::ViewDirectory->value))->toBeTrue()
-        ->and($gate->allows(Permission::ViewEmployeeRecords->value, $cara))->toBeTrue()
-        ->and($gate->allows(Permission::ViewAssignments->value, $cara))->toBeTrue()
-        ->and($gate->allows(Permission::ViewPay->value, $cara))->toBeTrue()
-        ->and($cara->widestScopeFor(Permission::ViewTimeOff)?->value)->toBe('own')
-        ->and($cara->widestScopeFor(Permission::ViewTravel)?->value)->toBe('own')
-        ->and($cara->widestScopeFor(Permission::ManageWorkEntries)?->value)->toBe('own')
+    expect(Role::query()->where('name', 'Employee')->sole()->grants())->toBe([
+        'view-employee-records' => 'own',
+        'view-assignments' => 'own',
+        'view-pay' => 'own',
+        'view-work-entries' => 'own',
+        'manage-work-entries' => 'own',
+        'view-time-off' => 'own',
+        'view-travel' => 'own',
+        'view-performance-evaluations' => 'own',
+        'view-directory' => null,
+    ])
+        ->and($gate->allows(Permission::ViewPerformanceEvaluations->value, $cara))->toBeTrue()
         ->and($gate->allows(Permission::ViewEmployeeRecords->value, $colleague))->toBeFalse()
         ->and($gate->allows(Permission::AddEmployees->value))->toBeFalse()
         ->and($gate->allows(Permission::ManageEmployees->value, $colleague))->toBeFalse()
@@ -153,30 +157,37 @@ it('marks only the starter Employee Role as given to new Employees', function ()
     expect(Role::query()->where('is_given_to_new_employees', true)->pluck('name')->all())->toBe(['Employee']);
 });
 
-it('creates the starter Manager Role: Reports\' records, Assignments, Work Entries, reopening them, and Time Off, plus Projects', function () {
+it('creates the starter Manager Role: seeing everything about their Reports, managing their Assignments and reopening their Work Entries and Travel Expenses, plus Projects', function () {
+    install(installOptions())->assertSuccessful();
+
+    expect(Role::query()->where('name', 'Manager')->sole()->grants())->toBe([
+        'view-employee-records' => 'reports',
+        'view-assignments' => 'reports',
+        'manage-assignments' => 'reports',
+        'view-pay' => 'reports',
+        'view-work-entries' => 'reports',
+        'reopen-work-entries' => 'reports',
+        'view-time-off' => 'reports',
+        'view-travel' => 'reports',
+        'reopen-travel-expenses' => 'reports',
+        'view-performance-evaluations' => 'reports',
+        'view-projects' => null,
+    ]);
+});
+
+it('lets the starter Manager change neither Pay nor Paid Days, nor manage or add Employees', function () {
     install(installOptions())->assertSuccessful();
 
     $ben = Employee::factory()->create();
     $ben->roles()->attach(Role::query()->where('name', 'Manager')->sole());
+    $report = Employee::factory()->reportingTo($ben)->create();
     $gate = Gate::forUser($ben);
 
-    expect($gate->allows(Permission::ViewProjects->value))->toBeTrue()
-        ->and($ben->widestScopeFor(Permission::ViewEmployeeRecords)?->value)->toBe('reports')
-        ->and($ben->widestScopeFor(Permission::ViewAssignments)?->value)->toBe('reports')
-        ->and($ben->widestScopeFor(Permission::ManageAssignments)?->value)->toBe('reports')
-        ->and($ben->widestScopeFor(Permission::ViewWorkEntries)?->value)->toBe('reports')
-        ->and($ben->widestScopeFor(Permission::ReopenWorkEntries)?->value)->toBe('reports')
-        ->and($ben->widestScopeFor(Permission::ViewTimeOff)?->value)->toBe('reports')
-        ->and($ben->widestScopeFor(Permission::ManagePaidDays))->toBeNull()
-        ->and($ben->widestScopeFor(Permission::ManageWorkEntries))->toBeNull()
-        ->and($ben->widestScopeFor(Permission::ViewPay))->toBeNull()
-        ->and($gate->allows(Permission::ManageProjects->value))->toBeFalse();
-});
-
-it('gives reopening Travel Expenses to no starter Role but Admin', function () {
-    install(installOptions())->assertSuccessful();
-
-    expect(RolePermission::query()->where('permission', Permission::ReopenTravelExpenses)->exists())->toBeFalse();
+    expect($gate->allows(Permission::ViewPay->value, $report))->toBeTrue()
+        ->and($gate->allows(Permission::ManagePay->value, $report))->toBeFalse()
+        ->and($gate->allows(Permission::ManagePaidDays->value, $report))->toBeFalse()
+        ->and($gate->allows(Permission::ManageEmployees->value, $report))->toBeFalse()
+        ->and($gate->allows(Permission::AddEmployees->value))->toBeFalse();
 });
 
 it('refuses to run on an app that is already installed', function () {
@@ -267,7 +278,7 @@ it('logs the starter Roles being created and Admin given to the first Employee, 
         ->and($entries->get(0)?->after)->toBe(['name' => 'Admin', 'admin' => true, 'given_to_new_employees' => false])
         ->and($entries->get(2)?->after)->toBe([
             'name' => 'Employee',
-            'permissions' => ['view-employee-records' => 'own', 'view-assignments' => 'own', 'view-pay' => 'own', 'manage-work-entries' => 'own', 'view-time-off' => 'own', 'view-travel' => 'own', 'view-directory' => null],
+            'permissions' => ['view-employee-records' => 'own', 'view-assignments' => 'own', 'view-pay' => 'own', 'view-work-entries' => 'own', 'manage-work-entries' => 'own', 'view-time-off' => 'own', 'view-travel' => 'own', 'view-performance-evaluations' => 'own', 'view-directory' => null],
             'given_to_new_employees' => true,
         ]);
 });
