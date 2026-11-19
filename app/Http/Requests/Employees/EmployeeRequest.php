@@ -170,9 +170,25 @@ class EmployeeRequest extends FormRequest
     public function messages(): array
     {
         return [
+            ...$this->belongsToFormerEmployee() ? ['email.unique' => __('This email belongs to a Former Employee. A rehired person is added as a new Employee, so give them a new email.')] : [],
             'manager_id.not_in' => __('An Employee cannot be their own Manager.'),
             'leaving_date.in' => __('A Leaving Date that has passed can\'t be changed.'),
             'leaving_date.after_or_equal' => __('The Leaving Date must be on or after the Start Date.'),
         ];
+    }
+
+    /**
+     * Whether a new Employee is being added with a Former Employee's email,
+     * so the person is likely being rehired, which takes a new address
+     * (ADR 0001).
+     */
+    private function belongsToFormerEmployee(): bool
+    {
+        return $this->route('employee') === null
+            && is_string($this->input('email'))
+            && Employee::query()
+                ->where('email', $this->input('email'))
+                ->inEmploymentStatus(EmploymentStatus::Former)
+                ->exists();
     }
 }

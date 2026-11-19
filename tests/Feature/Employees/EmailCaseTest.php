@@ -52,6 +52,29 @@ it('treats an email that differs only in capitals as already used', function () 
         ->assertSessionHasErrors(['email' => 'The email has already been taken.']);
 });
 
+it('says a Former Employee\'s email can\'t be reused, since a rehire needs a new address', function () {
+    Employee::factory()->former()->create(['email' => 'cara@acme.test']);
+
+    actingAs(employeeWhoManagesEmployees())
+        ->post(route('employees.store'), detailsWithEmail('cara@acme.test'))
+        ->assertSessionHasErrors(['email' => 'This email belongs to a Former Employee. A rehired person is added as a new Employee, so give them a new email.']);
+});
+
+it('keeps the usual message when an Employee\'s email is changed to a Former Employee\'s', function () {
+    Employee::factory()->former()->create(['email' => 'ben@acme.test']);
+    $cara = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
+
+    actingAs(employeeWhoManagesEmployees())
+        ->patch(route('employees.update', $cara), [
+            'name' => $cara->name,
+            'email' => 'ben@acme.test',
+            'department_id' => $cara->department_id,
+            'manager_id' => $cara->manager_id,
+            'start_date' => $cara->start_date->toDateString(),
+        ])
+        ->assertSessionHasErrors(['email' => 'The email has already been taken.']);
+});
+
 it('refuses changing an email to another Employee\'s in different capitals, but accepts the Employee\'s own', function () {
     Employee::factory()->create(['email' => 'ben@acme.test']);
     $cara = Employee::factory()->create(['email' => 'cara@acme.test', 'manager_id' => Employee::factory()->create()->id]);

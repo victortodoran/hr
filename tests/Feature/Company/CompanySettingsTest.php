@@ -9,11 +9,12 @@ use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\Project;
 use App\Models\TravelExpense;
+use App\Rules\CurrencyInUse;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 
-covers(CompanySettingsController::class, CompanySettingsRequest::class, CompanySettings::class);
+covers(CompanySettingsController::class, CompanySettingsRequest::class, CompanySettings::class, CurrencyInUse::class);
 
 beforeEach(fn () => CompanySettings::factory()->create(['name' => 'Acme', 'currency' => 'EUR']));
 
@@ -83,8 +84,10 @@ it('rejects invalid company settings and explains why', function (array $changes
     'name not text' => [['name' => ['Acme']], 'name', 'The name field must be a string.'],
     'name too long' => [['name' => str_repeat('a', 256)], 'name', 'The name field must not be greater than 255 characters.'],
     'currency missing' => [['currency' => ''], 'currency', 'The currency field is required.'],
-    'currency not a code' => [['currency' => 'EURO'], 'currency', 'The currency must be a three-letter code, such as EUR.'],
-    'currency not text' => [['currency' => ['EUR']], 'currency', 'The currency must be a three-letter code, such as EUR.'],
+    'currency not a code' => [['currency' => 'EURO'], 'currency', 'The currency must be the three-letter code of a currency in use, such as EUR.'],
+    'currency not text' => [['currency' => ['EUR']], 'currency', 'The currency must be the three-letter code of a currency in use, such as EUR.'],
+    'three letters that are no currency' => [['currency' => 'ABC'], 'currency', 'The currency must be the three-letter code of a currency in use, such as EUR.'],
+    'currency no longer in use' => [['currency' => 'DEM'], 'currency', 'The currency must be the three-letter code of a currency in use, such as EUR.'],
 ]);
 
 it('keeps the company settings to those who manage the company', function () {

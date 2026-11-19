@@ -22,7 +22,7 @@ const props = defineProps<{
     token: string;
     email: string;
     passwordRules: string;
-    isValid: boolean;
+    refusal: string | null;
 }>();
 
 const inputEmail = ref(props.email);
@@ -31,12 +31,10 @@ const inputEmail = ref(props.email);
 <template>
     <Head title="Set your password" />
 
-    <div v-if="!isValid" class="grid gap-6">
+    <div v-if="refusal !== null" class="grid gap-6">
         <AlertError
             title="This invitation link no longer works"
-            :errors="[
-                'It is invalid or has expired. Ask HR to send a new one.',
-            ]"
+            :errors="[refusal]"
         />
         <div class="text-center text-sm text-muted-foreground">
             Already set your password?
