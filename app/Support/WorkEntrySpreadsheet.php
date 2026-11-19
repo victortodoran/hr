@@ -29,13 +29,7 @@ class WorkEntrySpreadsheet
      */
     public static function download(WorkEntryBuilder $entries, SpreadsheetFormat $format, Period $period): StreamedResponse
     {
-        $name = sprintf('work-entries-%s-to-%s', $period->from->toDateString(), $period->to->toDateString());
-
-        return Spreadsheet::download($name, $format, self::HEADERS, (function () use ($entries, $format): iterable {
-            foreach ($entries->lazy(500) as $entry) {
-                yield self::cells($entry, $format);
-            }
-        })());
+        return Spreadsheet::download('work-entries', $period, $format, self::HEADERS, $entries, fn (WorkEntry $entry): array => self::cells($entry, $format));
     }
 
     /**

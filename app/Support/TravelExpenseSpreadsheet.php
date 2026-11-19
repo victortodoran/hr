@@ -27,14 +27,9 @@ class TravelExpenseSpreadsheet
     public static function download(TravelExpenseBuilder $expenses, SpreadsheetFormat $format, Period $period): StreamedResponse
     {
         $currency = CompanySettings::payCurrency();
-        $name = sprintf('travel-expenses-%s-to-%s', $period->from->toDateString(), $period->to->toDateString());
         $headers = ['Employee', 'Destination', 'First date', 'Last date', 'Paid on', 'Category', 'Description', "Amount ({$currency->code})"];
 
-        return Spreadsheet::download($name, $format, $headers, (function () use ($expenses, $format, $currency): iterable {
-            foreach ($expenses->lazy(500) as $expense) {
-                yield self::cells($expense, $format, $currency);
-            }
-        })());
+        return Spreadsheet::download('travel-expenses', $period, $format, $headers, $expenses, fn (TravelExpense $expense): array => self::cells($expense, $format, $currency));
     }
 
     /**

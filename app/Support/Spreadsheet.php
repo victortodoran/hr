@@ -3,7 +3,10 @@
 namespace App\Support;
 
 use App\Enums\SpreadsheetFormat;
+use Closure;
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use OpenSpout\Common\Entity\Cell;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\Style;
@@ -17,26 +20,32 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 final class Spreadsheet
 {
     /**
-     * The rows under the headers as a download with the given name, its
-     * extension added from the format. The rows are only read while the
-     * file is sent, so a lazy iterable keeps them out of memory.
+     * The query's models, in its order, as a download named after what it
+     * holds and the Period, such as "work-entries-2026-11-01-to-2026-11-30.csv":
+     * the headers, then one row per model of the cells it gives. The models
+     * are read 500 at a time while the file is sent.
      *
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
      * @param  list<string>  $headers
-     * @param  iterable<list<Cell>>  $rows
+     * @param  Closure(TModel): list<Cell>  $cells
      */
-    public static function download(string $name, SpreadsheetFormat $format, array $headers, iterable $rows): StreamedResponse
+    public static function download(string $holding, Period $period, SpreadsheetFormat $format, array $headers, Builder $query, Closure $cells): StreamedResponse
     {
-        return response()->streamDownload(function () use ($format, $headers, $rows): void {
+        $name = sprintf('%s-%s-to-%s.%s', $holding, $period->from->toDateString(), $period->to->toDateString(), $format->value);
+
+        return response()->streamDownload(function () use ($format, $headers, $query, $cells): void {
             $writer = $format->writer();
             $writer->openToFile('php://output');
             $writer->addRow(Row::fromValuesWithStyle($headers, (new Style)->withFontBold(true)));
 
-            foreach ($rows as $cells) {
-                $writer->addRow(new Row($cells));
+            foreach ($query->lazy(500) as $model) {
+                $writer->addRow(new Row($cells($model)));
             }
 
             $writer->close();
-        }, "{$name}.{$format->value}", ['Content-Type' => $format->contentType()]);
+        }, $name, ['Content-Type' => $format->contentType()]);
     }
 
     /**
@@ -55,8 +64,9 @@ final class Spreadsheet
     /**
      * Text as text. Excel keeps it so; in a CSV file, text starting like a
      * formula (=, +, - or @, or their full-width forms, even after spaces, or
-     * a tab or a carriage return) gets a leading apostrophe, so a description such as "=HYPERLINK(...)" doesn't run
-     * when the file is opened in a spreadsheet.
+     * a tab or a carriage return) gets a leading apostrophe, so a description
+     * such as "=HYPERLINK(...)" doesn't run when the file is opened in a
+     * spreadsheet.
      */
     public static function text(string $text, SpreadsheetFormat $format): Cell
     {
