@@ -7,8 +7,8 @@ import type { StatusBadgeState } from '@/types';
 /**
  * Shows a state in its status colour: Pending amber, Approved green, Declined
  * red, Cancelled grey, Upcoming blue, Open amber, Completed green, and a
- * Goal's Progress: Not Started blue, On Track green, At Risk orange, Done
- * grey. The label defaults to
+ * Goal's Progress: Not Started yellow, On Track blue, At Risk red, Done
+ * green. The label defaults to
  * the state's name; pass slot content to word it differently.
  */
 const props = defineProps<{

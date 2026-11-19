@@ -27,6 +27,7 @@ import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { goalRemovalWarning } from '@/lib/goals';
 import { outcomes } from '@/lib/outcomes';
 import { progresses } from '@/lib/progress';
+import { statusColours, statusPillTrigger } from '@/lib/status';
 import { show } from '@/routes/performance-evaluations/goals';
 import type { AssessedGoal, Outcome, Progress } from '@/types';
 
@@ -163,7 +164,11 @@ const commentCountLabel = computed(() => {
                             "
                         >
                             <SelectTrigger
-                                class="w-36"
+                                size="sm"
+                                :class="[
+                                    statusPillTrigger,
+                                    statusColours[progress.chosen.value],
+                                ]"
                                 :aria-label="`Progress of ${goal.title}`"
                             >
                                 <SelectValue />
@@ -203,7 +208,13 @@ const commentCountLabel = computed(() => {
                         "
                     >
                         <SelectTrigger
-                            class="w-36"
+                            size="sm"
+                            :class="[
+                                statusPillTrigger,
+                                outcome.chosen.value
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-status-closed text-status-closed-foreground',
+                            ]"
                             :aria-label="`Outcome of ${goal.title}`"
                         >
                             <SelectValue />

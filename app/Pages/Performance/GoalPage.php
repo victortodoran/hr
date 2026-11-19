@@ -27,12 +27,14 @@ final class GoalPage
     public static function props(PerformanceEvaluation $performanceEvaluation, Goal $goal, Employee $actor, bool $editing = false): array
     {
         $canEdit = $actor->can('edit', $performanceEvaluation);
+        $seesOutcomes = $actor->can('seeOutcomes', $performanceEvaluation);
 
         return [
             'evaluation' => PerformanceEvaluationHeading::of($performanceEvaluation),
             'goal' => [
                 ...$goal->only('id', 'title', 'description'),
                 'progress' => $goal->progress->value,
+                'outcome' => $seesOutcomes ? $goal->outcome?->value : null,
                 'given_at' => $goal->created_at?->toDateString(),
             ],
             'history' => $goal->progressChanges()->with('changedBy:id,name')->get()
@@ -55,6 +57,7 @@ final class GoalPage
             'canChangeProgress' => $actor->can('changeProgress', $performanceEvaluation),
             'canComment' => $actor->can('comment', $performanceEvaluation),
             'canEdit' => $canEdit,
+            'canSeeOutcomes' => $seesOutcomes,
             'startsEditing' => $editing && $canEdit,
         ];
     }
