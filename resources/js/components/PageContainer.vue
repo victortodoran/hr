@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * The column every page sits in: narrow and centred for forms, wide for
- * lists.
+ * The column every page sits in: narrow and centred for forms, wide and
+ * left-aligned for lists.
  */
 withDefaults(
     defineProps<{

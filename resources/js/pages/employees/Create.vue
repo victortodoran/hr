@@ -23,7 +23,7 @@ defineProps<{
 <template>
     <Head title="Add Employee" />
 
-    <div class="flex max-w-xl flex-col gap-8 p-4">
+    <div class="mx-auto flex w-full max-w-xl flex-col gap-8 p-4">
         <Heading
             title="Add Employee"
             description="They'll get an email inviting them to set a password"

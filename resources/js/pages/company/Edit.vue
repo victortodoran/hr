@@ -24,7 +24,7 @@ defineProps<{
 <template>
     <Head title="Company" />
 
-    <div class="flex max-w-xl flex-col gap-8 p-4">
+    <div class="mx-auto flex w-full max-w-xl flex-col gap-8 p-4">
         <Heading
             title="Company"
             description="The company's name and the currency every Pay and Travel Expense is recorded in"

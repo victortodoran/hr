@@ -28,7 +28,7 @@ setLayoutProps({
 <template>
     <Head :title="employee.name" />
 
-    <div class="flex max-w-xl flex-col gap-8 p-4">
+    <div class="mx-auto flex w-full max-w-xl flex-col gap-8 p-4">
         <div class="flex items-start justify-between gap-4">
             <Heading :title="employee.name" description="Employee record" />
             <EmploymentStatusBadge :status="employee.status" />
