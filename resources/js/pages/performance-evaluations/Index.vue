@@ -4,6 +4,7 @@ import { Plus, Target } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FilterBar from '@/components/FilterBar.vue';
+import FilterSearch from '@/components/FilterSearch.vue';
 import FilterSelect from '@/components/FilterSelect.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
@@ -13,7 +14,12 @@ import { Button } from '@/components/ui/button';
 import { useListFilters } from '@/composables/useListFilters';
 import { outcomes } from '@/lib/outcomes';
 import { create, index, show } from '@/routes/performance-evaluations';
-import type { Paginated, PerformanceEvaluationRow, TableColumn } from '@/types';
+import type {
+    FilterChoice,
+    Paginated,
+    PerformanceEvaluationRow,
+    TableColumn,
+} from '@/types';
 
 defineOptions({
     layout: {
@@ -23,12 +29,15 @@ defineOptions({
 
 /**
  * For one year, the Employees the viewer effectively manages or may read
- * the Performance Evaluations of who have one for it, each with that
- * Performance Evaluation, and a way to create one when the viewer may.
+ * the Performance Evaluations of who have one for it or are still due
+ * one, each with that Performance Evaluation or None yet, and a way to
+ * create it when the viewer may.
  */
 const props = defineProps<{
     year: number;
     years: number[];
+    search: string;
+    state: 'open' | 'completed' | 'none-yet' | null;
     canCreate: boolean;
     employees: Paginated<PerformanceEvaluationRow>;
 }>();
@@ -44,7 +53,17 @@ const yearChoices = props.years.map((option) => ({
     label: String(option),
 }));
 
-const filters = useListFilters(index.url, { year: String(props.year) });
+const states: FilterChoice[] = [
+    { value: 'open', label: 'Open' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'none-yet', label: 'None yet' },
+];
+
+const filters = useListFilters(index.url, {
+    year: String(props.year),
+    search: props.search,
+    state: props.state ?? 'all',
+});
 </script>
 
 <template>
@@ -72,21 +91,51 @@ const filters = useListFilters(index.url, { year: String(props.year) });
                 width="w-32"
                 :choices="yearChoices"
             />
+            <FilterSearch v-model="filters.search" />
+            <FilterSelect
+                v-model="filters.state"
+                label="State"
+                any="Any state"
+                :choices="states"
+            />
         </FilterBar>
 
         <DataTable :columns="columns" :rows="employees.data">
             <template #cell-name="{ row }">
                 <Link
+                    v-if="row.evaluation"
                     :href="show(row.evaluation.id)"
                     class="font-medium underline-offset-4 hover:underline"
                     >{{ row.name }}</Link
                 >
+                <span v-else class="font-medium">{{ row.name }}</span>
             </template>
             <template #cell-goals="{ row }">
-                {{ row.evaluation.goals_count }}
+                <template v-if="row.evaluation">{{
+                    row.evaluation.goals_count
+                }}</template>
+                <span v-else class="text-muted-foreground">—</span>
             </template>
             <template #cell-state="{ row }">
                 <div
+                    v-if="!row.evaluation"
+                    class="flex items-center justify-end gap-2 whitespace-nowrap"
+                >
+                    <StatusBadge state="none-yet" />
+                    <Button v-if="row.can_create" size="sm" as-child>
+                        <Link
+                            :aria-label="`Create ${row.name}'s ${year} Evaluation`"
+                            :href="
+                                create({
+                                    query: { year, employee_id: row.id },
+                                })
+                            "
+                            >Create</Link
+                        >
+                    </Button>
+                </div>
+                <div
+                    v-else
                     class="flex items-center justify-end gap-2 whitespace-nowrap"
                 >
                     <span
@@ -106,7 +155,7 @@ const filters = useListFilters(index.url, { year: String(props.year) });
             <template #empty>
                 <EmptyState
                     :icon="Target"
-                    :message="`The ${year} Performance Evaluations you write or may read appear here.`"
+                    :message="`The ${year} Performance Evaluations you write or may read appear here. None match your search and state.`"
                 >
                     <template v-if="canCreate" #action>
                         <Button variant="outline" as-child>

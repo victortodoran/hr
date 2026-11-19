@@ -54,7 +54,7 @@ class PerformanceEvaluationPolicy
     public function createAny(Employee $actor): bool
     {
         foreach (PerformanceEvaluation::creatableYears() as $year) {
-            if (Employee::query()->effectivelyManagedBy($actor)->awaitingPerformanceEvaluationFor($year)->exists()) {
+            if (Employee::query()->awaitingPerformanceEvaluationFrom($actor, $year)->exists()) {
                 return true;
             }
         }
@@ -70,8 +70,7 @@ class PerformanceEvaluationPolicy
      */
     public function create(Employee $actor, Employee $employee, int $year): bool
     {
-        return in_array($year, PerformanceEvaluation::creatableYears(), true)
-            && Employee::query()->effectivelyManagedBy($actor)->awaitingPerformanceEvaluationFor($year)->whereKey($employee->id)->exists();
+        return Employee::query()->awaitingPerformanceEvaluationFrom($actor, $year)->whereKey($employee->id)->exists();
     }
 
     /**
