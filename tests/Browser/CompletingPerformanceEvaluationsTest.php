@@ -45,6 +45,7 @@ it('saves Outcomes, completes the Evaluation, and the Employee then reads them',
 
     visit(route('performance-evaluations.show', $evaluation))
         ->assertSee('Completed')
+        ->assertSee('The year as a whole')
         ->assertSee('Exceeded')
         ->assertSee('A strong year.')
         ->assertNoJavaScriptErrors();

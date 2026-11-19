@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Plus, Target } from '@lucide/vue';
 import PerformanceEvaluationAssessmentController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationAssessmentController';
 import PerformanceEvaluationCompletionController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationCompletionController';
@@ -48,8 +48,7 @@ import type {
 /**
  * One Performance Evaluation with its Goals as cards, each with its
  * Progress, its Comment count and a link to its own page. Only the
- * Employee's effective
- * Manager is offered to give, change or remove Goals and to give their
+ * Employee's effective Manager is offered to give, change or remove Goals and to give their
  * Outcomes, the Outcome of the whole and a summary, saving them bit by bit
  * and then Completing it, while it is Open. Anyone else reads the Goals,
  * and the Outcomes only once it is Completed.
@@ -131,6 +130,11 @@ const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
           },
       ];
 
+/** Whether the Manager is giving Outcomes, which needs a Goal to assess. */
+const isAssessing = computed(
+    () => props.canEdit && props.evaluation.goals.length > 0,
+);
+
 /** What the Goals' empty state calls the Employee. */
 const firstName = props.evaluation.employee.name.trim().split(/\s+/u)[0];
 
@@ -175,7 +179,7 @@ setLayoutProps({
                     </div>
                 </div>
             </div>
-            <Button v-if="canEdit && evaluation.goals.length > 0" as-child>
+            <Button v-if="isAssessing" as-child>
                 <Link :href="create(evaluation.id)"><Plus />Give a Goal</Link>
             </Button>
             <ConfirmDeleteDialog
@@ -197,7 +201,7 @@ setLayoutProps({
         </header>
 
         <Card
-            v-if="!canEdit && canSeeOutcomes && evaluation.outcome"
+            v-if="!isAssessing && canSeeOutcomes && evaluation.outcome"
             class="flex-row flex-wrap gap-7 bg-muted/50 p-7 shadow-none"
         >
             <div class="flex shrink-0 flex-col gap-2 sm:w-44">
@@ -271,11 +275,15 @@ setLayoutProps({
                             >The Goals your Manager gives you for this year
                             appear here.</template
                         >
-                        <template v-else
+                        <template v-else-if="canEdit"
                             >The Goals you give {{ firstName }} for
                             {{ evaluation.year }} appear here.
                             {{ firstName }} sees each one as soon as you give
                             it.</template
+                        >
+                        <template v-else
+                            >The Goals {{ firstName }}'s Manager gives for
+                            {{ evaluation.year }} appear here.</template
                         >
                     </p>
                 </div>
@@ -287,7 +295,7 @@ setLayoutProps({
             </div>
         </section>
 
-        <Card v-if="canEdit && evaluation.goals.length > 0" class="p-6">
+        <Card v-if="isAssessing" class="p-6">
             <form class="flex flex-col gap-5" @submit.prevent="saveAssessment">
                 <div class="flex flex-col gap-1">
                     <h2 class="text-lg font-semibold">The year as a whole</h2>

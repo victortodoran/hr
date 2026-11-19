@@ -54,7 +54,8 @@ const goalRoute = computed(() => ({
     goal: props.goal.id,
 }));
 
-const commentCount = computed(() => {
+/** "No comments", "1 comment" or "3 comments". */
+const commentCountLabel = computed(() => {
     const count = props.goal.comments_count;
 
     if (count === 0) {
@@ -123,7 +124,7 @@ const commentCount = computed(() => {
                     <StatusBadge :state="goal.progress" />
                     <span class="inline-flex items-center gap-1.5">
                         <MessageSquare class="size-3.5" aria-hidden="true" />
-                        {{ commentCount }}
+                        {{ commentCountLabel }}
                     </span>
                 </div>
                 <div v-if="canEdit" class="flex items-center gap-2">
