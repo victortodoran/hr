@@ -131,7 +131,7 @@ it('refuses Cara\'s page to Ana with view travel for her Reports, as no travel s
     actingAs($ana)->get(route('employees.show', $cara))->assertForbidden();
 });
 
-it('shows Cara\'s Travel Request page in full, with its Travel Expenses and nothing to do, and her name in the breadcrumbs leading nowhere, to Ana with view travel for her Reports', function () {
+it('shows Cara\'s Travel Request page in full, with its Travel Expenses, only her Pending ones for Ana to decide as her Manager, and her name in the breadcrumbs leading nowhere, to Ana with view travel for her Reports', function () {
     [$ana, $cara] = anaWithViewTravelAndCara(Scope::Reports);
     $hotel = berlinTripWithHotel($cara);
     $berlin = $hotel->travelRequest;
@@ -144,11 +144,11 @@ it('shows Cara\'s Travel Request page in full, with its Travel Expenses and noth
             ->where('travelRequest', [
                 'id' => $berlin->id, 'project' => 'Relaunch', 'client' => null, 'destination' => 'Berlin',
                 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'days' => 3, 'purpose' => 'Checkout workshop',
-                'state' => 'approved', 'decided_by' => $berlin->decider?->name, 'decline_reason' => null, 'can_cancel' => false,
+                'state' => 'approved', 'decided_by' => $berlin->decider?->name, 'decline_reason' => null, 'can_cancel' => false, 'can_decide' => false,
                 'expenses' => [
                     'items' => [
-                        ['id' => $hotel->id, 'paid_on' => '2026-12-04', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'pending', 'decline_reason' => null, 'can_change' => false, 'can_reopen' => false],
-                        ['id' => $dinner->id, 'paid_on' => '2026-12-05', 'category' => 'meals', 'description' => 'Dinner', 'amount' => "RON\u{a0}50.00", 'state' => 'declined', 'decline_reason' => 'Company card', 'can_change' => false, 'can_reopen' => false],
+                        ['id' => $hotel->id, 'paid_on' => '2026-12-04', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'pending', 'decline_reason' => null, 'can_change' => false, 'can_decide' => true, 'can_reopen' => false],
+                        ['id' => $dinner->id, 'paid_on' => '2026-12-05', 'category' => 'meals', 'description' => 'Dinner', 'amount' => "RON\u{a0}50.00", 'state' => 'declined', 'decline_reason' => 'Company card', 'can_change' => false, 'can_decide' => false, 'can_reopen' => false],
                     ],
                     'total' => "RON\u{a0}1,990.00",
                     'can_create' => false,
@@ -184,14 +184,17 @@ it('shows the Employee their own Travel Request page, with what they may do and 
             ->where('travelRequest.can_cancel', false)
             ->where('travelRequest.expenses.can_create', true)
             ->where('travelRequest.expenses.items.0.id', $hotel->id)
-            ->where('travelRequest.expenses.items.0.can_change', true));
+            ->where('travelRequest.expenses.items.0.can_change', true)
+            ->where('travelRequest.expenses.items.0.can_decide', false));
     actingAs($cara)->get(route('travel-requests.show', $travel['rome']))
         ->assertInertia(fn (Assert $page) => $page->where('travelRequest.can_cancel', true));
     actingAs($cara)->get(route('travel-requests.show', $travel['munich']))
         ->assertOk();
+    actingAs($cara)->get(route('travel-requests.show', $travel['vienna']))
+        ->assertInertia(fn (Assert $page) => $page->where('travelRequest.can_decide', false));
 });
 
-it('shows a Pending Travel Request\'s page, with nothing to do, to the Employee\'s effective Manager, who may decide it, and refuses them one already decided', function () {
+it('shows a Pending Travel Request\'s page to the Employee\'s effective Manager, who may decide it there, and refuses them one already decided', function () {
     $mona = Employee::factory()->create();
     $cara = Employee::factory()->reportingTo($mona)->create();
     $travel = carasTravel($cara);
@@ -200,7 +203,8 @@ it('shows a Pending Travel Request\'s page, with nothing to do, to the Employee\
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('isOwn', false)
-            ->where('travelRequest.can_cancel', false));
+            ->where('travelRequest.can_cancel', false)
+            ->where('travelRequest.can_decide', true));
     actingAs($mona)->get(route('travel-requests.show', $travel['rome']))->assertForbidden();
 });
 
@@ -212,6 +216,7 @@ it('shows a Travel Request page, with nothing to do, to someone who may reopen T
         ->assertInertia(fn (Assert $page) => $page
             ->where('isOwn', false)
             ->where('travelRequest.can_cancel', false)
+            ->where('travelRequest.can_decide', false)
             ->where('travelRequest.expenses.can_create', false));
 });
 

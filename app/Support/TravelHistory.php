@@ -63,11 +63,12 @@ final class TravelHistory
     /**
      * One Travel Request in full: the Assignment it is for, the days it
      * counts, who decided it and why it was declined, and whether the actor
-     * may cancel it; and, when it takes Travel Expenses, those in the order
-     * they were paid, with the total of those not Declined, and whether the
-     * actor may record more and change or delete each.
+     * may cancel it or decide it; and, when it takes Travel Expenses, those
+     * in the order they were paid, with the total of those not Declined, and
+     * whether the actor may record more and change, delete, decide or reopen
+     * each.
      *
-     * @return array{id: int, project: string, client: string|null, destination: string, first_date: string, last_date: string, days: int, purpose: string, state: string, decided_by: string|null, decline_reason: string|null, can_cancel: bool, expenses: array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, can_change: bool}>, total: string, can_create: bool}|null}
+     * @return array{id: int, project: string, client: string|null, destination: string, first_date: string, last_date: string, days: int, purpose: string, state: string, decided_by: string|null, decline_reason: string|null, can_cancel: bool, can_decide: bool, expenses: array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, can_change: bool, can_decide: bool, can_reopen: bool}>, total: string, can_create: bool}|null}
      */
     public static function detail(TravelRequest $travelRequest, Currency $currency, Employee $actor): array
     {
@@ -86,6 +87,7 @@ final class TravelHistory
             'decided_by' => $travelRequest->decider?->name,
             'decline_reason' => $travelRequest->decline_reason,
             'can_cancel' => $actor->can('cancel', $travelRequest),
+            'can_decide' => $actor->can('decide', $travelRequest),
             'expenses' => $travelRequest->takesExpenses() ? self::expenses($travelRequest, $currency, $actor) : null,
         ];
     }
@@ -108,20 +110,23 @@ final class TravelHistory
     /**
      * The Travel Expenses of a Travel Request that takes them, in the order
      * they were paid, with the total of those not Declined in the company
-     * currency, and whether the actor may change each, reopen it and
-     * record more. Reopening is for an Approved one of an Employee the
-     * actor's reopen Scope covers, never their own.
+     * currency, and whether the actor may change each, decide it, reopen it
+     * and record more. Deciding is for a Pending one of an Employee the
+     * actor effectively manages, as TravelExpensePolicy::decide has it.
+     * Reopening is for an Approved one of an Employee the actor's reopen
+     * Scope covers, never their own.
      *
-     * @return array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, can_change: bool, can_reopen: bool}>, total: string, can_create: bool}
+     * @return array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, can_change: bool, can_decide: bool, can_reopen: bool}>, total: string, can_create: bool}
      */
     private static function expenses(TravelRequest $travelRequest, Currency $currency, Employee $actor): array
     {
         $travelExpenses = $travelRequest->travelExpenses()->orderBy('paid_on')->orderBy('id')->get();
         $reopensForEmployee = Employee::query()->reopenableBy($actor, Permission::ReopenTravelExpenses)->whereKey($travelRequest->employee_id)->exists();
+        $decidesForEmployee = Employee::query()->effectivelyManagedBy($actor)->whereKey($travelRequest->employee_id)->exists();
 
         return [
             'items' => $travelExpenses
-                ->map(function (TravelExpense $travelExpense) use ($travelRequest, $currency, $actor, $reopensForEmployee): array {
+                ->map(function (TravelExpense $travelExpense) use ($travelRequest, $currency, $actor, $decidesForEmployee, $reopensForEmployee): array {
                     $travelExpense->setRelation('travelRequest', $travelRequest);
 
                     return [
@@ -133,6 +138,7 @@ final class TravelHistory
                         'state' => $travelExpense->state->value,
                         'decline_reason' => $travelExpense->decline_reason,
                         'can_change' => $actor->can('update', $travelExpense),
+                        'can_decide' => $decidesForEmployee && $travelExpense->state === TravelExpenseState::Pending,
                         'can_reopen' => $reopensForEmployee && $travelExpense->state === TravelExpenseState::Approved,
                     ];
                 })

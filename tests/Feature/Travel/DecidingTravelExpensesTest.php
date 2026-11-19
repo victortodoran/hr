@@ -94,6 +94,21 @@ it('lets Ben approve Cara\'s flight and hotel together and decline her taxi with
             ->where('travelRequest.expenses.items.2.decline_reason', 'The taxi isn\'t on the receipt.'));
 });
 
+it('keeps Ben on the Travel Request page after answering an expense there', function (string $route, array $form) {
+    $ben = managerBen();
+    $berlin = carasBerlinTrip($ben);
+    $expense = expenseOn($berlin);
+
+    actingAs($ben)->from(route('travel-requests.show', $berlin))
+        ->post(route($route), ['ids' => [$expense->id], ...$form])
+        ->assertRedirect(route('travel-requests.show', $berlin));
+
+    expect($expense->refresh()->state)->not->toBe(TravelExpenseState::Pending);
+})->with([
+    'approve' => ['approvals.travel-expenses.store', []],
+    'decline' => ['approvals.travel-expenses.declines.store', ['decline_reason' => 'No receipt for this.']],
+]);
+
 it('refuses answering Cara\'s expenses to anyone but her Manager, even with the Admin Role', function (string $route, array $form) {
     $ben = managerBen();
     $berlin = carasBerlinTrip($ben);

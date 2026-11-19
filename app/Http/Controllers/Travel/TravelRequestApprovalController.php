@@ -19,6 +19,9 @@ class TravelRequestApprovalController extends Controller
     /**
      * Approve the Travel Request, recording who approved it and when. One
      * decided or cancelled since the policy check is refused, never changed.
+     * It is decided from the Approvals page or its own page, and the actor
+     * goes back to where they decided it, unless they may no longer see it
+     * once decided, then to the Approvals page's Travel Requests tab.
      */
     public function store(TravelRequest $travelRequest, #[CurrentUser] Employee $actor, ApproveTravelRequest $approveTravelRequest): RedirectResponse
     {
@@ -27,6 +30,8 @@ class TravelRequestApprovalController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Travel Request approved.')]);
 
-        return to_route('approvals.index', ['tab' => ApprovalsTab::TravelRequests]);
+        return $actor->can('view', $travelRequest)
+            ? back()
+            : to_route('approvals.index', ['tab' => ApprovalsTab::TravelRequests]);
     }
 }

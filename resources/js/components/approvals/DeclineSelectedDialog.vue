@@ -20,11 +20,12 @@ import type { RouteDefinition } from '@/wayfinder';
 
 /**
  * Declines the selected Work Entries or Travel Expenses on the Approvals
+ * page, or one Travel Request or Travel Expense on its Travel Request's
  * page, asking for the one reason the Employee will see on each.
  */
 const props = defineProps<{
-    /** The selected rows. */
-    ids: number[];
+    /** The selected rows; left out when the action declines one thing by its URL. */
+    ids?: number[];
     /** Where the decline is sent. */
     action: RouteDefinition<'post'>;
     /** What is declined, such as "Work Entry" and "Work Entries". */
@@ -32,6 +33,8 @@ const props = defineProps<{
     /** What declining means for the Employee. */
     description: string;
     placeholder: string;
+    /** The trigger button's size, smaller in a table row. */
+    size?: 'default' | 'sm';
 }>();
 
 const emit = defineEmits<{
@@ -42,6 +45,10 @@ const open = ref(false);
 
 const form = useForm({ ids: [] as number[], decline_reason: '' });
 
+form.transform((data) =>
+    props.ids === undefined ? { decline_reason: data.decline_reason } : data,
+);
+
 function opened(isOpen: boolean): void {
     if (isOpen) {
         form.reset();
@@ -50,7 +57,7 @@ function opened(isOpen: boolean): void {
 }
 
 function decline(): void {
-    form.ids = props.ids;
+    form.ids = props.ids ?? [];
     form.submit(props.action, {
         preserveScroll: true,
         onSuccess: () => {
@@ -64,14 +71,20 @@ function decline(): void {
 <template>
     <Dialog v-model:open="open" @update:open="opened">
         <DialogTrigger as-child>
-            <Button variant="outline" :disabled="ids.length === 0"
+            <Button
+                variant="outline"
+                :size="size"
+                :disabled="ids !== undefined && ids.length === 0"
                 >Decline…</Button
             >
         </DialogTrigger>
         <DialogContent>
             <form class="flex flex-col gap-4" @submit.prevent="decline">
                 <DialogHeader>
-                    <DialogTitle
+                    <DialogTitle v-if="ids === undefined"
+                        >Decline this {{ noun.one }}?</DialogTitle
+                    >
+                    <DialogTitle v-else
                         >Decline {{ ids.length }}
                         {{
                             ids.length === 1 ? noun.one : noun.many

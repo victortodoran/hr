@@ -2,6 +2,8 @@
 
 use App\Actions\ApproveTravelRequest;
 use App\Actions\DeclineTravelRequest;
+use App\Enums\Permission;
+use App\Enums\Scope;
 use App\Enums\TravelRequestState;
 use App\Http\Controllers\Travel\TravelRequestApprovalController;
 use App\Http\Controllers\Travel\TravelRequestController;
@@ -73,6 +75,27 @@ it('lets the Manager decline their Report\'s Pending Travel Request with a reaso
     expect($travelRequest->decided_at)->toEqual(now());
     expect($travelRequest->decline_reason)->toBe('The release is that week.');
 });
+
+it('keeps the Manager where they decided the Travel Request when they may still see it once decided', function (string $route, array $form, string $from) {
+    $ben = managerBen();
+    giveRole($ben, [Permission::ViewTravel->value => Scope::Reports]);
+    $travelRequest = pendingTravelRequestOf($ben);
+    $origin = $from === 'its page' ? route('travel-requests.show', $travelRequest) : route('approvals.index', ['tab' => 'travel-requests']);
+
+    actingAs($ben)->from($origin)->post(route($route, $travelRequest), $form)->assertRedirect($origin);
+
+    expect($travelRequest->refresh()->decided_by)->toBe($ben->id);
+})->with('travel answers')->with(['its page', 'the Approvals page']);
+
+it('sends a Manager who decided the Travel Request on its page to the Approvals Travel Requests tab when they may no longer see it', function (string $route, array $form) {
+    $ben = managerBen();
+    $travelRequest = pendingTravelRequestOf($ben);
+
+    actingAs($ben)->from(route('travel-requests.show', $travelRequest))->post(route($route, $travelRequest), $form)
+        ->assertRedirect(route('approvals.index', ['tab' => 'travel-requests']));
+
+    expect($travelRequest->refresh()->decided_by)->toBe($ben->id);
+})->with('travel answers');
 
 it('refuses a decline without a reason', function (?string $reason) {
     $ben = managerBen();
