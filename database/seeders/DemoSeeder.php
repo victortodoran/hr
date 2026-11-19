@@ -94,6 +94,7 @@ class DemoSeeder extends Seeder
 
         $ana = $this->installCompany->install('Acme Software', 'EUR', 'Engineering', 'Ana Popescu', 'ana@acme.test');
         $this->updateTrimmingAssignments->updateEmployee($ana, ['start_date' => $today->subYears(4)]);
+        $ana->internalAssignment()->sole()->update(['job_title' => 'CTO']);
         $this->letSignIn($ana);
 
         $engineering = Department::query()->where('name', 'Engineering')->sole();
@@ -120,14 +121,14 @@ class DemoSeeder extends Seeder
             Permission::ViewProjects->value => null,
         ], givenToNewEmployees: false);
 
-        $ben = $this->add($ana, 'Ben Ionescu', $engineering, $ana, $today->subYears(3));
-        $hana = $this->add($ana, 'Hana Pop', $design, $ana, $today->subYears(2));
-        $finn = $this->add($ana, 'Finn Muller', $finance, $ana, $today->subYears(2));
-        $cara = $this->add($ana, 'Cara Lane', $engineering, $ben, $today->subMonths(18));
-        $eve = $this->add($ana, 'Eve Stan', $engineering, $ben, $today->subYears(2));
-        $lia = $this->add($ana, 'Lia Rusu', $engineering, $eve, $today->subYear());
-        $ivan = $this->add($ana, 'Ivan Petrov', $design, $hana, $today->subYear(), $today->addMonths(6));
-        $dan = $this->add($ana, 'Dan Moraru', $engineering, $ben, $today->addMonth(), canSignIn: false);
+        $ben = $this->add($ana, 'Ben Ionescu', 'Engineering Manager', $engineering, $ana, $today->subYears(3));
+        $hana = $this->add($ana, 'Hana Pop', 'Design Lead', $design, $ana, $today->subYears(2));
+        $finn = $this->add($ana, 'Finn Muller', 'Payroll Specialist', $finance, $ana, $today->subYears(2));
+        $cara = $this->add($ana, 'Cara Lane', 'Senior Developer', $engineering, $ben, $today->subMonths(18));
+        $eve = $this->add($ana, 'Eve Stan', 'QA Engineer', $engineering, $ben, $today->subYears(2));
+        $lia = $this->add($ana, 'Lia Rusu', 'Developer', $engineering, $eve, $today->subYear());
+        $ivan = $this->add($ana, 'Ivan Petrov', 'Product Designer', $design, $hana, $today->subYear(), $today->addMonths(6));
+        $dan = $this->add($ana, 'Dan Moraru', 'Developer', $engineering, $ben, $today->addMonth(), canSignIn: false);
         $this->updateTrimmingAssignments->updateEmployee($eve, ['leaving_date' => $today->subMonths(2)]);
 
         $this->changeAccess->giveRole($ana, $seniorManager, $ben);
@@ -144,19 +145,19 @@ class DemoSeeder extends Seeder
         $website = $this->project('Website Revamp', null, $today->subMonths(6), $today->addMonths(4));
         $this->project('Archive Cleanup', null, $today->subMonth());
 
-        $this->internal($ana, 'CTO', 100, [['fixed', 900000, null]]);
-        $this->internal($ben, 'Engineering Manager', 80, [['fixed', 650000, null]]);
-        $this->internal($hana, 'Design Lead', 100, [['fixed', 580000, null]]);
-        $this->internal($finn, 'Payroll Specialist', 100, [['fixed', 450000, null]]);
-        $this->internal($cara, 'Senior Developer', 0, [
+        $this->internal($ana, 100, [['fixed', 900000, null]]);
+        $this->internal($ben, 80, [['fixed', 650000, null]]);
+        $this->internal($hana, 100, [['fixed', 580000, null]]);
+        $this->internal($finn, 100, [['fixed', 450000, null]]);
+        $this->internal($cara, 0, [
             ['fixed', 420000, null],
             ['fixed', 480000, $today->subMonths(3)],
             ['fixed', 520000, $today->addMonths(2)],
         ]);
-        $this->internal($eve, 'QA Engineer', 0, [['fixed', 400000, null]]);
-        $this->internal($lia, 'Developer', 20, [['fixed', 350000, null]]);
-        $this->internal($ivan, 'Product Designer', 50, [['fixed', 390000, null]]);
-        $this->internal($dan, null, 0, []);
+        $this->internal($eve, 0, [['fixed', 400000, null]]);
+        $this->internal($lia, 20, [['fixed', 350000, null]]);
+        $this->internal($ivan, 50, [['fixed', 390000, null]]);
+        $this->internal($dan, 0, []);
 
         $caraOnRelaunch = $this->assign($cara, $relaunch, 'Tech Lead', 60, $today->subYear(), null, [['hourly', 2500, null]]);
         $this->assign($cara, $audit, 'Developer', 40, $today->subMonths(14), $today->subMonths(2), [['hourly', 2200, null]]);
@@ -248,7 +249,7 @@ class DemoSeeder extends Seeder
      * Add an Employee the way the app does, then, unless they are still to
      * accept their invitation, let them sign in with the demo password.
      */
-    private function add(Employee $actor, string $name, Department $department, Employee $manager, CarbonInterface $startDate, ?CarbonInterface $leavingDate = null, bool $canSignIn = true): Employee
+    private function add(Employee $actor, string $name, string $jobTitle, Department $department, Employee $manager, CarbonInterface $startDate, ?CarbonInterface $leavingDate = null, bool $canSignIn = true): Employee
     {
         $employee = $this->addEmployee->add($actor, [
             'name' => $name,
@@ -257,6 +258,7 @@ class DemoSeeder extends Seeder
             'manager_id' => $manager->id,
             'start_date' => $startDate,
             'leaving_date' => $leavingDate,
+            'job_title' => $jobTitle,
         ]);
 
         if ($canSignIn) {
@@ -286,15 +288,15 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Set the Employee's internal Job Title and Capacity, and give their
-     * Internal Assignment its Pay history.
+     * Set the Employee's internal Capacity, and give their Internal
+     * Assignment its Pay history.
      *
      * @param  list<array{0: string, 1: int, 2: CarbonInterface|null}>  $pay  Kind, amount in cents, and the day it takes effect (null for the first day)
      */
-    private function internal(Employee $employee, ?string $jobTitle, int $capacity, array $pay): void
+    private function internal(Employee $employee, int $capacity, array $pay): void
     {
         $internal = $employee->internalAssignment()->sole();
-        $internal->update(['job_title' => $jobTitle, 'capacity' => $capacity]);
+        $internal->update(['capacity' => $capacity]);
 
         $this->pay($internal, $pay);
     }

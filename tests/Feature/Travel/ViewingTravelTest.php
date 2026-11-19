@@ -260,7 +260,7 @@ it('lets a new Employee, given the starter Employee Role, see their own travel o
     $ana = app(InstallCompany::class)->install('Acme Software', 'RON', 'Engineering', 'Ana', 'ana@acme.test');
     $cara = app(AddEmployee::class)->add($ana, [
         'name' => 'Cara', 'email' => 'cara@acme.test', 'department_id' => Department::query()->sole()->id,
-        'manager_id' => $ana->id, 'start_date' => '2026-11-02',
+        'manager_id' => $ana->id, 'start_date' => '2026-11-02', 'job_title' => 'Developer',
     ]);
     $cara->markEmailAsVerified();
     berlinTripWithHotel($cara);
