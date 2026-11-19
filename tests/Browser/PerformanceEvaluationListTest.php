@@ -47,3 +47,16 @@ it('fits the list on a phone without scrolling the page sideways', function () {
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth')
         ->assertNoJavaScriptErrors();
 });
+
+it('shows an Open Evaluation in the neutral grey, not the Pending amber', function () {
+    $ben = managerBen();
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
+    PerformanceEvaluation::factory()->of($cara)->create();
+
+    actingAs($ben);
+
+    visit(route('performance-evaluations.index'))
+        ->assertSeeIn('[data-slot="status-badge"]', 'Open')
+        ->assertScript("document.querySelector('[data-slot=\"status-badge\"]').classList.contains('bg-status-closed')", true)
+        ->assertNoJavaScriptErrors();
+});
