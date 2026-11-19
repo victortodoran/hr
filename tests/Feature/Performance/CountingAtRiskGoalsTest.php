@@ -84,12 +84,8 @@ it('follows the Goals\' current Progress', function () {
 
 it('never counts At Risk Goals on a Completed Evaluation', function () {
     [$ben, $cara, , $caras] = atRiskLine();
-    app(AssessPerformanceEvaluation::class)->complete(
-        $caras,
-        $caras->goals()->pluck('id')->mapWithKeys(fn (int $id): array => [$id => Outcome::NotMet])->all(),
-        Outcome::PartlyMet,
-        'A hard year.',
-    );
+    $caras->goals()->update(['outcome' => Outcome::NotMet]);
+    app(AssessPerformanceEvaluation::class)->complete($caras, Outcome::PartlyMet, 'A hard year.');
 
     assertAtRiskCountsOnList($ben, ['Cara' => 0]);
     actingAs($cara)->get(route('my-performance-evaluations.index'))

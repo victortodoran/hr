@@ -545,13 +545,12 @@ class DemoSeeder extends Seeder
     private function completedPerformanceEvaluation(Employee $employee, array $goals, Outcome $outcome, string $summary): void
     {
         $evaluation = $employee->performanceEvaluations()->create(['year' => today()->year - 1]);
-        $goalOutcomes = [];
 
         foreach ($goals as [$title, $description, $goalOutcome]) {
-            $goalOutcomes[$evaluation->goals()->create(['title' => $title, 'description' => $description])->id] = $goalOutcome;
+            $this->assessPerformanceEvaluation->giveGoalOutcome($evaluation->goals()->create(['title' => $title, 'description' => $description]), $goalOutcome);
         }
 
-        $this->assessPerformanceEvaluation->complete($evaluation, $goalOutcomes, $outcome, $summary);
+        $this->assessPerformanceEvaluation->complete($evaluation, $outcome, $summary);
     }
 
     /**

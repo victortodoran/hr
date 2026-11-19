@@ -8,7 +8,6 @@ use App\Enums\Scope;
 use App\Http\Controllers\Performance\PerformanceEvaluationController;
 use App\Http\Controllers\Performance\PerformanceEvaluationReopeningController;
 use App\Models\Employee;
-use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
 use App\Policies\PerformanceEvaluationPolicy;
 use Illuminate\Support\Collection;
@@ -57,8 +56,10 @@ it('lets someone with reopen performance evaluations send a Completed one back t
     actingAs($ben)->get(route('performance-evaluations.show', $evaluation))
         ->assertInertia(fn (Assert $page) => $page->where('canEdit', true)->where('canReopen', false)->where('evaluation.summary', 'A steady year.'));
 
+    foreach ($evaluation->goals as $goal) {
+        actingAs($ben)->put(route('performance-evaluations.goals.outcome.update', [$evaluation, $goal]), ['outcome' => 'exceeded'])->assertSessionHasNoErrors();
+    }
     actingAs($ben)->post(route('performance-evaluations.completion.store', $evaluation), [
-        'goals' => $evaluation->goals->map(fn (Goal $goal): array => ['id' => $goal->id, 'outcome' => 'exceeded'])->all(),
         'outcome' => 'exceeded',
         'summary' => 'Better than first written.',
     ])->assertSessionHasNoErrors();

@@ -127,7 +127,8 @@ it('refuses Comments to anyone who can\'t see the Performance Evaluation, and th
 it('refuses Comments once the Performance Evaluation is Completed, and allows them again after a Reopen', function () {
     [, $ben, $cara, $goal] = goalCommentLine();
     $assess = app(AssessPerformanceEvaluation::class);
-    $assess->complete($goal->performanceEvaluation, [$goal->id => Outcome::Met], Outcome::Met, 'Good year.');
+    $goal->forceFill(['outcome' => Outcome::Met])->save();
+    $assess->complete($goal->performanceEvaluation, Outcome::Met, 'Good year.');
 
     actingAs($cara)->get(commentedGoalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canComment', false));
     actingAs($cara)->post(commentRoute($goal), ['body' => 'Late note'])->assertForbidden();

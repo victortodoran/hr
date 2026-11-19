@@ -14,7 +14,8 @@ final class PerformanceEvaluationPage
 {
     /**
      * The Performance Evaluation with its Goals, and whether the viewer may
-     * give, change or remove them and their Outcomes. Outcomes and the
+     * give, change or remove them and their Outcomes, and change their
+     * Progress. Outcomes and the
      * summary are left out for anyone but the effective Manager until it is
      * Completed. Whether it is the viewer's own sets where its breadcrumbs
      * lead: the Performance page, or the Performance Evaluations page for
@@ -46,6 +47,7 @@ final class PerformanceEvaluationPage
             ],
             'isOwn' => $performanceEvaluation->employee_id === $actor->id,
             'canEdit' => $actor->can('edit', $performanceEvaluation),
+            'canChangeProgress' => $actor->can('changeProgress', $performanceEvaluation),
             'canSeeOutcomes' => $seesOutcomes,
             'canReopen' => $actor->can('reopen', $performanceEvaluation),
         ];

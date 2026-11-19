@@ -47,10 +47,12 @@ import type {
 
 /**
  * One Performance Evaluation with its Goals as cards, each with its
- * Progress, its Comment count and a link to its own page. Only the
- * Employee's effective Manager is offered to give, change or remove Goals and to give their
- * Outcomes, the Outcome of the whole and a summary, saving them bit by bit
- * and then Completing it, while it is Open. Anyone else reads the Goals,
+ * Progress, its Comment count and a link to its own page. The Employee
+ * and their Manager change each Goal's Progress from its card while it is
+ * Open. Only the Employee's effective Manager is offered to give, change
+ * or remove Goals and to give their Outcomes, each saved from its card as
+ * it is picked, and the Outcome of the whole and a summary, saved bit by
+ * bit, and then Completing it, while it is Open. Anyone else reads the Goals,
  * and the Outcomes only once it is Completed.
  */
 const props = defineProps<{
@@ -59,34 +61,28 @@ const props = defineProps<{
     isOwn: boolean;
     /** Whether the viewer may give, change or remove its Goals and their Outcomes, and Complete it. */
     canEdit: boolean;
+    /** Whether the viewer may change its Goals' Progress. */
+    canChangeProgress: boolean;
     /** Whether the viewer sees its Outcomes and summary. */
     canSeeOutcomes: boolean;
     /** Whether the viewer may send it, Completed, back to Open for its Manager to correct. */
     canReopen: boolean;
 }>();
 
-/** Each Goal's Outcome by Goal ID, the whole's Outcome and the summary, as the Manager is writing them. */
+/** The whole's Outcome and the summary, as the Manager is writing them. Each Goal's Outcome saves from its card. */
 type Assessment = {
-    goalOutcomes: Record<number, Outcome | ''>;
     outcome: Outcome | '';
     summary: string;
 };
 
 const assessment = useForm<Assessment>({
-    goalOutcomes: Object.fromEntries(
-        props.evaluation.goals.map((goal) => [goal.id, goal.outcome ?? '']),
-    ),
     outcome: props.evaluation.outcome ?? '',
     summary: props.evaluation.summary ?? '',
 });
 
-/** The assessment as the server takes it: every Goal on the page, any Outcome still empty as null. */
+/** The assessment as the server takes it, an Outcome still empty as null. */
 function assessmentPayload(data: Assessment) {
     return {
-        goals: props.evaluation.goals.map((goal) => ({
-            id: goal.id,
-            outcome: data.goalOutcomes[goal.id] || null,
-        })),
         outcome: data.outcome || null,
         summary: data.summary,
     };
@@ -243,11 +239,11 @@ setLayoutProps({
                 <GoalCard
                     v-for="(goal, position) in evaluation.goals"
                     :key="goal.id"
-                    v-model:outcome="assessment.goalOutcomes[goal.id]"
                     :goal="goal"
                     :number="position + 1"
                     :performance-evaluation-id="evaluation.id"
                     :can-edit="canEdit"
+                    :can-change-progress="canChangeProgress"
                     :can-see-outcomes="canSeeOutcomes"
                 />
                 <Link

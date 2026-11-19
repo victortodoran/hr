@@ -103,6 +103,22 @@ it('lets the Employee and their effective Manager change a Goal\'s Progress, kee
             ->where('canChangeProgress', true));
 });
 
+it('lets the Employee and their Manager change a Goal\'s Progress from its card, leading back to the Performance Evaluation\'s page', function () {
+    [, $ben, $cara, $goal] = goalProgressLine();
+    $evaluationPage = route('performance-evaluations.show', $goal->performanceEvaluation);
+
+    foreach ([$cara, $ben] as $actor) {
+        actingAs($actor)->get($evaluationPage)
+            ->assertInertia(fn (Assert $page) => $page->where('canChangeProgress', true));
+    }
+
+    actingAs($cara)->from($evaluationPage)->put(progressRoute($goal), ['progress' => 'at-risk'])
+        ->assertRedirect($evaluationPage);
+
+    expect($goal->fresh()?->progress)->toBe(Progress::AtRisk)
+        ->and($goal->progressChanges()->sole()->changed_by_id)->toBe($cara->id);
+});
+
 it('keeps no change when the Progress stays the same', function () {
     [, , $cara, $goal] = goalProgressLine();
 
@@ -128,6 +144,8 @@ it('lets readers of the Performance Evaluation see the Progress but not change i
         ->assertInertia(fn (Assert $page) => $page
             ->where('goal.progress', 'not-started')
             ->where('canChangeProgress', false));
+    actingAs($actor)->get(route('performance-evaluations.show', $goal->performanceEvaluation))
+        ->assertInertia(fn (Assert $page) => $page->where('canChangeProgress', false));
     actingAs($actor)->put(progressRoute($goal), ['progress' => 'done'])->assertForbidden();
 
     expect($goal->fresh()?->progress)->toBe(Progress::NotStarted);
@@ -161,7 +179,8 @@ it('refuses changing Progress once the Performance Evaluation is Completed, and 
     [, $ben, $cara, $goal] = goalProgressLine();
     $evaluation = $goal->performanceEvaluation;
     $assess = app(AssessPerformanceEvaluation::class);
-    $assess->complete($evaluation, [$goal->id => Outcome::Met], Outcome::Met, 'Good year.');
+    $goal->forceFill(['outcome' => Outcome::Met])->save();
+    $assess->complete($evaluation, Outcome::Met, 'Good year.');
 
     actingAs($cara)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canChangeProgress', false));
     actingAs($cara)->put(progressRoute($goal), ['progress' => 'done'])->assertForbidden();
@@ -177,8 +196,9 @@ it('completes a Performance Evaluation whatever its Goals\' Progress', function 
     [, $ben, , $goal] = goalProgressLine();
     actingAs($ben)->put(progressRoute($goal), ['progress' => 'at-risk']);
 
+    $goal->forceFill(['outcome' => Outcome::NotMet])->save();
+
     actingAs($ben)->post(route('performance-evaluations.completion.store', $goal->performanceEvaluation), [
-        'goals' => [['id' => $goal->id, 'outcome' => 'not-met']],
         'outcome' => 'partly-met',
         'summary' => 'The Checkout API slipped.',
     ]);
@@ -212,7 +232,8 @@ it('offers Change and Remove on the Goal\'s page only to the effective Manager w
     actingAs($cara)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', false));
     actingAs($ana)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', false));
 
-    app(AssessPerformanceEvaluation::class)->complete($goal->performanceEvaluation, [$goal->id => Outcome::Met], Outcome::Met, 'Good year.');
+    $goal->forceFill(['outcome' => Outcome::Met])->save();
+    app(AssessPerformanceEvaluation::class)->complete($goal->performanceEvaluation, Outcome::Met, 'Good year.');
 
     actingAs($ben)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', false));
 });

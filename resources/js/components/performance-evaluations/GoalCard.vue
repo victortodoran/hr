@@ -3,7 +3,10 @@ import { Link } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { MessageSquare, MoreHorizontal } from '@lucide/vue';
 import GoalController from '@/actions/App/Http/Controllers/Performance/GoalController';
+import GoalOutcomeController from '@/actions/App/Http/Controllers/Performance/GoalOutcomeController';
+import GoalProgressController from '@/actions/App/Http/Controllers/Performance/GoalProgressController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
+import SavedTick from '@/components/SavedTick.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -20,17 +23,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { goalRemovalWarning } from '@/lib/goals';
 import { outcomes } from '@/lib/outcomes';
+import { progresses } from '@/lib/progress';
 import { show } from '@/routes/performance-evaluations/goals';
-import type { AssessedGoal, Outcome } from '@/types';
+import type { AssessedGoal, Outcome, Progress } from '@/types';
 
 /**
  * One Goal on its Performance Evaluation's page: its number, its title
  * linking to its own page, its description, its Progress and how many
- * Comments it has. Whoever may edit gives its Outcome here and, from its
- * menu, changes it on its own page, opened with the fields showing, or
- * removes it; anyone else who may see Outcomes reads the one given.
+ * Comments it has. The Employee and their Manager change its Progress
+ * here while it is Open, and whoever may edit gives, changes or clears
+ * its Outcome; both save as soon as they are picked. Whoever may edit
+ * also, from its menu, changes it on its own page, opened with the fields
+ * showing, or removes it; anyone else who may see Outcomes reads the one
+ * given.
  */
 const props = defineProps<{
     goal: AssessedGoal;
@@ -39,12 +47,11 @@ const props = defineProps<{
     performanceEvaluationId: number;
     /** Whether the viewer may change or remove it and give its Outcome. */
     canEdit: boolean;
+    /** Whether the viewer may change its Progress. */
+    canChangeProgress: boolean;
     /** Whether the viewer sees its Outcome. */
     canSeeOutcomes: boolean;
 }>();
-
-/** The Outcome the Manager is giving it, empty while not given. */
-const outcome = defineModel<Outcome | ''>('outcome', { default: '' });
 
 /** Whether the question before removing it is showing. */
 const confirmingRemoval = ref(false);
@@ -53,6 +60,25 @@ const goalRoute = computed(() => ({
     performanceEvaluation: props.performanceEvaluationId,
     goal: props.goal.id,
 }));
+
+/** The Progress dropdown, which saves what is picked straight away. */
+const progress = useSaveOnPick<Progress>({
+    saved: () => props.goal.progress,
+    url: () => GoalProgressController.update.url(goalRoute.value),
+    field: 'progress',
+    label: 'Progress',
+});
+
+/** The Outcome dropdown's choice for none, which clears it. */
+const notGiven = 'not-given';
+
+/** The Outcome dropdown, which saves what is picked straight away. */
+const outcome = useSaveOnPick<Outcome | null>({
+    saved: () => props.goal.outcome,
+    url: () => GoalOutcomeController.update.url(goalRoute.value),
+    field: 'outcome',
+    label: 'Outcome',
+});
 
 /** "No comments", "1 comment" or "3 comments". */
 const commentCountLabel = computed(() => {
@@ -125,7 +151,35 @@ const commentCountLabel = computed(() => {
                 <div
                     class="flex items-center gap-3.5 text-sm text-muted-foreground"
                 >
-                    <StatusBadge :state="goal.progress" />
+                    <div
+                        v-if="canChangeProgress"
+                        class="flex items-center gap-2"
+                    >
+                        <Select
+                            :model-value="progress.chosen.value"
+                            :disabled="progress.saving.value"
+                            @update:model-value="
+                                progress.save($event as Progress)
+                            "
+                        >
+                            <SelectTrigger
+                                class="w-36"
+                                :aria-label="`Progress of ${goal.title}`"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="(label, value) in progresses"
+                                    :key="value"
+                                    :value="value"
+                                    >{{ label }}</SelectItem
+                                >
+                            </SelectContent>
+                        </Select>
+                        <SavedTick :shown="progress.justSaved.value" />
+                    </div>
+                    <StatusBadge v-else :state="goal.progress" />
                     <span class="inline-flex items-center gap-1.5">
                         <MessageSquare class="size-3.5" aria-hidden="true" />
                         {{ commentCountLabel }}
@@ -138,19 +192,24 @@ const commentCountLabel = computed(() => {
                         >Outcome</span
                     >
                     <Select
-                        :name="`goals[${goal.id}][outcome]`"
-                        :model-value="outcome"
+                        :model-value="outcome.chosen.value ?? notGiven"
+                        :disabled="outcome.saving.value"
                         @update:model-value="
-                            outcome = $event ? ($event as Outcome) : ''
+                            outcome.save(
+                                $event === notGiven
+                                    ? null
+                                    : ($event as Outcome),
+                            )
                         "
                     >
                         <SelectTrigger
                             class="w-36"
                             :aria-label="`Outcome of ${goal.title}`"
                         >
-                            <SelectValue placeholder="Not given" />
+                            <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                            <SelectItem :value="notGiven">Not given</SelectItem>
                             <SelectItem
                                 v-for="(label, value) in outcomes"
                                 :key="value"
@@ -159,6 +218,7 @@ const commentCountLabel = computed(() => {
                             >
                         </SelectContent>
                     </Select>
+                    <SavedTick :shown="outcome.justSaved.value" />
                 </div>
                 <span
                     v-else-if="canSeeOutcomes && goal.outcome"

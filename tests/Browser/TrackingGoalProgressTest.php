@@ -45,6 +45,26 @@ it('opens a Goal from its Performance Evaluation, changes its Progress, and the 
     expect($goal->fresh()?->progress)->toBe(Progress::AtRisk);
 });
 
+it('changes a Goal\'s Progress from its card, kept in the Goal\'s history', function () {
+    $ben = managerBen();
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
+    $evaluation = PerformanceEvaluation::factory()->of($cara)->create();
+    $goal = Goal::factory()->for($evaluation)->create(['title' => 'Lead the Checkout API']);
+
+    actingAs($cara);
+
+    visit(route('performance-evaluations.show', $evaluation))
+        ->click('[aria-label="Progress of Lead the Checkout API"]')
+        ->click('internal:role=option[name="On Track"s]')
+        ->assertSee('Saved')
+        ->assertMissing('[aria-label="Outcome of Lead the Checkout API"]')
+        ->click('internal:role=link[name="Lead the Checkout API"s]')
+        ->assertSee('Cara changed it from Not Started')
+        ->assertNoJavaScriptErrors();
+
+    expect($goal->fresh()?->progress)->toBe(Progress::OnTrack);
+});
+
 it('puts the Progress back with a toast saying why when the Performance Evaluation was Completed meanwhile', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
@@ -56,7 +76,8 @@ it('puts the Progress back with a toast saying why when the Performance Evaluati
     $page = visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
         ->assertSee('The Goal was given');
 
-    app(AssessPerformanceEvaluation::class)->complete($evaluation, [$goal->id => Outcome::Met], Outcome::Met, 'Good year.');
+    $goal->forceFill(['outcome' => Outcome::Met])->save();
+    app(AssessPerformanceEvaluation::class)->complete($evaluation, Outcome::Met, 'Good year.');
 
     $page->click('#goal-progress')
         ->click('internal:role=option[name="Done"s]')
