@@ -6,6 +6,7 @@ use App\Http\Controllers\WorkEntries\WorkEntryController;
 use App\Http\Requests\WorkEntries\WorkEntryRequest;
 use App\Models\Assignment;
 use App\Models\Employee;
+use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use App\Policies\WorkEntryPolicy;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -90,6 +91,38 @@ it('refuses a date after today', function () {
     $response->assertInvalid(['date' => 'Work Entries can\'t be recorded for days still to come.']);
     assertDatabaseCount('work_entries', 0);
 });
+
+it('refuses hours on a day of the Employee\'s Pending or Approved Time Off', function (string $state) {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    $factory = TimeOff::factory()->for($cara);
+    ($state === 'approved' ? $factory->approved() : $factory)->create(['first_date' => '2026-11-09', 'last_date' => '2026-11-10']);
+
+    $response = actingAs($cara)->post(route('employees.work-entries.store', $cara), workEntryForm($relaunch, ['date' => '2026-11-10']));
+
+    $response->assertInvalid(['date' => 'Cara has Time Off on 10 Nov 2026, so no hours can be recorded that day.']);
+    assertDatabaseCount('work_entries', 0);
+})->with(['pending', 'approved']);
+
+it('accepts hours on a weekend inside Time Off, next to it, or over Declined, Cancelled or someone else\'s Time Off', function (string $date) {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    TimeOff::factory()->for($cara)->create(['first_date' => '2026-11-06', 'last_date' => '2026-11-09']);
+    TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-11-10', 'last_date' => '2026-11-10']);
+    TimeOff::factory()->for($cara)->cancelled()->create(['first_date' => '2026-11-11', 'last_date' => '2026-11-11']);
+    TimeOff::factory()->create(['first_date' => '2026-11-04', 'last_date' => '2026-11-04']);
+
+    actingAs($cara)->post(route('employees.work-entries.store', $cara), workEntryForm($relaunch, ['date' => $date]))
+        ->assertValid();
+
+    assertDatabaseHas('work_entries', ['date' => $date]);
+})->with([
+    'Saturday inside' => '2026-11-07',
+    'day before' => '2026-11-05',
+    'Declined' => '2026-11-10',
+    'Cancelled' => '2026-11-11',
+    'someone else\'s' => '2026-11-04',
+]);
 
 it('accepts the first and last day of the Assignment, and today', function (array $period, string $date) {
     $cara = recorder();

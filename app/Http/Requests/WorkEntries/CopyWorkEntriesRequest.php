@@ -56,7 +56,7 @@ class CopyWorkEntriesRequest extends FormRequest
             $date = $this->day();
             $replace = ['name' => $this->employee()->name, 'date' => $date->format('j M Y')];
 
-            if ($date->isWeekday() && $this->employee()->timeOff()->standing()->overlapping($date, $date)->exists()) {
+            if ($this->employee()->timeOff()->standing()->onDay($date)->exists()) {
                 $validator->errors()->add('date', __(':name has Time Off on :date, so nothing is copied onto it.', $replace));
 
                 return;

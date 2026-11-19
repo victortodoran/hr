@@ -36,7 +36,8 @@ class WorkEntryRequest extends FormRequest
 
     /**
      * Once the Assignment and date are valid on their own, check that the
-     * date falls within the Assignment.
+     * date falls within the Assignment and isn't a day of the Employee's
+     * Time Off, then the hours left on the day.
      *
      * @return array<int, Closure(Validator): void>
      */
@@ -52,6 +53,15 @@ class WorkEntryRequest extends FormRequest
 
             if ($date->isBefore($assignment->start_date) || ($assignment->end_date !== null && $date->isAfter($assignment->end_date))) {
                 $validator->errors()->add('date', $this->outsideAssignment($assignment));
+
+                return;
+            }
+
+            if ($this->employee()->timeOff()->standing()->onDay($date)->exists()) {
+                $validator->errors()->add('date', __(':name has Time Off on :date, so no hours can be recorded that day.', [
+                    'name' => $this->employee()->name,
+                    'date' => $date->format('j M Y'),
+                ]));
 
                 return;
             }

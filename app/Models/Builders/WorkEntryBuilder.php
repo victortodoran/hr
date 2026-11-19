@@ -8,6 +8,7 @@ use App\Models\Employee;
 use App\Models\WorkEntry;
 use App\Support\Period;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -68,6 +69,19 @@ class WorkEntryBuilder extends ModelBuilder
     {
         return $this->scoped(function (): void {
             $this->where($this->qualifyColumn('state'), '!=', WorkEntryState::Declined);
+        });
+    }
+
+    /**
+     * Limit the query to the Work Entries on a weekday from the first to the
+     * last date given.
+     */
+    public function onWeekdaysBetween(CarbonInterface $first, CarbonInterface $last): static
+    {
+        return $this->scoped(function () use ($first, $last): void {
+            $this->whereDate($this->qualifyColumn('date'), '>=', $first)
+                ->whereDate($this->qualifyColumn('date'), '<=', $last)
+                ->whereRaw('extract(isodow from work_entries.date) < 6');
         });
     }
 

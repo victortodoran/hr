@@ -5,6 +5,7 @@ use App\Enums\Scope;
 use App\Http\Controllers\WorkEntries\WorkEntryController;
 use App\Http\Requests\WorkEntries\WorkEntryRequest;
 use App\Models\Employee;
+use App\Models\TimeOff;
 use App\Models\WorkEntry;
 use App\Policies\WorkEntryPolicy;
 
@@ -65,6 +66,17 @@ it('leaves the Work Entry being corrected out of the 24-hour day', function () {
         ->assertValid();
 
     expect($workEntry->refresh()->minutes)->toBe(20 * 60);
+});
+
+it('refuses moving a Work Entry onto a day of the Employee\'s Time Off', function () {
+    $cara = recorder();
+    $workEntry = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10']);
+    TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-11-04', 'last_date' => '2026-11-04']);
+
+    actingAs($cara)->patch(route('work-entries.update', $workEntry), workEntryForm($workEntry->assignment, ['date' => '2026-11-04']))
+        ->assertInvalid(['date' => 'Cara has Time Off on 4 Nov 2026, so no hours can be recorded that day.']);
+
+    expect($workEntry->refresh()->date->toDateString())->toBe('2026-11-10');
 });
 
 it('refuses moving a Work Entry to another Employee\'s Assignment', function () {
