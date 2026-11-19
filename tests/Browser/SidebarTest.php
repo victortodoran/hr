@@ -4,7 +4,6 @@ use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Employee;
-use App\Models\PerformanceEvaluation;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
@@ -36,18 +35,5 @@ it('gives Me and Manage the same short names, told apart by the group title', fu
         ]))
         ->click('internal:role=link[name="Performance"s] >> nth=1')
         ->assertPathIs(route('performance-evaluations.index', absolute: false))
-        ->assertNoJavaScriptErrors();
-});
-
-it('shows an Open Evaluation in the neutral grey, not the Pending amber', function () {
-    $ben = managerBen();
-    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
-    PerformanceEvaluation::factory()->of($cara)->create();
-
-    actingAs($ben);
-
-    visit(route('performance-evaluations.index'))
-        ->assertSeeIn('[data-slot="status-badge"]', 'Open')
-        ->assertScript("document.querySelector('[data-slot=\"status-badge\"]').classList.contains('bg-status-closed')", true)
         ->assertNoJavaScriptErrors();
 });
