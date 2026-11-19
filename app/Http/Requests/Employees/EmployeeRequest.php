@@ -178,14 +178,17 @@ class EmployeeRequest extends FormRequest
     }
 
     /**
-     * Whether the email is a Former Employee's, so the person is likely being
-     * rehired, which takes a new address (ADR 0001).
+     * Whether a new Employee is being added with a Former Employee's email,
+     * so the person is likely being rehired, which takes a new address
+     * (ADR 0001).
      */
     private function belongsToFormerEmployee(): bool
     {
-        return is_string($this->input('email')) && Employee::query()
-            ->where('email', $this->input('email'))
-            ->inEmploymentStatus(EmploymentStatus::Former)
-            ->exists();
+        return $this->route('employee') === null
+            && is_string($this->input('email'))
+            && Employee::query()
+                ->where('email', $this->input('email'))
+                ->inEmploymentStatus(EmploymentStatus::Former)
+                ->exists();
     }
 }

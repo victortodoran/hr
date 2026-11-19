@@ -209,6 +209,7 @@ it('rejects invalid values and explains why', function (string $option, string $
     'currency not three letters' => ['--currency', 'euro', 'three-letter code'],
     'currency with a digit' => ['--currency', 'E1R', 'three-letter code'],
     'three letters that are no currency' => ['--currency', 'ABC', 'currency in use'],
+    'currency no longer in use' => ['--currency', 'DEM', 'currency in use'],
     'invalid email' => ['--email', 'not-an-email', 'valid email'],
     'company name too long' => ['--company', str_repeat('a', 256), 'company'],
     'Department name too long' => ['--department', str_repeat('a', 256), 'department'],
