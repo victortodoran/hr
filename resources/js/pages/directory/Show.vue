@@ -25,7 +25,7 @@ setLayoutProps({
 <template>
     <Head :title="`${reportingChain.employee.name}'s Reporting Chain`" />
 
-    <div class="mx-auto flex w-full max-w-xl flex-col gap-6 p-4">
+    <div class="flex max-w-xl flex-col gap-6 p-4">
         <div class="flex items-start justify-between gap-4">
             <Heading
                 :title="`${reportingChain.employee.name}'s Reporting Chain`"
