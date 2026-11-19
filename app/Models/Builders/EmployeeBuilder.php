@@ -3,9 +3,11 @@
 namespace App\Models\Builders;
 
 use App\Enums\EmploymentStatus;
+use App\Enums\PerformanceEvaluationState;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Models\Employee;
+use App\Models\PerformanceEvaluation;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -185,6 +187,52 @@ class EmployeeBuilder extends ModelBuilder
         return $this->scoped(function () use ($year): void {
             $this->employedDuring($year)
                 ->whereDoesntHave('performanceEvaluations', fn (PerformanceEvaluationBuilder $evaluations) => $evaluations->where('year', $year));
+        });
+    }
+
+    /**
+     * Limit the query to Employees who have a Performance Evaluation for the
+     * year, only an Open or only a Completed one when a state is given.
+     */
+    public function withPerformanceEvaluationFor(int $year, ?PerformanceEvaluationState $state = null): static
+    {
+        return $this->scoped(function () use ($year, $state): void {
+            $this->whereHas('performanceEvaluations', fn (PerformanceEvaluationBuilder $evaluations) => $evaluations
+                ->where('year', $year)
+                ->when($state, fn (PerformanceEvaluationBuilder $inState, PerformanceEvaluationState $state) => $inState->where('state', $state)));
+        });
+    }
+
+    /**
+     * Limit the query to Employees whose Performance Evaluation for the year
+     * is still to be created: they have a Manager, aren't Former today,
+     * work for the company on some day of the year and have none for it.
+     */
+    public function withNoPerformanceEvaluationYetFor(int $year): static
+    {
+        return $this->scoped(function () use ($year): void {
+            $this->whereNotNull('manager_id')
+                ->notFormer()
+                ->awaitingPerformanceEvaluationFor($year);
+        });
+    }
+
+    /**
+     * Limit the query to the Employees the given Employee may create a
+     * Performance Evaluation for the year for: those they effectively
+     * manage who are awaiting one for it, and nobody unless it is the
+     * current or the next year.
+     */
+    public function awaitingPerformanceEvaluationFrom(Employee $manager, int $year): static
+    {
+        return $this->scoped(function () use ($manager, $year): void {
+            if (! in_array($year, PerformanceEvaluation::creatableYears(), true)) {
+                $this->whereRaw('false');
+
+                return;
+            }
+
+            $this->effectivelyManagedBy($manager)->awaitingPerformanceEvaluationFor($year);
         });
     }
 

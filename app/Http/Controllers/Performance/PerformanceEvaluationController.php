@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Performance;
 
 use App\Actions\CreatePerformanceEvaluation;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Performance\NewPerformanceEvaluationRequest;
 use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
 use App\Http\Requests\Performance\PerformanceEvaluationRequest;
 use App\Models\Employee;
@@ -29,23 +30,24 @@ class PerformanceEvaluationController extends Controller
      * Show, for one year, the Employees whose Performance Evaluations the
      * viewer may open here (those they effectively manage, and those one of
      * the Permissions for reading them reaches) who have one for it,
-     * Former Employees included, by name, with that Performance
-     * Evaluation, and whether the viewer may create any. The years to
-     * choose from run back from the next one to the earliest Start Date
-     * among those Employees.
+     * Former Employees included, or are still due one, by name, with that
+     * Performance Evaluation or a way to create it, optionally narrowed to
+     * part of a name or one state.
      */
     public function index(PerformanceEvaluationListRequest $request, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationListPage::props($actor, $request->year()));
+        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationListPage::props($actor, $request->year(), $request->search(), $request->state()));
     }
 
     /**
      * Show the New Performance Evaluation page: the current and the next
-     * year, each with the Employees the viewer may create one for.
+     * year, each with the Employees the viewer may create one for, with
+     * the year and Employee in the query string chosen when they're among
+     * them.
      */
-    public function create(#[CurrentUser] Employee $actor): Response
+    public function create(NewPerformanceEvaluationRequest $request, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/Create', PerformanceEvaluationFormPage::create($actor));
+        return Inertia::render('performance-evaluations/Create', PerformanceEvaluationFormPage::create($actor, $request->year(), $request->employeeId()));
     }
 
     /**

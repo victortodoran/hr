@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
 use App\Policies\PerformanceEvaluationPolicy;
+use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -90,10 +91,10 @@ it('offers the Performance Evaluations page only to Employees who effectively ma
     actingAs($cara)->get(route('performance-evaluations.index'))->assertForbidden();
 });
 
-it('lists, for the year, the Employees the viewer effectively manages who have an Evaluation for it, and offers creating one', function () {
+it('lists, for the year, the Employees the viewer effectively manages, with their Evaluation for it or None yet, and offers creating one', function () {
     $ben = managerBen();
     $cara = caraReportingTo($ben);
-    Employee::factory()->reportingTo($ben)->create(['name' => 'Dan', 'start_date' => '2026-12-14']);
+    $dan = Employee::factory()->reportingTo($ben)->create(['name' => 'Dan', 'start_date' => '2026-12-14']);
     $zed = Employee::factory()->startedLongAgo()->create(['name' => 'Zed']);
     PerformanceEvaluation::factory()->of($zed)->create();
     $evaluation = PerformanceEvaluation::factory()->of($cara)->has(Goal::factory()->count(3))->create();
@@ -105,11 +106,12 @@ it('lists, for the year, the Employees the viewer effectively manages who have a
             ->where('years', [2027, 2026, 2025])
             ->where('canCreate', true)
             ->where('employees.data', [
-                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3, 'at_risk_goals_count' => 0, 'outcome' => null]],
+                ['id' => $cara->id, 'name' => 'Cara', 'can_create' => false, 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3, 'at_risk_goals_count' => 0, 'outcome' => null]],
+                ['id' => $dan->id, 'name' => 'Dan', 'can_create' => true, 'evaluation' => null],
             ]));
 });
 
-it('shows another year with the Employees who have an Evaluation for it, Former Employees included', function () {
+it('shows another year with the Employees who have an Evaluation for it, Former Employees included, and those with None yet, too late to create', function () {
     $ben = managerBen();
     $cara = caraReportingTo($ben);
     $ola = Employee::factory()->reportingTo($ben)->create(['name' => 'Ola', 'start_date' => '2020-01-06', 'leaving_date' => '2025-12-31']);
@@ -120,7 +122,8 @@ it('shows another year with the Employees who have an Evaluation for it, Former 
         ->assertInertia(fn (Assert $page) => $page
             ->where('year', 2025)
             ->where('employees.data', [
-                ['id' => $ola->id, 'name' => 'Ola', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null]],
+                ['id' => $cara->id, 'name' => 'Cara', 'can_create' => false, 'evaluation' => null],
+                ['id' => $ola->id, 'name' => 'Ola', 'can_create' => false, 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null]],
             ]));
 });
 
@@ -140,7 +143,8 @@ it('lists the Reports of a Manager who has left under the next Manager up', func
     PerformanceEvaluation::factory()->of($ben)->create();
 
     actingAs($ana)->get(route('performance-evaluations.index'))
-        ->assertInertia(fn (Assert $page) => $page->count('employees.data', 1)->where('employees.data.0.name', 'Ben'));
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('employees.data', fn (Collection $rows): bool => $rows->map(fn (array $row): array => [$row['name'], $row['can_create']])->all() === [['Ben', false], ['Cara', true]]));
     actingAs($ana)->post(route('performance-evaluations.store'), ['year' => 2026, 'employee_id' => $cara->id])->assertRedirect();
     expect($cara->performanceEvaluations()->sole()->year)->toBe(2026);
 });

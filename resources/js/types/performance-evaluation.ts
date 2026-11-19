@@ -32,11 +32,13 @@ export type OwnPerformanceEvaluation = {
 
 /**
  * One Employee on the Performance Evaluations page, with their Performance
- * Evaluation for the year shown.
+ * Evaluation for the year shown, or null while they have none yet.
  */
 export type PerformanceEvaluationRow = {
     id: number;
     name: string;
+    /** Whether the viewer may create their Performance Evaluation for the year. */
+    can_create: boolean;
     evaluation: {
         id: number;
         state: PerformanceEvaluationState;
@@ -45,7 +47,7 @@ export type PerformanceEvaluationRow = {
         at_risk_goals_count: number;
         /** The Outcome of the whole, once Completed. */
         outcome: Outcome | null;
-    };
+    } | null;
 };
 
 /**
