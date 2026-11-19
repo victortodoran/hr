@@ -48,7 +48,7 @@ it('shows an Employee their own record, with no Assignments or Pay when they may
         );
 });
 
-it('shows a Manager who also holds the Employee Role their own record, Assignments with Pay and Time Off on their Profile', function () {
+it('shows a Manager who also holds the Employee Role their own record, Assignments with Pay, and Time Off with Paid Days on their Profile', function () {
     CompanySettings::factory()->create();
     $ben = employeeWith([
         Permission::ViewEmployeeRecords->value => Scope::Own,
@@ -72,7 +72,7 @@ it('shows a Manager who also holds the Employee Role their own record, Assignmen
     get(route('employees.show', ['employee' => $ben, 'tab' => 'assignments']))
         ->assertInertia(fn (Assert $page) => $page->has('assignments.0.pay'));
     get(route('employees.show', ['employee' => $ben, 'tab' => 'time-off']))
-        ->assertInertia(fn (Assert $page) => $page->whereNot('timeOff', null));
+        ->assertInertia(fn (Assert $page) => $page->where('timeOff.paid_days', $ben->paid_days)->has('timeOff.paid_days_left'));
 });
 
 it('opens an Employee\'s page to a viewer who may only see their Assignments, without their record', function () {

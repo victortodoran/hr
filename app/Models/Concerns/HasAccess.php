@@ -117,7 +117,7 @@ trait HasAccess
      */
     public function reachesThrough(array $permissions, Employee $target): bool
     {
-        return $this->scopesThrough($permissions)->contains(fn (Scope $scope): bool => $scope->covers($this, $target));
+        return $this->scopesGivenFor($permissions)->contains(fn (Scope $scope): bool => $scope->covers($this, $target));
     }
 
     /**
@@ -127,7 +127,7 @@ trait HasAccess
      */
     public function reachesOthersThrough(array $permissions): bool
     {
-        return $this->scopesThrough($permissions)->contains(fn (Scope $scope): bool => $scope->coversOthers());
+        return $this->scopesGivenFor($permissions)->contains(fn (Scope $scope): bool => $scope->coversOthers());
     }
 
     /**
@@ -139,7 +139,7 @@ trait HasAccess
      */
     public function limitToReachOf(EmployeeBuilder $employees, array $permissions): void
     {
-        $scopes = $this->scopesThrough($permissions);
+        $scopes = $this->scopesGivenFor($permissions);
 
         $employees->where(function (EmployeeBuilder $covered) use ($scopes): void {
             $covered->whereRaw('false');
@@ -195,12 +195,12 @@ trait HasAccess
     }
 
     /**
-     * Every Scope any of the Permissions reaches with for the Employee.
+     * Every Scope the Employee's Roles give for any of the Permissions.
      *
      * @param  list<Permission>  $permissions
      * @return Collection<int, Scope>
      */
-    private function scopesThrough(array $permissions): Collection
+    private function scopesGivenFor(array $permissions): Collection
     {
         return collect($permissions)
             ->flatMap(fn (Permission $permission): array => $this->reachOf($permission))
