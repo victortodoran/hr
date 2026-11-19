@@ -100,7 +100,7 @@ it('lets the Manager change the Goal on its page, then remove it from there', fu
     actingAs($ben);
 
     visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
-        ->click('internal:role=button[name="Edit"s]')
+        ->click('internal:role=button[name="Change"s]')
         ->fill('#goal-title', 'Lead the Payments API')
         ->click('Save Goal')
         ->assertSee('Goal changed.')

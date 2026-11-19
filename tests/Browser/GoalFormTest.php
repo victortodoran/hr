@@ -54,7 +54,7 @@ it('opens a Goal\'s fields on its page from the card\'s Change, keeps them open 
         ->assertMissing('#goal-title')
         ->assertSee('Lead the Checkout API')
         ->assertSee('Own its design.')
-        ->click('internal:role=button[name="Edit"s]')
+        ->click('internal:role=button[name="Change"s]')
         ->assertValue('#goal-title', 'Lead the Checkout API')
         ->assertDontSee('The title field is required.')
         ->assertNoJavaScriptErrors();
