@@ -130,6 +130,18 @@ class EmployeeBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to the Employees whose Time Off the given Employee may
+     * see, through the Permissions that show it (Permission::seeingTimeOff()),
+     * matching EmployeePolicy::viewTimeOffAndPaidDays().
+     */
+    public function withTimeOffVisibleTo(Employee $viewer): static
+    {
+        return $this->scoped(function () use ($viewer): void {
+            $viewer->limitToReachOf($this, Permission::seeingTimeOff());
+        });
+    }
+
+    /**
      * Limit the query to the Employees whose Performance Evaluations the
      * given Employee may open from the Performance Evaluations page: those
      * whose effective Manager they are, and those a Permission for reading

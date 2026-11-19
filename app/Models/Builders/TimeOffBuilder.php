@@ -4,7 +4,9 @@ namespace App\Models\Builders;
 
 use App\Enums\TimeOffState;
 use App\Models\TimeOff;
+use App\Support\Period;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Every reusable query on Time Off.
@@ -87,6 +89,21 @@ class TimeOffBuilder extends ModelBuilder
     {
         return $this->scoped(function () use ($day): void {
             $this->overlapping($day, $day)->when($day->isWeekend(), fn (self $none) => $none->whereRaw('false'));
+        });
+    }
+
+    /**
+     * Limit the query to the filters given, each optional: an Employee, by
+     * ID, a Period it has at least one date in, and a state.
+     *
+     * @param  array{employee?: int|null, period?: Period|null, state?: string|null}  $filters
+     */
+    public function filteredBy(array $filters): static
+    {
+        return $this->scoped(function () use ($filters): void {
+            $this->when($filters['employee'] ?? null, fn (Builder $timeOff, int $employee) => $timeOff->where($timeOff->qualifyColumn('employee_id'), $employee))
+                ->when($filters['period'] ?? null, fn (self $timeOff, Period $period) => $timeOff->overlapping($period->from, $period->to))
+                ->when($filters['state'] ?? null, fn (Builder $timeOff, string $state) => $timeOff->where($timeOff->qualifyColumn('state'), $state));
         });
     }
 

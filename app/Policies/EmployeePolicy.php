@@ -38,15 +38,15 @@ class EmployeePolicy
     }
 
     /**
-     * Seeing an Employee's Time Off and Paid Days needs view time off for
-     * them, or manage paid days, since setting their Paid Days means
-     * seeing them. It isn't named viewTimeOff, since the Gate would then
-     * send the Permission's own check back here.
+     * Seeing an Employee's Time Off and Paid Days needs one of the
+     * Permissions for seeing Time Off (Permission::seeingTimeOff()) to reach
+     * them: view time off, or manage paid days, since setting their Paid
+     * Days means seeing them. It isn't named viewTimeOff, since the Gate
+     * would then send the Permission's own check back here.
      */
     public function viewTimeOffAndPaidDays(Employee $actor, Employee $employee): bool
     {
-        return $actor->can(Permission::ViewTimeOff->value, $employee)
-            || $this->setPaidDays($actor, $employee);
+        return $actor->reachesThrough(Permission::seeingTimeOff(), $employee);
     }
 
     /**

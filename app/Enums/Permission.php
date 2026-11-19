@@ -144,6 +144,19 @@ enum Permission: string
     }
 
     /**
+     * The Permissions that let someone see an Employee's Time Off: viewing
+     * it, or managing their Paid Days, as setting Paid Days means seeing
+     * the Time Off that uses them. The one list the policy, the Time Off
+     * page across Employees and the flags use.
+     *
+     * @return list<Permission>
+     */
+    public static function seeingTimeOff(): array
+    {
+        return [self::ViewTimeOff, self::ManagePaidDays];
+    }
+
+    /**
      * The Permissions that let someone read an Employee's Performance
      * Evaluations without writing them: viewing them, or reopening them, as
      * you can always see what you can act on. The one list the policy, the

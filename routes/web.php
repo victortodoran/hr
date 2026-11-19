@@ -29,6 +29,7 @@ use App\Http\Controllers\TimeOff\TimeOffApprovalController;
 use App\Http\Controllers\TimeOff\TimeOffCancellationController;
 use App\Http\Controllers\TimeOff\TimeOffController;
 use App\Http\Controllers\TimeOff\TimeOffDeclineController;
+use App\Http\Controllers\TimeOff\TimeOffListController;
 use App\Http\Controllers\TimeOff\TimeOffPreviewController;
 use App\Http\Controllers\Travel\TravelExpenseApprovalController;
 use App\Http\Controllers\Travel\TravelExpenseController;
@@ -51,6 +52,7 @@ use App\Models\Assignment;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
 use App\Models\Project;
+use App\Models\TimeOff;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
@@ -110,6 +112,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('work-entries/{workEntry}', [WorkEntryController::class, 'destroy'])->middleware('can:delete,workEntry')->name('work-entries.destroy');
 
     Route::get('time-off', [TimeOffController::class, 'index'])->name('time-off.index');
+    Route::get('time-off/all', [TimeOffListController::class, 'index'])->middleware('can:viewList,'.TimeOff::class)->name('time-off-list.index');
     Route::get('time-off/create', [TimeOffController::class, 'create'])->name('time-off.create');
     Route::get('time-off/preview', [TimeOffPreviewController::class, 'show'])->name('time-off.preview');
     Route::post('time-off', [TimeOffController::class, 'store'])->name('time-off.store');
