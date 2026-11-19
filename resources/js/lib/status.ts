@@ -15,14 +15,12 @@ export const statusLabels: Record<StatusBadgeState, string> = {
     'on-track': 'On Track',
     'at-risk': 'At Risk',
     done: 'Done',
-    'none-yet': 'None yet',
 };
 
 /**
  * Each state's status colour: Pending amber, Approved green, Declined red,
  * Cancelled grey, Upcoming blue, and a Performance Evaluation grey while
- * Open, since nothing waits on a decision, green once Completed, and
- * blue while there is None yet, since it hasn't started.
+ * Open, since nothing waits on a decision, and green once Completed.
  * A Goal's Progress is blue while Not Started, green On Track, orange At
  * Risk, since it needs attention, and grey once Done.
  */
@@ -38,7 +36,6 @@ export const statusColours: Record<StatusBadgeState, string> = {
     'on-track': 'bg-status-approved text-status-approved-foreground',
     'at-risk': 'bg-status-attention text-status-attention-foreground',
     done: 'bg-status-closed text-status-closed-foreground',
-    'none-yet': 'bg-status-upcoming text-status-upcoming-foreground',
 };
 
 /**

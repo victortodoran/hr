@@ -35,16 +35,11 @@ defineOptions({
 const props = defineProps<{
     /** The current year, then the next, each with who may get one. */
     years: CreatableYear[];
-    /** The year to start with: the one the link asked for, or the current one. */
-    chosenYear: number;
-    /** The Employee to start with, when the link asked for one of the year's. */
-    chosenEmployeeId: number | null;
 }>();
 
 const form = useForm({
-    year: props.chosenYear,
-    employee_id:
-        props.chosenEmployeeId === null ? '' : String(props.chosenEmployeeId),
+    year: props.years[0].year,
+    employee_id: '',
 });
 
 const employees = computed(

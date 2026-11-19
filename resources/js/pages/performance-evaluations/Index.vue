@@ -19,6 +19,7 @@ import type {
     FilterChoice,
     Paginated,
     PerformanceEvaluationRow,
+    PerformanceEvaluationState,
     TableColumn,
 } from '@/types';
 
@@ -30,16 +31,16 @@ defineOptions({
 
 /**
  * For one year, the Employees the viewer effectively manages or may read
- * the Performance Evaluations of who have one for it or are still due
- * one, each with that Performance Evaluation or None yet, and a way to
- * create it when the viewer may. An Employee's page links here narrowed
- * to them, which the bar shows as an Employee to clear.
+ * the Performance Evaluations of who have one for it, each with that
+ * Performance Evaluation; New Evaluation starts one for those still
+ * without. An Employee's page links here narrowed to them, which the bar
+ * shows as an Employee to clear.
  */
 const props = defineProps<{
     year: number;
     years: number[];
     search: string;
-    state: 'open' | 'completed' | 'none-yet' | null;
+    state: PerformanceEvaluationState | null;
     /** The one Employee the list is narrowed to, null when it isn't. */
     employee: Choice | null;
     canCreate: boolean;
@@ -60,7 +61,6 @@ const yearChoices = props.years.map((option) => ({
 const states: FilterChoice[] = [
     { value: 'open', label: 'Open' },
     { value: 'completed', label: 'Completed' },
-    { value: 'none-yet', label: 'None yet' },
 ];
 
 const employeeChoices: FilterChoice[] = props.employee
@@ -120,39 +120,16 @@ const filters = useListFilters(index.url, {
         <DataTable :columns="columns" :rows="employees.data">
             <template #cell-name="{ row }">
                 <Link
-                    v-if="row.evaluation"
                     :href="show(row.evaluation.id)"
                     class="font-medium underline-offset-4 hover:underline"
                     >{{ row.name }}</Link
                 >
-                <span v-else class="font-medium">{{ row.name }}</span>
             </template>
             <template #cell-goals="{ row }">
-                <template v-if="row.evaluation">{{
-                    row.evaluation.goals_count
-                }}</template>
-                <span v-else class="text-muted-foreground">—</span>
+                {{ row.evaluation.goals_count }}
             </template>
             <template #cell-state="{ row }">
                 <div
-                    v-if="!row.evaluation"
-                    class="flex items-center justify-end gap-2 whitespace-nowrap"
-                >
-                    <StatusBadge state="none-yet" />
-                    <Button v-if="row.can_create" size="sm" as-child>
-                        <Link
-                            :aria-label="`Create ${row.name}'s ${year} Evaluation`"
-                            :href="
-                                create({
-                                    query: { year, employee_id: row.id },
-                                })
-                            "
-                            >Create</Link
-                        >
-                    </Button>
-                </div>
-                <div
-                    v-else
                     class="flex items-center justify-end gap-2 whitespace-nowrap"
                 >
                     <span

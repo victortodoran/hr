@@ -7,7 +7,6 @@ use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
 use App\Models\Builders\EmployeeBuilder;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
-use App\Pages\Performance\PerformanceEvaluationFormPage;
 use App\Pages\Performance\PerformanceEvaluationListPage;
 use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -15,14 +14,14 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(PerformanceEvaluationController::class, PerformanceEvaluationListRequest::class, PerformanceEvaluationListPage::class, PerformanceEvaluationFormPage::class, EmployeeBuilder::class);
+covers(PerformanceEvaluationController::class, PerformanceEvaluationListRequest::class, PerformanceEvaluationListPage::class, EmployeeBuilder::class);
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
 /**
- * Ben's Reports for 2026: Cara with none yet, Dan with an Open one, Eva
- * with a Completed one whose Outcome is Met, and Ola, who left without
- * one; and Zed, who has no Manager.
+ * Ben's Reports for 2026: Cara without an Evaluation, Dan with an Open
+ * one, Eva with a Completed one whose Outcome is Met, and Ola, who left
+ * without one; and Zed, who has no Manager.
  *
  * @return array{Employee, Employee, Employee, Employee}
  */
@@ -41,9 +40,8 @@ function evaluationsListLine(): array
 }
 
 /**
- * Assert the page's rows for the viewer, each as its name, state
- * ("none-yet" without an Evaluation), Outcome and whether the viewer may
- * create it.
+ * Assert the page's rows for the viewer, each as its name, its
+ * Evaluation's state and its Outcome.
  *
  * @param  array<string, string>  $query
  * @param  array<mixed>  $expected
@@ -52,43 +50,39 @@ function assertEvaluationsListRows(Employee $viewer, array $query, array $expect
 {
     actingAs($viewer)->get(route('performance-evaluations.index', $query))
         ->assertInertia(fn (Assert $page) => $page->where('employees.data', fn (Collection $rows): bool => $rows
-            ->map(fn (array $row): array => [$row['name'], $row['evaluation']['state'] ?? 'none-yet', $row['evaluation']['outcome'] ?? null, $row['can_create']])
+            ->map(fn (array $row): array => [$row['name'], $row['evaluation']['state'], $row['evaluation']['outcome']])
             ->all() === $expected));
 }
 
-it('lists the Manager\'s Reports without an Evaluation as None yet, with Create, but not those without a Manager or who left without one', function () {
+it('lists only the Manager\'s Reports who have an Evaluation for the year, not those still without one', function () {
     [$ben] = evaluationsListLine();
 
     assertEvaluationsListRows($ben, [], [
-        ['Cara', 'none-yet', null, true],
-        ['Dan', 'open', null, false],
-        ['Eva', 'completed', 'met', false],
+        ['Dan', 'open', null],
+        ['Eva', 'completed', 'met'],
     ]);
 });
 
-it('shows a reader None yet without Create, and an Outcome only once Completed', function () {
+it('shows a reader the Evaluations they may read, and an Outcome only once Completed', function () {
     evaluationsListLine();
     $dana = employeeWith([Permission::ViewPerformanceEvaluations->value => Scope::Everyone], ['name' => 'Dana']);
 
     assertEvaluationsListRows($dana, [], [
-        ['Ben', 'none-yet', null, false],
-        ['Cara', 'none-yet', null, false],
-        ['Dan', 'open', null, false],
-        ['Eva', 'completed', 'met', false],
+        ['Dan', 'open', null],
+        ['Eva', 'completed', 'met'],
     ]);
 });
 
-it('lists only the Employees with an Evaluation for a past year, without None yet rows', function () {
-    [$ben, , $dan] = evaluationsListLine();
+it('lists only the Employees with an Evaluation for a past or the next year', function () {
+    [$ben, $cara, $dan] = evaluationsListLine();
     PerformanceEvaluation::factory()->of($dan)->create(['year' => 2025]);
+    PerformanceEvaluation::factory()->of($cara)->create(['year' => 2027]);
 
     assertEvaluationsListRows($ben, ['year' => '2025'], [
-        ['Dan', 'open', null, false],
+        ['Dan', 'open', null],
     ]);
     assertEvaluationsListRows($ben, ['year' => '2027'], [
-        ['Cara', 'none-yet', null, true],
-        ['Dan', 'none-yet', null, true],
-        ['Eva', 'none-yet', null, true],
+        ['Cara', 'open', null],
     ]);
 });
 
@@ -97,44 +91,36 @@ it('narrows the list to one state and to part of a name', function (array $query
 
     assertEvaluationsListRows($ben, $query, $expected);
 })->with([
-    'Completed' => [['state' => 'completed'], [['Eva', 'completed', 'met', false]]],
-    'Open' => [['state' => 'open'], [['Dan', 'open', null, false]]],
-    'None yet' => [['state' => 'none-yet'], [['Cara', 'none-yet', null, true]]],
-    'a name' => [['search' => 'ar'], [['Cara', 'none-yet', null, true]]],
+    'Completed' => [['state' => 'completed'], [['Eva', 'completed', 'met']]],
+    'Open' => [['state' => 'open'], [['Dan', 'open', null]]],
+    'a name' => [['search' => 'an'], [['Dan', 'open', null]]],
     'a name with no match' => [['search' => 'Eva', 'state' => 'open'], []],
 ]);
 
 it('narrows the list to one Employee the viewer may open the Evaluations of, giving them back for the filter bar, and ignores anyone else', function () {
-    [$ben, $cara] = evaluationsListLine();
+    [$ben, , $dan] = evaluationsListLine();
     $zed = Employee::query()->where('name', 'Zed')->sole();
 
-    assertEvaluationsListRows($ben, ['employee' => (string) $cara->id], [['Cara', 'none-yet', null, true]]);
-    actingAs($ben)->get(route('performance-evaluations.index', ['employee' => $cara->id]))
-        ->assertInertia(fn (Assert $page) => $page->where('employee', ['id' => $cara->id, 'name' => 'Cara']));
+    assertEvaluationsListRows($ben, ['employee' => (string) $dan->id], [['Dan', 'open', null]]);
+    actingAs($ben)->get(route('performance-evaluations.index', ['employee' => $dan->id]))
+        ->assertInertia(fn (Assert $page) => $page->where('employee', ['id' => $dan->id, 'name' => 'Dan']));
     actingAs($ben)->get(route('performance-evaluations.index', ['employee' => $zed->id]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('employee', null)
-            ->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === ['Cara', 'Dan', 'Eva']));
+            ->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === ['Dan', 'Eva']));
     actingAs($ben)->get(route('performance-evaluations.index', ['employee' => 'cara']))->assertSessionHasErrors('employee');
 });
 
-it('sends the filters back for the filter bar and refuses an unknown state', function () {
+it('sends the filters back for the filter bar, and shows any state for an unknown one', function (string $unknownState) {
     [$ben] = evaluationsListLine();
 
-    actingAs($ben)->get(route('performance-evaluations.index', ['search' => 'Ca', 'state' => 'none-yet']))
-        ->assertInertia(fn (Assert $page) => $page->where('search', 'Ca')->where('state', 'none-yet'));
+    actingAs($ben)->get(route('performance-evaluations.index', ['search' => 'Ev', 'state' => 'completed']))
+        ->assertInertia(fn (Assert $page) => $page->where('search', 'Ev')->where('state', 'completed'));
     actingAs($ben)->get(route('performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page->where('search', '')->where('state', null));
-    actingAs($ben)->get(route('performance-evaluations.index', ['state' => 'pending']))->assertSessionHasErrors('state');
-});
-
-it('opens the New Performance Evaluation page with the Employee and year from the list\'s Create, when they may get one', function () {
-    [$ben, $cara, $dan] = evaluationsListLine();
-
-    actingAs($ben)->get(route('performance-evaluations.create', ['year' => 2027, 'employee_id' => $cara->id]))
-        ->assertInertia(fn (Assert $page) => $page->where('chosenYear', 2027)->where('chosenEmployeeId', $cara->id));
-    actingAs($ben)->get(route('performance-evaluations.create', ['year' => 2026, 'employee_id' => $dan->id]))
-        ->assertInertia(fn (Assert $page) => $page->where('chosenYear', 2026)->where('chosenEmployeeId', null));
-    actingAs($ben)->get(route('performance-evaluations.create'))
-        ->assertInertia(fn (Assert $page) => $page->where('chosenYear', 2026)->where('chosenEmployeeId', null));
-});
+    actingAs($ben)->get(route('performance-evaluations.index', ['state' => $unknownState]))
+        ->assertSessionHasNoErrors()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('state', null)
+            ->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === ['Dan', 'Eva']));
+})->with(['the old None yet' => 'none-yet', 'a made-up one' => 'pending']);
