@@ -108,6 +108,6 @@ it('tells pages an Admin holder has every company-wide Permission, so the menu s
 
     actingAs($ana)->get(route('profile.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.can', [
-            'manage-clients', 'manage-company', 'manage-departments', 'manage-employees', 'manage-projects', 'manage-roles', 'view-directory', 'view-projects',
+            'add-employees', 'manage-clients', 'manage-company', 'manage-departments', 'manage-projects', 'manage-roles', 'view-directory', 'view-projects',
         ]));
 });

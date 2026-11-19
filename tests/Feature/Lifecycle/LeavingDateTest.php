@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Permission;
+use App\Enums\Scope;
 use App\Http\Controllers\Employees\EmployeeController;
 use App\Http\Requests\Employees\EmployeeRequest;
 use App\Models\Employee;
@@ -159,7 +160,7 @@ it('offers resending the invitation only while it can be resent', function (stri
 
 it('refuses a Leaving Date for the last Employee who could manage Roles, until someone else can', function () {
     $ada = reportingEmployee(['name' => 'Ada']);
-    $adminRole = giveRole($ada, [Permission::ManageRoles->value => null, Permission::ManageEmployees->value => null]);
+    $adminRole = giveRole($ada, [Permission::ManageRoles->value => null, Permission::ManageEmployees->value => Scope::Everyone]);
 
     actingAs($ada)
         ->patch(route('employees.update', $ada), recordWith($ada, ['leaving_date' => '2026-06-30']))

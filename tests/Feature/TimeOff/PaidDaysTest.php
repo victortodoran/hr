@@ -102,7 +102,7 @@ it('refuses setting Paid Days to someone without Manage Paid Days for the Employ
     expect(shownPaidDays($cara))->toBe(20);
 })->with([
     'no Permission' => [[]],
-    'managing Employees and Pay' => [[Permission::ManageEmployees->value => null, Permission::ManagePay->value => Scope::Everyone]],
+    'managing Employees and Pay' => [[Permission::ManageEmployees->value => Scope::Everyone, Permission::ManagePay->value => Scope::Everyone]],
     'Manage Paid Days for themselves only' => [[Permission::ManagePaidDays->value => Scope::Own]],
 ]);
 

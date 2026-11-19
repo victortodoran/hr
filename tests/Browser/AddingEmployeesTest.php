@@ -16,7 +16,7 @@ it('adds an Employee with their Job Title and lands on their Employee page', fun
     Notification::fake();
     Project::factory()->internal()->create();
     Department::factory()->create(['name' => 'Finance']);
-    $hr = employeeWith([Permission::ManageEmployees->value => null, Permission::ViewEmployeeRecords->value => Scope::Everyone]);
+    $hr = employeeWith([Permission::AddEmployees->value => null, Permission::ViewEmployeeRecords->value => Scope::Everyone]);
     $hr->update(['name' => 'Ana Popescu']);
 
     actingAs($hr);

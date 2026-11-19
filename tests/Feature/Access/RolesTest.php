@@ -46,18 +46,20 @@ it('shows an Employee who manages Roles every Role with its Permissions, Scopes 
 it('offers every Permission with the Scopes it can carry, in its group', function () {
     actingAs(employeeWhoManagesRoles())->get(route('roles.index'))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('permissions', 22)
+            ->has('permissions', 23)
             ->where('permissions.0', ['value' => 'view-employee-records', 'label' => 'View employee records', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Employees'])
-            ->where('permissions.6', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Work entries'])
-            ->where('permissions.7', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Work entries'])
-            ->where('permissions.8', ['value' => 'reopen-work-entries', 'label' => 'Reopen work entries', 'scopes' => ['reports', 'everyone'], 'group' => 'Work entries'])
-            ->where('permissions.9', ['value' => 'view-time-off', 'label' => 'View time off', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Time off'])
-            ->where('permissions.10', ['value' => 'manage-paid-days', 'label' => 'Manage paid days', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Time off'])
-            ->where('permissions.11', ['value' => 'view-travel', 'label' => 'View travel', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Travel'])
-            ->where('permissions.12', ['value' => 'reopen-travel-expenses', 'label' => 'Reopen travel expenses', 'scopes' => ['reports', 'everyone'], 'group' => 'Travel'])
-            ->where('permissions.13', ['value' => 'view-performance-evaluations', 'label' => 'View performance evaluations', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Performance'])
-            ->where('permissions.14', ['value' => 'reopen-performance-evaluations', 'label' => 'Reopen performance evaluations', 'scopes' => ['reports', 'everyone'], 'group' => 'Performance'])
-            ->where('permissions.20', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => [], 'group' => 'Administration'])
+            ->where('permissions.1', ['value' => 'add-employees', 'label' => 'Add employees', 'scopes' => [], 'group' => 'Employees'])
+            ->where('permissions.2', ['value' => 'manage-employees', 'label' => 'Manage employees', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Employees'])
+            ->where('permissions.7', ['value' => 'view-work-entries', 'label' => 'View work entries', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Work entries'])
+            ->where('permissions.8', ['value' => 'manage-work-entries', 'label' => 'Manage work entries', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Work entries'])
+            ->where('permissions.9', ['value' => 'reopen-work-entries', 'label' => 'Reopen work entries', 'scopes' => ['reports', 'everyone'], 'group' => 'Work entries'])
+            ->where('permissions.10', ['value' => 'view-time-off', 'label' => 'View time off', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Time off'])
+            ->where('permissions.11', ['value' => 'manage-paid-days', 'label' => 'Manage paid days', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Time off'])
+            ->where('permissions.12', ['value' => 'view-travel', 'label' => 'View travel', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Travel'])
+            ->where('permissions.13', ['value' => 'reopen-travel-expenses', 'label' => 'Reopen travel expenses', 'scopes' => ['reports', 'everyone'], 'group' => 'Travel'])
+            ->where('permissions.14', ['value' => 'view-performance-evaluations', 'label' => 'View performance evaluations', 'scopes' => ['own', 'reports', 'everyone'], 'group' => 'Performance'])
+            ->where('permissions.15', ['value' => 'reopen-performance-evaluations', 'label' => 'Reopen performance evaluations', 'scopes' => ['reports', 'everyone'], 'group' => 'Performance'])
+            ->where('permissions.21', ['value' => 'manage-roles', 'label' => 'Manage roles', 'scopes' => [], 'group' => 'Administration'])
             ->where('permissions', fn (Collection $permissions): bool => $permissions->pluck('group')->unique()->values()->all() === ['Employees', 'Assignments', 'Pay', 'Work entries', 'Time off', 'Travel', 'Performance', 'Organization', 'Administration'])
             ->etc(),
         );
@@ -66,7 +68,7 @@ it('offers every Permission with the Scopes it can carry, in its group', functio
 it('refuses every Roles page to an Employee who does not manage Roles', function (Closure $url) {
     $role = Role::factory()->create();
 
-    actingAs(employeeWith([Permission::ManageEmployees->value => null]))
+    actingAs(employeeWhoManagesEmployees())
         ->get($url($role))
         ->assertForbidden();
 })->with([
@@ -277,7 +279,7 @@ it('refuses to delete the only Role that lets a current Employee manage Roles', 
 
 it('gives new Employees the Role marked for them on the Role form, so another Role can take over from the starter one', function () {
     $admin = employeeWhoManagesRoles();
-    $admin->roles()->sole()->permissions()->create(['permission' => Permission::ManageEmployees, 'scope' => null]);
+    $admin->roles()->sole()->permissions()->create(['permission' => Permission::AddEmployees, 'scope' => null]);
     $starter = Role::factory()->create(['name' => 'Employee', 'is_given_to_new_employees' => true]);
     $staff = Role::factory()->create(['name' => 'Staff']);
     Project::factory()->internal()->create();

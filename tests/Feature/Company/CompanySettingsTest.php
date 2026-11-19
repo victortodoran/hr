@@ -91,7 +91,7 @@ it('rejects invalid company settings and explains why', function (array $changes
 ]);
 
 it('keeps the company settings to those who manage the company', function () {
-    $employee = employeeWith([Permission::ManagePay->value => Scope::Everyone, Permission::ManageEmployees->value => null]);
+    $employee = employeeWith([Permission::ManagePay->value => Scope::Everyone, Permission::AddEmployees->value => null, Permission::ManageEmployees->value => Scope::Everyone]);
 
     actingAs($employee)->get(route('company.edit'))->assertForbidden();
     actingAs($employee)->patch(route('company.update'), ['name' => 'Taken', 'currency' => 'USD'])->assertForbidden();

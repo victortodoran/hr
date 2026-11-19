@@ -111,6 +111,55 @@ it('does not resend an invitation once the password is set', function () {
     Notification::assertNothingSent();
 });
 
+/*
+ * Dana (Finance, top) ── Ben ── Cara ── Dev
+ */
+it('lets an Employee edit only the Employees their Scope for manage employees covers', function (Scope $scope, array $editable) {
+    $dana = Employee::factory()->invited()->create(['name' => 'Dana']);
+    $ben = Employee::factory()->reportingTo($dana)->create(['name' => 'Ben']);
+    $cara = Employee::factory()->invited()->reportingTo($ben)->create(['name' => 'Cara']);
+    $dev = Employee::factory()->invited()->reportingTo($cara)->create(['name' => 'Dev']);
+    giveRole($ben, [Permission::ManageEmployees->value => $scope]);
+
+    foreach ([$dana, $ben, $cara, $dev] as $employee) {
+        $allowed = in_array($employee->name, $editable, true);
+        $name = $employee->name;
+
+        actingAs($ben)->get(route('employees.edit', $employee))->assertStatus($allowed ? 200 : 403);
+        actingAs($ben)->patch(route('employees.update', $employee), employeeRecordFields($employee, ['name' => "{$name} changed"]))->assertStatus($allowed ? 302 : 403);
+        expect($employee->refresh()->name)->toBe($allowed ? "{$name} changed" : $name);
+    }
+})->with([
+    'own' => [Scope::Own, ['Ben']],
+    'reports' => [Scope::Reports, ['Cara', 'Dev']],
+    'everyone' => [Scope::Everyone, ['Dana', 'Ben', 'Cara', 'Dev']],
+]);
+
+it('opens the Employee\'s page after a change that takes them out of what the viewer may edit', function () {
+    $ben = Employee::factory()->create();
+    $cara = Employee::factory()->reportingTo($ben)->create();
+    $dana = Employee::factory()->create();
+    giveRole($ben, [Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ManageEmployees->value => Scope::Reports]);
+
+    actingAs($ben)->patch(route('employees.update', $cara), employeeRecordFields($cara, ['manager_id' => $dana->id]))
+        ->assertRedirect(route('employees.show', $cara));
+
+    expect($cara->refresh()->manager_id)->toBe($dana->id);
+});
+
+it('resends invitations only to Employees the viewer may edit', function () {
+    $dana = Employee::factory()->invited()->create();
+    $ben = Employee::factory()->reportingTo($dana)->create();
+    $cara = Employee::factory()->invited()->reportingTo($ben)->create();
+    giveRole($ben, [Permission::ManageEmployees->value => Scope::Reports]);
+
+    actingAs($ben)->post(route('employees.invitation.store', $dana))->assertForbidden();
+    actingAs($ben)->post(route('employees.invitation.store', $cara))->assertRedirect(route('employees.edit', $cara));
+
+    Notification::assertSentTo($cara, Invitation::class);
+    Notification::assertNotSentTo($dana, Invitation::class);
+});
+
 it('refuses editing Employees, even yourself, without manage employees', function () {
     $ben = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]);
     $cara = Employee::factory()->invited()->reportingTo($ben)->create();

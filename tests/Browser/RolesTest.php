@@ -114,7 +114,7 @@ it('creates a Role copying another\'s Permissions, landing on it with a message'
         ->assertSeeIn('nav[aria-label="Roles"]', 'Pay Leads')
         ->click('#role-copy')
         ->click('[role="option"] >> text=Payroll')
-        ->assertSee('2 of 22')
+        ->assertSee('2 of 23')
         ->click('Create Role')
         ->assertSee('Pay Leads created')
         ->assertNoJavaScriptErrors();

@@ -118,13 +118,14 @@ it('lets Scope decide whose record an Employee may see', function (Scope $scope,
     'reports' => [Scope::Reports, ['Cara', 'Dev'], false],
 ]);
 
-it('offers Edit only to those who manage Employees', function (array $grants, bool $expected) {
+it('offers Edit only to those who manage Employees with a Scope that covers them', function (array $grants, bool $expected) {
     $cara = Employee::factory()->create();
 
     actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, ...$grants]))->get(route('employees.show', $cara))
         ->assertInertia(fn (Assert $page) => $page->where('canEdit', $expected));
 })->with([
-    'manage employees' => [[Permission::ManageEmployees->value => null], true],
+    'manage employees for everyone' => [[Permission::ManageEmployees->value => Scope::Everyone], true],
+    'manage employees for their Reports only' => [[Permission::ManageEmployees->value => Scope::Reports], false],
     'view only' => [[], false],
 ]);
 
@@ -239,7 +240,7 @@ it('offers each viewer only the tabs they may see, each carrying only its own da
     ])), ['overview', 'assignments', 'time-off']],
     'HR, with full access' => [fn () => employeeWith([
         Permission::ViewEmployeeRecords->value => Scope::Everyone,
-        Permission::ManageEmployees->value => null,
+        Permission::ManageEmployees->value => Scope::Everyone,
         Permission::ViewAssignments->value => Scope::Everyone,
         Permission::ManageAssignments->value => Scope::Everyone,
         Permission::ViewPay->value => Scope::Everyone,

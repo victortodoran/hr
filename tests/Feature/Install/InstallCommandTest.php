@@ -142,7 +142,8 @@ it('creates the starter Employee Role: directory, plus own records, Assignments,
         ->and($cara->widestScopeFor(Permission::ViewTravel)?->value)->toBe('own')
         ->and($cara->widestScopeFor(Permission::ManageWorkEntries)?->value)->toBe('own')
         ->and($gate->allows(Permission::ViewEmployeeRecords->value, $colleague))->toBeFalse()
-        ->and($gate->allows(Permission::ManageEmployees->value))->toBeFalse()
+        ->and($gate->allows(Permission::AddEmployees->value))->toBeFalse()
+        ->and($gate->allows(Permission::ManageEmployees->value, $colleague))->toBeFalse()
         ->and($gate->allows(Permission::ManageRoles->value))->toBeFalse();
 });
 

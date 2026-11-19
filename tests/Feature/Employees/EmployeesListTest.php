@@ -97,8 +97,8 @@ it('refuses a status that isn\'t one', function () {
         ->assertSessionHasErrors('status');
 });
 
-it('offers Add Employee only to those who manage Employees', function () {
-    actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ManageEmployees->value => null]))
+it('offers Add Employee only to those who add Employees', function () {
+    actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::AddEmployees->value => null]))
         ->get(route('employees.index'))
         ->assertInertia(fn (Assert $page) => $page->where('canAdd', true));
 });
