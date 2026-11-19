@@ -13,6 +13,7 @@ import PageContainer from '@/components/PageContainer.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import PaidDaysForm from '@/components/time-off/PaidDaysForm.vue';
+import PaidDaysLeft from '@/components/time-off/PaidDaysLeft.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
 import ReportingChain from '@/components/employees/ReportingChain.vue';
 import { Badge } from '@/components/ui/badge';
@@ -466,19 +467,12 @@ setLayoutProps({
                     "
                     title="Paid Days"
                 >
-                    <p v-if="timeOff" data-test="paid-days-left">
-                        <span
-                            class="text-2xl font-semibold tabular-nums"
-                            :class="
-                                timeOff.paid_days_left < 0 && 'text-destructive'
-                            "
-                            >{{ timeOff.paid_days_left }}</span
-                        >
-                        <span class="ml-1.5 text-sm text-muted-foreground"
-                            >of {{ timeOff.paid_days }} Paid Days left in
-                            {{ timeOff.year }}</span
-                        >
-                    </p>
+                    <PaidDaysLeft
+                        v-if="timeOff"
+                        :paid-days-left="timeOff.paid_days_left"
+                        :paid-days="timeOff.paid_days"
+                        data-test="paid-days-left"
+                    />
                     <div
                         v-if="typeof paidDays === 'number'"
                         class="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-end sm:justify-between"

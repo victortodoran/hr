@@ -7,6 +7,7 @@ import Heading from '@/components/Heading.vue';
 import NeedsAttentionCard from '@/components/home/NeedsAttentionCard.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import PaidDaysLeft from '@/components/time-off/PaidDaysLeft.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
 import HoursThisYearCard from '@/components/work-entries/HoursThisYearCard.vue';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ import type {
     HoursThisMonth,
     HoursThisYear,
     NeedsAttention,
-    PaidDaysLeft,
+    PaidDaysLeftInYear,
     TimeOffDetails,
 } from '@/types';
 
@@ -45,7 +46,8 @@ const props = defineProps<{
     hoursThisMonth: HoursThisMonth | null;
     /** Null exactly when hoursThisMonth is. */
     hoursThisYear: HoursThisYear | null;
-    paidDaysLeft: PaidDaysLeft;
+    /** This year's Paid Days left and, from October, next year's. */
+    paidDaysLeft: PaidDaysLeftInYear[];
     /** The next Pending or Approved Time Off that hasn't ended. */
     nextTimeOff: TimeOffDetails | null;
     /** What of the Employee's was declined; null when nothing is. */
@@ -193,18 +195,7 @@ const thisMonthsWorkEntries = computed(() =>
                     <CardTitle>Time Off</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-4 text-sm">
-                    <p>
-                        <span
-                            class="text-2xl font-semibold tabular-nums"
-                            :class="{
-                                'text-destructive': paidDaysLeft.days < 0,
-                            }"
-                            >{{ paidDaysLeft.days }}</span
-                        >
-                        <span class="ml-2 text-muted-foreground"
-                            >Paid Days left in {{ paidDaysLeft.year }}</span
-                        >
-                    </p>
+                    <PaidDaysLeft :paid-days-left="paidDaysLeft" />
                     <div class="space-y-2">
                         <p class="font-medium">Next Time Off</p>
                         <p

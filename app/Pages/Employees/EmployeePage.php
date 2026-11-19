@@ -12,6 +12,7 @@ use App\Models\PayEntry;
 use App\Models\Project;
 use App\Models\TimeOff;
 use App\Support\Currency;
+use App\Support\PaidDaysLeft;
 use App\Support\PayHistory;
 use App\Support\ReportingChain;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Assignments & Pay and Time Off. Each tab is only built when it is open.
  * The Overview's Reports needing a new Manager are shown on the edit form
  * too.
+ *
+ * @phpstan-import-type PaidDaysLeftInYear from PaidDaysLeft
  */
 final class EmployeePage
 {
@@ -121,7 +124,7 @@ final class EmployeePage
     {
         return [
             'paidDays' => $canSetPaidDays ? $employee->paid_days : null,
-            'timeOff' => $canViewTimeOff ? self::timeOff($employee, today()->year) : null,
+            'timeOff' => $canViewTimeOff ? self::timeOff($employee) : null,
         ];
     }
 
@@ -167,17 +170,16 @@ final class EmployeePage
     }
 
     /**
-     * The Employee's Paid Days and Paid Days left this year, and their Time
-     * Off in every state, latest first.
+     * The Employee's Paid Days, their Paid Days left this year and, from
+     * October, next year, and their Time Off in every state, latest first.
      *
-     * @return array{year: int, paid_days: int, paid_days_left: int, requests: array<int, array{id: int, first_date: string, last_date: string, days: int, is_paid: bool, state: string, decided_by: string|null, decline_reason: string|null}>}
+     * @return array{paid_days: int, paid_days_left: list<PaidDaysLeftInYear>, requests: array<int, array{id: int, first_date: string, last_date: string, days: int, is_paid: bool, state: string, decided_by: string|null, decline_reason: string|null}>}
      */
-    private static function timeOff(Employee $employee, int $year): array
+    private static function timeOff(Employee $employee): array
     {
         return [
-            'year' => $year,
             'paid_days' => $employee->paid_days,
-            'paid_days_left' => $employee->paidDaysLeftIn($year),
+            'paid_days_left' => PaidDaysLeft::of($employee),
             'requests' => $employee->timeOff()
                 ->with('decider:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
                 ->orderByDesc('first_date')

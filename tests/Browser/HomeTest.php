@@ -26,6 +26,7 @@ it('lands an Employee on Home after signing in, showing their month, Paid Days a
         ->assertSee('Hours this month')
         ->assertSee('1.5 h')
         ->assertSee('Paid Days left in 2026')
+        ->assertSee('Paid Days left in 2027')
         ->assertSee('17')
         ->assertSee('Next Time Off')
         ->assertDontSee('Waiting for you')
