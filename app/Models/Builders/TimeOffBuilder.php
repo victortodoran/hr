@@ -79,6 +79,18 @@ class TimeOffBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to Time Off that has the day as one of its days: a
+     * weekday from its first to its last date. Weekends are never days of
+     * Time Off, so none has a Saturday or Sunday.
+     */
+    public function onDay(CarbonInterface $day): static
+    {
+        return $this->scoped(function () use ($day): void {
+            $this->overlapping($day, $day)->when($day->isWeekend(), fn (self $none) => $none->whereRaw('false'));
+        });
+    }
+
+    /**
      * Limit the query to the Time Off of the given Employees.
      */
     public function ofEmployees(EmployeeBuilder $employees): static

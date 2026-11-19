@@ -3,21 +3,23 @@
 namespace App\Http\Requests\TimeOff;
 
 use App\Models\TimeOff;
+use Carbon\CarbonImmutable;
 use Illuminate\Validation\Validator;
 
 /**
  * Time Off the signed-in Employee requests for themselves: whole days from
  * a first to a last date, Paid or Unpaid. It starts today or later, falls
  * within their period of work, holds at least one weekday, overlaps none of
- * their Pending or Approved Time Off or Travel Requests and, when Paid, fits
- * the Paid Days left in every year it touches.
+ * their Pending or Approved Time Off or Travel Requests, takes no day they
+ * have Pending or Approved hours on and, when Paid, fits the Paid Days left
+ * in every year it touches.
  */
 class TimeOffRequest extends TimeOffPreviewRequest
 {
     /**
      * Once the dates are valid on their own and cover at most a year, check
-     * them against the Employee's period of work, other Time Off and Travel
-     * Requests, then the Paid Days left.
+     * them against the Employee's period of work, other Time Off, Travel
+     * Requests and Work Entries, then the Paid Days left.
      *
      * @return array<int, callable(Validator): void>
      */
@@ -32,6 +34,7 @@ class TimeOffRequest extends TimeOffPreviewRequest
             $this->checkWeekdays($validator);
             $this->checkOverlap($validator);
             $this->checkTravelOverlap($validator);
+            $this->checkWorkedDays($validator);
 
             if ($validator->errors()->isEmpty() && $this->boolean('is_paid')) {
                 $this->checkPaidDays($validator);
@@ -103,6 +106,26 @@ class TimeOffRequest extends TimeOffPreviewRequest
             $validator->errors()->add('first_date', __('You have a Travel Request from :first to :last, so Time Off can\'t overlap it.', [
                 'first' => $overlapped->first_date->format('j M Y'),
                 'last' => $overlapped->last_date->format('j M Y'),
+            ]));
+        }
+    }
+
+    /**
+     * Refuse Time Off taking a day the Employee already has Pending or
+     * Approved hours on, naming the earliest: a day is either worked or off.
+     * Declined Work Entries never block, and neither do weekend ones, as
+     * weekends are never days of Time Off.
+     */
+    private function checkWorkedDays(Validator $validator): void
+    {
+        $worked = $this->employee()->workEntries()
+            ->counted()
+            ->onWeekdaysBetween($this->firstDate(), $this->lastDate())
+            ->min('work_entries.date');
+
+        if (is_string($worked)) {
+            $validator->errors()->add('first_date', __('You have hours recorded on :date, so Time Off can\'t include that day.', [
+                'date' => CarbonImmutable::parse($worked)->format('j M Y'),
             ]));
         }
     }

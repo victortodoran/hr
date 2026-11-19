@@ -6,6 +6,7 @@ use App\Http\Requests\TimeOff\TimeOffRequest;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Models\TravelRequest;
+use App\Models\WorkEntry;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -167,6 +168,33 @@ it('allows Time Off over Declined or Cancelled Travel Requests, someone else\'s,
     TravelRequest::factory()->on($relaunch)->create(['first_date' => '2026-12-17', 'last_date' => '2026-12-18']);
 
     actingAs($cara)->post(route('time-off.store'), timeOffForm())->assertSessionHasNoErrors();
+
+    expect(storedTimeOff($cara))->toHaveCount(1);
+});
+
+it('refuses Time Off over a day the Employee has Pending or Approved hours on, naming the earliest', function (string $state) {
+    $cara = timeOffRequester();
+    $relaunch = assignmentOf($cara);
+    $factory = WorkEntry::factory()->for($relaunch);
+    ($state === 'approved' ? $factory->approved() : $factory)->create(['date' => '2026-12-02']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-12-03']);
+
+    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-01', 'last_date' => '2026-12-04']))
+        ->assertSessionHasErrors(['first_date' => 'You have hours recorded on 2 Dec 2026, so Time Off can\'t include that day.']);
+
+    expect(storedTimeOff($cara))->toBe([]);
+})->with(['pending', 'approved']);
+
+it('allows Time Off over Declined hours, weekend hours, someone else\'s, or right next to them', function () {
+    $cara = timeOffRequester();
+    $relaunch = assignmentOf($cara);
+    WorkEntry::factory()->for($relaunch)->declined()->create(['date' => '2026-12-14']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-12-12']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-12-11']);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-12-17']);
+    WorkEntry::factory()->for(assignmentOf(Employee::factory()->create()))->create(['date' => '2026-12-15']);
+
+    actingAs($cara)->post(route('time-off.store'), timeOffForm(['first_date' => '2026-12-12']))->assertSessionHasNoErrors();
 
     expect(storedTimeOff($cara))->toHaveCount(1);
 });
