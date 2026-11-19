@@ -14,9 +14,9 @@ use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
 /**
- * Lets those who manage Assignments put Employees on Projects and change
- * their Assignments, or delete one made by mistake. The Assignments themselves are shown on the Employee
- * page.
+ * Lets those who manage Assignments put Employees on Projects, change
+ * their Assignments and delete one made by mistake. The Assignments
+ * themselves are shown on the Employee page.
  */
 class AssignmentController extends Controller
 {

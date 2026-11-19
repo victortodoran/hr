@@ -200,6 +200,7 @@ final class EmployeePage
     {
         return $employee->assignments()
             ->with('project.client')
+            ->when($canManage, fn (Builder $query) => $query->withExists(['workEntries', 'travelRequests']))
             ->when($currency !== null, fn (Builder $query) => $query->with(['payEntries' => fn (HasMany $entries) => $entries->orderByDesc('effective_from')]))
             ->orderBy('start_date')
             ->orderBy('id')

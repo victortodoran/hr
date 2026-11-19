@@ -14,6 +14,8 @@ use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use App\Pages\Employees\EmployeePage;
 use App\Policies\AssignmentPolicy;
+use Illuminate\Support\Collection;
+use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
@@ -100,14 +102,13 @@ it('offers Delete only on unused Assignments other than the Internal Assignment,
     $travelled = Assignment::factory()->for($ana)->create(['start_date' => '2026-01-30']);
     TravelRequest::factory()->for($travelled)->create(['employee_id' => $ana->id]);
 
-    $canDelete = fn (Employee $viewer): array => collect(actingAs($viewer)
+    $offersDelete = fn (Employee $viewer, array $expected) => actingAs($viewer)
         ->get(route('employees.show', ['employee' => $ana, 'tab' => 'assignments']))
-        ->inertiaProps('assignments'))
-        ->mapWithKeys(fn (array $row): array => [$row['id'] => $row['can_delete']])
-        ->all();
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('assignments', fn (Collection $rows): bool => $rows->pluck('can_delete', 'id')->all() === $expected));
 
-    expect($canDelete(managerOfAssignments()))->toBe([$internal->id => false, $unused->id => true, $worked->id => false, $travelled->id => false])
-        ->and($canDelete(employeeWith([Permission::ViewAssignments->value => Scope::Everyone])))->toBe([$internal->id => false, $unused->id => false, $worked->id => false, $travelled->id => false]);
+    $offersDelete(managerOfAssignments(), [$internal->id => false, $unused->id => true, $worked->id => false, $travelled->id => false]);
+    $offersDelete(employeeWith([Permission::ViewAssignments->value => Scope::Everyone]), [$internal->id => false, $unused->id => false, $worked->id => false, $travelled->id => false]);
 });
 
 it('removes Pay dated after an Assignment\'s new end when it is ended earlier by hand', function () {
@@ -131,28 +132,47 @@ it('removes Pay dated after an Assignment\'s new end when it is ended earlier by
     expect(payDatesOf($assignment))->toBe(['2026-01-05', '2026-04-30']);
 });
 
-it('removes Pay dated after the day a Leaving Date or a Project end trims Assignments to', function (string $trimmedBy) {
+/**
+ * An Employee with a Manager, their Internal Assignment, an Assignment to a
+ * Project and someone else's Assignment, each with Pay from 1 January and
+ * 1 June 2026.
+ *
+ * @return array{Employee, Assignment, Assignment, Assignment}
+ */
+function assignmentsPaidFromJanuaryAndJune(): array
+{
     $cara = Employee::factory()->create(['start_date' => '2024-01-01', 'manager_id' => fn () => Employee::factory()->create()->id]);
     $internal = Assignment::factory()->internal()->for($cara)->create();
-    $project = Project::factory()->create(['start_date' => '2024-01-01']);
-    $assignment = Assignment::factory()->for($cara)->for($project)->create(['start_date' => '2026-01-01', 'end_date' => null]);
+    $assignment = Assignment::factory()->for($cara)->for(Project::factory()->state(['start_date' => '2024-01-01']))->create(['start_date' => '2026-01-01', 'end_date' => null]);
     $other = Assignment::factory()->for(Employee::factory()->startedLongAgo())->for(Project::factory()->state(['start_date' => '2024-01-01']))->create(['start_date' => '2026-01-01', 'end_date' => null]);
     foreach ([$internal, $assignment, $other] as $each) {
         PayEntry::factory()->for($each)->createMany([['effective_from' => '2026-01-01'], ['effective_from' => '2026-06-01']]);
     }
 
-    if ($trimmedBy === 'Leaving Date') {
-        actingAs(employeeWhoManagesEmployees())
-            ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['leaving_date' => '2026-05-31']))
-            ->assertSessionHasNoErrors();
-        expect(payDatesOf($internal))->toBe(['2026-01-01']);
-    } else {
-        actingAs(employeeWith([Permission::ManageProjects->value => null]))
-            ->patch(route('projects.update', $project), ['name' => $project->name, 'client_id' => $project->client_id, 'start_date' => '2024-01-01', 'end_date' => '2026-05-31'])
-            ->assertSessionHasNoErrors();
-        expect(payDatesOf($internal))->toBe(['2026-01-01', '2026-06-01']);
-    }
+    return [$cara, $internal, $assignment, $other];
+}
+
+it('removes Pay dated after a Leaving Date from every Assignment it trims, the Internal Assignment too', function () {
+    [$cara, $internal, $assignment, $other] = assignmentsPaidFromJanuaryAndJune();
+
+    actingAs(employeeWhoManagesEmployees())
+        ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['leaving_date' => '2026-05-31']))
+        ->assertSessionHasNoErrors();
+
+    expect(payDatesOf($internal))->toBe(['2026-01-01'])
+        ->and(payDatesOf($assignment))->toBe(['2026-01-01'])
+        ->and(payDatesOf($other))->toBe(['2026-01-01', '2026-06-01']);
+});
+
+it('removes Pay dated after a Project\'s end from the Assignments it trims', function () {
+    [, $internal, $assignment, $other] = assignmentsPaidFromJanuaryAndJune();
+    $project = $assignment->project;
+
+    actingAs(employeeWith([Permission::ManageProjects->value => null]))
+        ->patch(route('projects.update', $project), ['name' => $project->name, 'client_id' => $project->client_id, 'start_date' => '2024-01-01', 'end_date' => '2026-05-31'])
+        ->assertSessionHasNoErrors();
 
     expect(payDatesOf($assignment))->toBe(['2026-01-01'])
+        ->and(payDatesOf($internal))->toBe(['2026-01-01', '2026-06-01'])
         ->and(payDatesOf($other))->toBe(['2026-01-01', '2026-06-01']);
-})->with(['Leaving Date', 'Project end']);
+});
