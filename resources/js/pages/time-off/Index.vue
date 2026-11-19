@@ -43,7 +43,7 @@ const columns: TableColumn[] = [
         />
 
         <div class="flex flex-wrap items-center justify-between gap-4">
-            <PaidDaysLeft :years="paidDaysLeft" />
+            <PaidDaysLeft :paid-days-left="paidDaysLeft" />
             <Button as-child>
                 <Link :href="create()">Request Time Off</Link>
             </Button>

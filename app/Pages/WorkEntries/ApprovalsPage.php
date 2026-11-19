@@ -13,6 +13,7 @@ use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use App\Support\PageWithin;
+use App\Support\PaidDaysLeft;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Inertia\Inertia;
 
@@ -137,10 +138,7 @@ final class ApprovalsPage
                 'last_date' => $timeOff->last_date->toDateString(),
                 'days' => $timeOff->weekdays(),
                 'is_paid' => $timeOff->is_paid,
-                'paid_days_left' => array_map(fn (int $year): array => [
-                    'year' => $year,
-                    'days' => $timeOff->employee->paidDaysLeftIn($year),
-                ], range($timeOff->first_date->year, $timeOff->last_date->year)),
+                'paid_days_left' => PaidDaysLeft::in($timeOff->employee, range($timeOff->first_date->year, $timeOff->last_date->year)),
             ])
             ->all();
     }

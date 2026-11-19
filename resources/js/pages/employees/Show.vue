@@ -469,7 +469,7 @@ setLayoutProps({
                 >
                     <PaidDaysLeft
                         v-if="timeOff"
-                        :years="timeOff.paid_days_left"
+                        :paid-days-left="timeOff.paid_days_left"
                         :paid-days="timeOff.paid_days"
                         data-test="paid-days-left"
                     />

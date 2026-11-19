@@ -323,3 +323,12 @@ it('gives only the first date\'s error when it is missing or in the past, not th
     'missing' => ['', 'The first date field is required.'],
     'in the past' => ['2026-11-30', 'Time Off can\'t start in the past.'],
 ]);
+
+it('shows the Employee only this year\'s Paid Days left on their Time Off page before October', function () {
+    travelTo('2026-09-30 09:00');
+    $cara = timeOffRequester();
+    TimeOff::factory()->for($cara)->create(['first_date' => '2027-01-04', 'last_date' => '2027-01-04']);
+
+    actingAs($cara)->get(route('time-off.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('paidDaysLeft', [['year' => 2026, 'days' => 20]]));
+});

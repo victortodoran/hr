@@ -195,7 +195,7 @@ const thisMonthsWorkEntries = computed(() =>
                     <CardTitle>Time Off</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-4 text-sm">
-                    <PaidDaysLeft :years="paidDaysLeft" />
+                    <PaidDaysLeft :paid-days-left="paidDaysLeft" />
                     <div class="space-y-2">
                         <p class="font-medium">Next Time Off</p>
                         <p

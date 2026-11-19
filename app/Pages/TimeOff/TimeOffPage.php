@@ -9,6 +9,8 @@ use App\Support\PaidDaysLeft;
 /**
  * The Time Off page as the props it renders: the signed-in Employee's own
  * Time Off and their Paid Days left.
+ *
+ * @phpstan-import-type PaidDaysLeftInYear from PaidDaysLeft
  */
 final class TimeOffPage
 {
@@ -18,7 +20,7 @@ final class TimeOffPage
      * cancel it, and their Paid Days left this year and, from October,
      * next year.
      *
-     * @return array{paidDaysLeft: list<array{year: int, days: int}>, timeOff: array<int, array<string, mixed>>}
+     * @return array{paidDaysLeft: list<PaidDaysLeftInYear>, timeOff: array<int, array<string, mixed>>}
      */
     public static function props(Employee $actor): array
     {
