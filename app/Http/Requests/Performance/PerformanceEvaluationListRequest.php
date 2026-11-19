@@ -53,8 +53,8 @@ class PerformanceEvaluationListRequest extends FormRequest
     }
 
     /**
-     * The state asked for, null when none is or it isn't one, such as the
-     * None yet the list once had.
+     * The state asked for, null when none is or it isn't a Performance
+     * Evaluation state.
      */
     public function state(): ?PerformanceEvaluationState
     {
