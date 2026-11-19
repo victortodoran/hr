@@ -16,7 +16,8 @@ final class TravelRequestPage
      * The Travel Request in full with its Travel Expenses, and what the
      * viewer may do to them, which only the Employee themselves ever may.
      * Whether it is the viewer's own sets where its breadcrumbs lead: their
-     * Travel page, or the Employee's record when the viewer may open it.
+     * Travel page; for anyone else the Travel Requests page when the viewer
+     * may open it, or else the Employee's record when they may open that.
      *
      * @return array<string, mixed>
      */
@@ -27,6 +28,7 @@ final class TravelRequestPage
             'employee' => $travelRequest->employee->only('id', 'name'),
             'isOwn' => $travelRequest->employee_id === $actor->id,
             'canViewEmployee' => $actor->can('view', $travelRequest->employee),
+            'canViewTravelRequests' => $actor->can('viewList', TravelRequest::class),
         ];
     }
 }

@@ -86,3 +86,16 @@ it('shows the Employee no way to decide their own Pending Travel Request', funct
         ->assertDontSee('Decline…')
         ->assertNoJavaScriptErrors();
 });
+
+it('leads the Manager from a Travel Request\'s breadcrumbs back to the Travel Requests page', function () {
+    [$ben, $cara] = benWhoSeesCarasTravel();
+    $berlin = TravelRequest::factory()->on(assignmentOf($cara))->create(['destination' => 'Berlin', 'first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+
+    actingAs($ben);
+
+    visit(route('travel-requests.show', $berlin))
+        ->assertSee('Cara · Berlin')
+        ->click('internal:role=link[name="Travel Requests"s]')
+        ->assertPathIs('/travel-requests/all')
+        ->assertNoJavaScriptErrors();
+});

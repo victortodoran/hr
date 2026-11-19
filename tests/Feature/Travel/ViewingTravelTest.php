@@ -131,7 +131,7 @@ it('refuses Cara\'s page to Ana with view travel for her Reports, as no travel s
     actingAs($ana)->get(route('employees.show', $cara))->assertForbidden();
 });
 
-it('shows Cara\'s Travel Request page in full, with its Travel Expenses, only her Pending ones for Ana to decide as her Manager, and her name in the breadcrumbs leading nowhere, to Ana with view travel for her Reports', function () {
+it('shows Cara\'s Travel Request page in full, with its Travel Expenses, only her Pending ones for Ana to decide as her Manager, and breadcrumbs leading to the Travel Requests page, to Ana with view travel for her Reports', function () {
     [$ana, $cara] = anaWithViewTravelAndCara(Scope::Reports);
     $hotel = berlinTripWithHotel($cara);
     $berlin = $hotel->travelRequest;
@@ -156,7 +156,8 @@ it('shows Cara\'s Travel Request page in full, with its Travel Expenses, only he
             ])
             ->where('employee', ['id' => $cara->id, 'name' => 'Cara'])
             ->where('isOwn', false)
-            ->where('canViewEmployee', false));
+            ->where('canViewEmployee', false)
+            ->where('canViewTravelRequests', true));
     actingAs($ana)->get(route('travel-expenses.receipt.show', $hotel))->assertOk()->assertStreamedContent('receipt');
 });
 
@@ -194,7 +195,7 @@ it('shows the Employee their own Travel Request page, with what they may do and 
         ->assertInertia(fn (Assert $page) => $page->where('travelRequest.can_decide', false));
 });
 
-it('shows a Pending Travel Request\'s page to the Employee\'s effective Manager, who may decide it there, and refuses them one already decided', function () {
+it('shows a Pending Travel Request\'s page to the Employee\'s effective Manager, who may decide it there with breadcrumbs through Employees, and refuses them one already decided', function () {
     $mona = Employee::factory()->create();
     $cara = Employee::factory()->reportingTo($mona)->create();
     $travel = carasTravel($cara);
@@ -203,6 +204,7 @@ it('shows a Pending Travel Request\'s page to the Employee\'s effective Manager,
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('isOwn', false)
+            ->where('canViewTravelRequests', false)
             ->where('travelRequest.can_cancel', false)
             ->where('travelRequest.can_decide', true));
     actingAs($mona)->get(route('travel-requests.show', $travel['rome']))->assertForbidden();
@@ -238,12 +240,14 @@ it('shows anyone\'s Travel Request pages and receipts to Ana with view travel fo
     actingAs($ana)->get(route('travel-expenses.receipt.show', $hotel))->assertOk();
 });
 
-it('leads the breadcrumbs to Cara\'s page for a viewer who may also see her record', function () {
-    $viewer = employeeWith([Permission::ViewTravel->value => Scope::Everyone, Permission::ViewEmployeeRecords->value => Scope::Everyone]);
-    $hotel = berlinTripWithHotel(Employee::factory()->create(['name' => 'Cara']));
+it('leads the breadcrumbs to Cara\'s page for her Manager, who may see her record but not the Travel Requests page', function () {
+    $mona = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Reports]);
+    $cara = Employee::factory()->reportingTo($mona)->create(['name' => 'Cara']);
 
-    actingAs($viewer)->get(route('travel-requests.show', $hotel->travelRequest))
-        ->assertInertia(fn (Assert $page) => $page->where('canViewEmployee', true));
+    actingAs($mona)->get(route('travel-requests.show', carasTravel($cara)['vienna']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('canViewEmployee', true)
+            ->where('canViewTravelRequests', false));
 });
 
 it('refuses Travel Request pages and receipts to someone who may see Cara\'s record but not her travel', function () {
