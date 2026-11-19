@@ -5,16 +5,20 @@ import ClientController from '@/actions/App/Http/Controllers/Projects/ClientCont
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import FilterBar from '@/components/FilterBar.vue';
+import FilterSearch from '@/components/FilterSearch.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import Pagination from '@/components/Pagination.vue';
 import RenameDialog from '@/components/RenameDialog.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useListFilters } from '@/composables/useListFilters';
 import { index, show } from '@/routes/clients';
-import type { ClientRecord, TableColumn } from '@/types';
+import type { ClientRecord, Paginated, TableColumn } from '@/types';
 
 defineOptions({
     layout: {
@@ -22,9 +26,12 @@ defineOptions({
     },
 });
 
-defineProps<{
-    clients: ClientRecord[];
+const props = defineProps<{
+    clients: Paginated<ClientRecord>;
+    search: string;
 }>();
+
+const filters = useListFilters(index.url, { search: props.search });
 
 const columns: TableColumn[] = [
     { key: 'name', label: 'Name' },
@@ -62,7 +69,11 @@ const columns: TableColumn[] = [
             <SubmitButton :processing="processing">Add</SubmitButton>
         </Form>
 
-        <DataTable :columns="columns" :rows="clients">
+        <FilterBar>
+            <FilterSearch v-model="filters.search" />
+        </FilterBar>
+
+        <DataTable :columns="columns" :rows="clients.data">
             <template #cell-name="{ row }">
                 <Link
                     :href="show(row.id)"
@@ -94,7 +105,11 @@ const columns: TableColumn[] = [
             <template #empty>
                 <EmptyState
                     :icon="Briefcase"
-                    message="Clients are the outside organisations the company does Projects for. You only need them for work done for outside organisations."
+                    :message="
+                        search
+                            ? `Clients are the outside organisations the company does Projects for. None match “${search}”.`
+                            : 'Clients are the outside organisations the company does Projects for. You only need them for work done for outside organisations.'
+                    "
                 >
                     <template #action>
                         <Button variant="outline" as-child>
@@ -104,5 +119,7 @@ const columns: TableColumn[] = [
                 </EmptyState>
             </template>
         </DataTable>
+
+        <Pagination :page="clients" />
     </PageContainer>
 </template>

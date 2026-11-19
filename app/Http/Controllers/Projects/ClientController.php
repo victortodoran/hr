@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Projects;
 use App\Actions\DeleteClient;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\ClientRequest;
+use App\Http\Requests\Projects\NameSearchRequest;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Pages\Projects\ClientListPage;
@@ -21,11 +22,12 @@ use Inertia\Response;
 class ClientController extends Controller
 {
     /**
-     * Show every Client by name, with how many Projects each has.
+     * Show the Clients a page at a time by name, with how many Projects each
+     * has, optionally searched by part of a name.
      */
-    public function index(): Response
+    public function index(NameSearchRequest $request): Response
     {
-        return Inertia::render('clients/Index', ClientListPage::props());
+        return Inertia::render('clients/Index', ClientListPage::props($request->search()));
     }
 
     /**

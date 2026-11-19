@@ -3,23 +3,31 @@
 namespace App\Pages\Projects;
 
 use App\Models\Client;
-use Illuminate\Database\Eloquent\Collection;
 
 /**
  * The Clients page as the props it renders: the Clients the company does
- * work for.
+ * work for, a page at a time.
  */
 final class ClientListPage
 {
     /**
-     * Every Client by name, with how many Projects each has.
+     * The Clients by name, with how many Projects each has, optionally
+     * searched by part of a name.
      *
-     * @return array{clients: Collection<int, Client>}
+     * @return array<string, mixed>
      */
-    public static function props(): array
+    public static function props(string $search): array
     {
         return [
-            'clients' => Client::query()->select(['id', 'name'])->withCount('projects')->orderBy('name')->get(),
+            'clients' => Client::query()
+                ->select(['id', 'name'])
+                ->withCount('projects')
+                ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
+                ->orderBy('name')
+                ->orderBy('id')
+                ->paginate(25)
+                ->withQueryString(),
+            'search' => $search,
         ];
     }
 }

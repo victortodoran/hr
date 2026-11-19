@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Projects;
 use App\Actions\DeleteProject;
 use App\Actions\UpdateTrimmingAssignments;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Projects\NameSearchRequest;
 use App\Http\Requests\Projects\ProjectRequest;
 use App\Models\Employee;
 use App\Models\Project;
@@ -23,11 +24,12 @@ use Inertia\Response;
 class ProjectController extends Controller
 {
     /**
-     * Show every Project, the Internal Project first and the rest by name.
+     * Show the Projects a page at a time, the Internal Project first and the
+     * rest by name, optionally searched by part of a name.
      */
-    public function index(): Response
+    public function index(NameSearchRequest $request): Response
     {
-        return Inertia::render('projects/Index', ProjectListPage::props());
+        return Inertia::render('projects/Index', ProjectListPage::props($request->search()));
     }
 
     /**

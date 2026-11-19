@@ -36,3 +36,22 @@ it('creates a Project on its own page, then changes it in place on the Project\'
 
     expect(Project::query()->where('name', 'Rebrand')->exists())->toBeTrue();
 });
+
+it('searches the Projects by name from the filter bar, back on the first page', function () {
+    Project::factory()->internal()->create(['name' => 'Acme Software']);
+    Project::factory()->create(['name' => 'Website relaunch']);
+    Project::factory()->count(25)->create();
+
+    actingAs(employeeWith([Permission::ViewProjects->value => null]));
+
+    visit(route('projects.index', ['page' => 2]))
+        ->assertSee('26–27 of 27')
+        ->fill('[aria-label="Search by name"]', 'relau')
+        ->assertQueryStringHas('search', 'relau')
+        ->assertQueryStringMissing('page')
+        ->assertSee('Website relaunch')
+        ->assertDontSee('Acme Software')
+        ->fill('[aria-label="Search by name"]', 'nothing like it')
+        ->assertSee('None match “nothing like it”.')
+        ->assertNoJavaScriptErrors();
+});

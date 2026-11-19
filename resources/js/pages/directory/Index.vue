@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { Users } from '@lucide/vue';
-import { useDebounceFn } from '@vueuse/core';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import FilterBar from '@/components/FilterBar.vue';
+import FilterSearch from '@/components/FilterSearch.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
-import { Input } from '@/components/ui/input';
 import ValueOr from '@/components/ValueOr.vue';
+import { useListFilters } from '@/composables/useListFilters';
 import { index, show } from '@/routes/directory';
 import type { DirectoryEntry, Paginated, TableColumn } from '@/types';
 
@@ -41,15 +42,7 @@ const emptyMessage = computed(
         }`,
 );
 
-const query = ref(props.search);
-
-const searchDirectory = useDebounceFn(() => {
-    router.get(
-        index.url({ query: query.value ? { search: query.value } : {} }),
-        {},
-        { preserveState: true, replace: true },
-    );
-}, 300);
+const filters = useListFilters(index.url, { search: props.search });
 </script>
 
 <template>
@@ -61,14 +54,9 @@ const searchDirectory = useDebounceFn(() => {
             description="Everyone currently working at the company"
         />
 
-        <Input
-            v-model="query"
-            type="search"
-            placeholder="Search by name"
-            aria-label="Search by name"
-            class="max-w-sm"
-            @update:model-value="searchDirectory"
-        />
+        <FilterBar>
+            <FilterSearch v-model="filters.search" />
+        </FilterBar>
 
         <DataTable :columns="columns" :rows="employees.data">
             <template #cell-name="{ row }">

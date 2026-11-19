@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import FilterBar from '@/components/FilterBar.vue';
+import FilterSelect from '@/components/FilterSelect.vue';
 import PeriodNavigation from '@/components/PeriodNavigation.vue';
 import type {
     Choice,
     EmployeeWithCount,
+    FilterChoice,
     ListFilters,
     StateChoice,
 } from '@/types';
@@ -27,7 +23,8 @@ import type {
  * drops the Project. With nobody to choose, only the Period and state are
  * offered. An Employee with something on only one Project shows that
  * Project, without "Any Project" to choose; both list the same, so the
- * filter itself stays as it was.
+ * filter itself stays as it was. Built on `FilterBar`, like every list's
+ * filters, so a list across Employees only adds what else it needs.
  */
 const props = withDefaults(
     defineProps<{
@@ -77,93 +74,76 @@ const hasOnlyOneProject = computed(
         props.projects.length === 1,
 );
 
-function chooseState(state: unknown): void {
-    emit('change', query({ state: String(state), employee: anyEmployee() }));
+const employeeChoices = computed<FilterChoice[]>(() =>
+    props.employees.map((choice) => ({
+        value: String(choice.id),
+        label: `${choice.name} (${choice.count})`,
+    })),
+);
+
+const projectChoices = computed<FilterChoice[]>(() =>
+    props.projects.map((choice) => ({
+        value: String(choice.id),
+        label: choice.name,
+    })),
+);
+
+function chooseState(state: string): void {
+    emit('change', query({ state, employee: anyEmployee() }));
 }
 
-function chooseEmployee(employee: unknown): void {
-    emit('change', query({ employee: String(employee) }));
+function chooseEmployee(employee: string): void {
+    emit('change', query({ employee }));
 }
 
-function chooseProject(project: unknown): void {
+function chooseProject(project: string): void {
     emit(
         'change',
         query({
             employee: String(props.filters.employee),
-            ...(project !== 'all' ? { project: String(project) } : {}),
+            ...(project !== 'all' ? { project } : {}),
         }),
     );
 }
 </script>
 
 <template>
-    <div class="flex flex-wrap items-center gap-3">
+    <FilterBar>
         <PeriodNavigation
             :period="filters.period"
             :today="today"
             :no-future="!allowFuture"
             @change="choosePeriod"
         />
-        <div class="flex flex-wrap items-center gap-3">
-            <template v-if="employees.length > 0">
-                <Select
-                    :model-value="String(filters.employee)"
-                    @update:model-value="chooseEmployee"
-                >
-                    <SelectTrigger class="w-48" aria-label="Employee">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Any Employee</SelectItem>
-                        <SelectItem
-                            v-for="choice in employees"
-                            :key="choice.id"
-                            :value="String(choice.id)"
-                            >{{ choice.name }} ({{ choice.count }})</SelectItem
-                        >
-                    </SelectContent>
-                </Select>
-                <Select
-                    :model-value="
-                        hasOnlyOneProject
-                            ? String(projects[0].id)
-                            : (filters.project?.toString() ?? 'all')
-                    "
-                    @update:model-value="chooseProject"
-                >
-                    <SelectTrigger class="w-48" aria-label="Project">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem v-if="!hasOnlyOneProject" value="all"
-                            >Any Project</SelectItem
-                        >
-                        <SelectItem
-                            v-for="choice in projects"
-                            :key="choice.id"
-                            :value="String(choice.id)"
-                            >{{ choice.name }}</SelectItem
-                        >
-                    </SelectContent>
-                </Select>
-            </template>
-            <Select
-                :model-value="filters.state ?? 'all'"
-                @update:model-value="chooseState"
-            >
-                <SelectTrigger class="w-36" aria-label="State">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Any state</SelectItem>
-                    <SelectItem
-                        v-for="choice in states"
-                        :key="choice.value"
-                        :value="choice.value"
-                        >{{ choice.label }}</SelectItem
-                    >
-                </SelectContent>
-            </Select>
-        </div>
-    </div>
+        <template v-if="employees.length > 0">
+            <FilterSelect
+                label="Employee"
+                any="Any Employee"
+                width="w-48"
+                :model-value="String(filters.employee)"
+                :choices="employeeChoices"
+                @update:model-value="chooseEmployee"
+            />
+            <FilterSelect
+                label="Project"
+                :any="hasOnlyOneProject ? undefined : 'Any Project'"
+                width="w-48"
+                :model-value="
+                    hasOnlyOneProject
+                        ? String(projects[0].id)
+                        : (filters.project?.toString() ?? 'all')
+                "
+                :choices="projectChoices"
+                @update:model-value="chooseProject"
+            />
+        </template>
+        <FilterSelect
+            label="State"
+            any="Any state"
+            width="w-36"
+            :model-value="filters.state ?? 'all'"
+            :choices="states"
+            @update:model-value="chooseState"
+        />
+    </FilterBar>
 </template>

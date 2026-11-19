@@ -50,13 +50,50 @@ it('lists the Projects with their Client and dates, the Internal Project first',
     actingAs(employeeWith([Permission::ViewProjects->value => null]))->get(route('projects.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('projects/Index')
-            ->where('projects', [
+            ->where('projects.data', [
                 ['id' => $internal->id, 'name' => 'Acme Software', 'client' => null, 'start_date' => null, 'end_date' => null, 'is_internal' => true],
                 ['id' => $audit->id, 'name' => 'Audit', 'client' => null, 'start_date' => '2026-03-01', 'end_date' => null, 'is_internal' => false],
                 ['id' => $relaunch->id, 'name' => 'Website relaunch', 'client' => ['id' => $globex->id, 'name' => 'Globex'], 'start_date' => '2026-01-05', 'end_date' => '2026-06-30', 'is_internal' => false],
             ]),
         );
 });
+
+it('searches the Projects by any part of a name, ignoring case and treating % and _ as ordinary characters', function () {
+    Project::factory()->internal()->create(['name' => 'Acme Software']);
+    $relaunch = Project::factory()->create(['name' => 'Website Relaunch']);
+    $odd = Project::factory()->create(['name' => 'Audit 100% done']);
+    Project::factory()->create(['name' => 'Audit 1000 done']);
+    $viewer = employeeWith([Permission::ViewProjects->value => null]);
+
+    actingAs($viewer)->get(route('projects.index', ['search' => 'relau']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('search', 'relau')
+            ->has('projects.data', 1)->where('projects.data.0.id', $relaunch->id),
+        );
+
+    actingAs($viewer)->get(route('projects.index', ['search' => '0%']))
+        ->assertInertia(fn (Assert $page) => $page->has('projects.data', 1)->where('projects.data.0.id', $odd->id));
+});
+
+it('lists the Projects 25 at a time', function () {
+    Project::factory()->internal()->create();
+    Project::factory()->count(25)->create();
+
+    actingAs(employeeWith([Permission::ViewProjects->value => null]))->get(route('projects.index', ['page' => 2]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('projects.data', 1)
+            ->where('projects.total', 26),
+        );
+});
+
+it('rejects a Project search that is not text or is too long', function (mixed $search, string $message) {
+    actingAs(employeeWith([Permission::ViewProjects->value => null]))
+        ->get(route('projects.index', ['search' => $search]))
+        ->assertSessionHasErrors(['search' => $message]);
+})->with([
+    'not text' => [['Acme'], 'The search field must be a string.'],
+    'too long' => [str_repeat('a', 256), 'The search field must not be greater than 255 characters.'],
+]);
 
 it('offers the Clients by name on the page for creating a Project', function () {
     $initech = Client::factory()->create(['name' => 'Initech']);

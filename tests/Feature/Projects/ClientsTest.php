@@ -28,7 +28,7 @@ it('lists the Clients by name, with how many Projects each has', function () {
     actingAs(clientManager())->get(route('clients.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('clients/Index')
-            ->where('clients', [
+            ->where('clients.data', [
                 ['id' => $acme->id, 'name' => 'Acme', 'projects_count' => 0],
                 ['id' => $globex->id, 'name' => 'Globex', 'projects_count' => 2],
             ]),
@@ -37,8 +37,42 @@ it('lists the Clients by name, with how many Projects each has', function () {
 
 it('shows an empty Clients page to a company that has none', function () {
     actingAs(clientManager())->get(route('clients.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('clients', []));
+        ->assertInertia(fn (Assert $page) => $page->where('clients.data', []));
 });
+
+it('searches the Clients by any part of a name, ignoring case and treating % and _ as ordinary characters', function () {
+    $globex = Client::factory()->create(['name' => 'Globex']);
+    $odd = Client::factory()->create(['name' => 'Initech 100%']);
+    Client::factory()->create(['name' => 'Initech 1000']);
+
+    actingAs(clientManager())->get(route('clients.index', ['search' => 'GLOB']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('search', 'GLOB')
+            ->has('clients.data', 1)->where('clients.data.0.id', $globex->id),
+        );
+
+    actingAs(clientManager())->get(route('clients.index', ['search' => '0%']))
+        ->assertInertia(fn (Assert $page) => $page->has('clients.data', 1)->where('clients.data.0.id', $odd->id));
+});
+
+it('lists the Clients 25 at a time', function () {
+    Client::factory()->count(26)->create();
+
+    actingAs(clientManager())->get(route('clients.index', ['page' => 2]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('clients.data', 1)
+            ->where('clients.total', 26),
+        );
+});
+
+it('rejects a Client search that is not text or is too long', function (mixed $search, string $message) {
+    actingAs(clientManager())
+        ->get(route('clients.index', ['search' => $search]))
+        ->assertSessionHasErrors(['search' => $message]);
+})->with([
+    'not text' => [['Acme'], 'The search field must be a string.'],
+    'too long' => [str_repeat('a', 256), 'The search field must not be greater than 255 characters.'],
+]);
 
 it('lets a Client manager create a Client', function () {
     actingAs(clientManager())

@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { Plus, Target } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import FilterBar from '@/components/FilterBar.vue';
+import FilterSelect from '@/components/FilterSelect.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { useInitials } from '@/composables/useInitials';
+import { useListFilters } from '@/composables/useListFilters';
 import { outcomes } from '@/lib/outcomes';
 import { create, index, show } from '@/routes/performance-evaluations';
 import type { Paginated, PerformanceEvaluationRow, TableColumn } from '@/types';
@@ -39,31 +33,18 @@ const props = defineProps<{
     employees: Paginated<PerformanceEvaluationRow>;
 }>();
 
-const { getInitials } = useInitials();
-
-/**
- * DataTable is shared by every list, so this page restyles its rows from
- * outside: a rounder box and roomier, vertically centred Evaluation rows,
- * each positioned so the name's link can stretch over the whole row, which
- * then shows a hover background. The empty state's row (its one `colspan`
- * cell) is left as DataTable draws it.
- */
-const evaluationRowsClass =
-    '[&]:rounded-xl [&_tbody_td:not([colspan])]:py-3.5 [&_tbody_td:not([colspan])]:align-middle [&_tbody_tr]:relative [&_tbody_tr:not(:has([colspan])):has(a:hover)]:bg-muted/50';
-
 const columns: TableColumn[] = [
     { key: 'name', label: 'Employee' },
     { key: 'goals', label: 'Goals', minor: true },
     { key: 'state', label: 'Status', align: 'end' },
 ];
 
-function showYear(year: unknown): void {
-    router.get(
-        index.url({ query: { year: String(year) } }),
-        {},
-        { preserveState: true, replace: true },
-    );
-}
+const yearChoices = props.years.map((option) => ({
+    value: String(option),
+    label: String(option),
+}));
+
+const filters = useListFilters(index.url, { year: String(props.year) });
 </script>
 
 <template>
@@ -75,22 +56,6 @@ function showYear(year: unknown): void {
             description="The Evaluations you write for the Employees you are the Manager of, and those you may read"
         >
             <template #actions>
-                <Select
-                    :model-value="String(props.year)"
-                    @update:model-value="showYear"
-                >
-                    <SelectTrigger class="w-32" aria-label="Year">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="option in years"
-                            :key="option"
-                            :value="String(option)"
-                            >{{ option }}</SelectItem
-                        >
-                    </SelectContent>
-                </Select>
                 <Button v-if="canCreate" as-child>
                     <Link :href="create()">
                         <Plus class="size-4" aria-hidden="true" />
@@ -100,24 +65,22 @@ function showYear(year: unknown): void {
             </template>
         </Heading>
 
-        <DataTable
-            :columns="columns"
-            :rows="employees.data"
-            :class="evaluationRowsClass"
-        >
+        <FilterBar>
+            <FilterSelect
+                v-model="filters.year"
+                label="Year"
+                width="w-32"
+                :choices="yearChoices"
+            />
+        </FilterBar>
+
+        <DataTable :columns="columns" :rows="employees.data">
             <template #cell-name="{ row }">
-                <div class="flex items-center gap-3">
-                    <Avatar class="size-9" aria-hidden="true">
-                        <AvatarFallback class="text-xs font-medium">{{
-                            getInitials(row.name)
-                        }}</AvatarFallback>
-                    </Avatar>
-                    <Link
-                        :href="show(row.evaluation.id)"
-                        class="font-medium after:absolute after:inset-0"
-                        >{{ row.name }}</Link
-                    >
-                </div>
+                <Link
+                    :href="show(row.evaluation.id)"
+                    class="font-medium underline-offset-4 hover:underline"
+                    >{{ row.name }}</Link
+                >
             </template>
             <template #cell-goals="{ row }">
                 {{ row.evaluation.goals_count }}

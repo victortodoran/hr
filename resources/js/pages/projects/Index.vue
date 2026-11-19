@@ -6,13 +6,17 @@ import ProjectController from '@/actions/App/Http/Controllers/Projects/ProjectCo
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import FilterBar from '@/components/FilterBar.vue';
+import FilterSearch from '@/components/FilterSearch.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import Pagination from '@/components/Pagination.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useListFilters } from '@/composables/useListFilters';
 import { formatDate } from '@/lib/dates';
 import { create, index, show } from '@/routes/projects';
-import type { ProjectRecord, TableColumn } from '@/types';
+import type { Paginated, ProjectRecord, TableColumn } from '@/types';
 
 defineOptions({
     layout: {
@@ -20,9 +24,12 @@ defineOptions({
     },
 });
 
-defineProps<{
-    projects: ProjectRecord[];
+const props = defineProps<{
+    projects: Paginated<ProjectRecord>;
+    search: string;
 }>();
+
+const filters = useListFilters(index.url, { search: props.search });
 
 const page = usePage();
 const canManage = computed(() =>
@@ -54,7 +61,11 @@ const columns = computed<TableColumn[]>(() => [
             </template>
         </Heading>
 
-        <DataTable :columns="columns" :rows="projects">
+        <FilterBar>
+            <FilterSearch v-model="filters.search" />
+        </FilterBar>
+
+        <DataTable :columns="columns" :rows="projects.data">
             <template #cell-name="{ row }">
                 <Link
                     :href="show(row.id)"
@@ -95,7 +106,11 @@ const columns = computed<TableColumn[]>(() => [
             <template #empty>
                 <EmptyState
                     :icon="FolderKanban"
-                    message="Projects are the work Employees can be assigned to. There are none yet."
+                    :message="
+                        search
+                            ? `Projects are the work Employees can be assigned to. None match “${search}”.`
+                            : 'Projects are the work Employees can be assigned to. There are none yet.'
+                    "
                 >
                     <template v-if="canManage" #action>
                         <Button as-child>
@@ -105,5 +120,7 @@ const columns = computed<TableColumn[]>(() => [
                 </EmptyState>
             </template>
         </DataTable>
+
+        <Pagination :page="projects" />
     </PageContainer>
 </template>

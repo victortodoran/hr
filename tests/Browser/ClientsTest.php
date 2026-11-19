@@ -30,3 +30,18 @@ it('renames a Client and shows why one with Projects can\'t be deleted', functio
 
     expect($acme->refresh()->name)->toBe('Acme Group');
 });
+
+it('searches the Clients by name from the filter bar', function () {
+    Client::factory()->create(['name' => 'Acme']);
+    Client::factory()->create(['name' => 'Globex']);
+
+    actingAs(employeeWith([Permission::ManageClients->value => null]));
+
+    visit(route('clients.index'))
+        ->assertSee('Acme')
+        ->fill('[aria-label="Search by name"]', 'glob')
+        ->assertQueryStringHas('search', 'glob')
+        ->assertSee('Globex')
+        ->assertDontSee('Acme')
+        ->assertNoJavaScriptErrors();
+});
