@@ -122,7 +122,7 @@ it('lets Ben open Cara\'s Approved Berlin workshop and reopen its Approved Trave
     expect($approved->refresh()->state)->toBe(TravelExpenseState::Pending);
 });
 
-it('keeps Ben on a Travel Request\'s page after he approves it there, as he may still see it', function () {
+it('keeps Ben on a Travel Request\'s page after he approves it there, now that Managers see their Reports\' travel', function () {
     seed(DemoSeeder::class);
     $ben = Employee::query()->where('email', 'ben@acme.test')->sole();
     $pairing = TravelRequest::query()->where('state', TravelRequestState::Pending)->whereRelation('employee', 'email', 'lia@acme.test')->sole();

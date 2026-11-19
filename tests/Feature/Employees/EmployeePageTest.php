@@ -224,14 +224,14 @@ it('offers each viewer only the tabs they may see, each carrying only its own da
             });
     }
 })->with([
-    'themselves, with the starter Employee Role' => [fn (Employee $ben, Employee $cara) => tap($cara, fn () => giveRole($cara, [
+    'themselves, seeing their own records, Assignments and Time Off' => [fn (Employee $ben, Employee $cara) => tap($cara, fn () => giveRole($cara, [
         Permission::ViewDirectory->value => null,
         Permission::ViewEmployeeRecords->value => Scope::Own,
         Permission::ViewAssignments->value => Scope::Own,
         Permission::ViewPay->value => Scope::Own,
         Permission::ViewTimeOff->value => Scope::Own,
     ])), ['overview', 'assignments', 'time-off']],
-    'their Manager, with the starter Manager Role' => [fn (Employee $ben) => tap($ben, fn () => giveRole($ben, [
+    'their Manager, seeing their Reports\' records, Assignments and Time Off' => [fn (Employee $ben) => tap($ben, fn () => giveRole($ben, [
         Permission::ViewEmployeeRecords->value => Scope::Reports,
         Permission::ViewAssignments->value => Scope::Reports,
         Permission::ManageAssignments->value => Scope::Reports,
