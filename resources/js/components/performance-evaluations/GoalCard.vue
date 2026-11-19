@@ -22,15 +22,15 @@ import {
 } from '@/components/ui/select';
 import { goalRemovalWarning } from '@/lib/goals';
 import { outcomes } from '@/lib/outcomes';
-import { edit, show } from '@/routes/performance-evaluations/goals';
+import { show } from '@/routes/performance-evaluations/goals';
 import type { AssessedGoal, Outcome } from '@/types';
 
 /**
  * One Goal on its Performance Evaluation's page: its number, its title
  * linking to its own page, its description, its Progress and how many
  * Comments it has. Whoever may edit gives its Outcome here and, from its
- * menu, changes or removes it; anyone else who may see Outcomes reads the
- * one given.
+ * menu, changes it on its own page, opened with the fields showing, or
+ * removes it; anyone else who may see Outcomes reads the one given.
  */
 const props = defineProps<{
     goal: AssessedGoal;
@@ -96,7 +96,11 @@ const commentCountLabel = computed(() => {
                     <DropdownMenuContent align="end" class="w-40">
                         <DropdownMenuItem as-child>
                             <Link
-                                :href="edit(goalRoute)"
+                                :href="
+                                    show(goalRoute, {
+                                        query: { editing: '1' },
+                                    })
+                                "
                                 :aria-label="`Change ${goal.title}`"
                                 >Change</Link
                             >

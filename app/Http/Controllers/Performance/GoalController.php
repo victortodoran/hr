@@ -20,10 +20,11 @@ use Inertia\Response;
 
 /**
  * The Goals of a Performance Evaluation, which only the Employee's
- * effective Manager gives, changes or removes, while it is Open. Saving
+ * effective Manager gives, changes or removes, while it is Open. Giving
  * and removing lead back to the Performance Evaluation's page. Each Goal
  * has its own page, open to everyone who can see the Evaluation, with
- * its Progress and every change to it, and its Comments.
+ * its Progress and every change to it, and its Comments; its Manager
+ * changes its title and description there.
  */
 class GoalController extends Controller
 {
@@ -53,25 +54,17 @@ class GoalController extends Controller
      * Show the Goal with its Progress and every change to it, newest
      * first, and its Comments, oldest first, and whether the viewer may
      * change the Progress, write Comments, and change or remove the Goal.
+     * `?editing=1` opens it with the title and description as fields.
      */
-    public function show(PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor): Response
+    public function show(PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor, Request $request): Response
     {
-        return Inertia::render('performance-evaluations/goals/Show', GoalPage::props($performanceEvaluation, $goal, $actor));
+        return Inertia::render('performance-evaluations/goals/Show', GoalPage::props($performanceEvaluation, $goal, $actor, $request->query('editing') === '1'));
     }
 
     /**
-     * Show the form for changing a Goal, and whether it was opened from
-     * the Goal's own page (`?from=goal`), where saving then leads back.
-     */
-    public function edit(Request $request, PerformanceEvaluation $performanceEvaluation, Goal $goal): Response
-    {
-        return Inertia::render('performance-evaluations/goals/Edit', GoalFormPage::edit($performanceEvaluation, $goal, $request->query('from') === 'goal'));
-    }
-
-    /**
-     * Change a Goal's title and description, then lead back to where it
-     * was changed from. One whose Performance Evaluation was Completed
-     * since the policy check is refused, never changed.
+     * Change a Goal's title and description, which is done on its own
+     * page, then lead back there. One whose Performance Evaluation was
+     * Completed since the policy check is refused, never changed.
      */
     public function update(GoalRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, ChangeGoal $changeGoal): RedirectResponse
     {
@@ -80,9 +73,7 @@ class GoalController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal changed.')]);
 
-        return $request->returnsToGoal()
-            ? to_route('performance-evaluations.goals.show', [$performanceEvaluation, $goal])
-            : to_route('performance-evaluations.show', $performanceEvaluation);
+        return to_route('performance-evaluations.goals.show', [$performanceEvaluation, $goal]);
     }
 
     /**

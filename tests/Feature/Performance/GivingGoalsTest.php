@@ -161,12 +161,8 @@ it('lets the effective Manager give, change and remove Goals while the Evaluatio
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Goal given.']);
     $goal = $evaluation->goals()->sole();
 
-    actingAs($ben)->get(route('performance-evaluations.goals.edit', [$evaluation, $goal]))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('performance-evaluations/goals/Edit')
-            ->where('goal', ['id' => $goal->id, 'title' => 'Lead the Checkout API', 'description' => 'Own its design.']));
     actingAs($ben)->put(route('performance-evaluations.goals.update', [$evaluation, $goal]), ['title' => 'Lead the Payments API', 'description' => 'Own its delivery.'])
-        ->assertRedirect(route('performance-evaluations.show', $evaluation))
+        ->assertRedirect(route('performance-evaluations.goals.show', [$evaluation, $goal]))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Goal changed.']);
     expect(storedGoals($evaluation))->toBe([['title' => 'Lead the Payments API', 'description' => 'Own its delivery.']]);
 

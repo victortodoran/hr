@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
-import { MessageSquare } from '@lucide/vue';
+import { Form, Head, router, setLayoutProps, useForm } from '@inertiajs/vue3';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { Check, MessageSquare } from '@lucide/vue';
+import { toast } from 'vue-sonner';
 import GoalController from '@/actions/App/Http/Controllers/Performance/GoalController';
 import GoalCommentController from '@/actions/App/Http/Controllers/Performance/GoalCommentController';
 import GoalProgressController from '@/actions/App/Http/Controllers/Performance/GoalProgressController';
@@ -10,6 +11,7 @@ import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import GoalFields from '@/components/performance-evaluations/GoalFields.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
@@ -27,7 +29,7 @@ import { goalRemovalWarning } from '@/lib/goals';
 import { progresses } from '@/lib/progress';
 import { index as mine } from '@/routes/my-performance-evaluations';
 import { index, show } from '@/routes/performance-evaluations';
-import { edit, show as showGoal } from '@/routes/performance-evaluations/goals';
+import { show as showGoal } from '@/routes/performance-evaluations/goals';
 import type {
     BreadcrumbItem,
     GoalComment,
@@ -44,8 +46,9 @@ import type {
  * was given, and the thread of Comments on it, oldest first. The
  * Employee and their effective Manager change the Progress and write
  * Comments while the Performance Evaluation is Open; anyone else who can
- * see it reads them. Their effective Manager also changes or removes the
- * Goal itself from here.
+ * see it reads them. Picking a Progress saves it straight away. Their
+ * effective Manager also changes the Goal's title and description here,
+ * opened straight into the fields with `?editing=1`, or removes it.
  */
 const props = defineProps<{
     evaluation: PerformanceEvaluationSummary;
@@ -60,15 +63,128 @@ const props = defineProps<{
     canComment: boolean;
     /** Whether the viewer may change or remove the Goal itself. */
     canEdit: boolean;
+    /** Whether it opens with the title and description as fields (`?editing=1`). */
+    startsEditing: boolean;
 }>();
 
-/** The Progress chosen in the form, the Goal's own until changed. */
+const goalRoute = {
+    performanceEvaluation: props.evaluation.id,
+    goal: props.goal.id,
+};
+
+/** The Progress showing in the dropdown, the Goal's own until another is picked. */
 const chosenProgress = ref<Progress>(props.goal.progress);
 
 watch(
     () => props.goal.progress,
     (progress) => (chosenProgress.value = progress),
 );
+
+/** Whether a picked Progress is being saved. */
+const savingProgress = ref(false);
+
+/** Whether the brief "Saved" tick shows beside the dropdown. */
+const progressSaved = ref(false);
+
+let hideSavedTick: ReturnType<typeof setTimeout> | undefined;
+
+onBeforeUnmount(() => clearTimeout(hideSavedTick));
+
+/**
+ * Save the picked Progress straight away. When saving fails, for
+ * example because the Performance Evaluation was Completed meanwhile,
+ * the dropdown goes back to the Goal's Progress and a toast says why.
+ */
+function saveProgress(progress: Progress): void {
+    if (progress === props.goal.progress) {
+        return;
+    }
+
+    chosenProgress.value = progress;
+
+    const refuse = (message: string): void => {
+        chosenProgress.value = props.goal.progress;
+        toast.error(message);
+    };
+
+    router.put(
+        GoalProgressController.update.url(goalRoute),
+        { progress },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                savingProgress.value = true;
+                progressSaved.value = false;
+            },
+            onFinish: () => (savingProgress.value = false),
+            onSuccess: () => {
+                progressSaved.value = true;
+                clearTimeout(hideSavedTick);
+                hideSavedTick = setTimeout(
+                    () => (progressSaved.value = false),
+                    2000,
+                );
+            },
+            onError: (errors) =>
+                refuse(errors.progress ?? 'The Progress wasn’t saved.'),
+            onHttpException: (response) => {
+                if (response.status !== 403) {
+                    refuse('The Progress wasn’t saved. Try again.');
+
+                    return false;
+                }
+
+                refuse(
+                    'The Progress wasn’t saved: you can’t change it any more, as the Performance Evaluation may have been Completed.',
+                );
+                router.reload();
+
+                return false;
+            },
+            onNetworkError: () => {
+                refuse(
+                    'The Progress wasn’t saved: the connection failed. Try again.',
+                );
+
+                return false;
+            },
+        },
+    );
+}
+
+/** Whether the Goal's title and description show as fields. */
+const editing = ref(props.startsEditing);
+
+const goalForm = useForm({
+    title: props.goal.title,
+    description: props.goal.description,
+});
+
+/** Open the fields on the Goal's title and description as they are now. */
+function startEditing(): void {
+    goalForm.defaults({
+        title: props.goal.title,
+        description: props.goal.description,
+    });
+    goalForm.reset();
+    goalForm.clearErrors();
+    editing.value = true;
+}
+
+/** Put the text back and close the fields. */
+function cancelEditing(): void {
+    goalForm.reset();
+    goalForm.clearErrors();
+    editing.value = false;
+}
+
+/** Save the change and stay here; errors keep the fields open. */
+function saveGoal(): void {
+    goalForm.submit(GoalController.update(goalRoute), {
+        preserveScroll: true,
+        onSuccess: () => (editing.value = false),
+    });
+}
 
 /** One line of the history: a change, or the Goal starting Not Started. */
 type HistoryRow = {
@@ -117,13 +233,7 @@ setLayoutProps({
     breadcrumbs: [
         ...leadingBreadcrumbs,
         { title: evaluationTitle, href: show(props.evaluation.id) },
-        {
-            title: props.goal.title,
-            href: showGoal({
-                performanceEvaluation: props.evaluation.id,
-                goal: props.goal.id,
-            }),
-        },
+        { title: props.goal.title, href: showGoal(goalRoute) },
     ],
 });
 </script>
@@ -132,7 +242,33 @@ setLayoutProps({
     <Head :title="`Goal · ${goal.title}`" />
 
     <PageContainer width="wide">
-        <header class="flex flex-wrap items-start justify-between gap-4">
+        <form
+            v-if="editing"
+            class="flex flex-col gap-4"
+            @submit.prevent="saveGoal"
+        >
+            <div class="flex flex-col gap-1">
+                <h1 class="sr-only">{{ goal.title }}</h1>
+                <p class="text-sm text-muted-foreground">
+                    {{ evaluation.employee.name }} · {{ evaluation.year }}
+                    Performance Evaluation
+                </p>
+            </div>
+            <GoalFields
+                v-model:title="goalForm.title"
+                v-model:description="goalForm.description"
+                :errors="goalForm.errors"
+            />
+            <div class="flex gap-2">
+                <SubmitButton :processing="goalForm.processing"
+                    >Save Goal</SubmitButton
+                >
+                <Button type="button" variant="ghost" @click="cancelEditing"
+                    >Cancel</Button
+                >
+            </div>
+        </form>
+        <header v-else class="flex flex-wrap items-start justify-between gap-4">
             <div class="flex min-w-0 flex-col gap-1">
                 <h1 class="text-xl font-semibold tracking-tight">
                     {{ goal.title }}
@@ -144,27 +280,9 @@ setLayoutProps({
                 <p class="whitespace-pre-line">{{ goal.description }}</p>
             </div>
             <div v-if="canEdit" class="flex gap-2">
-                <Button variant="outline" as-child>
-                    <Link
-                        :href="
-                            edit(
-                                {
-                                    performanceEvaluation: evaluation.id,
-                                    goal: goal.id,
-                                },
-                                { query: { from: 'goal' } },
-                            )
-                        "
-                        >Change</Link
-                    >
-                </Button>
+                <Button variant="outline" @click="startEditing">Edit</Button>
                 <ConfirmDeleteDialog
-                    :form="
-                        GoalController.destroy.form({
-                            performanceEvaluation: evaluation.id,
-                            goal: goal.id,
-                        })
-                    "
+                    :form="GoalController.destroy.form(goalRoute)"
                     :title="`Remove “${goal.title}”?`"
                     :description="goalRemovalWarning(comments.length)"
                     confirm-label="Remove Goal"
@@ -181,49 +299,38 @@ setLayoutProps({
 
         <section class="space-y-2">
             <h2 class="text-sm font-medium">Progress</h2>
-            <Form
+            <div
                 v-if="canChangeProgress"
-                v-bind="
-                    GoalProgressController.update.form({
-                        performanceEvaluation: evaluation.id,
-                        goal: goal.id,
-                    })
-                "
-                :options="{ preserveScroll: true }"
-                class="flex flex-wrap items-end gap-2"
-                v-slot="{ errors, processing }"
+                class="flex flex-wrap items-center gap-2"
             >
-                <div class="grid gap-2">
-                    <Label for="goal-progress" class="sr-only">Progress</Label>
-                    <Select
-                        name="progress"
-                        required
-                        :model-value="chosenProgress"
-                        @update:model-value="
-                            chosenProgress = $event as Progress
-                        "
-                    >
-                        <SelectTrigger id="goal-progress" class="w-40">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem
-                                v-for="(label, progress) in progresses"
-                                :key="progress"
-                                :value="progress"
-                                >{{ label }}</SelectItem
-                            >
-                        </SelectContent>
-                    </Select>
-                </div>
-                <SubmitButton
-                    variant="outline"
-                    :processing="processing"
-                    :disabled="chosenProgress === goal.progress"
-                    >Save Progress</SubmitButton
+                <Label for="goal-progress" class="sr-only">Progress</Label>
+                <Select
+                    :model-value="chosenProgress"
+                    :disabled="savingProgress"
+                    @update:model-value="saveProgress($event as Progress)"
                 >
-                <InputError class="w-full" :message="errors.progress" />
-            </Form>
+                    <SelectTrigger id="goal-progress" class="w-40">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem
+                            v-for="(label, progress) in progresses"
+                            :key="progress"
+                            :value="progress"
+                            >{{ label }}</SelectItem
+                        >
+                    </SelectContent>
+                </Select>
+                <span
+                    class="inline-flex items-center gap-1 text-sm text-muted-foreground"
+                    aria-live="polite"
+                >
+                    <template v-if="progressSaved">
+                        <Check class="size-4" aria-hidden="true" />
+                        Saved
+                    </template>
+                </span>
+            </div>
             <StatusBadge v-else :state="goal.progress" />
         </section>
 
@@ -251,12 +358,7 @@ setLayoutProps({
             />
             <Form
                 v-if="canComment"
-                v-bind="
-                    GoalCommentController.store.form({
-                        performanceEvaluation: evaluation.id,
-                        goal: goal.id,
-                    })
-                "
+                v-bind="GoalCommentController.store.form(goalRoute)"
                 reset-on-success
                 :options="{ preserveScroll: true }"
                 class="flex flex-wrap items-start gap-2"
