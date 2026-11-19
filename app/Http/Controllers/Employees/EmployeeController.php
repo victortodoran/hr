@@ -81,14 +81,16 @@ class EmployeeController extends Controller
 
     /**
      * Save changes to an Employee's record. Their Assignments are trimmed
-     * to end by their Leaving Date in the same transaction.
+     * to end by their Leaving Date in the same transaction. The form opens
+     * again, or their page when the change, such as a new Manager, took
+     * them out of what the viewer may change.
      */
-    public function update(EmployeeRequest $request, Employee $employee, UpdateTrimmingAssignments $updateTrimming): RedirectResponse
+    public function update(#[CurrentUser] Employee $actor, EmployeeRequest $request, Employee $employee, UpdateTrimmingAssignments $updateTrimming): RedirectResponse
     {
         $updateTrimming->updateEmployee($employee, $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Employee updated.')]);
 
-        return to_route('employees.edit', $employee);
+        return $actor->can('update', $employee) ? to_route('employees.edit', $employee) : to_route('employees.show', $employee);
     }
 }

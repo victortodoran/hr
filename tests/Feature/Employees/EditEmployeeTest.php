@@ -135,6 +135,18 @@ it('lets an Employee edit only the Employees their Scope for manage employees co
     'everyone' => [Scope::Everyone, ['Dana', 'Ben', 'Cara', 'Dev']],
 ]);
 
+it('opens the Employee\'s page after a change that takes them out of what the viewer may edit', function () {
+    $ben = Employee::factory()->create();
+    $cara = Employee::factory()->reportingTo($ben)->create();
+    $dana = Employee::factory()->create();
+    giveRole($ben, [Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ManageEmployees->value => Scope::Reports]);
+
+    actingAs($ben)->patch(route('employees.update', $cara), employeeRecordFields($cara, ['manager_id' => $dana->id]))
+        ->assertRedirect(route('employees.show', $cara));
+
+    expect($cara->refresh()->manager_id)->toBe($dana->id);
+});
+
 it('resends invitations only to Employees the viewer may edit', function () {
     $dana = Employee::factory()->invited()->create();
     $ben = Employee::factory()->reportingTo($dana)->create();
