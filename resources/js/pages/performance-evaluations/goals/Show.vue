@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { Form, Head, setLayoutProps, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { MessageSquare } from '@lucide/vue';
 import GoalController from '@/actions/App/Http/Controllers/Performance/GoalController';
-import GoalOutcomeController from '@/actions/App/Http/Controllers/Performance/GoalOutcomeController';
 import GoalCommentController from '@/actions/App/Http/Controllers/Performance/GoalCommentController';
 import GoalProgressController from '@/actions/App/Http/Controllers/Performance/GoalProgressController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import SavedTick from '@/components/SavedTick.vue';
 import GoalFields from '@/components/performance-evaluations/GoalFields.vue';
+import GoalOutcomeSelect from '@/components/performance-evaluations/GoalOutcomeSelect.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -30,7 +32,11 @@ import { formatDate, formatDateTime } from '@/lib/dates';
 import { goalRemovalWarning } from '@/lib/goals';
 import { outcomes } from '@/lib/outcomes';
 import { progresses } from '@/lib/progress';
-import { statusColours, statusPillTrigger } from '@/lib/status';
+import {
+    progressDotColours,
+    statusColours,
+    statusPillTrigger,
+} from '@/lib/status';
 import { index as mine } from '@/routes/my-performance-evaluations';
 import { index, show } from '@/routes/performance-evaluations';
 import { show as showGoal } from '@/routes/performance-evaluations/goals';
@@ -38,21 +44,22 @@ import type {
     BreadcrumbItem,
     GoalComment,
     GoalRecord,
-    Outcome,
     PerformanceEvaluationSummary,
     Progress,
     ProgressChange,
 } from '@/types';
 
 /**
- * One Goal on its own page: its title, description and Progress, and
- * every change to the Progress, newest first, back to Not Started when it
- * was given, and the thread of Comments on it, oldest first. The
- * Employee and their effective Manager change the Progress and write
- * Comments while the Performance Evaluation is Open; anyone else who can
- * see it reads them. Picking a Progress saves it straight away. Their
- * effective Manager also changes the Goal's title and description here,
- * opened straight into the fields with `?editing=1`, or removes it.
+ * One Goal on its own page: its title and description with the thread of
+ * Comments on it, oldest first, and beside them its Progress, its Outcome
+ * and every change to the Progress, newest first, back to Not Started when
+ * it was given. The Employee and their effective Manager change the
+ * Progress and write Comments while the Performance Evaluation is Open;
+ * anyone else who can see it reads them. Their effective Manager also
+ * gives, changes or clears its Outcome, and changes the Goal's title and
+ * description here, opened straight into the fields with `?editing=1`, or
+ * removes it; anyone else who may see Outcomes reads the one given.
+ * Picking a Progress or an Outcome saves it straight away.
  */
 const props = defineProps<{
     evaluation: PerformanceEvaluationSummary;
@@ -65,7 +72,7 @@ const props = defineProps<{
     canChangeProgress: boolean;
     /** Whether the viewer may write Comments on the Goal. */
     canComment: boolean;
-    /** Whether the viewer may change or remove the Goal itself, and give its Outcome. */
+    /** Whether the viewer may change or remove the Goal itself and give its Outcome, which means they also see it. */
     canEdit: boolean;
     /** Whether the viewer sees its Outcome. */
     canSeeOutcomes: boolean;
@@ -79,27 +86,11 @@ const goalRoute = {
 };
 
 /** The Progress dropdown, which saves what is picked straight away. */
-const {
-    chosen: chosenProgress,
-    saving: savingProgress,
-    justSaved: progressSaved,
-    save: saveProgress,
-} = useSaveOnPick<Progress>({
+const progress = useSaveOnPick<Progress>({
     saved: () => props.goal.progress,
     url: () => GoalProgressController.update.url(goalRoute),
     field: 'progress',
     label: 'Progress',
-});
-
-/** The value the Outcome dropdown shows while no Outcome is given. */
-const notGiven = 'not-given';
-
-/** The Outcome dropdown, which saves what is picked straight away. */
-const outcome = useSaveOnPick<Outcome | null>({
-    saved: () => props.goal.outcome,
-    url: () => GoalOutcomeController.update.url(goalRoute),
-    field: 'outcome',
-    label: 'Outcome',
 });
 
 /** Whether the Goal's title and description show as fields. */
@@ -170,14 +161,6 @@ const shownHistoryRows = computed(() =>
         ? historyRows.value
         : historyRows.value.slice(0, historyPreviewLength),
 );
-
-/** Each Progress's dot on the History timeline, in its status colour. */
-const progressDots: Record<Progress, string> = {
-    'not-started': 'bg-status-pending-foreground',
-    'on-track': 'bg-status-upcoming-foreground',
-    'at-risk': 'bg-status-declined-foreground',
-    done: 'bg-status-approved-foreground',
-};
 
 const evaluationTitle = props.isOwn
     ? String(props.evaluation.year)
@@ -306,10 +289,11 @@ setLayoutProps({
                             </div>
                         </li>
                     </ol>
-                    <p v-else class="text-sm text-muted-foreground">
-                        What {{ evaluation.employee.name }} and their Manager
-                        write about this Goal appears here.
-                    </p>
+                    <EmptyState
+                        v-else
+                        :icon="MessageSquare"
+                        :message="`What ${evaluation.employee.name} and their Manager write about this Goal appears here.`"
+                    />
                     <Form
                         v-if="canComment"
                         v-bind="GoalCommentController.store.form(goalRoute)"
@@ -341,145 +325,117 @@ setLayoutProps({
             </div>
 
             <aside
-                class="flex w-full flex-[1_1_16rem] flex-col gap-5 rounded-xl border bg-card p-5 text-card-foreground shadow-sm sm:max-w-xs"
+                class="w-full flex-[1_1_16rem] sm:max-w-xs"
                 aria-label="Progress, Outcome and History"
             >
-                <section class="flex flex-col gap-2">
-                    <h2
-                        class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
-                    >
-                        Progress
-                    </h2>
-                    <div
-                        v-if="canChangeProgress"
-                        class="flex items-center gap-2"
-                    >
-                        <Select
-                            :model-value="chosenProgress"
-                            :disabled="savingProgress"
-                            @update:model-value="
-                                saveProgress($event as Progress)
-                            "
+                <Card class="gap-5 p-5">
+                    <section class="flex flex-col gap-2">
+                        <h2
+                            class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
                         >
-                            <SelectTrigger
-                                id="goal-progress"
-                                size="sm"
-                                aria-label="Progress"
-                                :class="[
-                                    statusPillTrigger,
-                                    statusColours[chosenProgress],
-                                ]"
+                            Progress
+                        </h2>
+                        <div
+                            v-if="canChangeProgress"
+                            class="flex items-center gap-2"
+                        >
+                            <Select
+                                :model-value="progress.chosen.value"
+                                :disabled="progress.saving.value"
+                                @update:model-value="
+                                    progress.save($event as Progress)
+                                "
                             >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="(label, progress) in progresses"
-                                    :key="progress"
-                                    :value="progress"
-                                    >{{ label }}</SelectItem
+                                <SelectTrigger
+                                    id="goal-progress"
+                                    size="sm"
+                                    aria-label="Progress"
+                                    :class="[
+                                        statusPillTrigger,
+                                        statusColours[progress.chosen.value],
+                                    ]"
                                 >
-                            </SelectContent>
-                        </Select>
-                        <SavedTick :shown="progressSaved" />
-                    </div>
-                    <StatusBadge v-else :state="goal.progress" />
-                </section>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem
+                                        v-for="(label, value) in progresses"
+                                        :key="value"
+                                        :value="value"
+                                        >{{ label }}</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+                            <SavedTick :shown="progress.justSaved.value" />
+                        </div>
+                        <StatusBadge v-else :state="goal.progress" />
+                    </section>
 
-                <section
-                    v-if="canEdit || (canSeeOutcomes && goal.outcome)"
-                    class="flex flex-col gap-2"
-                >
-                    <h2
-                        class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                    <section
+                        v-if="canEdit || (canSeeOutcomes && goal.outcome)"
+                        class="flex flex-col gap-2"
                     >
-                        Outcome
-                    </h2>
-                    <div v-if="canEdit" class="flex items-center gap-2">
-                        <Select
-                            :model-value="outcome.chosen.value ?? notGiven"
-                            :disabled="outcome.saving.value"
-                            @update:model-value="
-                                outcome.save(
-                                    $event === notGiven
-                                        ? null
-                                        : ($event as Outcome),
-                                )
-                            "
+                        <h2
+                            class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
                         >
-                            <SelectTrigger
-                                size="sm"
-                                aria-label="Outcome"
-                                :class="[
-                                    statusPillTrigger,
-                                    outcome.chosen.value
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-status-closed text-status-closed-foreground',
-                                ]"
+                            Outcome
+                        </h2>
+                        <GoalOutcomeSelect
+                            v-if="canEdit"
+                            :outcome="goal.outcome"
+                            :performance-evaluation-id="evaluation.id"
+                            :goal-id="goal.id"
+                            label="Outcome"
+                        />
+                        <span
+                            v-else-if="goal.outcome"
+                            class="inline-flex w-fit rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                            >{{ outcomes[goal.outcome] }}</span
+                        >
+                    </section>
+
+                    <div class="h-px bg-border" aria-hidden="true" />
+
+                    <section class="flex flex-col gap-3">
+                        <h2
+                            class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                        >
+                            History
+                        </h2>
+                        <ol class="ml-1 flex flex-col gap-3.5 border-l pl-4">
+                            <li
+                                v-for="row in shownHistoryRows"
+                                :key="row.key"
+                                class="relative text-sm"
                             >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem :value="notGiven"
-                                    >Not given</SelectItem
-                                >
-                                <SelectItem
-                                    v-for="(label, value) in outcomes"
-                                    :key="value"
-                                    :value="value"
-                                    >{{ label }}</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-                        <SavedTick :shown="outcome.justSaved.value" />
-                    </div>
-                    <span
-                        v-else-if="goal.outcome"
-                        class="inline-flex w-fit rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground"
-                        >{{ outcomes[goal.outcome] }}</span
-                    >
-                </section>
-
-                <div class="h-px bg-border" aria-hidden="true" />
-
-                <section class="flex flex-col gap-3">
-                    <h2
-                        class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
-                    >
-                        History
-                    </h2>
-                    <ol class="ml-1 flex flex-col gap-3.5 border-l pl-4">
-                        <li
-                            v-for="row in shownHistoryRows"
-                            :key="row.key"
-                            class="relative text-sm"
+                                <span
+                                    class="absolute top-1.5 -left-[1.3rem] size-2 rounded-full ring-4 ring-card"
+                                    :class="progressDotColours[row.progress]"
+                                    aria-hidden="true"
+                                />
+                                <p class="font-medium">
+                                    {{ progresses[row.progress] }}
+                                </p>
+                                <p class="text-xs text-muted-foreground">
+                                    {{ row.description }} · {{ row.when }}
+                                </p>
+                            </li>
+                        </ol>
+                        <Button
+                            v-if="historyRows.length > historyPreviewLength"
+                            variant="link"
+                            size="sm"
+                            class="h-auto self-start p-0"
+                            @click="showingAllHistory = !showingAllHistory"
                         >
-                            <span
-                                class="absolute top-1.5 -left-[1.3rem] size-2 rounded-full ring-4 ring-card"
-                                :class="progressDots[row.progress]"
-                                aria-hidden="true"
-                            />
-                            <p class="font-medium">
-                                {{ progresses[row.progress] }}
-                            </p>
-                            <p class="text-xs text-muted-foreground">
-                                {{ row.description }} · {{ row.when }}
-                            </p>
-                        </li>
-                    </ol>
-                    <button
-                        v-if="historyRows.length > historyPreviewLength"
-                        type="button"
-                        class="self-start text-sm font-medium underline-offset-4 hover:underline"
-                        @click="showingAllHistory = !showingAllHistory"
-                    >
-                        {{
-                            showingAllHistory
-                                ? 'Show fewer'
-                                : `Show all ${historyRows.length} changes`
-                        }}
-                    </button>
-                </section>
+                            {{
+                                showingAllHistory
+                                    ? 'Show fewer'
+                                    : `Show all ${historyRows.length} changes`
+                            }}
+                        </Button>
+                    </section>
+                </Card>
             </aside>
         </div>
     </PageContainer>

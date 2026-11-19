@@ -3,9 +3,9 @@ import { Link } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { MessageSquare, MoreHorizontal } from '@lucide/vue';
 import GoalController from '@/actions/App/Http/Controllers/Performance/GoalController';
-import GoalOutcomeController from '@/actions/App/Http/Controllers/Performance/GoalOutcomeController';
 import GoalProgressController from '@/actions/App/Http/Controllers/Performance/GoalProgressController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
+import GoalOutcomeSelect from '@/components/performance-evaluations/GoalOutcomeSelect.vue';
 import SavedTick from '@/components/SavedTick.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ import { outcomes } from '@/lib/outcomes';
 import { progresses } from '@/lib/progress';
 import { statusColours, statusPillTrigger } from '@/lib/status';
 import { show } from '@/routes/performance-evaluations/goals';
-import type { AssessedGoal, Outcome, Progress } from '@/types';
+import type { AssessedGoal, Progress } from '@/types';
 
 /**
  * One Goal on its Performance Evaluation's page: its number, its title
@@ -68,17 +68,6 @@ const progress = useSaveOnPick<Progress>({
     url: () => GoalProgressController.update.url(goalRoute.value),
     field: 'progress',
     label: 'Progress',
-});
-
-/** The Outcome dropdown's choice for none, which clears it. */
-const notGiven = 'not-given';
-
-/** The Outcome dropdown, which saves what is picked straight away. */
-const outcome = useSaveOnPick<Outcome | null>({
-    saved: () => props.goal.outcome,
-    url: () => GoalOutcomeController.update.url(goalRoute.value),
-    field: 'outcome',
-    label: 'Outcome',
 });
 
 /** "No comments", "1 comment" or "3 comments". */
@@ -196,40 +185,12 @@ const commentCountLabel = computed(() => {
                         aria-hidden="true"
                         >Outcome</span
                     >
-                    <Select
-                        :model-value="outcome.chosen.value ?? notGiven"
-                        :disabled="outcome.saving.value"
-                        @update:model-value="
-                            outcome.save(
-                                $event === notGiven
-                                    ? null
-                                    : ($event as Outcome),
-                            )
-                        "
-                    >
-                        <SelectTrigger
-                            size="sm"
-                            :class="[
-                                statusPillTrigger,
-                                outcome.chosen.value
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-status-closed text-status-closed-foreground',
-                            ]"
-                            :aria-label="`Outcome of ${goal.title}`"
-                        >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem :value="notGiven">Not given</SelectItem>
-                            <SelectItem
-                                v-for="(label, value) in outcomes"
-                                :key="value"
-                                :value="value"
-                                >{{ label }}</SelectItem
-                            >
-                        </SelectContent>
-                    </Select>
-                    <SavedTick :shown="outcome.justSaved.value" />
+                    <GoalOutcomeSelect
+                        :outcome="goal.outcome"
+                        :performance-evaluation-id="performanceEvaluationId"
+                        :goal-id="goal.id"
+                        :label="`Outcome of ${goal.title}`"
+                    />
                 </div>
                 <span
                     v-else-if="canSeeOutcomes && goal.outcome"

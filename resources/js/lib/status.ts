@@ -1,4 +1,4 @@
-import type { StatusBadgeState } from '@/types';
+import type { Progress, StatusBadgeState } from '@/types';
 
 /**
  * Each state's name as people read it.
@@ -21,8 +21,8 @@ export const statusLabels: Record<StatusBadgeState, string> = {
  * Each state's status colour: Pending amber, Approved green, Declined red,
  * Cancelled grey, Upcoming blue, and a Performance Evaluation amber while
  * Open, since it waits on the Employee's Manager, and green once Completed.
- * A Goal's Progress is yellow while Not Started, blue On Track, red At
- * Risk, since it needs attention, and green once Done.
+ * A Goal's Progress is blue while Not Started, green On Track, orange At
+ * Risk, since it needs attention, and grey once Done.
  */
 export const statusColours: Record<StatusBadgeState, string> = {
     pending: 'bg-status-pending text-status-pending-foreground',
@@ -32,10 +32,21 @@ export const statusColours: Record<StatusBadgeState, string> = {
     upcoming: 'bg-status-upcoming text-status-upcoming-foreground',
     open: 'bg-status-pending text-status-pending-foreground',
     completed: 'bg-status-approved text-status-approved-foreground',
-    'not-started': 'bg-status-pending text-status-pending-foreground',
-    'on-track': 'bg-status-upcoming text-status-upcoming-foreground',
-    'at-risk': 'bg-status-declined text-status-declined-foreground',
-    done: 'bg-status-approved text-status-approved-foreground',
+    'not-started': 'bg-status-upcoming text-status-upcoming-foreground',
+    'on-track': 'bg-status-approved text-status-approved-foreground',
+    'at-risk': 'bg-status-attention text-status-attention-foreground',
+    done: 'bg-status-closed text-status-closed-foreground',
+};
+
+/**
+ * Each Progress's dot on a Goal's History timeline: the strong shade of
+ * its status colour in statusColours.
+ */
+export const progressDotColours: Record<Progress, string> = {
+    'not-started': 'bg-status-upcoming-foreground',
+    'on-track': 'bg-status-approved-foreground',
+    'at-risk': 'bg-status-attention-foreground',
+    done: 'bg-status-closed-foreground',
 };
 
 /**
