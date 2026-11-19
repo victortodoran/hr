@@ -23,7 +23,7 @@ One line per rule; list each place a diff breaks one.
 
 - Pages use the shared page container (`PageContainer`): `width="narrow"` for forms, `width="wide"` for lists.
 - States are shown with the status badge (`StatusBadge`), never with ad-hoc colours; colour is used only for state.
-- Each status colour means one thing across the app: amber waiting on someone, green settled or active, red refused, grey over or closed, blue not started yet, orange needs attention. A new state takes the colour of its meaning, or a new colour, never one with another meaning.
+- Each status colour means one thing across the app: amber waiting on someone, green settled or active, red refused, grey neutral (open with nothing waiting on a decision, over or closed), blue not started yet, orange needs attention. A new state takes the colour of its meaning, or a new colour, never one with another meaning.
 - Tabbed pages resolve `?tab=` through an enum and fall back to the default tab when it's unknown or not allowed (see `ApprovalsTab` and `EmployeePageTab`).
 - A dropdown (`Select`) whose field the server requires carries `name` and `required`, so the browser stops an empty submit.
 - Submit buttons show a spinner while saving (`SubmitButton`).

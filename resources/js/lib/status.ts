@@ -19,8 +19,8 @@ export const statusLabels: Record<StatusBadgeState, string> = {
 
 /**
  * Each state's status colour: Pending amber, Approved green, Declined red,
- * Cancelled grey, Upcoming blue, and a Performance Evaluation amber while
- * Open, since it waits on the Employee's Manager, and green once Completed.
+ * Cancelled grey, Upcoming blue, and a Performance Evaluation grey while
+ * Open, since nothing waits on a decision, and green once Completed.
  * A Goal's Progress is blue while Not Started, green On Track, orange At
  * Risk, since it needs attention, and grey once Done.
  */
@@ -30,7 +30,7 @@ export const statusColours: Record<StatusBadgeState, string> = {
     declined: 'bg-status-declined text-status-declined-foreground',
     cancelled: 'bg-status-closed text-status-closed-foreground',
     upcoming: 'bg-status-upcoming text-status-upcoming-foreground',
-    open: 'bg-status-pending text-status-pending-foreground',
+    open: 'bg-status-closed text-status-closed-foreground',
     completed: 'bg-status-approved text-status-approved-foreground',
     'not-started': 'bg-status-upcoming text-status-upcoming-foreground',
     'on-track': 'bg-status-approved text-status-approved-foreground',

@@ -88,24 +88,18 @@ const manageItems = computed<NavItem[]>(() => [
               },
           ]
         : []),
+    ...(auth.value.canSeeWorkEntryList
+        ? [{ title: 'Work', href: workEntryList(), icon: Clock }]
+        : []),
+    ...(auth.value.canSeeTravelRequestList
+        ? [{ title: 'Travel', href: travelRequestList(), icon: Luggage }]
+        : []),
     ...(auth.value.canSeePerformanceEvaluations
         ? [
               {
-                  title: 'Performance Evaluations',
+                  title: 'Performance',
                   href: performanceEvaluations(),
                   icon: ClipboardCheck,
-              },
-          ]
-        : []),
-    ...(auth.value.canSeeWorkEntryList
-        ? [{ title: 'Work Entries', href: workEntryList(), icon: Clock }]
-        : []),
-    ...(auth.value.canSeeTravelRequestList
-        ? [
-              {
-                  title: 'Travel Requests',
-                  href: travelRequestList(),
-                  icon: Luggage,
               },
           ]
         : []),
