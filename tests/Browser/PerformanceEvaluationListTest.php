@@ -34,7 +34,7 @@ it('opens an Evaluation from anywhere on its row', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('scrolls the list inside its box on a phone', function () {
+it('fits the list on a phone without scrolling the page sideways', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara Alexandrescu-Whitfield-Lindqvist']);
     PerformanceEvaluation::factory()->of($cara)->create();

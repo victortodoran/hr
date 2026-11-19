@@ -40,6 +40,16 @@ const props = defineProps<{
 
 const { getInitials } = useInitials();
 
+/**
+ * DataTable is shared by every list, so this page restyles its rows from
+ * outside: a rounder box and roomier, vertically centred Evaluation rows,
+ * each positioned so the name's link can stretch over the whole row, which
+ * then shows a hover background. The empty state's row (its one `colspan`
+ * cell) is left as DataTable draws it.
+ */
+const evaluationRowsClass =
+    '[&]:rounded-xl [&_tbody_td:not([colspan])]:py-3.5 [&_tbody_td:not([colspan])]:align-middle [&_tbody_tr]:relative [&_tbody_tr:not(:has([colspan])):has(a:hover)]:bg-muted/50';
+
 const columns: TableColumn[] = [
     { key: 'name', label: 'Employee' },
     { key: 'goals', label: 'Goals', minor: true },
@@ -95,15 +105,10 @@ function showYear(year: unknown): void {
             </div>
         </header>
 
-        <!--
-            DataTable's own classes are overridden from here for this page's
-            look: a rounder box, roomier rows, and rows that are positioned so
-            the name's link can stretch over the whole row and hover it.
-        -->
         <DataTable
             :columns="columns"
             :rows="employees.data"
-            class="[&]:rounded-xl [&_tbody_td]:py-3.5 [&_tbody_td]:align-middle [&_tbody_td]:whitespace-nowrap [&_tbody_tr]:relative [&_tbody_tr:has(a:hover)]:bg-muted/50"
+            :class="evaluationRowsClass"
         >
             <template #cell-name="{ row }">
                 <div class="flex items-center gap-3">
@@ -123,7 +128,9 @@ function showYear(year: unknown): void {
                 {{ row.evaluation.goals_count }}
             </template>
             <template #cell-state="{ row }">
-                <div class="flex items-center justify-end gap-2">
+                <div
+                    class="flex items-center justify-end gap-2 whitespace-nowrap"
+                >
                     <span
                         v-if="row.evaluation.outcome"
                         class="text-muted-foreground"
