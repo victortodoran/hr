@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Company;
 
 use App\Models\CompanySettings;
+use App\Rules\CurrencyInUse;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -30,17 +31,7 @@ class CompanySettingsRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'currency' => ['required', 'regex:/^[A-Z]{3}$/'],
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'currency.regex' => __('The currency must be a three-letter code, such as EUR.'),
+            'currency' => ['required', new CurrencyInUse],
         ];
     }
 

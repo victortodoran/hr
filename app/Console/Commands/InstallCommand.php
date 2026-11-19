@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\InstallCompany;
+use App\Rules\CurrencyInUse;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -37,12 +38,10 @@ class InstallCommand extends Command
 
         $validator = Validator::make($input, [
             'company' => ['required', 'max:255'],
-            'currency' => ['required', 'regex:/^[A-Z]{3}$/'],
+            'currency' => ['required', new CurrencyInUse],
             'department' => ['required', 'max:255'],
             'name' => ['required', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-        ], [
-            'currency.regex' => 'The currency must be a three-letter code, such as EUR.',
         ]);
 
         if ($validator->fails()) {

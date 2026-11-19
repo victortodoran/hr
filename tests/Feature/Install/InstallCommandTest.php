@@ -13,13 +13,14 @@ use App\Models\Project;
 use App\Models\Role;
 use App\Models\RolePermission;
 use App\Notifications\Invitation;
+use App\Rules\CurrencyInUse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\PendingCommand;
 
 use function Pest\Laravel\artisan;
 
-covers(InstallCommand::class, InstallCompany::class, CompanySettings::class, Role::class, ChangeAccess::class);
+covers(InstallCommand::class, InstallCompany::class, CompanySettings::class, Role::class, ChangeAccess::class, CurrencyInUse::class);
 
 /**
  * Run hr:install with the given options and return the pending command
@@ -207,6 +208,7 @@ it('rejects invalid values and explains why', function (string $option, string $
 })->with([
     'currency not three letters' => ['--currency', 'euro', 'three-letter code'],
     'currency with a digit' => ['--currency', 'E1R', 'three-letter code'],
+    'three letters that are no currency' => ['--currency', 'ABC', 'currency in use'],
     'invalid email' => ['--email', 'not-an-email', 'valid email'],
     'company name too long' => ['--company', str_repeat('a', 256), 'company'],
     'Department name too long' => ['--department', str_repeat('a', 256), 'department'],

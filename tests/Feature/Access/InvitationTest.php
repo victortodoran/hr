@@ -1,9 +1,11 @@
 <?php
 
+use App\Actions\AcceptInvitation;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Requests\Auth\AcceptInvitationRequest;
 use App\Models\Employee;
 use App\Notifications\Invitation;
+use App\Pages\Auth\AcceptInvitationPage;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -12,7 +14,7 @@ use function Pest\Laravel\get;
 use function Pest\Laravel\post;
 use function Pest\Laravel\travel;
 
-covers(InvitationController::class, AcceptInvitationRequest::class, Invitation::class, Employee::class);
+covers(InvitationController::class, AcceptInvitation::class, AcceptInvitationPage::class, AcceptInvitationRequest::class, Invitation::class, Employee::class);
 
 /**
  * Invite a new Employee and return the token from their invitation email.
@@ -42,7 +44,7 @@ it('shows the set-password page from the invitation link', function () {
             ->component('auth/AcceptInvitation')
             ->where('email', $employee->email)
             ->where('token', $token)
-            ->where('isValid', true)
+            ->where('refusal', null)
             ->has('passwordRules'),
         );
 });
@@ -53,7 +55,7 @@ it('tells the person straight away when the invitation link no longer works', fu
     get($linkFor($employee))
         ->assertInertia(fn (Assert $page) => $page
             ->component('auth/AcceptInvitation')
-            ->where('isValid', false),
+            ->where('refusal', 'It is invalid or has expired. Ask HR to send a new one.'),
         );
 })->with([
     'expired' => [function (Employee $employee): string {
@@ -81,6 +83,24 @@ it('lets the invited Employee set a password, verifying their email, then sign i
 
     post(route('login.store'), ['email' => $employee->email, 'password' => 'a-new-password'])
         ->assertRedirect(route('landing', absolute: false));
+});
+
+it('refuses an invitation once the Employee has left, as signing in is refused', function () {
+    $employee = Employee::factory()->invited()->create();
+    $token = inviteAndCaptureToken($employee);
+    $employee->update(['start_date' => today()->subYear(), 'leaving_date' => today()->subDay()]);
+
+    get(route('invitation.show', ['token' => $token, 'email' => $employee->email]))
+        ->assertInertia(fn (Assert $page) => $page->where('refusal', 'You can no longer sign in because you have left the company.'));
+
+    post(route('invitation.store'), [
+        'token' => $token,
+        'email' => $employee->email,
+        'password' => 'a-new-password',
+        'password_confirmation' => 'a-new-password',
+    ])->assertSessionHasErrors(['email' => 'You can no longer sign in because you have left the company.']);
+
+    expect($employee->refresh()->hasVerifiedEmail())->toBeFalse();
 });
 
 it('keeps the invitation valid for a week', function () {
