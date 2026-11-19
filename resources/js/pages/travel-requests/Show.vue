@@ -84,14 +84,6 @@ setLayoutProps({
                 v-if="travelRequest.can_decide"
                 class="flex flex-wrap items-center gap-2"
             >
-                <DeclineSelectedDialog
-                    :action="
-                        TravelRequestDeclineController.store(travelRequest.id)
-                    "
-                    :noun="{ one: 'Travel Request', many: 'Travel Requests' }"
-                    description="It stays on record as Declined, and the Employee sees the reason on their Travel page."
-                    placeholder="The release is that week"
-                />
                 <Form
                     v-bind="
                         TravelRequestApprovalController.store.form(
@@ -105,6 +97,14 @@ setLayoutProps({
                         >Approve</SubmitButton
                     >
                 </Form>
+                <DeclineSelectedDialog
+                    :action="
+                        TravelRequestDeclineController.store(travelRequest.id)
+                    "
+                    :noun="{ one: 'Travel Request', many: 'Travel Requests' }"
+                    description="It stays on record as Declined, and the Employee sees the reason on their Travel page."
+                    placeholder="The release is that week"
+                />
             </div>
             <ConfirmDeleteDialog
                 v-if="travelRequest.can_cancel"
