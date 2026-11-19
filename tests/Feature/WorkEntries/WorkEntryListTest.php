@@ -167,7 +167,7 @@ it('shows only the chosen state, offering only Employees with Work Entries in it
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10']);
     $approved = WorkEntry::factory()->for($devs)->approved()->create(['date' => '2026-11-10', 'minutes' => 90]);
 
-    actingAs($dan)->get(route('work-entry-list.index', ['employee' => $relaunch->employee_id, 'state' => 'approved']))
+    actingAs($dan)->get(route('work-entry-list.index', ['state' => 'approved']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('filters.state', 'approved')
             ->where('filters.employee', $devs->employee_id)
@@ -176,6 +176,25 @@ it('shows only the chosen state, offering only Employees with Work Entries in it
             ->where('total', 1.5));
     actingAs($dan)->get(route('work-entry-list.index', ['state' => 'invoiced']))
         ->assertInvalid(['state' => 'The selected state is invalid.']);
+});
+
+it('keeps an Employee the viewer may see with no Work Entries in the Period, as an Employee\'s page links here for them, but not one they may not see', function () {
+    $ben = employeeWith([Permission::ViewWorkEntries->value => Scope::Reports], ['name' => 'Ben', 'manager_id' => Employee::factory()->create()->id]);
+    $ada = Employee::factory()->reportingTo($ben)->create(['name' => 'Ada']);
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
+    $adas = WorkEntry::factory()->for(assignmentOf($ada))->create(['date' => '2026-11-09']);
+    $outsider = Employee::factory()->create();
+    WorkEntry::factory()->for(assignmentOf($outsider))->create(['date' => '2026-11-10']);
+
+    actingAs($ben)->get(route('work-entry-list.index', ['employee' => $cara->id]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.employee', $cara->id)
+            ->where('employees', [['id' => $ada->id, 'name' => 'Ada', 'count' => 1], ['id' => $cara->id, 'name' => 'Cara', 'count' => 0]])
+            ->where('entries.data', []));
+    actingAs($ben)->get(route('work-entry-list.index', ['employee' => $outsider->id]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.employee', $ada->id)
+            ->where('entries.data', fn (Collection $data): bool => $data->pluck('id')->all() === [$adas->id]));
 });
 
 it('offers nobody to choose in a month without Work Entries, keeping any Employee when asked for', function () {

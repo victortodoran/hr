@@ -116,14 +116,28 @@ it('narrows the list to one Employee, one Project and one state', function () {
             ->where('travelRequests.data', listing([$cancelled->id])));
 });
 
-it('falls back to everyone for an Employee with no Travel Requests to show', function () {
-    $dana = travelViewer();
-    $trip = tripOf(Employee::factory()->create(), 'Berlin', '2026-11-03', '2026-11-05');
+it('falls back to everyone for an Employee whose travel the viewer may not see', function () {
+    $dana = travelViewer([Permission::ViewTravel->value => Scope::Reports]);
+    $trip = tripOf(Employee::factory()->reportingTo($dana)->create(), 'Berlin', '2026-11-03', '2026-11-05');
+    $outsider = Employee::factory()->create();
+    tripOf($outsider, 'Madrid', '2026-11-12', '2026-11-13');
 
-    actingAs($dana)->get(route('travel-request-list.index', ['employee' => Employee::factory()->create()->id]))
+    actingAs($dana)->get(route('travel-request-list.index', ['employee' => $outsider->id]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('filters.employee', 'all')
             ->where('travelRequests.data', listing([$trip->id])));
+});
+
+it('keeps an Employee the viewer may see with no Travel Requests in the Period, as an Employee\'s page links here for them', function () {
+    $dana = travelViewer();
+    $berlin = tripOf(Employee::factory()->create(['name' => 'Ada']), 'Berlin', '2026-11-03', '2026-11-05');
+    $cara = Employee::factory()->create(['name' => 'Cara']);
+
+    actingAs($dana)->get(route('travel-request-list.index', ['employee' => $cara->id]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.employee', $cara->id)
+            ->where('employees', [['id' => $berlin->employee_id, 'name' => 'Ada', 'count' => 1], ['id' => $cara->id, 'name' => 'Cara', 'count' => 0]])
+            ->where('travelRequests.data', []));
 });
 
 it('lists only the Employees a reopen Scope covers', function () {

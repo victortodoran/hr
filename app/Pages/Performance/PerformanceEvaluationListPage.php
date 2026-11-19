@@ -22,15 +22,18 @@ final class PerformanceEvaluationListPage
      * (those they effectively manage, and those one of the Permissions for
      * reading them reaches) who have one for the year, Former Employees
      * included, or are still due one, by name, optionally narrowed to part
-     * of a name or one state. Each comes with that Performance Evaluation,
-     * or with whether the viewer may create it. The years to choose from
-     * run back from the next one to the earliest Start Date among those
-     * Employees.
+     * of a name, one state, or one Employee, given back when the viewer may
+     * open theirs here and ignored otherwise. Each comes with that
+     * Performance Evaluation, or with whether the viewer may create it. The
+     * years to choose from run back from the next one to the earliest Start
+     * Date among those Employees.
      *
      * @return array<string, mixed>
      */
-    public static function props(Employee $actor, int $year, string $search, ?PerformanceEvaluationListState $state): array
+    public static function props(Employee $actor, int $year, string $search, ?PerformanceEvaluationListState $state, ?int $employeeId): array
     {
+        $chosen = $employeeId === null ? null : Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->whereKey($employeeId)->first(['employees.id', 'name']);
+
         $latestYear = max(PerformanceEvaluation::creatableYears());
         $firstStart = Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->min('start_date');
         $years = range($latestYear, min(today()->year, $firstStart === null ? today()->year : CarbonImmutable::parse($firstStart)->year));
@@ -44,6 +47,7 @@ final class PerformanceEvaluationListPage
                 PerformanceEvaluationListState::NoneYet => $listed->withNoPerformanceEvaluationYetFor($year),
             })
             ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
+            ->when($chosen, fn (EmployeeBuilder $one, Employee $employee) => $one->whereKey($employee->id))
             ->with(['performanceEvaluations' => fn ($evaluations) => $evaluations->where('year', $year)->withCount('goals')->withAtRiskGoalsCount()]) // @pest-mutate-ignore (eager loading only saves queries; the row reads the same year either way)
             ->orderBy('name')
             ->orderBy('id'), 25)
@@ -56,6 +60,7 @@ final class PerformanceEvaluationListPage
             'years' => $years,
             'search' => $search,
             'state' => $state?->value,
+            'employee' => $chosen?->only('id', 'name'),
             'canCreate' => $actor->can('createAny', PerformanceEvaluation::class),
             'employees' => $employees->through(function (Employee $employee) use ($creatableIds): array {
                 $evaluation = $employee->performanceEvaluations->first();

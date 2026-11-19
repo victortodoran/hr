@@ -9,8 +9,11 @@ use App\Models\Assignment;
 use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;
+use App\Models\PerformanceEvaluation;
 use App\Models\Project;
 use App\Models\TimeOff;
+use App\Models\TravelRequest;
+use App\Models\WorkEntry;
 use App\Support\Currency;
 use App\Support\PaidDaysLeft;
 use App\Support\PayHistory;
@@ -85,10 +88,11 @@ final class EmployeePage
 
     /**
      * The Overview tab: the Employee's record and the reports needing a new
-     * Manager, when the viewer may see the record, and their Reporting Chain
-     * unless they have left.
+     * Manager, when the viewer may see the record, their Reporting Chain
+     * unless they have left, and which lists across Employees the viewer
+     * may open filtered to them.
      *
-     * @return array{record: array<string, mixed>|null, reportsNeedingAManager: array<int, array{id: int, name: string}>, reportingChain: array<string, mixed>|null}
+     * @return array{record: array<string, mixed>|null, reportsNeedingAManager: array<int, array{id: int, name: string}>, reportingChain: array<string, mixed>|null, seeAlso: array{work: bool, travel: bool, performance: bool}}
      */
     private static function overviewTab(Employee $actor, Employee $employee, bool $canViewRecord): array
     {
@@ -96,6 +100,27 @@ final class EmployeePage
             'record' => $canViewRecord ? self::record($employee) : null,
             'reportsNeedingAManager' => $canViewRecord ? self::reportsNeedingAManager($employee) : [],
             'reportingChain' => $employee->employmentStatus() === EmploymentStatus::Former ? null : ReportingChain::of($employee, $actor),
+            'seeAlso' => self::seeAlso($actor, $employee),
+        ];
+    }
+
+    /**
+     * Which lists across Employees the viewer may open with the Employee
+     * listed on them: the Work Entries and Travel Requests pages when the
+     * viewer may open them and see the Employee's Work Entries or travel
+     * there, and the Performance Evaluations page when the Employee's are
+     * among those the viewer may open there, which never includes the
+     * viewer's own.
+     *
+     * @return array{work: bool, travel: bool, performance: bool}
+     */
+    private static function seeAlso(Employee $actor, Employee $employee): array
+    {
+        return [
+            'work' => $actor->can('viewList', WorkEntry::class) && $actor->can('viewAny', [WorkEntry::class, $employee]),
+            'travel' => $actor->can('viewList', TravelRequest::class) && $actor->reachesThrough(Permission::seeingTravel(), $employee),
+            'performance' => $actor->can('viewList', PerformanceEvaluation::class)
+                && Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->whereKey($employee->id)->exists(),
         ];
     }
 

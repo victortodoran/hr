@@ -15,6 +15,7 @@ import { useListFilters } from '@/composables/useListFilters';
 import { outcomes } from '@/lib/outcomes';
 import { create, index, show } from '@/routes/performance-evaluations';
 import type {
+    Choice,
     FilterChoice,
     Paginated,
     PerformanceEvaluationRow,
@@ -31,13 +32,16 @@ defineOptions({
  * For one year, the Employees the viewer effectively manages or may read
  * the Performance Evaluations of who have one for it or are still due
  * one, each with that Performance Evaluation or None yet, and a way to
- * create it when the viewer may.
+ * create it when the viewer may. An Employee's page links here narrowed
+ * to them, which the bar shows as an Employee to clear.
  */
 const props = defineProps<{
     year: number;
     years: number[];
     search: string;
     state: 'open' | 'completed' | 'none-yet' | null;
+    /** The one Employee the list is narrowed to, null when it isn't. */
+    employee: Choice | null;
     canCreate: boolean;
     employees: Paginated<PerformanceEvaluationRow>;
 }>();
@@ -59,9 +63,14 @@ const states: FilterChoice[] = [
     { value: 'none-yet', label: 'None yet' },
 ];
 
+const employeeChoices: FilterChoice[] = props.employee
+    ? [{ value: String(props.employee.id), label: props.employee.name }]
+    : [];
+
 const filters = useListFilters(index.url, {
     year: String(props.year),
     search: props.search,
+    employee: props.employee ? String(props.employee.id) : 'all',
     state: props.state ?? 'all',
 });
 </script>
@@ -92,6 +101,14 @@ const filters = useListFilters(index.url, {
                 :choices="yearChoices"
             />
             <FilterSearch v-model="filters.search" />
+            <FilterSelect
+                v-if="employee"
+                v-model="filters.employee"
+                label="Employee"
+                any="Any Employee"
+                width="w-48"
+                :choices="employeeChoices"
+            />
             <FilterSelect
                 v-model="filters.state"
                 label="State"

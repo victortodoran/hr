@@ -8,6 +8,7 @@ use App\Models\Assignment;
 use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Pages\Employees\EmployeePage;
 use App\Policies\EmployeePolicy;
 use App\Support\ReportingChain;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -15,7 +16,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 
-covers(EmployeeController::class, EmployeePolicy::class, DirectoryController::class, ReportingChain::class);
+covers(EmployeeController::class, EmployeePolicy::class, DirectoryController::class, ReportingChain::class, EmployeePage::class);
 
 it('shows an Employee their own record, with no Assignments or Pay when they may only see the record', function () {
     $ben = Employee::factory()->create(['name' => 'Ben Ford']);
@@ -204,7 +205,7 @@ it('offers each viewer only the tabs they may see, each carrying only its own da
     $ben = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
     $props = [
-        'overview' => ['record', 'reportsNeedingAManager', 'reportingChain'],
+        'overview' => ['record', 'reportsNeedingAManager', 'reportingChain', 'seeAlso'],
         'assignments' => ['assignments', 'projects'],
         'time-off' => ['paidDays', 'timeOff'],
     ];
@@ -268,4 +269,27 @@ it('opens Overview when no tab, or an unknown one, is asked for', function (arra
     'an unknown tab' => [['tab' => 'pay']],
     'a tab in the wrong case' => [['tab' => 'Assignments']],
     'a list instead of a tab' => [['tab' => ['assignments']]],
+]);
+
+/*
+ * Ada ── Ben ── Cara
+ */
+it('links the Overview to the Work, Travel and Performance lists only where the viewer may see the Employee on them', function (Closure $viewer, string $whose, array $expected) {
+    $ada = Employee::factory()->create(['name' => 'Ada']);
+    $ben = Employee::factory()->reportingTo($ada)->create(['name' => 'Ben']);
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
+    $actor = $viewer($ben);
+    giveRole($actor, [Permission::ViewEmployeeRecords->value => Scope::Everyone]);
+    $employee = ['cara' => $cara, 'ben' => $ben, 'themselves' => $actor][$whose];
+
+    actingAs($actor)->get(route('employees.show', $employee))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('seeAlso', $expected));
+})->with([
+    'one who sees everyone\'s Work Entries' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]), 'cara', ['work' => true, 'travel' => false, 'performance' => false]],
+    'one who sees everyone\'s travel' => [fn () => employeeWith([Permission::ViewTravel->value => Scope::Everyone]), 'cara', ['work' => false, 'travel' => true, 'performance' => false]],
+    'one who reads everyone\'s Evaluations' => [fn () => employeeWith([Permission::ViewPerformanceEvaluations->value => Scope::Everyone]), 'cara', ['work' => false, 'travel' => false, 'performance' => true]],
+    'her Manager, seeing his Reports\' Work Entries and travel' => [fn (Employee $ben) => tap($ben, fn () => giveRole($ben, [Permission::ViewWorkEntries->value => Scope::Reports, Permission::ViewTravel->value => Scope::Reports])), 'cara', ['work' => true, 'travel' => true, 'performance' => true]],
+    'one whose Scope stops at their Reports, on someone else' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Reports, Permission::ViewTravel->value => Scope::Reports, Permission::ViewPerformanceEvaluations->value => Scope::Reports], ['manager_id' => Employee::factory()->create()->id]), 'ben', ['work' => false, 'travel' => false, 'performance' => false]],
+    'one who sees everyone\'s, on their own page, where their own Evaluations are not listed' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone, Permission::ViewTravel->value => Scope::Everyone, Permission::ViewPerformanceEvaluations->value => Scope::Everyone]), 'themselves', ['work' => true, 'travel' => true, 'performance' => false]],
+    'one who sees only their own, on their own page' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Own, Permission::ViewTravel->value => Scope::Own]), 'themselves', ['work' => false, 'travel' => false, 'performance' => false]],
 ]);

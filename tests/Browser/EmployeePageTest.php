@@ -9,6 +9,7 @@ use App\Models\Assignment;
 use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;
+use App\Models\PerformanceEvaluation;
 use App\Models\WorkEntry;
 
 use function Pest\Laravel\actingAs;
@@ -119,4 +120,36 @@ it('removes an Employee\'s Manager by choosing No Manager', function () {
         ->assertNoJavaScriptErrors();
 
     expect($cara->refresh()->manager_id)->toBeNull();
+});
+
+it('links an Employee\'s Overview to their Work Entries and Performance Evaluations, each list opening narrowed to them', function () {
+    $ana = Employee::factory()->create(['name' => 'Ana Popescu']);
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ana)->create(['name' => 'Cara Lane']);
+    $bea = Employee::factory()->startedLongAgo()->reportingTo($ana)->create(['name' => 'Bea Dunn']);
+    WorkEntry::factory()->for(assignmentOf($bea, 'Relaunch'))->create(['date' => '2026-11-10']);
+    PerformanceEvaluation::factory()->of($bea)->create();
+    $viewer = employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+        Permission::ViewWorkEntries->value => Scope::Everyone,
+        Permission::ViewPerformanceEvaluations->value => Scope::Everyone,
+    ]);
+
+    actingAs($viewer);
+
+    visit(route('employees.show', $cara))
+        ->assertSee('See also')
+        ->assertDontSee('Travel →')
+        ->click('internal:role=link[name="Work →"s]')
+        ->assertPathIs(route('work-entry-list.index', absolute: false))
+        ->assertQueryStringHas('employee', (string) $cara->id)
+        ->assertSeeIn('[aria-label="Employee"]', 'Cara Lane (0)')
+        ->assertNoJavaScriptErrors();
+
+    visit(route('employees.show', $cara))
+        ->click('internal:role=link[name="Performance →"s]')
+        ->assertPathIs(route('performance-evaluations.index', absolute: false))
+        ->assertSeeIn('[aria-label="Employee"]', 'Cara Lane')
+        ->assertSee('Cara Lane')
+        ->assertDontSee('Bea Dunn')
+        ->assertNoJavaScriptErrors();
 });
