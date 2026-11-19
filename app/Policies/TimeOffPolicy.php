@@ -14,6 +14,15 @@ use App\Models\TimeOff;
 class TimeOffPolicy
 {
     /**
+     * The Time Off page across Employees is for someone who sees the Time
+     * Off of anyone besides themselves.
+     */
+    public function viewList(Employee $actor): bool
+    {
+        return $actor->seesOthersTimeOff();
+    }
+
+    /**
      * Only the Employee whose Time Off it is may cancel it, and only while
      * it is Pending or Approved and hasn't started yet.
      */

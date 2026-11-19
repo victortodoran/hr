@@ -16,7 +16,8 @@ import type {
  * Requests pages: a Period, a week, a month or a custom one, never after
  * today unless `allowFuture` is set; one Employee with something listed in
  * it, each offered with how many, or any Employee; a Project they have
- * something on, or any; and one of the list's `states`, or any. Shows what
+ * something on, or any, unless the list gives no `projects` to choose
+ * from; and one of the list's `states`, or any. Shows what
  * the server resolved, and emits the query string to reload the list with
  * whenever one changes. Changing the Period or state keeps "Any Employee"
  * but otherwise lets the server pick; changing anything but the Project
@@ -31,7 +32,8 @@ const props = withDefaults(
         filters: ListFilters<string>;
         today: string;
         employees: EmployeeWithCount[];
-        projects: Choice[];
+        /** Left out on a list not filtered by Project, such as Time Off. */
+        projects?: Choice[];
         /** The states the list can be filtered by. */
         states: StateChoice[];
         /** Lets the Period go past today, for what is planned ahead. */
@@ -71,7 +73,7 @@ function choosePeriod(period: Record<string, string>): void {
 const hasOnlyOneProject = computed(
     () =>
         typeof props.filters.employee === 'number' &&
-        props.projects.length === 1,
+        props.projects?.length === 1,
 );
 
 const employeeChoices = computed<FilterChoice[]>(() =>
@@ -82,7 +84,7 @@ const employeeChoices = computed<FilterChoice[]>(() =>
 );
 
 const projectChoices = computed<FilterChoice[]>(() =>
-    props.projects.map((choice) => ({
+    (props.projects ?? []).map((choice) => ({
         value: String(choice.id),
         label: choice.name,
     })),
@@ -125,6 +127,7 @@ function chooseProject(project: string): void {
                 @update:model-value="chooseEmployee"
             />
             <FilterSelect
+                v-if="projects"
                 label="Project"
                 :any="hasOnlyOneProject ? undefined : 'Any Project'"
                 width="w-48"

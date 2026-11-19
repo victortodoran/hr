@@ -68,6 +68,16 @@ trait HasAccess
     }
 
     /**
+     * Whether the Employee sees the Time Off of anyone besides themselves
+     * across Employees: one of the Permissions for seeing Time Off reaches
+     * beyond themselves.
+     */
+    public function seesOthersTimeOff(): bool
+    {
+        return $this->reachesOthersThrough(Permission::seeingTimeOff());
+    }
+
+    /**
      * Whether the Employee may read Performance Evaluations of anyone
      * besides themselves: one of the Permissions for reading them
      * (Permission::seeingPerformanceEvaluations()) reaches beyond

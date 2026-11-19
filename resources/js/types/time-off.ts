@@ -1,3 +1,5 @@
+import type { ListFilters } from './list-filters';
+
 /**
  * Where Time Off stands: Pending until the Manager decides, Approved or
  * Declined once they have, or Cancelled by the Employee before it started.
@@ -73,4 +75,19 @@ export type TimeOffToApprove = {
 export type TimeOffPreview = {
     weekdays: number;
     years: { year: number; uses: number; left_after: number }[];
+};
+
+/** The Time Off page's filters across Employees, which have no Project. */
+export type TimeOffListFilters = Omit<ListFilters<TimeOffState>, 'project'>;
+
+/** One Time Off on the Time Off page across Employees. */
+export type ListedTimeOff = {
+    id: number;
+    employee: { id: number; name: string };
+    first_date: string;
+    last_date: string;
+    /** The weekdays it counts; weekends never do. */
+    days: number;
+    is_paid: boolean;
+    state: TimeOffState;
 };

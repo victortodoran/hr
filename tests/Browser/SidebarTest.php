@@ -14,7 +14,7 @@ beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
 it('gives Me and Manage the same short names, told apart by the group title', function () {
     $ben = managerBen();
-    giveRole($ben, [Permission::ManageWorkEntries->value => Scope::Own, Permission::ViewWorkEntries->value => Scope::Everyone, Permission::ViewTravel->value => Scope::Everyone]);
+    giveRole($ben, [Permission::ManageWorkEntries->value => Scope::Own, Permission::ViewWorkEntries->value => Scope::Everyone, Permission::ViewTimeOff->value => Scope::Reports, Permission::ViewTravel->value => Scope::Everyone]);
     Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
 
     actingAs($ben);
@@ -31,7 +31,7 @@ it('gives Me and Manage the same short names, told apart by the group title', fu
             })()
             JS, json_encode([
             'me' => ['Home', 'Profile', 'Work', 'Time Off', 'Travel', 'Performance'],
-            'manage' => ['Team', 'Approvals', 'Work', 'Travel', 'Performance'],
+            'manage' => ['Team', 'Approvals', 'Work', 'Time Off', 'Travel', 'Performance'],
         ]))
         ->click('internal:role=link[name="Performance"s] >> nth=1')
         ->assertPathIs(route('performance-evaluations.index', absolute: false))

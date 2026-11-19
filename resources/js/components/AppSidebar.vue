@@ -45,6 +45,7 @@ import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import { index as team } from '@/routes/team';
 import { index as timeOff } from '@/routes/time-off';
+import { index as timeOffList } from '@/routes/time-off-list';
 import { index as travelRequestList } from '@/routes/travel-request-list';
 import { index as travelRequests } from '@/routes/travel-requests';
 import { index as workEntries } from '@/routes/work-entries';
@@ -90,6 +91,9 @@ const manageItems = computed<NavItem[]>(() => [
         : []),
     ...(auth.value.canSeeWorkEntryList
         ? [{ title: 'Work', href: workEntryList(), icon: Clock }]
+        : []),
+    ...(auth.value.canSeeTimeOffList
+        ? [{ title: 'Time Off', href: timeOffList(), icon: CalendarDays }]
         : []),
     ...(auth.value.canSeeTravelRequestList
         ? [{ title: 'Travel', href: travelRequestList(), icon: Luggage }]
