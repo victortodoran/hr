@@ -31,6 +31,7 @@ use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
+use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
 use function Pest\Laravel\seed;
 
@@ -41,7 +42,7 @@ it('seeds a demo company with at least one of everything to try by hand', functi
 
     expect(CompanySettings::query()->count())->toBe(1)
         ->and(Department::query()->count())->toBeGreaterThan(1)
-        ->and(Role::query()->pluck('name')->all())->toContain('Admin', 'Manager', 'Employee', 'Senior Manager', 'Payroll')
+        ->and(Role::query()->pluck('name')->all())->toContain('Admin', 'Manager', 'Employee', 'Payroll')
         ->and(Client::query()->count())->toBeGreaterThan(1)
         ->and(Project::query()->where('is_internal', false)->count())->toBeGreaterThan(1)
         ->and(Assignment::query()->notInternal()->count())->toBeGreaterThan(1)
@@ -105,6 +106,31 @@ it('gives Ben a year of travel in every state, a dozen trips behind him and some
         ->and($bensTravel->pluck('state')->unique()->values()->all())->toEqualCanonicalizing(TravelRequestState::cases())
         ->and($bensTravel->filter(fn (TravelRequest $travel): bool => $travel->takesExpenses())
             ->every(fn (TravelRequest $travel): bool => $travel->travel_expenses_count >= 2 && $travel->travel_expenses_count <= 5))->toBeTrue();
+});
+
+it('lets Ben open Cara\'s Approved Berlin workshop and reopen its Approved Travel Expense', function () {
+    seed(DemoSeeder::class);
+    $ben = Employee::query()->where('email', 'ben@acme.test')->sole();
+    $workshop = TravelRequest::query()->where('destination', 'Berlin')->where('state', TravelRequestState::Approved)
+        ->whereRelation('employee', 'email', 'cara@acme.test')->sole();
+    $approved = $workshop->travelExpenses()->where('state', TravelExpenseState::Approved)->sole();
+
+    actingAs($ben)->get(route('travel-requests.show', $workshop))->assertOk();
+    actingAs($ben)->post(route('travel-requests.expenses.reopenings.store', $workshop), ['ids' => [$approved->id]])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '1 Travel Expense reopened.']);
+
+    expect($approved->refresh()->state)->toBe(TravelExpenseState::Pending);
+});
+
+it('keeps Ben on a Travel Request\'s page after he approves it there, now that Managers see their Reports\' travel', function () {
+    seed(DemoSeeder::class);
+    $ben = Employee::query()->where('email', 'ben@acme.test')->sole();
+    $pairing = TravelRequest::query()->where('state', TravelRequestState::Pending)->whereRelation('employee', 'email', 'lia@acme.test')->sole();
+    $page = route('travel-requests.show', $pairing);
+
+    actingAs($ben)->from($page)->post(route('travel-requests.approval.store', $pairing))->assertRedirect($page);
+
+    expect($pairing->refresh()->state)->toBe(TravelRequestState::Approved);
 });
 
 it('gives Travel Expenses only on Travel Requests that take them, each with a PDF receipt on the receipt disk', function () {

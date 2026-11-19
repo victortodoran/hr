@@ -52,12 +52,12 @@ use Illuminate\Support\Str;
  * waiting. Invitations are not emailed.
  *
  *   Ana (no Manager, Admin)
- *   ├── Ben (Senior Manager: Pay of his Reports)
+ *   ├── Ben (Manager)
  *   │   ├── Cara (Employee; Client work and a planned raise)
  *   │   ├── Dan (Future Employee, invitation pending)
  *   │   └── Eve (Former Employee)
  *   │       └── Lia (her Manager has left, so Ben is her effective Manager)
- *   ├── Hana (Manager: no Pay)
+ *   ├── Hana (Manager)
  *   │   └── Ivan (leaving in six months)
  *   └── Finn (Payroll: everyone's Pay)
  */
@@ -102,16 +102,6 @@ class DemoSeeder extends Seeder
         $finance = Department::query()->create(['name' => 'Finance']);
         Department::query()->create(['name' => 'Legal']);
 
-        $seniorManager = $this->changeAccess->createRole($ana, 'Senior Manager', [
-            Permission::ViewDirectory->value => null,
-            Permission::ViewEmployeeRecords->value => Scope::Reports->value,
-            Permission::ViewAssignments->value => Scope::Reports->value,
-            Permission::ManageAssignments->value => Scope::Reports->value,
-            Permission::ViewPay->value => Scope::Reports->value,
-            Permission::ViewTimeOff->value => Scope::Reports->value,
-            Permission::ViewTravel->value => Scope::Reports->value,
-            Permission::ViewProjects->value => null,
-        ], givenToNewEmployees: false);
         $payroll = $this->changeAccess->createRole($ana, 'Payroll', [
             Permission::ViewPay->value => Scope::Everyone->value,
             Permission::ManagePay->value => Scope::Everyone->value,
@@ -131,8 +121,9 @@ class DemoSeeder extends Seeder
         $dan = $this->add($ana, 'Dan Moraru', 'Developer', $engineering, $ben, $today->addMonth(), canSignIn: false);
         $this->updateTrimmingAssignments->updateEmployee($eve, ['leaving_date' => $today->subMonths(2)]);
 
-        $this->changeAccess->giveRole($ana, $seniorManager, $ben);
-        $this->changeAccess->giveRole($ana, Role::query()->where('name', 'Manager')->sole(), $hana);
+        $manager = Role::query()->where('name', 'Manager')->sole();
+        $this->changeAccess->giveRole($ana, $manager, $ben);
+        $this->changeAccess->giveRole($ana, $manager, $hana);
         $this->changeAccess->giveRole($ana, $payroll, $finn);
 
         $globex = Client::query()->create(['name' => 'Globex']);

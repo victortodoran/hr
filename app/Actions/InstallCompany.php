@@ -64,7 +64,11 @@ class InstallCompany
 
     /**
      * Create Manager and Employee as ordinary, editable Roles, logged as
-     * created by the first Employee, the one installing the app.
+     * created by the first Employee, the one installing the app. Manager
+     * sees everything about their Reports, manages their Assignments and
+     * reopens their Work Entries and Travel Expenses, but changes neither
+     * their Pay nor their Paid Days; Employee sees everything about
+     * themselves and records their own Work Entries.
      */
     private function createStarterRoles(Employee $installer): void
     {
@@ -73,9 +77,13 @@ class InstallCompany
                 Permission::ViewEmployeeRecords->value => Scope::Reports->value,
                 Permission::ViewAssignments->value => Scope::Reports->value,
                 Permission::ManageAssignments->value => Scope::Reports->value,
+                Permission::ViewPay->value => Scope::Reports->value,
                 Permission::ViewWorkEntries->value => Scope::Reports->value,
                 Permission::ReopenWorkEntries->value => Scope::Reports->value,
                 Permission::ViewTimeOff->value => Scope::Reports->value,
+                Permission::ViewTravel->value => Scope::Reports->value,
+                Permission::ReopenTravelExpenses->value => Scope::Reports->value,
+                Permission::ViewPerformanceEvaluations->value => Scope::Reports->value,
                 Permission::ViewProjects->value => null,
             ], 'givenToNewEmployees' => false],
             'Employee' => ['grants' => [
@@ -83,9 +91,11 @@ class InstallCompany
                 Permission::ViewEmployeeRecords->value => Scope::Own->value,
                 Permission::ViewAssignments->value => Scope::Own->value,
                 Permission::ViewPay->value => Scope::Own->value,
+                Permission::ViewWorkEntries->value => Scope::Own->value,
                 Permission::ManageWorkEntries->value => Scope::Own->value,
                 Permission::ViewTimeOff->value => Scope::Own->value,
                 Permission::ViewTravel->value => Scope::Own->value,
+                Permission::ViewPerformanceEvaluations->value => Scope::Own->value,
             ], 'givenToNewEmployees' => true],
         ];
 
