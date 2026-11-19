@@ -23,7 +23,7 @@ it('gives a Goal whose description keeps its line breaks', function () {
         ->assertSee('Give Cara a Goal')
         ->assertSee('For the 2026 Performance Evaluation. Cara sees it as soon as you give it.')
         ->fill('#goal-title', 'Lead the Checkout API')
-        ->fill('What achieving it looks like', "Own its design.\nShip it by October.")
+        ->fill('#goal-description', "Own its design.\nShip it by October.")
         ->click('Give Goal')
         ->assertSee('Goal given.')
         ->assertNoJavaScriptErrors();
@@ -31,7 +31,7 @@ it('gives a Goal whose description keeps its line breaks', function () {
     expect($evaluation->goals()->sole()->description)->toBe("Own its design.\nShip it by October.");
 });
 
-it('changes a Goal, titled after it', function () {
+it('opens Change Goal titled after the Goal', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
     $evaluation = PerformanceEvaluation::factory()->of($cara)->create();

@@ -14,6 +14,8 @@ const props = defineProps<{
     returnsToGoal: boolean;
 }>();
 
+const title = `Change ${props.goal.title}`;
+
 setLayoutProps({
     breadcrumbs: [
         {
@@ -50,11 +52,11 @@ setLayoutProps({
 </script>
 
 <template>
-    <Head :title="`Change ${goal.title}`" />
+    <Head :title="title" />
 
     <PageContainer width="narrow">
         <Heading
-            :title="`Change ${goal.title}`"
+            :title="title"
             :description="`For the ${evaluation.year} Performance Evaluation.`"
         />
 
