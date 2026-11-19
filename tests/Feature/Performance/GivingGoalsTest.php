@@ -91,10 +91,10 @@ it('offers the Performance Evaluations page only to Employees who effectively ma
     actingAs($cara)->get(route('performance-evaluations.index'))->assertForbidden();
 });
 
-it('lists, for the year, the Employees the viewer effectively manages, with their Evaluation for it or None yet, and offers creating one', function () {
+it('lists, for the year, the Employees the viewer effectively manages who have an Evaluation for it, and offers creating one for the rest', function () {
     $ben = managerBen();
     $cara = caraReportingTo($ben);
-    $dan = Employee::factory()->reportingTo($ben)->create(['name' => 'Dan', 'start_date' => '2026-12-14']);
+    Employee::factory()->reportingTo($ben)->create(['name' => 'Dan', 'start_date' => '2026-12-14']);
     $zed = Employee::factory()->startedLongAgo()->create(['name' => 'Zed']);
     PerformanceEvaluation::factory()->of($zed)->create();
     $evaluation = PerformanceEvaluation::factory()->of($cara)->has(Goal::factory()->count(3))->create();
@@ -106,12 +106,11 @@ it('lists, for the year, the Employees the viewer effectively manages, with thei
             ->where('years', [2027, 2026, 2025])
             ->where('canCreate', true)
             ->where('employees.data', [
-                ['id' => $cara->id, 'name' => 'Cara', 'can_create' => false, 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3, 'at_risk_goals_count' => 0, 'outcome' => null]],
-                ['id' => $dan->id, 'name' => 'Dan', 'can_create' => true, 'evaluation' => null],
+                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3, 'at_risk_goals_count' => 0, 'outcome' => null]],
             ]));
 });
 
-it('shows a past year with only the Employees who have an Evaluation for it, Former Employees included, too late to create', function () {
+it('shows a past year with the Employees who have an Evaluation for it, Former Employees included', function () {
     $ben = managerBen();
     $cara = caraReportingTo($ben);
     $ola = Employee::factory()->reportingTo($ben)->create(['name' => 'Ola', 'start_date' => '2020-01-06', 'leaving_date' => '2025-12-31']);
@@ -122,7 +121,7 @@ it('shows a past year with only the Employees who have an Evaluation for it, For
         ->assertInertia(fn (Assert $page) => $page
             ->where('year', 2025)
             ->where('employees.data', [
-                ['id' => $ola->id, 'name' => 'Ola', 'can_create' => false, 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null]],
+                ['id' => $ola->id, 'name' => 'Ola', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null]],
             ]));
 });
 
@@ -141,11 +140,13 @@ it('lists the Reports of a Manager who has left under the next Manager up', func
     $cara = caraReportingTo($ben);
     PerformanceEvaluation::factory()->of($ben)->create();
 
-    actingAs($ana)->get(route('performance-evaluations.index'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('employees.data', fn (Collection $rows): bool => $rows->map(fn (array $row): array => [$row['name'], $row['can_create']])->all() === [['Ben', false], ['Cara', true]]));
+    actingAs($ana)->get(route('performance-evaluations.create'))
+        ->assertInertia(fn (Assert $page) => $page->where('years.0.employees', [['id' => $cara->id, 'name' => 'Cara']]));
     actingAs($ana)->post(route('performance-evaluations.store'), ['year' => 2026, 'employee_id' => $cara->id])->assertRedirect();
     expect($cara->performanceEvaluations()->sole()->year)->toBe(2026);
+    actingAs($ana)->get(route('performance-evaluations.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === ['Ben', 'Cara']));
 });
 
 it('lets the effective Manager give, change and remove Goals while the Evaluation is Open', function () {

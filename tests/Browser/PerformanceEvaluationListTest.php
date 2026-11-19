@@ -60,27 +60,29 @@ it('shows an Open Evaluation in the neutral grey, not the Pending amber', functi
         ->assertNoJavaScriptErrors();
 });
 
-it('creates a Report\'s missing Evaluation from their None yet row, and finds Completed ones by state', function () {
+it('leaves out a Report without an Evaluation, finds Completed ones by state, and starts the missing one from New Evaluation', function () {
     $ben = managerBen();
-    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara None']);
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara Missing']);
     PerformanceEvaluation::factory()->of(Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Eva Done']))->completed()->create();
+    PerformanceEvaluation::factory()->of(Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Dan Open']))->create();
 
     actingAs($ben);
 
     visit(route('performance-evaluations.index'))
-        ->assertSee('None yet')
+        ->assertSee('Dan Open')
+        ->assertDontSee('Cara Missing')
         ->click('[aria-label="State"]')
+        ->assertDontSee('None yet')
         ->click('internal:role=option[name="Completed"s]')
         ->assertQueryStringHas('state', 'completed')
         ->assertSee('Eva Done')
-        ->assertDontSee('Cara None')
-        ->click('[aria-label="State"]')
-        ->click('internal:role=option[name="None yet"s]')
-        ->assertSee('Cara None')
-        ->click("internal:role=link[name=\"Create Cara None's 2026 Evaluation\"s]")
+        ->assertDontSee('Dan Open')
+        ->click('internal:role=link[name="New Evaluation"s]')
         ->assertPathIs(route('performance-evaluations.create', absolute: false))
-        ->assertSeeIn('#evaluation-employee', 'Cara None')
+        ->click('#evaluation-employee')
+        ->click('internal:role=option[name="Cara Missing"s]')
         ->click('Create Evaluation')
+        ->assertSee("Cara Missing's 2026 Performance Evaluation")
         ->assertPathIs(route('performance-evaluations.show', $cara->performanceEvaluations()->firstOrFail(), false))
         ->assertNoJavaScriptErrors();
 });

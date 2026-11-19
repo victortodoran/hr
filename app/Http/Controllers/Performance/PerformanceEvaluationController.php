@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Performance;
 
 use App\Actions\CreatePerformanceEvaluation;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Performance\NewPerformanceEvaluationRequest;
 use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
 use App\Http\Requests\Performance\PerformanceEvaluationRequest;
 use App\Models\Employee;
@@ -30,9 +29,8 @@ class PerformanceEvaluationController extends Controller
      * Show, for one year, the Employees whose Performance Evaluations the
      * viewer may open here (those they effectively manage, and those one of
      * the Permissions for reading them reaches) who have one for it,
-     * Former Employees included, or are still due one, by name, with that
-     * Performance Evaluation or a way to create it, optionally narrowed to
-     * part of a name, one Employee or one state.
+     * Former Employees included, by name, with that Performance Evaluation,
+     * optionally narrowed to part of a name, one Employee or one state.
      */
     public function index(PerformanceEvaluationListRequest $request, #[CurrentUser] Employee $actor): Response
     {
@@ -41,13 +39,11 @@ class PerformanceEvaluationController extends Controller
 
     /**
      * Show the New Performance Evaluation page: the current and the next
-     * year, each with the Employees the viewer may create one for, with
-     * the year and Employee in the query string chosen when they're among
-     * them.
+     * year, each with the Employees the viewer may create one for.
      */
-    public function create(NewPerformanceEvaluationRequest $request, #[CurrentUser] Employee $actor): Response
+    public function create(#[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/Create', PerformanceEvaluationFormPage::create($actor, $request->year(), $request->employeeId()));
+        return Inertia::render('performance-evaluations/Create', PerformanceEvaluationFormPage::create($actor));
     }
 
     /**

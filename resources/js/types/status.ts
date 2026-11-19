@@ -3,8 +3,7 @@
  * Work Entry and Travel Expense states; Pending, Approved, Declined and
  * Cancelled are Time Off and Travel Request states; Upcoming is a Future
  * Employee, who hasn't started yet; Open and Completed are Performance
- * Evaluation states, and None yet an Employee who has no Performance
- * Evaluation for the year yet; Not Started, On Track, At Risk and Done are a Goal's
+ * Evaluation states; Not Started, On Track, At Risk and Done are a Goal's
  * Progress.
  */
 export type StatusBadgeState =
@@ -18,5 +17,4 @@ export type StatusBadgeState =
     | 'not-started'
     | 'on-track'
     | 'at-risk'
-    | 'done'
-    | 'none-yet';
+    | 'done';
