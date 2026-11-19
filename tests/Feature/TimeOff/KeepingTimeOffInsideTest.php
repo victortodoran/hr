@@ -70,7 +70,7 @@ it('lets Declined or Cancelled Time Off fall outside the employment', function (
         ->patch(route('employees.update', $cara), employeeRecordChanging($cara->refresh(), ['leaving_date' => '2026-12-23']))
         ->assertValid();
 
-    expect($cara->refresh())
-        ->start_date->toDateString()->toBe('2026-12-23')
-        ->leaving_date?->toDateString()->toBe('2026-12-23');
+    $cara->refresh();
+    expect($cara->start_date->toDateString())->toBe('2026-12-23');
+    expect($cara->leaving_date?->toDateString())->toBe('2026-12-23');
 })->with(['declined', 'cancelled']);

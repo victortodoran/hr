@@ -126,11 +126,24 @@ it('refuses a Leaving Date before the last day of the Employee\'s Pending or App
     expect($cara->refresh()->leaving_date?->toDateString())->toBe('2026-12-05');
 })->with(['pending' => null, 'approved' => 'approved']);
 
-it('refuses a Start Date after the first day of the Employee\'s Pending or Approved travel on their Internal Assignment, and allows one on it', function (?string $state) {
+/**
+ * Cara's Internal Assignment, from her Start Date on 6 Jan 2025, with a
+ * Travel Request from 3 to 5 Dec 2026, Pending unless given another
+ * factory state.
+ */
+function internalWithTravel(?string $state = null): Assignment
+{
     $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'manager_id' => Employee::factory()->startedLongAgo()->create()->id]);
     $internal = Assignment::factory()->for($cara)->internal()->create(['start_date' => '2025-01-06']);
     $factory = TravelRequest::factory()->on($internal);
     ($state === null ? $factory : $factory->{$state}())->create(['first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+
+    return $internal;
+}
+
+it('refuses a Start Date after the first day of the Employee\'s Pending or Approved travel on their Internal Assignment, and allows one on it', function (?string $state) {
+    $internal = internalWithTravel($state);
+    $cara = $internal->employee;
 
     actingAs(employeeWhoManagesEmployees())
         ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['start_date' => '2026-12-04']))
@@ -146,8 +159,7 @@ it('refuses a Start Date after the first day of the Employee\'s Pending or Appro
 })->with(['pending' => null, 'approved' => 'approved']);
 
 it('lets a Start Date move past Declined or Cancelled travel', function (string $state) {
-    $cara = Employee::factory()->startedLongAgo()->create(['manager_id' => Employee::factory()->startedLongAgo()->create()->id]);
-    TravelRequest::factory()->on(Assignment::factory()->for($cara)->internal()->create(['start_date' => '2025-01-06']))->{$state}()->create(['first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+    $cara = internalWithTravel($state)->employee;
 
     actingAs(employeeWhoManagesEmployees())
         ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['start_date' => '2026-12-06']))
