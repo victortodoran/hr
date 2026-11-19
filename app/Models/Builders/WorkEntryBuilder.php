@@ -74,7 +74,7 @@ class WorkEntryBuilder extends ModelBuilder
 
     /**
      * Limit the query to the Work Entries on a weekday from the first to the
-     * last date given, the days Time Off over those dates would have.
+     * last date given.
      */
     public function onWeekdaysBetween(CarbonInterface $first, CarbonInterface $last): static
     {

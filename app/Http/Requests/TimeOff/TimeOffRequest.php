@@ -3,7 +3,6 @@
 namespace App\Http\Requests\TimeOff;
 
 use App\Models\TimeOff;
-use Carbon\CarbonImmutable;
 use Illuminate\Validation\Validator;
 
 /**
@@ -121,11 +120,12 @@ class TimeOffRequest extends TimeOffPreviewRequest
         $worked = $this->employee()->workEntries()
             ->counted()
             ->onWeekdaysBetween($this->firstDate(), $this->lastDate())
-            ->min('work_entries.date');
+            ->orderBy('work_entries.date')
+            ->first();
 
-        if (is_string($worked)) {
+        if ($worked !== null) {
             $validator->errors()->add('first_date', __('You have hours recorded on :date, so Time Off can\'t include that day.', [
-                'date' => CarbonImmutable::parse($worked)->format('j M Y'),
+                'date' => $worked->date->format('j M Y'),
             ]));
         }
     }

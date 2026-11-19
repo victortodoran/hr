@@ -95,13 +95,14 @@ it('refuses a date after today', function () {
 it('refuses hours on a day of the Employee\'s Pending or Approved Time Off', function (string $state) {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
-    TimeOff::factory()->for($cara)->{$state}()->create(['first_date' => '2026-11-09', 'last_date' => '2026-11-10']);
+    $factory = TimeOff::factory()->for($cara);
+    ($state === 'approved' ? $factory->approved() : $factory)->create(['first_date' => '2026-11-09', 'last_date' => '2026-11-10']);
 
     $response = actingAs($cara)->post(route('employees.work-entries.store', $cara), workEntryForm($relaunch, ['date' => '2026-11-10']));
 
     $response->assertInvalid(['date' => 'Cara has Time Off on 10 Nov 2026, so no hours can be recorded that day.']);
     assertDatabaseCount('work_entries', 0);
-})->with(['pending' => 'unpaid', 'approved' => 'approved']);
+})->with(['pending', 'approved']);
 
 it('accepts hours on a weekend inside Time Off, next to it, or over Declined, Cancelled or someone else\'s Time Off', function (string $date) {
     $cara = recorder();
