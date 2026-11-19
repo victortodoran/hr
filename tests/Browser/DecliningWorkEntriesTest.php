@@ -28,7 +28,7 @@ it('lets a Manager decline ticked Work Entries with a reason, which then leave t
     visit(route('approvals.index'))
         ->click("[aria-label=\"Select Cara's Work Entry on Nov 10, 2026\"]")
         ->click("[aria-label=\"Select Cara's Work Entry on Nov 11, 2026\"]")
-        ->click('Decline…')
+        ->click('internal:role=button[name="Decline…"s]')
         ->assertSee('Decline 2 Work Entries?')
         ->click('internal:role=dialog >> internal:role=button[name="Decline"s]')
         ->assertPresent('#decline-reason:invalid')

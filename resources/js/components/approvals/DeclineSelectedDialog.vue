@@ -20,8 +20,9 @@ import type { RouteDefinition } from '@/wayfinder';
 
 /**
  * Declines the selected Work Entries or Travel Expenses on the Approvals
- * page, or one Travel Request or Travel Expense on its Travel Request's
- * page, asking for the one reason the Employee will see on each.
+ * page, or one of them from its row there, or one Travel Request or Travel
+ * Expense on its Travel Request's page, asking for the one reason the
+ * Employee will see on each.
  */
 const props = defineProps<{
     /** The selected rows; left out when the action declines one thing by its URL. */
@@ -35,6 +36,8 @@ const props = defineProps<{
     placeholder: string;
     /** The trigger button's size, smaller in a table row. */
     size?: 'default' | 'sm';
+    /** The trigger button's accessible name, telling one row's from another's. */
+    label?: string;
 }>();
 
 const emit = defineEmits<{
@@ -74,6 +77,7 @@ function decline(): void {
             <Button
                 variant="outline"
                 :size="size"
+                :aria-label="label"
                 :disabled="ids !== undefined && ids.length === 0"
                 >Decline…</Button
             >
