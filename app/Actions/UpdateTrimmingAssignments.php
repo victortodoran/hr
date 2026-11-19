@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\DB;
  * Assignments to end by its last day (a Leaving Date or a Project end date),
  * so nobody appears to work after leaving or on a finished Project, and
  * removes their Pay changes dated after that day. An Employee's Internal
- * Assignment always takes their Start Date and Leaving Date. Validation has
+ * Assignment always takes their Start Date and Leaving Date, its Pay moving
+ * to a later Start Date as an Assignment's does. Validation has
  * already refused a last day before any other Assignment starts.
  */
 class UpdateTrimmingAssignments
@@ -29,6 +30,7 @@ class UpdateTrimmingAssignments
         DB::transaction(function () use ($employee, $changes): void {
             $employee->update($changes);
             $employee->internalAssignment()->update($employee->workingPeriod());
+            $employee->internalAssignment()->first()?->movePayToStart();
             $this->trim($employee->assignments(), $employee->leaving_date);
         });
     }

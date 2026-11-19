@@ -139,4 +139,24 @@ class Assignment extends Model
 
         $this->payEntries()->whereDate('effective_from', '>', $this->end_date)->delete();
     }
+
+    /**
+     * Move the Pay change in force on the Assignment's start to the start
+     * and remove the older ones, so its Pay still begins on its first day
+     * once its start moves later.
+     */
+    public function movePayToStart(): void
+    {
+        $inForce = $this->payEntries()
+            ->whereDate('effective_from', '<=', $this->start_date)
+            ->latest('effective_from')
+            ->first();
+
+        if ($inForce === null) {
+            return;
+        }
+
+        $this->payEntries()->whereDate('effective_from', '<', $inForce->effective_from)->delete();
+        $inForce->update(['effective_from' => $this->start_date]);
+    }
 }

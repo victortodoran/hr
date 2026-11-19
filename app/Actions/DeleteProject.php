@@ -18,7 +18,7 @@ class DeleteProject
     {
         if ($project->assignments()->exists()) {
             throw ValidationException::withMessages([
-                'project' => __(':project has Assignments, so it can\'t be deleted. Set an end date instead.', ['project' => $project->name]),
+                'project' => __(':project has Assignments, so it can\'t be deleted. Set an end date instead, or delete the Assignments on it that have no Work Entries or Travel Requests.', ['project' => $project->name]),
             ]);
         }
 
