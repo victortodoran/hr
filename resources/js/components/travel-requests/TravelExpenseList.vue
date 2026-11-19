@@ -14,6 +14,7 @@ import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useBulkSelection } from '@/composables/useBulkSelection';
