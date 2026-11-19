@@ -15,7 +15,7 @@ An Employee who has accepted an offer but whose Start Date has not arrived yet. 
 _Avoid_: New hire, pre-hire, starter, pending employee
 
 **Start Date**:
-The first day an Employee works for the company. From this day on, they can sign in.
+The first day an Employee works for the company. From this day on, they can sign in. It can't move past the first day of any of their Work Entries, or of their Pending or Approved Time Off or Travel Requests.
 _Avoid_: Hire date, joining date, first day
 
 **Former Employee**:
@@ -23,7 +23,7 @@ An Employee who has left the company. Their records are kept, but they can no lo
 _Avoid_: Leaver, ex-employee, deleted user, inactive user
 
 **Leaving Date**:
-The last day an Employee works for the company. From the next day on, they are a Former Employee. An Employee can't be given a Leaving Date while it would leave one of their Reports with no Manager and with Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or an Open Performance Evaluation.
+The last day an Employee works for the company. From the next day on, they are a Former Employee. It can't fall before the last day of any of their Work Entries, or of their Pending or Approved Time Off or Travel Requests; those must be cancelled or moved first. An Employee can't be given a Leaving Date while it would leave one of their Reports with no Manager and with Pending Work Entries, Time Off, Travel Requests or Travel Expenses, or an Open Performance Evaluation.
 _Avoid_: End date, termination date, exit date
 
 ### Reporting line
@@ -63,7 +63,7 @@ An outside organisation the company does work for. Companies that do not work fo
 _Avoid_: Customer, account, partner
 
 **Assignment**:
-An Employee working on a Project for a period of time, with a Job Title, Pay, a start date, an optional end date and a Capacity. An Employee can have Assignments to several Projects at once, and so can work for several Clients at once.
+An Employee working on a Project for a period of time, with a Job Title, Pay, a start date, an optional end date and a Capacity. An Employee can have Assignments to several Projects at once, and so can work for several Clients at once. An Assignment with no Work Entries or Travel Requests can be deleted, its Pay with it; once it has any, it can only be ended. The Internal Assignment is never deleted.
 _Avoid_: Allocation, staffing, placement, membership
 
 **Capacity**:
@@ -93,7 +93,7 @@ _Avoid_: Role, position, function
 ### Time
 
 **Work Entry**:
-A record of how many hours an Employee worked on one Assignment on one date, with a description of what was done, as in "Cara worked 3 hours on Relaunch on 10 Nov reviewing the API". An Employee can record several Work Entries for the same Assignment on the same date. Work Entries stand on their own and are not grouped into Timesheets.
+A record of how many hours an Employee worked on one Assignment on one date, with a description of what was done, as in "Cara worked 3 hours on Relaunch on 10 Nov reviewing the API". An Employee can record several Work Entries for the same Assignment on the same date. Work Entries stand on their own and are not grouped into Timesheets. No Work Entry can fall on a day of the Employee's Pending or Approved Time Off: a day is either worked or off.
 _Avoid_: Booking, time entry, timesheet, timesheet item, time log, worked hours
 
 **Pending**:
@@ -111,7 +111,7 @@ _Avoid_: Unlock, unapprove, reject, revert
 ### Time Off
 
 **Time Off**:
-One or more whole days an Employee asks to be away from work, from a first to a last date, as in "Cara requested Time Off from 22 to 24 Dec". Only weekdays count as days of Time Off; weekends never do, and public holidays count like any other weekday. Each Time Off is either Paid Time Off or Unpaid Time Off. It is Pending until the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't). The Time Off of an Employee with no Manager is Approved as soon as they request it. An Employee's Time Off can't overlap their other Pending or Approved Time Off, and one Time Off covers at most a year; longer leave is several.
+One or more whole days an Employee asks to be away from work, from a first to a last date, as in "Cara requested Time Off from 22 to 24 Dec". Only weekdays count as days of Time Off; weekends never do, and public holidays count like any other weekday. Each Time Off is either Paid Time Off or Unpaid Time Off. It is Pending until the Employee's Manager approves or declines it (while that Manager has left, the next Manager up who hasn't). The Time Off of an Employee with no Manager is Approved as soon as they request it. An Employee's Time Off can't overlap their other Pending or Approved Time Off, or any day they already have Pending or Approved Work Entries on, and one Time Off covers at most a year; longer leave is several.
 _Avoid_: Holiday, leave, vacation, absence, day off, PTO
 
 **Paid Time Off**:
