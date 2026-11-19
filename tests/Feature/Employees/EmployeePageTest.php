@@ -48,6 +48,33 @@ it('shows an Employee their own record, with no Assignments or Pay when they may
         );
 });
 
+it('shows a Manager who also holds the Employee Role their own record, Assignments with Pay and Time Off on their Profile', function () {
+    CompanySettings::factory()->create();
+    $ben = employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Own,
+        Permission::ViewAssignments->value => Scope::Own,
+        Permission::ViewPay->value => Scope::Own,
+        Permission::ViewTimeOff->value => Scope::Own,
+    ]);
+    giveRole($ben, [
+        Permission::ViewEmployeeRecords->value => Scope::Reports,
+        Permission::ViewAssignments->value => Scope::Reports,
+        Permission::ViewPay->value => Scope::Reports,
+        Permission::ViewTimeOff->value => Scope::Reports,
+    ]);
+    Employee::factory()->reportingTo($ben)->create();
+    Assignment::factory()->internal()->for($ben)->create();
+
+    actingAs($ben)->get(route('employees.show', $ben))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('tabs', ['overview', 'assignments', 'time-off'])
+            ->whereNot('record', null));
+    get(route('employees.show', ['employee' => $ben, 'tab' => 'assignments']))
+        ->assertInertia(fn (Assert $page) => $page->has('assignments.0.pay'));
+    get(route('employees.show', ['employee' => $ben, 'tab' => 'time-off']))
+        ->assertInertia(fn (Assert $page) => $page->whereNot('timeOff', null));
+});
+
 it('opens an Employee\'s page to a viewer who may only see their Assignments, without their record', function () {
     $eve = Employee::factory()->create();
     $assignment = Assignment::factory()->internal()->for($eve)->create(['job_title' => 'Designer']);

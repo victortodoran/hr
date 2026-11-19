@@ -43,9 +43,12 @@ it('lists every Employee to someone who may see everyone\'s record, Future and F
  * ├── Ben ── Cara ── Dev
  * └── Eve
  */
-it('lists only the Employees the viewer\'s Scope covers', function (Scope $scope, array $listed) {
+it('lists only the Employees the viewer\'s Scopes cover, each from its own Role', function (array $scopes, array $listed) {
     $dana = Employee::factory()->create(['name' => 'Dana']);
-    $ben = employeeWith([Permission::ViewEmployeeRecords->value => $scope], ['name' => 'Ben', 'manager_id' => $dana->id]);
+    $ben = employeeWith([Permission::ViewEmployeeRecords->value => array_shift($scopes)], ['name' => 'Ben', 'manager_id' => $dana->id]);
+    foreach ($scopes as $scope) {
+        giveRole($ben, [Permission::ViewEmployeeRecords->value => $scope]);
+    }
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
     Employee::factory()->former()->reportingTo($cara)->create(['name' => 'Dev']);
     Employee::factory()->reportingTo($dana)->create(['name' => 'Eve']);
@@ -53,9 +56,10 @@ it('lists only the Employees the viewer\'s Scope covers', function (Scope $scope
     actingAs($ben)->get(route('employees.index'))
         ->assertInertia(fn (Assert $page) => $page->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === $listed));
 })->with([
-    'own' => [Scope::Own, ['Ben']],
-    'reports, indirect and Former ones included' => [Scope::Reports, ['Cara', 'Dev']],
-    'everyone' => [Scope::Everyone, ['Ben', 'Cara', 'Dana', 'Dev', 'Eve']],
+    'own' => [[Scope::Own], ['Ben']],
+    'reports, indirect and Former ones included' => [[Scope::Reports], ['Cara', 'Dev']],
+    'own and reports combined' => [[Scope::Own, Scope::Reports], ['Ben', 'Cara', 'Dev']],
+    'everyone' => [[Scope::Everyone], ['Ben', 'Cara', 'Dana', 'Dev', 'Eve']],
 ]);
 
 it('narrows the list to one status', function (string $status, array $listed) {

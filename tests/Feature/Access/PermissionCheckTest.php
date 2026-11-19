@@ -48,7 +48,18 @@ it('refuses an Employee whose Roles lack the Permission', function () {
     actingAs($cara)->get("/_test/employees/{$cara->id}")->assertForbidden();
 });
 
-it('uses the widest Scope across all of an Employee\'s Roles', function () {
+it('combines own and reports from different Roles to cover the Employee and their Reports, and nobody else', function () {
+    $ben = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Own]);
+    giveRole($ben, [Permission::ViewEmployeeRecords->value => Scope::Reports]);
+    $cara = Employee::factory()->reportingTo($ben)->create();
+    $colleague = Employee::factory()->create();
+
+    actingAs($ben)->get("/_test/employees/{$ben->id}")->assertOk();
+    actingAs($ben)->get("/_test/employees/{$cara->id}")->assertOk();
+    actingAs($ben)->get("/_test/employees/{$colleague->id}")->assertForbidden();
+});
+
+it('lets everyone from one Role cover every Employee whatever narrower Scope another gives', function () {
     $ana = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Own]);
     giveRole($ana, [Permission::ViewEmployeeRecords->value => Scope::Everyone]);
     $colleague = Employee::factory()->create();
@@ -99,7 +110,7 @@ it('lets an Admin holder use every Permission on every Employee, with no grants 
     actingAs($ana)->get("/_test/employees/{$colleague->id}")->assertOk();
     actingAs($ana)->get('/_test/departments')->assertOk();
     expect(RolePermission::query()->exists())->toBeFalse()
-        ->and($ana->widestScopeFor(Permission::ManagePay))->toBe(Scope::Everyone);
+        ->and($ana->reachOf(Permission::ManagePay))->toBe([Scope::Everyone]);
 });
 
 it('tells pages an Admin holder has every company-wide Permission, so the menu shows everything', function () {

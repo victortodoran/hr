@@ -6,27 +6,15 @@ use App\Models\Builders\EmployeeBuilder;
 use App\Models\Employee;
 
 /**
- * Which Employees a Permission about Employees applies to.
+ * Which Employees a Permission about Employees applies to. The Scopes an
+ * Employee's Roles give for one Permission combine: own and reports
+ * together cover themselves and their Reports.
  */
 enum Scope: string
 {
     case Own = 'own';
     case Reports = 'reports';
     case Everyone = 'everyone';
-
-    /**
-     * The widest of the given Scopes (everyone > reports > own), or null when
-     * there are none, meaning no Role grants the Permission.
-     *
-     * @param  iterable<Scope>  $scopes
-     */
-    public static function widest(iterable $scopes): ?self
-    {
-        $given = collect($scopes);
-
-        return collect([self::Everyone, self::Reports, self::Own])
-            ->first(fn (self $candidate): bool => $given->contains($candidate));
-    }
 
     /**
      * Whether this Scope can cover anyone besides the acting Employee.
