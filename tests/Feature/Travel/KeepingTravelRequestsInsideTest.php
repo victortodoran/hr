@@ -126,6 +126,36 @@ it('refuses a Leaving Date before the last day of the Employee\'s Pending or App
     expect($cara->refresh()->leaving_date?->toDateString())->toBe('2026-12-05');
 })->with(['pending' => null, 'approved' => 'approved']);
 
+it('refuses a Start Date after the first day of the Employee\'s Pending or Approved travel on their Internal Assignment, and allows one on it', function (?string $state) {
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'manager_id' => Employee::factory()->startedLongAgo()->create()->id]);
+    $internal = Assignment::factory()->for($cara)->internal()->create(['start_date' => '2025-01-06']);
+    $factory = TravelRequest::factory()->on($internal);
+    ($state === null ? $factory : $factory->{$state}())->create(['first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+
+    actingAs(employeeWhoManagesEmployees())
+        ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['start_date' => '2026-12-04']))
+        ->assertInvalid(['start_date' => 'Cara has a Travel Request on '.$internal->project->name.' from 3 Dec 2026, so their Start Date can\'t be later than that.']);
+
+    expect($cara->refresh()->start_date->toDateString())->toBe('2025-01-06');
+
+    actingAs(employeeWhoManagesEmployees())
+        ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['start_date' => '2026-12-03']))
+        ->assertValid();
+
+    expect($cara->refresh()->start_date->toDateString())->toBe('2026-12-03');
+})->with(['pending' => null, 'approved' => 'approved']);
+
+it('lets a Start Date move past Declined or Cancelled travel', function (string $state) {
+    $cara = Employee::factory()->startedLongAgo()->create(['manager_id' => Employee::factory()->startedLongAgo()->create()->id]);
+    TravelRequest::factory()->on(Assignment::factory()->for($cara)->internal()->create(['start_date' => '2025-01-06']))->{$state}()->create(['first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+
+    actingAs(employeeWhoManagesEmployees())
+        ->patch(route('employees.update', $cara), employeeRecordChanging($cara, ['start_date' => '2026-12-06']))
+        ->assertValid();
+
+    expect($cara->refresh()->start_date->toDateString())->toBe('2026-12-06');
+})->with(['declined', 'cancelled']);
+
 it('refuses ending a Project before the last day of Pending or Approved travel on its Assignments, and allows it on that day', function (?string $state) {
     $relaunch = relaunchWithTravel($state);
 
