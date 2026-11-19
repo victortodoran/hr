@@ -11,7 +11,8 @@ use Illuminate\Validation\Rule;
 /**
  * The Performance Evaluations page's filters: the calendar year shown, up
  * to the next one, and the current one when none is asked for; part of an
- * Employee's name; and a state, any state when none is chosen.
+ * Employee's name, or one Employee, as an Employee's page links here for
+ * them; and a state, any state when none is chosen.
  */
 class PerformanceEvaluationListRequest extends FormRequest
 {
@@ -23,6 +24,7 @@ class PerformanceEvaluationListRequest extends FormRequest
         return [
             'year' => ['nullable', 'integer', 'min:2000', 'max:'.max(PerformanceEvaluation::creatableYears())],
             'search' => ['nullable', 'string', 'max:255'],
+            'employee' => ['nullable', 'integer'],
             'state' => ['nullable', Rule::enum(PerformanceEvaluationListState::class)],
         ];
     }
@@ -41,6 +43,14 @@ class PerformanceEvaluationListRequest extends FormRequest
     public function search(): string
     {
         return $this->string('search')->value();
+    }
+
+    /**
+     * The one Employee asked for, null when none is.
+     */
+    public function employeeId(): ?int
+    {
+        return $this->filled('employee') ? $this->integer('employee') : null;
     }
 
     /**

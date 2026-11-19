@@ -23,11 +23,15 @@ import ValueOr from '@/components/ValueOr.vue';
 import { formatDate, formatPeriod } from '@/lib/dates';
 import { formatPay } from '@/lib/pay';
 import { edit, show } from '@/routes/employees';
+import { index as performanceEvaluationList } from '@/routes/performance-evaluations';
+import { index as travelRequestList } from '@/routes/travel-request-list';
+import { index as workEntryList } from '@/routes/work-entry-list';
 import type {
     AssignmentRecord,
     Choice,
     EmployeePageRecord,
     EmployeePageTab,
+    EmployeeSeeAlso,
     EmployeeStanding,
     EmployeeTimeOff,
     OpenProject,
@@ -36,8 +40,8 @@ import type {
 } from '@/types';
 
 /**
- * Only the open tab's props are sent: `record`, `reportsNeedingAManager` and
- * `reportingChain` on Overview, `assignments` and `projects` on Assignments &
+ * Only the open tab's props are sent: `record`, `reportsNeedingAManager`,
+ * `reportingChain` and `seeAlso` on Overview, `assignments` and `projects` on Assignments &
  * Pay, and `paidDays` and `timeOff` on Time Off.
  */
 const props = withDefaults(
@@ -51,6 +55,8 @@ const props = withDefaults(
         reportsNeedingAManager?: Choice[];
         /** Null for a Former Employee, who is no longer in the reporting line. */
         reportingChain?: ReportingChainView | null;
+        /** Which lists across Employees the viewer may open filtered to them. */
+        seeAlso?: EmployeeSeeAlso;
         assignments?: AssignmentRecord[];
         projects?: OpenProject[];
         canManage: boolean;
@@ -88,6 +94,33 @@ const tabLabels = computed<Record<EmployeePageTab, string>>(() => ({
 function openTab(tab: string | number): void {
     router.get(show.url(props.employee.id, { query: { tab: String(tab) } }));
 }
+
+/**
+ * The Overview's links to the lists across Employees, filtered to this
+ * Employee, each only where the viewer may see them there.
+ */
+const seeAlsoLinks = computed(() => {
+    const employee = props.employee.id;
+    const year = props.seeAlso?.performance;
+
+    return [
+        {
+            label: 'Work',
+            shown: props.seeAlso?.work,
+            href: workEntryList({ query: { employee } }),
+        },
+        {
+            label: 'Travel',
+            shown: props.seeAlso?.travel,
+            href: travelRequestList({ query: { employee } }),
+        },
+        {
+            label: 'Performance',
+            shown: year != null,
+            href: performanceEvaluationList({ query: { employee, year } }),
+        },
+    ].filter((link) => link.shown);
+});
 
 const hasActions = computed(() => props.canManage || props.canViewPay);
 
@@ -162,6 +195,20 @@ setLayoutProps({
                 >
             </TabsList>
             <TabsContent value="overview" class="mt-6 flex flex-col gap-10">
+                <nav
+                    v-if="seeAlsoLinks.length > 0"
+                    aria-label="See also"
+                    class="-mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm"
+                >
+                    <span class="text-muted-foreground">See also</span>
+                    <Link
+                        v-for="link in seeAlsoLinks"
+                        :key="link.label"
+                        :href="link.href"
+                        :class="linkClass"
+                        >{{ link.label }} →</Link
+                    >
+                </nav>
                 <div
                     v-if="record && reportsNeedingAManager.length > 0"
                     class="flex gap-3 rounded-lg bg-status-pending p-4 text-sm text-status-pending-foreground"

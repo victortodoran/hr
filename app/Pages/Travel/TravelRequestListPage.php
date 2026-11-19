@@ -29,7 +29,9 @@ final class TravelRequestListPage
      * total of their Travel Expenses that aren't Declined in the company
      * currency. The Employees to choose from are those the viewer may see
      * with Travel Requests in the Period in the chosen state, by name with
-     * how many; one not among them falls back to every Employee. The
+     * how many, and the one asked for when the viewer may see them, even
+     * with none, as an Employee's page links here for them; one not among
+     * them falls back to every Employee. The
      * Projects to choose from are those the chosen Employee, or anyone, has
      * Travel Requests on in the Period; one not among them falls back to
      * any Project.
@@ -43,7 +45,9 @@ final class TravelRequestListPage
         $visible = fn (): EmployeeBuilder => Employee::query()->withTravelVisibleTo($actor);
         $inPeriod = fn (TravelRequestBuilder $travelRequests): TravelRequestBuilder => $travelRequests->filteredBy(['period' => $requested['period'], 'state' => $requested['state']]);
         $employees = $visible()
-            ->whereHas('travelRequests', $inPeriod)
+            ->where(fn (EmployeeBuilder $listed) => $listed
+                ->whereHas('travelRequests', $inPeriod)
+                ->when(is_int($requested['employee']), fn (EmployeeBuilder $asked) => $asked->orWhereKey($requested['employee'])))
             ->withCount(['travelRequests as travel_requests_count' => $inPeriod])
             ->orderBy('name')
             ->orderBy('id') // @pest-mutate-ignore (only orders Employees who share a name)

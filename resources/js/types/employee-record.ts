@@ -34,6 +34,17 @@ export type EmployeePageRecord = {
 };
 
 /**
+ * Which lists across Employees the viewer may open, from an Employee's
+ * Overview, filtered to that Employee.
+ */
+export type EmployeeSeeAlso = {
+    work: boolean;
+    travel: boolean;
+    /** The year to open the Performance Evaluations list on, null when hidden. */
+    performance: number | null;
+};
+
+/**
  * Where an Employee stands, shown in their page's header on every tab:
  * their employment status.
  */

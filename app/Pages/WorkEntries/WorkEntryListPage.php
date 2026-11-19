@@ -29,8 +29,10 @@ final class WorkEntryListPage
      * chosen, oldest first, with the total hours of those that aren't
      * Declined, and of those that are. The Employees to choose from are
      * those the viewer may see with Work Entries in the Period in the chosen
-     * state, by name with how many; an Employee not among them, or none,
-     * falls back to the first, while "all" keeps every Employee. The
+     * state, by name with how many, and the one asked for when the viewer
+     * may see them, even with none, as an Employee's page links here for
+     * them; an Employee not among them, or none, falls back to the first,
+     * while "all" keeps every Employee. The
      * Projects to choose from are those the chosen Employee, or anyone, has
      * Work Entries on during the Period; one not among them falls back to
      * any Project. With no Work Entries in the Period, there is nobody to
@@ -44,7 +46,9 @@ final class WorkEntryListPage
         $visible = fn (): EmployeeBuilder => Employee::query()->withWorkEntriesVisibleTo($actor);
         $inPeriod = fn (WorkEntryBuilder $entries): WorkEntryBuilder => self::inPeriod($entries, $requested['period'], $requested['state']);
         $employees = $visible()
-            ->whereHas('workEntries', $inPeriod)
+            ->where(fn (EmployeeBuilder $listed) => $listed
+                ->whereHas('workEntries', $inPeriod)
+                ->when(is_int($requested['employee']), fn (EmployeeBuilder $asked) => $asked->orWhereKey($requested['employee'])))
             ->withCount(['workEntries as entries_count' => $inPeriod])
             ->orderBy('name')
             ->orderBy('id') // @pest-mutate-ignore (only orders Employees who share a name)

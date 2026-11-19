@@ -90,6 +90,20 @@ it('narrows the list to one state and to part of a name', function (array $query
     'a name with no match' => [['search' => 'Eva', 'state' => 'open'], []],
 ]);
 
+it('narrows the list to one Employee the viewer may open the Evaluations of, giving them back for the filter bar, and ignores anyone else', function () {
+    [$ben, $cara] = evaluationsListLine();
+    $zed = Employee::query()->where('name', 'Zed')->sole();
+
+    assertEvaluationsListRows($ben, ['employee' => (string) $cara->id], [['Cara', 'none-yet', null, true]]);
+    actingAs($ben)->get(route('performance-evaluations.index', ['employee' => $cara->id]))
+        ->assertInertia(fn (Assert $page) => $page->where('employee', ['id' => $cara->id, 'name' => 'Cara']));
+    actingAs($ben)->get(route('performance-evaluations.index', ['employee' => $zed->id]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('employee', null)
+            ->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === ['Cara', 'Dan', 'Eva']));
+    actingAs($ben)->get(route('performance-evaluations.index', ['employee' => 'cara']))->assertSessionHasErrors('employee');
+});
+
 it('sends the filters back for the filter bar and refuses an unknown state', function () {
     [$ben] = evaluationsListLine();
 

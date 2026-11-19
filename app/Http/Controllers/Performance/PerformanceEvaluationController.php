@@ -32,11 +32,11 @@ class PerformanceEvaluationController extends Controller
      * the Permissions for reading them reaches) who have one for it,
      * Former Employees included, or are still due one, by name, with that
      * Performance Evaluation or a way to create it, optionally narrowed to
-     * part of a name or one state.
+     * part of a name, one Employee or one state.
      */
     public function index(PerformanceEvaluationListRequest $request, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationListPage::props($actor, $request->year(), $request->search(), $request->state()));
+        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationListPage::props($actor, $request->year(), $request->search(), $request->state(), $request->employeeId()));
     }
 
     /**
