@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
 import { CheckCheck } from '@lucide/vue';
 import ApprovalController from '@/actions/App/Http/Controllers/WorkEntries/ApprovalController';
 import WorkEntryDeclineController from '@/actions/App/Http/Controllers/WorkEntries/WorkEntryDeclineController';
@@ -13,6 +12,7 @@ import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useBulkSelection } from '@/composables/useBulkSelection';
+import { reloadList } from '@/composables/useListFilters';
 import { formatDate } from '@/lib/dates';
 import { formatHours } from '@/lib/work-entries';
 import { index } from '@/routes/approvals';
@@ -64,13 +64,9 @@ const {
     ids: () => props.matchingIds,
 });
 
-function reloadList(query: Record<string, string>): void {
+function showFiltered(query: Record<string, string>): void {
     clear();
-    router.get(
-        index.url({ query: { ...query, tab: 'work-entries' } }),
-        {},
-        { preserveState: true, replace: true },
-    );
+    reloadList(index.url({ query: { ...query, tab: 'work-entries' } }));
 }
 
 function approve(): void {
@@ -85,7 +81,7 @@ function approve(): void {
             :filters="filters"
             :employees="employees"
             :projects="projects"
-            @change="reloadList"
+            @change="showFiltered"
         />
 
         <SelectionBar

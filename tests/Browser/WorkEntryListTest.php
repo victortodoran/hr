@@ -155,7 +155,7 @@ it("opens an Employee's week from the list under their name, while the viewer's 
         ->assertNoJavaScriptErrors();
 });
 
-it('shows the total above the list, with Status in its own column, and keeps every column on a phone', function () {
+it('shows the total above the list, with Status in its own column, and fits a phone with the Status under the name', function () {
     $finn = employeeWith([Permission::ReopenWorkEntries->value => Scope::Everyone], ['name' => 'Finn']);
     $cara = Employee::factory()->create(['name' => 'Cara']);
     $relaunch = assignmentOf($cara, 'Relaunch');
@@ -172,9 +172,10 @@ it('shows the total above the list, with Status in its own column, and keeps eve
         ->assertSeeIn('[data-test="work-entry"]', 'Tue 10')
         ->assertSeeIn('[data-test="decline-reason"]', 'Declined by')
         ->resize(360, 800)
-        ->assertSee('Reviewing the API')
-        ->assertSee('Relaunch')
+        ->assertSee('Cara')
+        ->assertSee('Approved')
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->assertScript('[...document.querySelectorAll("table")].every((table) => table.parentElement.scrollWidth <= table.parentElement.clientWidth)', true)
         ->assertNoJavaScriptErrors();
 });
 

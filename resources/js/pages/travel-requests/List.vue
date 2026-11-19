@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { Luggage } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -8,6 +8,7 @@ import ListFilterBar from '@/components/ListFilterBar.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import { reloadList } from '@/composables/useListFilters';
 import { formatDateRange } from '@/lib/dates';
 import { index } from '@/routes/travel-request-list';
 import { show } from '@/routes/travel-requests';
@@ -61,12 +62,8 @@ const columns: TableColumn[] = [
     { key: 'expenses', label: 'Expenses', align: 'end' },
 ];
 
-function reloadList(query: Record<string, string>): void {
-    router.get(
-        index.url({ query }),
-        {},
-        { preserveState: true, replace: true },
-    );
+function showFiltered(query: Record<string, string>): void {
+    reloadList(index.url({ query }));
 }
 </script>
 
@@ -86,7 +83,7 @@ function reloadList(query: Record<string, string>): void {
             :projects="projects"
             :states="states"
             allow-future
-            @change="reloadList"
+            @change="showFiltered"
         />
 
         <p

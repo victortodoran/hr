@@ -25,3 +25,9 @@ export type StateChoice<State extends string = string> = {
     value: State;
     label: string;
 };
+
+/** A choice in one of a list's dropdowns, as people read it. */
+export type FilterChoice = {
+    value: string;
+    label: string;
+};

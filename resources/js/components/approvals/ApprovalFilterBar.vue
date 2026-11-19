@@ -1,12 +1,7 @@
 <script setup lang="ts">
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import type { ApprovalFilters, ChoiceToApprove } from '@/types';
+import FilterBar from '@/components/FilterBar.vue';
+import FilterSelect from '@/components/FilterSelect.vue';
+import type { ApprovalFilters, ChoiceToApprove, FilterChoice } from '@/types';
 
 /**
  * Filters for the Approvals Work Entries tab: one Employee and one Project
@@ -25,51 +20,40 @@ const emit = defineEmits<{
     change: [query: Record<string, string>];
 }>();
 
-function chooseEmployee(employee: unknown): void {
-    emit('change', { employee: String(employee) });
+function withPending(choices: ChoiceToApprove[]): FilterChoice[] {
+    return choices.map((choice) => ({
+        value: String(choice.id),
+        label: `${choice.name} (${choice.pending})`,
+    }));
 }
 
-function chooseProject(project: unknown): void {
+function chooseEmployee(employee: string): void {
+    emit('change', { employee });
+}
+
+function chooseProject(project: string): void {
     emit('change', {
         employee: String(props.filters.employee),
-        project: String(project),
+        project,
     });
 }
 </script>
 
 <template>
-    <div class="flex flex-wrap items-end gap-3">
-        <Select
+    <FilterBar>
+        <FilterSelect
+            label="Employee"
+            width="w-48"
             :model-value="String(filters.employee)"
+            :choices="withPending(employees)"
             @update:model-value="chooseEmployee"
-        >
-            <SelectTrigger class="w-48" aria-label="Employee">
-                <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem
-                    v-for="choice in employees"
-                    :key="choice.id"
-                    :value="String(choice.id)"
-                    >{{ choice.name }} ({{ choice.pending }})</SelectItem
-                >
-            </SelectContent>
-        </Select>
-        <Select
+        />
+        <FilterSelect
+            label="Project"
+            width="w-48"
             :model-value="String(filters.project)"
+            :choices="withPending(projects)"
             @update:model-value="chooseProject"
-        >
-            <SelectTrigger class="w-48" aria-label="Project">
-                <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem
-                    v-for="choice in projects"
-                    :key="choice.id"
-                    :value="String(choice.id)"
-                    >{{ choice.name }} ({{ choice.pending }})</SelectItem
-                >
-            </SelectContent>
-        </Select>
-    </div>
+        />
+    </FilterBar>
 </template>

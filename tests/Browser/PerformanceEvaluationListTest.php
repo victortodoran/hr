@@ -11,24 +11,23 @@ covers(PerformanceEvaluationController::class);
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
-it('opens an Evaluation from anywhere on its row', function () {
+it('opens an Evaluation from its Employee\'s name, and shows another year from the filter bar', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara Lindqvist']);
     $evaluation = PerformanceEvaluation::factory()->of($cara)->create();
+    PerformanceEvaluation::factory()->of(Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Dan Last-Year']))->create(['year' => 2025]);
 
     actingAs($ben);
 
     visit(route('performance-evaluations.index'))
-        ->assertSee('CL')
-        ->assertScript(<<<'JS'
-            (() => {
-                const status = document.querySelector('tbody tr td:last-child').getBoundingClientRect();
-                const hit = document.elementFromPoint(status.left + status.width / 2, status.top + status.height / 2);
-
-                return hit?.closest('a')?.textContent.trim() === 'Cara Lindqvist';
-            })()
-            JS)
-        ->assertNoJavaScriptErrors()
+        ->assertDontSee('Dan Last-Year')
+        ->click('[aria-label="Year"]')
+        ->click('internal:role=option[name="2025"s]')
+        ->assertQueryStringHas('year', '2025')
+        ->assertSee('Dan Last-Year')
+        ->assertDontSee('Cara Lindqvist')
+        ->click('[aria-label="Year"]')
+        ->click('internal:role=option[name="2026"s]')
         ->click('internal:role=link[name="Cara Lindqvist"s]')
         ->assertPathIs(route('performance-evaluations.show', $evaluation, false))
         ->assertNoJavaScriptErrors();

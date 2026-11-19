@@ -1,28 +1,23 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { UsersRound } from '@lucide/vue';
-import { useDebounceFn } from '@vueuse/core';
-import { ref } from 'vue';
 import DataTable from '@/components/DataTable.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import FilterBar from '@/components/FilterBar.vue';
+import FilterSearch from '@/components/FilterSearch.vue';
+import FilterSelect from '@/components/FilterSelect.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import ValueOr from '@/components/ValueOr.vue';
+import { useListFilters } from '@/composables/useListFilters';
 import { create, index, show } from '@/routes/employees';
 import type {
     EmployeeListEntry,
     EmploymentStatus,
+    FilterChoice,
     Paginated,
     TableColumn,
 } from '@/types';
@@ -47,25 +42,16 @@ const columns: TableColumn[] = [
     { key: 'manager', label: 'Manager', minor: true },
 ];
 
-const search = ref(props.search);
-const statusFilter = ref<string>(props.status ?? 'all');
+const statuses: FilterChoice[] = [
+    { value: 'future', label: 'Future' },
+    { value: 'current', label: 'Current' },
+    { value: 'former', label: 'Former' },
+];
 
-function reloadList(): void {
-    router.get(
-        index.url({
-            query: {
-                ...(search.value ? { search: search.value } : {}),
-                ...(statusFilter.value !== 'all'
-                    ? { status: statusFilter.value }
-                    : {}),
-            },
-        }),
-        {},
-        { preserveState: true, replace: true },
-    );
-}
-
-const searchEmployees = useDebounceFn(reloadList, 300);
+const filters = useListFilters(index.url, {
+    search: props.search,
+    status: props.status ?? 'all',
+});
 </script>
 
 <template>
@@ -83,27 +69,15 @@ const searchEmployees = useDebounceFn(reloadList, 300);
             </template>
         </Heading>
 
-        <div class="flex flex-wrap gap-3">
-            <Input
-                v-model="search"
-                type="search"
-                placeholder="Search by name"
-                aria-label="Search by name"
-                class="max-w-sm"
-                @update:model-value="searchEmployees"
+        <FilterBar>
+            <FilterSearch v-model="filters.search" />
+            <FilterSelect
+                v-model="filters.status"
+                label="Status"
+                any="Any status"
+                :choices="statuses"
             />
-            <Select v-model="statusFilter" @update:model-value="reloadList">
-                <SelectTrigger class="w-44" aria-label="Status">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Any status</SelectItem>
-                    <SelectItem value="future">Future</SelectItem>
-                    <SelectItem value="current">Current</SelectItem>
-                    <SelectItem value="former">Former</SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
+        </FilterBar>
 
         <DataTable :columns="columns" :rows="employees.data">
             <template #cell-name="{ row }">
