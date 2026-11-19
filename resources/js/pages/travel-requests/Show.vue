@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { formatDateRange } from '@/lib/dates';
 import { formatDays } from '@/lib/time-off';
 import { show as showEmployee } from '@/routes/employees';
+import { index as travelRequestList } from '@/routes/travel-request-list';
 import { index, show } from '@/routes/travel-requests';
 import type { BreadcrumbItem, Choice, TravelRequestRecord } from '@/types';
 
@@ -30,28 +31,38 @@ const props = defineProps<{
     isOwn: boolean;
     /** Whether the viewer may open the Employee's record, where the breadcrumb leads. */
     canViewEmployee: boolean;
+    /** Whether the viewer may open the Travel Requests page, where the breadcrumbs lead first. */
+    canViewTravelRequests: boolean;
 }>();
 
-/** Travel › destination for the Employee themselves; Employees › name › destination for anyone else. */
+/**
+ * Travel › destination for the Employee themselves; Travel Requests ›
+ * name · destination for a viewer who may open that page; Employees › name ›
+ * destination for anyone else.
+ */
 const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
     ? [{ title: 'Travel', href: index() }]
-    : [
-          { title: 'Employees' },
-          {
-              title: props.employee.name,
-              href: props.canViewEmployee
-                  ? showEmployee(props.employee.id)
-                  : undefined,
-          },
-      ];
+    : props.canViewTravelRequests
+      ? [{ title: 'Travel Requests', href: travelRequestList() }]
+      : [
+            { title: 'Employees' },
+            {
+                title: props.employee.name,
+                href: props.canViewEmployee
+                    ? showEmployee(props.employee.id)
+                    : undefined,
+            },
+        ];
+
+const title =
+    !props.isOwn && props.canViewTravelRequests
+        ? `${props.employee.name} · ${props.travelRequest.destination}`
+        : props.travelRequest.destination;
 
 setLayoutProps({
     breadcrumbs: [
         ...leadingBreadcrumbs,
-        {
-            title: props.travelRequest.destination,
-            href: show(props.travelRequest.id),
-        },
+        { title, href: show(props.travelRequest.id) },
     ],
 });
 </script>
