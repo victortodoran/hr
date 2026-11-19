@@ -77,7 +77,8 @@ it('puts the Progress back with a toast saying why when the Performance Evaluati
         ->assertSee('The Goal was given');
 
     $goal->forceFill(['outcome' => Outcome::Met])->save();
-    app(AssessPerformanceEvaluation::class)->complete($evaluation, Outcome::Met, 'Good year.');
+    app(AssessPerformanceEvaluation::class)->writeSummary($evaluation, 'Good year.');
+    app(AssessPerformanceEvaluation::class)->complete($evaluation, Outcome::Met);
 
     $page->click('#goal-progress')
         ->click('internal:role=option[name="Done"s]')

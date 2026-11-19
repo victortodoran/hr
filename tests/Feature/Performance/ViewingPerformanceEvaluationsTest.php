@@ -55,8 +55,8 @@ it('lets someone with view performance evaluations for everyone see the page and
     actingAs($dana)->get(route('performance-evaluations.create'))->assertForbidden();
     actingAs($dana)->post(route('performance-evaluations.store'), ['year' => 2027, 'employee_id' => $ben->id])->assertSessionHasErrors('employee_id');
     actingAs($dana)->post(route('performance-evaluations.goals.store', $evaluation), ['title' => 'From HR', 'description' => 'Not allowed'])->assertForbidden();
-    actingAs($dana)->put(route('performance-evaluations.assessment.update', $evaluation), ['outcome' => 'met', 'summary' => 'No'])->assertForbidden();
-    actingAs($dana)->post(route('performance-evaluations.completion.store', $evaluation), ['outcome' => 'met', 'summary' => 'No'])->assertForbidden();
+    actingAs($dana)->put(route('performance-evaluations.summary.update', $evaluation), ['summary' => 'No'])->assertForbidden();
+    actingAs($dana)->post(route('performance-evaluations.completion.store', $evaluation), ['outcome' => 'met'])->assertForbidden();
     expect($evaluation->goals()->count())->toBe(1)
         ->and($zed->performanceEvaluations()->count())->toBe(1);
 });

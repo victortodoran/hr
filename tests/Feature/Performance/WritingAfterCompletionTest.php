@@ -13,6 +13,7 @@ use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\travelTo;
 
@@ -46,14 +47,13 @@ function completeSinceLoaded(PerformanceEvaluation $evaluation): void
     PerformanceEvaluation::query()->whereKey($evaluation->id)->update(['state' => PerformanceEvaluationState::Completed, 'completed_at' => now()->subMinute()]);
 }
 
-it('saves no assessment on an Evaluation Completed since it was loaded', function () {
-    [, , $evaluation, $goal] = evaluationLoadedWhileOpen();
+it('saves no summary on an Evaluation Completed since it was loaded', function () {
+    [, , $evaluation] = evaluationLoadedWhileOpen();
     completeSinceLoaded($evaluation);
 
-    $saved = app(AssessPerformanceEvaluation::class)->save($evaluation, Outcome::NotMet, 'Rewritten.');
+    $saved = app(AssessPerformanceEvaluation::class)->writeSummary($evaluation, 'Rewritten.');
 
     expect($saved)->toBeFalse()
-        ->and($evaluation->fresh()?->outcome)->toBe(Outcome::Met)
         ->and($evaluation->fresh()?->summary)->toBe('Good year.');
 });
 
@@ -61,11 +61,11 @@ it('completes no Evaluation again once Completed since it was loaded, keeping th
     [, , $evaluation, $goal] = evaluationLoadedWhileOpen();
     completeSinceLoaded($evaluation);
 
-    $completed = app(AssessPerformanceEvaluation::class)->complete($evaluation, Outcome::NotMet, 'Rewritten.');
+    $completed = app(AssessPerformanceEvaluation::class)->complete($evaluation, Outcome::NotMet);
 
     expect($completed)->toBeFalse()
         ->and($goal->fresh()?->outcome)->toBe(Outcome::Met)
-        ->and($evaluation->fresh()?->summary)->toBe('Good year.')
+        ->and($evaluation->fresh()?->outcome)->toBe(Outcome::Met)
         ->and($evaluation->fresh()?->completed_at?->toDateTimeString())->toBe('2026-12-01 08:59:00');
 });
 
@@ -128,14 +128,21 @@ it('writes no Comment on an Evaluation Completed since it was loaded', function 
         ->and($goal->comments()->count())->toBe(0);
 });
 
-it('saves the Outcome and summary sent even when they match what was loaded before a save from another tab', function () {
+it('saves the summary sent even when it matches what was loaded before a save from another tab', function () {
     [, , $evaluation] = evaluationLoadedWhileOpen();
-    PerformanceEvaluation::query()->whereKey($evaluation->id)->update(['outcome' => Outcome::NotMet, 'summary' => 'Other tab.']);
+    PerformanceEvaluation::query()->whereKey($evaluation->id)->update(['summary' => 'Other tab.']);
 
-    app(AssessPerformanceEvaluation::class)->save($evaluation, Outcome::Met, 'Good year.');
+    app(AssessPerformanceEvaluation::class)->writeSummary($evaluation, 'Good year.');
 
-    expect($evaluation->fresh()?->outcome)->toBe(Outcome::Met)
-        ->and($evaluation->fresh()?->summary)->toBe('Good year.');
+    expect($evaluation->fresh()?->summary)->toBe('Good year.');
+});
+
+it('Completes with the summary as saved, not as loaded, refusing when another tab cleared it', function () {
+    [, , $evaluation] = evaluationLoadedWhileOpen();
+    PerformanceEvaluation::query()->whereKey($evaluation->id)->update(['summary' => null]);
+
+    expect(fn () => app(AssessPerformanceEvaluation::class)->complete($evaluation, Outcome::Met))->toThrow(ValidationException::class)
+        ->and($evaluation->fresh()?->isCompleted())->toBeFalse();
 });
 
 it('saves the Goal\'s Outcome sent even when it matches what was loaded before a save from another tab', function () {

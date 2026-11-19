@@ -167,7 +167,7 @@ A short written message on a Goal, part of the running conversation between the 
 _Avoid_: Note, feedback, remark
 
 **Outcome**:
-How well a Goal, or a Performance Evaluation as a whole, was achieved, from a fixed list the HR system defines: Not Met, Partly Met, Met or Exceeded. Companies can't add their own. The Manager gives one to every Goal and one to the Performance Evaluation, with a written summary, before Completing it. The Employee sees them only once it is Completed.
+How well a Goal, or a Performance Evaluation as a whole, was achieved, from a fixed list the HR system defines: Not Met, Partly Met, Met or Exceeded. Companies can't add their own. The Manager gives one to every Goal and writes a summary first; giving the Performance Evaluation as a whole its Outcome is what Completes it, so a Goal's Outcome can be given, changed or taken back while it is Open, but the whole's only on Completing. The Employee sees them only once it is Completed.
 _Avoid_: Rating, score, grade, result
 
 **Open**:
@@ -175,7 +175,7 @@ The state of a Performance Evaluation that has not been Completed yet, or that w
 _Avoid_: Draft, in progress, active
 
 **Completed**:
-The state of a Performance Evaluation whose Manager has given every Goal and the whole an Outcome and closed it. It cannot be changed, but someone whose Role grants it can Reopen it, which sends it back to Open.
+The state of a Performance Evaluation whose Manager has given every Goal an Outcome, written the summary and then given the whole its Outcome, which closes it. It cannot be changed, not even by its Manager, but someone whose Role grants it can Reopen it, which sends it back to Open with its Outcomes and summary kept; the Manager Completes it again by giving the whole its Outcome again.
 _Avoid_: Closed, finalised, signed off, submitted
 
 ### Access

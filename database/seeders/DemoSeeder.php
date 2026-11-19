@@ -550,7 +550,8 @@ class DemoSeeder extends Seeder
             $this->assessPerformanceEvaluation->giveGoalOutcome($evaluation->goals()->create(['title' => $title, 'description' => $description]), $goalOutcome);
         }
 
-        $this->assessPerformanceEvaluation->complete($evaluation, $outcome, $summary);
+        $this->assessPerformanceEvaluation->writeSummary($evaluation, $summary);
+        $this->assessPerformanceEvaluation->complete($evaluation, $outcome);
     }
 
     /**

@@ -59,11 +59,10 @@ it('lets someone with reopen performance evaluations send a Completed one back t
     foreach ($evaluation->goals as $goal) {
         actingAs($ben)->put(route('performance-evaluations.goals.outcome.update', [$evaluation, $goal]), ['outcome' => 'exceeded'])->assertSessionHasNoErrors();
     }
-    actingAs($ben)->post(route('performance-evaluations.completion.store', $evaluation), [
-        'outcome' => 'exceeded',
-        'summary' => 'Better than first written.',
-    ])->assertSessionHasNoErrors();
+    actingAs($ben)->put(route('performance-evaluations.summary.update', $evaluation), ['summary' => 'Better than first written.'])->assertSessionHasNoErrors();
+    actingAs($ben)->post(route('performance-evaluations.completion.store', $evaluation), ['outcome' => 'exceeded'])->assertSessionHasNoErrors();
     expect($evaluation->refresh()->state)->toBe(PerformanceEvaluationState::Completed)
+        ->and($evaluation->outcome)->toBe(Outcome::Exceeded)
         ->and($evaluation->summary)->toBe('Better than first written.');
 });
 
