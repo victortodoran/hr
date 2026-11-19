@@ -85,7 +85,8 @@ it('follows the Goals\' current Progress', function () {
 it('never counts At Risk Goals on a Completed Evaluation', function () {
     [$ben, $cara, , $caras] = atRiskLine();
     $caras->goals()->update(['outcome' => Outcome::NotMet]);
-    app(AssessPerformanceEvaluation::class)->complete($caras, Outcome::PartlyMet, 'A hard year.');
+    app(AssessPerformanceEvaluation::class)->writeSummary($caras, 'A hard year.');
+    app(AssessPerformanceEvaluation::class)->complete($caras, Outcome::PartlyMet);
 
     assertAtRiskCountsOnList($ben, ['Cara' => 0]);
     actingAs($cara)->get(route('my-performance-evaluations.index'))

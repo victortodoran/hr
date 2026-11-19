@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Plus, Target } from '@lucide/vue';
-import PerformanceEvaluationAssessmentController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationAssessmentController';
 import PerformanceEvaluationCompletionController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationCompletionController';
 import PerformanceEvaluationReopeningController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationReopeningController';
+import PerformanceEvaluationSummaryController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationSummaryController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import SavedTick from '@/components/SavedTick.vue';
 import GoalCard from '@/components/performance-evaluations/GoalCard.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -22,7 +23,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -34,6 +34,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { getInitials } from '@/composables/useInitials';
+import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { formatDate } from '@/lib/dates';
 import { outcomes } from '@/lib/outcomes';
 import { index as mine } from '@/routes/my-performance-evaluations';
@@ -51,8 +52,9 @@ import type {
  * and their Manager change each Goal's Progress from its card while it is
  * Open. Only the Employee's effective Manager is offered to give, change
  * or remove Goals and to give their Outcomes, each saved from its card as
- * it is picked, and the Outcome of the whole and a summary, saved bit by
- * bit, and then Completing it, while it is Open. Anyone else reads the Goals,
+ * it is picked, and to write a summary, saved as they leave it, while it
+ * is Open. Once every Goal has an Outcome and the summary is written,
+ * giving the whole its Outcome Completes it, after asking. Anyone else reads the Goals,
  * and the Outcomes only once it is Completed.
  */
 const props = defineProps<{
@@ -69,51 +71,61 @@ const props = defineProps<{
     canReopen: boolean;
 }>();
 
-/** The whole's Outcome and the summary, as the Manager is writing them. Each Goal's Outcome saves from its card. */
-type Assessment = {
-    outcome: Outcome | '';
-    summary: string;
-};
-
-const assessment = useForm<Assessment>({
-    outcome: props.evaluation.outcome ?? '',
-    summary: props.evaluation.summary ?? '',
+/** The summary, which saves when focus leaves its box. */
+const summary = useSaveOnPick<string | null>({
+    saved: () => props.evaluation.summary,
+    url: () =>
+        PerformanceEvaluationSummaryController.update.url(props.evaluation.id),
+    field: 'summary',
+    label: 'summary',
+    keepsChosenOnFailure: true,
 });
 
-/** The assessment as the server takes it, an Outcome still empty as null. */
-function assessmentPayload(data: Assessment) {
-    return {
-        outcome: data.outcome || null,
-        summary: data.summary,
-    };
+function saveSummary(): void {
+    summary.save(summary.chosen.value?.trim() || null);
 }
 
-function saveAssessment(): void {
-    assessment
-        .transform(assessmentPayload)
-        .submit(
-            PerformanceEvaluationAssessmentController.update(
-                props.evaluation.id,
-            ),
-            { preserveScroll: true },
-        );
-}
+/** Whether every Goal has an Outcome and the summary is written, as saved, so giving the whole its Outcome may Complete it. */
+const isReadyToComplete = computed(
+    () =>
+        props.evaluation.goals.every((goal) => goal.outcome !== null) &&
+        Boolean(props.evaluation.summary?.trim()),
+);
+
+/** The Outcome of the whole that Completing sends. */
+const completion = useForm<{ outcome: Outcome | '' }>({ outcome: '' });
+
+/**
+ * What the Outcome dropdown holds: empty, with the kept Outcome after a
+ * Reopen showing in its place, except while the question before
+ * Completing asks about the one picked. Keeping it empty lets picking the
+ * kept Outcome again still ask.
+ */
+const pickedOutcome = ref<Outcome | ''>('');
 
 /** Whether the question before Completing is showing. */
 const confirmingCompletion = ref(false);
 
+watch(confirmingCompletion, (isShowing) => {
+    if (!isShowing) {
+        pickedOutcome.value = '';
+    }
+});
+
+function askToComplete(outcome: Outcome): void {
+    pickedOutcome.value = outcome;
+    completion.outcome = outcome;
+    confirmingCompletion.value = true;
+}
+
 function complete(): void {
-    assessment
-        .transform(assessmentPayload)
-        .submit(
-            PerformanceEvaluationCompletionController.store(
-                props.evaluation.id,
-            ),
-            {
-                preserveScroll: true,
-                onFinish: () => (confirmingCompletion.value = false),
-            },
-        );
+    completion.submit(
+        PerformanceEvaluationCompletionController.store(props.evaluation.id),
+        {
+            preserveScroll: true,
+            onFinish: () => (confirmingCompletion.value = false),
+        },
+    );
 }
 
 /** Performance › year for the Employee; Performance Evaluations › name · year for their Manager. */
@@ -291,93 +303,105 @@ setLayoutProps({
             </div>
         </section>
 
-        <Card v-if="isAssessing" class="p-6">
-            <form class="flex flex-col gap-5" @submit.prevent="saveAssessment">
-                <div class="flex flex-col gap-1">
-                    <h2 class="text-lg font-semibold">The year as a whole</h2>
-                    <p class="text-sm text-muted-foreground">
-                        {{ evaluation.employee.name }} sees the Outcomes and
-                        summary once you complete it. After that, it can't
-                        change unless it's Reopened.
-                    </p>
-                </div>
-                <div class="grid gap-2">
-                    <Label for="evaluation-outcome">Outcome</Label>
-                    <Select
-                        name="outcome"
-                        :model-value="assessment.outcome"
-                        @update:model-value="
-                            assessment.outcome = $event
-                                ? ($event as Outcome)
-                                : ''
-                        "
-                    >
-                        <SelectTrigger id="evaluation-outcome" class="w-48">
-                            <SelectValue placeholder="Not given" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem
-                                v-for="(label, outcome) in outcomes"
-                                :key="outcome"
-                                :value="outcome"
-                                >{{ label }}</SelectItem
-                            >
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="assessment.errors.outcome" />
-                </div>
-                <div class="grid gap-2">
+        <Card v-if="isAssessing" class="flex flex-col gap-5 p-6">
+            <div class="flex flex-col gap-1">
+                <h2 class="text-lg font-semibold">The year as a whole</h2>
+                <p class="text-sm text-muted-foreground">
+                    Giving the year its Outcome completes it:
+                    {{ evaluation.employee.name }} then sees the Outcomes and
+                    summary, and it can't change unless it's Reopened.
+                </p>
+            </div>
+            <div class="grid gap-2">
+                <div class="flex items-center justify-between gap-2">
                     <Label for="evaluation-summary">Summary</Label>
-                    <Textarea
-                        id="evaluation-summary"
-                        v-model="assessment.summary"
-                        placeholder="How the year went, in a few sentences"
-                        maxlength="5000"
-                        class="min-h-30"
-                    />
-                    <InputError :message="assessment.errors.summary" />
+                    <SavedTick :shown="summary.justSaved.value" />
                 </div>
-                <div class="flex flex-wrap justify-end gap-2 border-t pt-4">
-                    <SubmitButton
-                        variant="outline"
-                        :processing="assessment.processing"
-                        >Save Outcomes</SubmitButton
+                <Textarea
+                    id="evaluation-summary"
+                    :model-value="summary.chosen.value ?? ''"
+                    placeholder="How the year went, in a few sentences"
+                    maxlength="5000"
+                    class="min-h-30"
+                    @update:model-value="summary.chosen.value = String($event)"
+                    @blur="saveSummary"
+                />
+            </div>
+            <div class="grid gap-2">
+                <Label for="evaluation-outcome">Outcome</Label>
+                <Select
+                    name="outcome"
+                    required
+                    :model-value="pickedOutcome"
+                    :disabled="!isReadyToComplete || completion.processing"
+                    @update:model-value="askToComplete($event as Outcome)"
+                >
+                    <SelectTrigger
+                        id="evaluation-outcome"
+                        class="w-48"
+                        :class="{
+                            'data-[placeholder]:text-foreground':
+                                evaluation.outcome,
+                        }"
                     >
-                    <Dialog v-model:open="confirmingCompletion">
-                        <DialogTrigger as-child>
-                            <Button type="button">Complete</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader class="space-y-3">
-                                <DialogTitle
-                                    >Complete {{ evaluation.employee.name }}'s
-                                    {{ evaluation.year }} Performance
-                                    Evaluation?</DialogTitle
-                                >
-                                <DialogDescription
-                                    >{{ evaluation.employee.name }} sees the
-                                    Outcomes and summary, and it can't change
-                                    after that unless it's
-                                    Reopened.</DialogDescription
-                                >
-                            </DialogHeader>
-                            <DialogFooter class="gap-2">
-                                <DialogClose as-child>
-                                    <Button type="button" variant="secondary"
-                                        >Keep writing</Button
-                                    >
-                                </DialogClose>
-                                <SubmitButton
-                                    type="button"
-                                    :processing="assessment.processing"
-                                    @click="complete"
-                                    >Complete</SubmitButton
-                                >
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </form>
+                        <SelectValue
+                            :placeholder="
+                                evaluation.outcome
+                                    ? outcomes[evaluation.outcome]
+                                    : 'Not given'
+                            "
+                        />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem
+                            v-for="(label, outcome) in outcomes"
+                            :key="outcome"
+                            :value="outcome"
+                            >{{ label }}</SelectItem
+                        >
+                    </SelectContent>
+                </Select>
+                <p
+                    v-if="!isReadyToComplete"
+                    class="text-sm text-muted-foreground"
+                >
+                    Give every Goal an Outcome and write the summary to complete
+                    it.
+                </p>
+                <InputError :message="completion.errors.outcome" />
+            </div>
+            <Dialog v-model:open="confirmingCompletion">
+                <DialogContent>
+                    <DialogHeader class="space-y-3">
+                        <DialogTitle
+                            >Complete {{ evaluation.employee.name }}'s
+                            {{ evaluation.year }} Performance Evaluation as
+                            {{
+                                completion.outcome
+                                    ? outcomes[completion.outcome]
+                                    : ''
+                            }}?</DialogTitle
+                        >
+                        <DialogDescription
+                            >{{ evaluation.employee.name }} sees the Outcomes
+                            and summary.</DialogDescription
+                        >
+                    </DialogHeader>
+                    <DialogFooter class="gap-2">
+                        <DialogClose as-child>
+                            <Button type="button" variant="secondary"
+                                >Keep it Open</Button
+                            >
+                        </DialogClose>
+                        <SubmitButton
+                            type="button"
+                            :processing="completion.processing"
+                            @click="complete"
+                            >Complete</SubmitButton
+                        >
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </Card>
     </PageContainer>
 </template>

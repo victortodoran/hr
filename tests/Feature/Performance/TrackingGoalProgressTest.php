@@ -180,7 +180,8 @@ it('refuses changing Progress once the Performance Evaluation is Completed, and 
     $evaluation = $goal->performanceEvaluation;
     $assess = app(AssessPerformanceEvaluation::class);
     $goal->forceFill(['outcome' => Outcome::Met])->save();
-    $assess->complete($evaluation, Outcome::Met, 'Good year.');
+    $assess->writeSummary($evaluation, 'Good year.');
+    $assess->complete($evaluation, Outcome::Met);
 
     actingAs($cara)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canChangeProgress', false));
     actingAs($cara)->put(progressRoute($goal), ['progress' => 'done'])->assertForbidden();
@@ -197,11 +198,9 @@ it('completes a Performance Evaluation whatever its Goals\' Progress', function 
     actingAs($ben)->put(progressRoute($goal), ['progress' => 'at-risk']);
 
     $goal->forceFill(['outcome' => Outcome::NotMet])->save();
+    $goal->performanceEvaluation->forceFill(['summary' => 'The Checkout API slipped.'])->save();
 
-    actingAs($ben)->post(route('performance-evaluations.completion.store', $goal->performanceEvaluation), [
-        'outcome' => 'partly-met',
-        'summary' => 'The Checkout API slipped.',
-    ]);
+    actingAs($ben)->post(route('performance-evaluations.completion.store', $goal->performanceEvaluation), ['outcome' => 'partly-met']);
 
     expect($goal->performanceEvaluation->fresh()?->isCompleted())->toBeTrue();
 });
@@ -233,7 +232,8 @@ it('offers Change and Remove on the Goal\'s page only to the effective Manager w
     actingAs($ana)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', false));
 
     $goal->forceFill(['outcome' => Outcome::Met])->save();
-    app(AssessPerformanceEvaluation::class)->complete($goal->performanceEvaluation, Outcome::Met, 'Good year.');
+    app(AssessPerformanceEvaluation::class)->writeSummary($goal->performanceEvaluation, 'Good year.');
+    app(AssessPerformanceEvaluation::class)->complete($goal->performanceEvaluation, Outcome::Met);
 
     actingAs($ben)->get(goalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canEdit', false));
 });

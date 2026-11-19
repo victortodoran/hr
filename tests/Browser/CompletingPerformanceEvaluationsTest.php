@@ -5,9 +5,9 @@ use App\Enums\PerformanceEvaluationState;
 use App\Enums\Progress;
 use App\Http\Controllers\Performance\GoalOutcomeController;
 use App\Http\Controllers\Performance\GoalProgressController;
-use App\Http\Controllers\Performance\PerformanceEvaluationAssessmentController;
 use App\Http\Controllers\Performance\PerformanceEvaluationCompletionController;
 use App\Http\Controllers\Performance\PerformanceEvaluationController;
+use App\Http\Controllers\Performance\PerformanceEvaluationSummaryController;
 use App\Models\Employee;
 use App\Models\Goal;
 use App\Models\PerformanceEvaluation;
@@ -15,11 +15,11 @@ use App\Models\PerformanceEvaluation;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(PerformanceEvaluationController::class, GoalOutcomeController::class, GoalProgressController::class, PerformanceEvaluationAssessmentController::class, PerformanceEvaluationCompletionController::class);
+covers(PerformanceEvaluationController::class, GoalOutcomeController::class, GoalProgressController::class, PerformanceEvaluationSummaryController::class, PerformanceEvaluationCompletionController::class);
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
-it('saves Progress and Outcomes, completes the Evaluation, and the Employee then reads them', function () {
+it('saves Progress, Outcomes and the summary as they are given, completes the Evaluation by giving the year its Outcome, and the Employee then reads them', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
     $evaluation = PerformanceEvaluation::factory()->of($cara)->create();
@@ -34,18 +34,24 @@ it('saves Progress and Outcomes, completes the Evaluation, and the Employee then
         ->click('[aria-label="Outcome of Lead the Checkout API"]')
         ->click('internal:role=option[name="Exceeded"s]')
         ->assertSee('Saved')
+        ->assertSee('Give every Goal an Outcome and write the summary to complete it.')
+        ->assertAttribute('#evaluation-outcome', 'data-disabled', '')
+        ->fill('#evaluation-summary', "A strong year.\nThe Relaunch shipped on time.")
+        ->click('internal:role=heading[name="The year as a whole"s]')
+        ->assertDontSee('Give every Goal an Outcome and write the summary to complete it.')
         ->click('#evaluation-outcome')
         ->click('internal:role=option[name="Met"s]')
-        ->fill('#evaluation-summary', "A strong year.\nThe Relaunch shipped on time.")
-        ->click('Save Outcomes')
-        ->assertSee('Outcomes saved.')
-        ->click('internal:role=button[name="Complete"s]')
-        ->assertSee('Complete Cara\'s 2026 Performance Evaluation?')
+        ->assertSee('Complete Cara\'s 2026 Performance Evaluation as Met?')
+        ->assertSee('Cara sees the Outcomes and summary.')
+        ->click('Keep it Open')
+        ->assertSeeIn('#evaluation-outcome', 'Not given')
+        ->click('#evaluation-outcome')
+        ->click('internal:role=option[name="Met"s]')
         ->click('internal:role=dialog >> internal:role=button[name="Complete"s]')
         ->assertSee('Performance Evaluation completed.')
         ->assertSee('A strong year.')
         ->assertSee('The Relaunch shipped on time.')
-        ->assertDontSee('Save Outcomes')
+        ->assertMissing('#evaluation-outcome')
         ->assertNoJavaScriptErrors();
 
     actingAs($cara);

@@ -128,7 +128,8 @@ it('refuses Comments once the Performance Evaluation is Completed, and allows th
     [, $ben, $cara, $goal] = goalCommentLine();
     $assess = app(AssessPerformanceEvaluation::class);
     $goal->forceFill(['outcome' => Outcome::Met])->save();
-    $assess->complete($goal->performanceEvaluation, Outcome::Met, 'Good year.');
+    $assess->writeSummary($goal->performanceEvaluation, 'Good year.');
+    $assess->complete($goal->performanceEvaluation, Outcome::Met);
 
     actingAs($cara)->get(commentedGoalRoute($goal))->assertInertia(fn (Assert $page) => $page->where('canComment', false));
     actingAs($cara)->post(commentRoute($goal), ['body' => 'Late note'])->assertForbidden();
