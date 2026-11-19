@@ -27,6 +27,17 @@ class TravelRequestBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to Declined Travel Requests, which the Employee's
+     * Manager refused with a reason.
+     */
+    public function declined(): static
+    {
+        return $this->scoped(function (): void {
+            $this->where($this->qualifyColumn('state'), TravelRequestState::Declined);
+        });
+    }
+
+    /**
      * Limit the query to Travel Requests that still stand: Pending or
      * Approved.
      */

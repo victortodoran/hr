@@ -5,18 +5,29 @@ namespace App\Pages;
 use App\Enums\WorkEntryState;
 use App\Models\Employee;
 use App\Models\TimeOff;
+use App\Models\TravelExpense;
+use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Carbon\CarbonPeriod;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 /**
  * Home as the props it renders: a summary of the Employee's hours this
- * month and this year, their Time Off and what waits for them to decide.
+ * month and this year, their Time Off, what of theirs was declined and
+ * what waits for them to decide.
  * Each block is null when it doesn't apply to them.
  */
 final class HomePage
 {
+    /**
+     * How many of each kind Needs your attention lists at most.
+     */
+    private const int NEEDS_ATTENTION_LIMIT = 10;
+
     /**
      * The signed-in Employee's summary.
      *
@@ -41,27 +52,104 @@ final class HomePage
                 ->orderBy('first_date')
                 ->first()
                 ?->details(),
-            'declinedAhead' => self::declinedAhead($employee),
+            'needsAttention' => self::needsAttention($employee),
             'waitingForYou' => array_sum($waiting) > 0 ? $waiting : null,
         ];
     }
 
     /**
-     * The Employee's Declined Time Off still to come, soonest first, so they
-     * see why; null when there is none.
+     * What the Employee should look at again, each with the reason it was
+     * declined: their Declined Work Entries (when they can see them), their
+     * Declined Travel Requests and Time Off still to come, and their Declined
+     * Travel Expenses, in that order and each kind by date. A Work Entry or
+     * Travel Expense leaves once changed or deleted, Time Off and a Travel
+     * Request once they have started. Each kind lists at most
+     * NEEDS_ATTENTION_LIMIT, the rest counted in `more`; null when there is
+     * nothing.
      *
-     * @return array<int, array<string, mixed>>|null
+     * @return array{items: list<array<string, mixed>>, more: int}|null
      */
-    private static function declinedAhead(Employee $employee): ?array
+    private static function needsAttention(Employee $employee): ?array
     {
-        $declined = $employee->timeOff()
-            ->declined()
-            ->whereDate('first_date', '>', today())
-            ->with('decider:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
-            ->orderBy('first_date')
-            ->get();
+        $kinds = [
+            ...($employee->canSeeWorkEntries() ? [self::firstOf(
+                $employee->workEntries()->declined(),
+                'work_entries.date',
+                ['assignment.project:id,name'],
+                fn (WorkEntry $workEntry): array => [
+                    'kind' => 'work-entry',
+                    'id' => $workEntry->id,
+                    'date' => $workEntry->date->toDateString(),
+                    'project' => $workEntry->assignment->project->name,
+                    'hours' => $workEntry->hours,
+                    'decline_reason' => $workEntry->decline_reason,
+                ],
+            )] : []),
+            self::firstOf(
+                $employee->travelRequests()->declined()->whereDate('first_date', '>', today()),
+                'first_date',
+                [],
+                fn (TravelRequest $travelRequest): array => [
+                    'kind' => 'travel-request',
+                    'id' => $travelRequest->id,
+                    'destination' => $travelRequest->destination,
+                    'first_date' => $travelRequest->first_date->toDateString(),
+                    'last_date' => $travelRequest->last_date->toDateString(),
+                    'decline_reason' => $travelRequest->decline_reason,
+                ],
+            ),
+            self::firstOf(
+                $employee->travelExpenses()->declined(),
+                'travel_expenses.paid_on',
+                ['travelRequest:id,destination'],
+                fn (TravelExpense $travelExpense): array => [
+                    'kind' => 'travel-expense',
+                    'id' => $travelExpense->id,
+                    'travel_request_id' => $travelExpense->travel_request_id,
+                    'destination' => $travelExpense->travelRequest->destination,
+                    'description' => $travelExpense->description,
+                    'decline_reason' => $travelExpense->decline_reason,
+                ],
+            ),
+            self::firstOf(
+                $employee->timeOff()->declined()->whereDate('first_date', '>', today()),
+                'first_date',
+                [],
+                fn (TimeOff $timeOff): array => [
+                    'kind' => 'time-off',
+                    'id' => $timeOff->id,
+                    'first_date' => $timeOff->first_date->toDateString(),
+                    'last_date' => $timeOff->last_date->toDateString(),
+                    'decline_reason' => $timeOff->decline_reason,
+                ],
+            ),
+        ];
+        $items = array_merge(...array_column($kinds, 'items'));
 
-        return $declined->isEmpty() ? null : $declined->map(fn (TimeOff $timeOff): array => $timeOff->details())->all();
+        return $items === [] ? null : ['items' => $items, 'more' => array_sum(array_column($kinds, 'more'))];
+    }
+
+    /**
+     * The first NEEDS_ATTENTION_LIMIT of a query by a date column, each
+     * shaped for the page, and how many more there are.
+     *
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>|Relation<TModel, *, *>  $query
+     * @param  array<int, string>  $with
+     * @param  callable(TModel): array<string, mixed>  $shape
+     * @return array{items: list<array<string, mixed>>, more: int}
+     */
+    private static function firstOf(Builder|Relation $query, string $dateColumn, array $with, callable $shape): array
+    {
+        $listed = (clone $query)
+            ->with($with) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
+            ->orderBy($dateColumn)
+            ->limit(self::NEEDS_ATTENTION_LIMIT)
+            ->get();
+        $more = $listed->count() < self::NEEDS_ATTENTION_LIMIT ? 0 : $query->count() - self::NEEDS_ATTENTION_LIMIT;
+
+        return ['items' => array_values($listed->map($shape)->all()), 'more' => $more];
     }
 
     /**

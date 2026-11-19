@@ -7,6 +7,9 @@ use App\Models\TimeOff;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
+use App\Pages\HomePage;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -14,7 +17,7 @@ use function Pest\Laravel\get;
 use function Pest\Laravel\post;
 use function Pest\Laravel\travelTo;
 
-covers(HomeController::class, Employee::class);
+covers(HomeController::class, HomePage::class, Employee::class);
 
 beforeEach(function () {
     travelTo('2026-11-11 09:00');
@@ -54,7 +57,7 @@ it('shows a regular Employee their hours this month, Paid Days left and next Tim
             ->where('paidDaysLeft', ['year' => 2026, 'days' => 17])
             ->where('nextTimeOff.id', $next->id)
             ->where('nextTimeOff.state', 'approved')
-            ->where('declinedAhead', null)
+            ->where('needsAttention.items.0.date', '2026-11-05')
             ->where('waitingForYou', null),
         );
 });
@@ -146,15 +149,17 @@ it('leaves hours this month and this year out for an Employee with no Manager, w
         );
 });
 
-it('leaves hours this month and this year out for an Employee who can\'t see their Work Entries', function () {
-    $cara = employeeWith([Permission::ViewDirectory->value => null]);
+it('leaves hours this month and this year, and Declined Work Entries, out for an Employee who can\'t see their Work Entries', function () {
+    $cara = employeeWith([Permission::ViewDirectory->value => null], ['manager_id' => Employee::factory()->create()->id]);
+    WorkEntry::factory()->for(assignmentOf($cara))->declined()->create(['date' => '2026-11-10']);
 
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
             ->where('hoursThisMonth', null)
             ->where('hoursThisYear', null)
-            ->where('paidDaysLeft', ['year' => 2026, 'days' => 0]),
+            ->where('paidDaysLeft', ['year' => 2026, 'days' => 0])
+            ->where('needsAttention', null),
         );
 });
 
@@ -173,16 +178,63 @@ it('shows as next Time Off the soonest Pending or Approved Time Off that hasn\'t
         );
 });
 
-it('shows Declined Time Off still to come, with the reason, and only that', function () {
+it('lists what of the Employee\'s was declined, with the reason: Work Entries, Travel Requests and Time Off still to come, and Travel Expenses', function () {
     $cara = recorder();
-    $ahead = TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-11-12', 'last_date' => '2026-11-12', 'decline_reason' => 'Launch week']);
+    $relaunch = assignmentOf($cara, 'Relaunch');
+    $entry = WorkEntry::factory()->for($relaunch)->declined(reason: 'Split by task')->create(['date' => '2026-11-10', 'minutes' => 90]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-09']);
+    $lisbon = TravelRequest::factory()->on($relaunch)->declined()->create(['destination' => 'Lisbon', 'first_date' => '2026-11-12', 'last_date' => '2026-11-13', 'decline_reason' => 'Launch prep']);
+    TravelRequest::factory()->on($relaunch)->declined()->create(['first_date' => '2026-11-11', 'last_date' => '2026-11-11']);
+    $berlin = TravelRequest::factory()->on($relaunch)->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-11-03', 'last_date' => '2026-11-05']);
+    $hotel = TravelExpense::factory()->for($berlin)->declined()->create(['description' => 'Berlin hotel', 'decline_reason' => 'Receipt unreadable']);
+    TravelExpense::factory()->for($berlin)->create();
+    $timeOff = TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-11-12', 'last_date' => '2026-11-12', 'decline_reason' => 'Launch week']);
     TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-11-11', 'last_date' => '2026-11-11']);
     TimeOff::factory()->for($cara)->create(['first_date' => '2026-11-20', 'last_date' => '2026-11-20']);
+    TravelExpense::factory()->for(TravelRequest::factory()->approved())->declined()->create();
 
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('declinedAhead', 1)
-            ->where('declinedAhead.0.id', $ahead->id)
-            ->where('declinedAhead.0.decline_reason', 'Launch week'),
+            ->where('needsAttention', [
+                'items' => [
+                    ['kind' => 'work-entry', 'id' => $entry->id, 'date' => '2026-11-10', 'project' => 'Relaunch', 'hours' => 1.5, 'decline_reason' => 'Split by task'],
+                    ['kind' => 'travel-request', 'id' => $lisbon->id, 'destination' => 'Lisbon', 'first_date' => '2026-11-12', 'last_date' => '2026-11-13', 'decline_reason' => 'Launch prep'],
+                    ['kind' => 'travel-expense', 'id' => $hotel->id, 'travel_request_id' => $berlin->id, 'destination' => 'Berlin', 'description' => 'Berlin hotel', 'decline_reason' => 'Receipt unreadable'],
+                    ['kind' => 'time-off', 'id' => $timeOff->id, 'first_date' => '2026-11-12', 'last_date' => '2026-11-12', 'decline_reason' => 'Launch week'],
+                ],
+                'more' => 0,
+            ]),
+        );
+});
+
+it('drops a Declined Work Entry once changed and a Declined Travel Expense once deleted', function () {
+    Storage::fake(TravelExpense::RECEIPT_DISK);
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    $entry = WorkEntry::factory()->for($relaunch)->declined()->create(['date' => '2026-11-10']);
+    $trip = TravelRequest::factory()->on($relaunch)->approved()->create(['first_date' => '2026-11-03', 'last_date' => '2026-11-05']);
+    $expense = TravelExpense::factory()->for($trip)->declined()->create();
+
+    actingAs($cara)->get(route('landing'))->assertInertia(fn (Assert $page) => $page->has('needsAttention.items', 2));
+
+    actingAs($cara)->patch(route('work-entries.update', $entry), workEntryForm($relaunch, ['hours' => '2']))->assertSessionHasNoErrors();
+    actingAs($cara)->delete(route('travel-expenses.destroy', $expense))->assertSessionHasNoErrors();
+
+    actingAs($cara)->get(route('landing'))->assertInertia(fn (Assert $page) => $page->where('needsAttention', null));
+});
+
+it('lists at most ten of each kind that needs attention, counting the rest', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    $entries = WorkEntry::factory()->for($relaunch)->declined()->count(12)->sequence(fn ($sequence) => ['date' => CarbonImmutable::parse('2026-11-02')->addDays($sequence->index)])->create();
+    TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2026-11-20', 'last_date' => '2026-11-20']);
+
+    actingAs($cara)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('needsAttention.items', 11)
+            ->where('needsAttention.items.0.id', $entries[0]->id)
+            ->where('needsAttention.items.9.id', $entries[9]->id)
+            ->where('needsAttention.items.10.kind', 'time-off')
+            ->where('needsAttention.more', 2),
         );
 });
