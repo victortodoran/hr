@@ -43,15 +43,16 @@ const columns = computed<TableColumn[]>(() => [
     <Head title="Projects" />
 
     <PageContainer width="wide">
-        <div class="flex items-start justify-between gap-4">
-            <Heading
-                title="Projects"
-                description="The work Employees can be assigned to"
-            />
-            <Button v-if="canManage" as-child>
-                <Link :href="create()">New Project</Link>
-            </Button>
-        </div>
+        <Heading
+            title="Projects"
+            description="The work Employees can be assigned to"
+        >
+            <template v-if="canManage" #actions>
+                <Button as-child>
+                    <Link :href="create()">New Project</Link>
+                </Button>
+            </template>
+        </Heading>
 
         <DataTable :columns="columns" :rows="projects">
             <template #cell-name="{ row }">

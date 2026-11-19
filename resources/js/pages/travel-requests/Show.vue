@@ -5,6 +5,7 @@ import TravelRequestCancellationController from '@/actions/App/Http/Controllers/
 import TravelRequestDeclineController from '@/actions/App/Http/Controllers/Travel/TravelRequestDeclineController';
 import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -59,70 +60,71 @@ setLayoutProps({
     <Head :title="travelRequest.destination" />
 
     <PageContainer width="wide">
-        <header class="flex flex-wrap items-start justify-between gap-4">
-            <div class="flex min-w-0 flex-col gap-1">
-                <h1 class="text-xl font-semibold tracking-tight">
-                    {{ travelRequest.destination }}
-                    <span class="font-normal text-muted-foreground"
-                        >·
-                        {{
-                            formatDateRange(
-                                travelRequest.first_date,
-                                travelRequest.last_date,
-                            )
-                        }}</span
-                    >
-                </h1>
-                <div
-                    class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground"
-                >
-                    <StatusBadge :state="travelRequest.state" />
-                    <span>{{ formatDays(travelRequest.days) }}</span>
-                </div>
-            </div>
-            <div
-                v-if="travelRequest.can_decide"
-                class="flex flex-wrap items-center gap-2"
+        <Heading :title="travelRequest.destination">
+            <template #description>
+                <StatusBadge :state="travelRequest.state" />
+                <span>{{
+                    formatDateRange(
+                        travelRequest.first_date,
+                        travelRequest.last_date,
+                    )
+                }}</span>
+                <span aria-hidden="true">·</span>
+                <span>{{ formatDays(travelRequest.days) }}</span>
+            </template>
+            <template
+                v-if="travelRequest.can_decide || travelRequest.can_cancel"
+                #actions
             >
-                <Form
-                    v-bind="
-                        TravelRequestApprovalController.store.form(
+                <div
+                    v-if="travelRequest.can_decide"
+                    class="flex flex-wrap items-center gap-2"
+                >
+                    <Form
+                        v-bind="
+                            TravelRequestApprovalController.store.form(
+                                travelRequest.id,
+                            )
+                        "
+                        :options="{ preserveScroll: true }"
+                        v-slot="{ processing }"
+                    >
+                        <SubmitButton :processing="processing"
+                            >Approve</SubmitButton
+                        >
+                    </Form>
+                    <DeclineSelectedDialog
+                        :action="
+                            TravelRequestDeclineController.store(
+                                travelRequest.id,
+                            )
+                        "
+                        :noun="{
+                            one: 'Travel Request',
+                            many: 'Travel Requests',
+                        }"
+                        description="It stays on record as Declined, and the Employee sees the reason on their Travel page."
+                        placeholder="The release is that week"
+                    />
+                </div>
+                <ConfirmDialog
+                    v-if="travelRequest.can_cancel"
+                    :form="
+                        TravelRequestCancellationController.store.form(
                             travelRequest.id,
                         )
                     "
-                    :options="{ preserveScroll: true }"
-                    v-slot="{ processing }"
+                    title="Cancel this Travel Request?"
+                    description="It stays on record as Cancelled, and frees its days for other travel or Time Off."
+                    confirm-label="Cancel travel"
+                    dismiss-label="Keep it"
                 >
-                    <SubmitButton :processing="processing"
-                        >Approve</SubmitButton
-                    >
-                </Form>
-                <DeclineSelectedDialog
-                    :action="
-                        TravelRequestDeclineController.store(travelRequest.id)
-                    "
-                    :noun="{ one: 'Travel Request', many: 'Travel Requests' }"
-                    description="It stays on record as Declined, and the Employee sees the reason on their Travel page."
-                    placeholder="The release is that week"
-                />
-            </div>
-            <ConfirmDialog
-                v-if="travelRequest.can_cancel"
-                :form="
-                    TravelRequestCancellationController.store.form(
-                        travelRequest.id,
-                    )
-                "
-                title="Cancel this Travel Request?"
-                description="It stays on record as Cancelled, and frees its days for other travel or Time Off."
-                confirm-label="Cancel travel"
-                dismiss-label="Keep it"
-            >
-                <template #trigger>
-                    <Button variant="outline">Cancel travel</Button>
-                </template>
-            </ConfirmDialog>
-        </header>
+                    <template #trigger>
+                        <Button variant="outline">Cancel travel</Button>
+                    </template>
+                </ConfirmDialog>
+            </template>
+        </Heading>
 
         <dl class="grid gap-4 text-sm sm:grid-cols-2">
             <div>

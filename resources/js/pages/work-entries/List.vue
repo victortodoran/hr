@@ -133,20 +133,21 @@ function weekOf(entry: ListedWorkEntry): string {
     <Head title="Work Entries" />
 
     <PageContainer width="wide">
-        <div class="flex items-start justify-between gap-4">
-            <Heading
-                title="Work Entries"
-                :description="
-                    canReopen
-                        ? 'Hours across Employees, to check and reopen'
-                        : 'Hours across Employees'
-                "
-            />
-            <WorkEntryExportMenu
-                :filters="filters"
-                :disabled="entries.total === 0"
-            />
-        </div>
+        <Heading
+            title="Work Entries"
+            :description="
+                canReopen
+                    ? 'Hours across Employees, to check and reopen'
+                    : 'Hours across Employees'
+            "
+        >
+            <template #actions>
+                <WorkEntryExportMenu
+                    :filters="filters"
+                    :disabled="entries.total === 0"
+                />
+            </template>
+        </Heading>
 
         <ListFilterBar
             :filters="filters"

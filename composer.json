@@ -52,6 +52,7 @@
         "lint:scopes": "Fails when a model declares query scopes; reusable queries go in the model's builder in app/Models/Builders.",
         "lint:builders": "Fails when a public builder method in app/Models/Builders doesn't start with return $this->scoped(...).",
         "lint:browser-tests": "Fails when a browser test in tests/Browser still calls screenshot(), debug() or pause().",
+        "lint:headings": "Fails when a page in resources/js/pages hand-builds an <h1> instead of opening with the Heading component.",
         "test:failures": "Runs the tests (or the paths given) and prints one line per failure or error: file:line, test name and message."
     },
     "scripts": {
@@ -83,6 +84,7 @@
             "@lint:scopes",
             "@lint:builders",
             "@lint:browser-tests",
+            "@lint:headings",
             "npm run build -- --logLevel warn",
             "npm run types:check",
             "@test",
@@ -94,6 +96,7 @@
         "lint:scopes": "bin/lint-scopes.sh",
         "lint:builders": "@php bin/lint-builders.php",
         "lint:browser-tests": "bin/lint-browser-tests.sh",
+        "lint:headings": "bin/lint-headings.sh",
         "types:check": [
             "phpstan analyse --memory-limit=1G"
         ],

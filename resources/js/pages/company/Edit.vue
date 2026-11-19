@@ -2,6 +2,7 @@
 import { Form, Head } from '@inertiajs/vue3';
 import CompanySettingsController from '@/actions/App/Http/Controllers/Company/CompanySettingsController';
 import Heading from '@/components/Heading.vue';
+import PageContainer from '@/components/PageContainer.vue';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Input } from '@/components/ui/input';
@@ -24,7 +25,7 @@ defineProps<{
 <template>
     <Head title="Company" />
 
-    <div class="flex max-w-xl flex-col gap-8 p-4">
+    <PageContainer width="narrow">
         <Heading
             title="Company"
             description="The company's name and the currency every Pay and Travel Expense is recorded in"
@@ -70,5 +71,5 @@ defineProps<{
 
             <SubmitButton :processing="processing">Save</SubmitButton>
         </Form>
-    </div>
+    </PageContainer>
 </template>

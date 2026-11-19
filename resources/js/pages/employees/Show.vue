@@ -8,19 +8,18 @@ import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import EmployeePageSection from '@/components/employees/EmployeePageSection.vue';
+import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import PaidDaysForm from '@/components/time-off/PaidDaysForm.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
 import ReportingChain from '@/components/employees/ReportingChain.vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ValueOr from '@/components/ValueOr.vue';
 import { formatDate, formatPeriod } from '@/lib/dates';
-import { useInitials } from '@/composables/useInitials';
 import { formatPay } from '@/lib/pay';
 import { edit, show } from '@/routes/employees';
 import type {
@@ -68,8 +67,6 @@ const props = withDefaults(
     }>(),
     { reportsNeedingAManager: () => [], projects: () => [] },
 );
-
-const { getInitials } = useInitials();
 
 /** The Record's fields, in groups: how to reach them, where they sit, and when they work. */
 const recordGroups = ['Contact', 'Organisation', 'Employment'] as const;
@@ -136,29 +133,20 @@ setLayoutProps({
     <Head :title="employee.name" />
 
     <PageContainer width="wide">
-        <header class="flex flex-wrap items-center gap-4">
-            <Avatar class="size-14 rounded-full" aria-hidden="true">
-                <AvatarFallback class="rounded-full text-lg font-medium">{{
-                    getInitials(employee.name)
-                }}</AvatarFallback>
-            </Avatar>
-            <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <h1 class="text-2xl font-semibold tracking-tight">
-                    {{ employee.name }}
-                </h1>
-                <div
-                    class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground"
-                >
-                    <span>{{ employee.job_title ?? 'Employee' }}</span>
-                    <template v-if="standing">
-                        <EmploymentStatusBadge :status="standing.status" />
-                    </template>
-                </div>
-            </div>
-            <Button v-if="canEdit" variant="outline" as-child>
-                <Link :href="edit(employee.id)">Edit</Link>
-            </Button>
-        </header>
+        <Heading :title="employee.name">
+            <template #description>
+                <span>{{ employee.job_title ?? 'Employee' }}</span>
+                <template v-if="standing">
+                    <span aria-hidden="true">·</span>
+                    <EmploymentStatusBadge :status="standing.status" />
+                </template>
+            </template>
+            <template v-if="canEdit" #actions>
+                <Button variant="outline" as-child>
+                    <Link :href="edit(employee.id)">Edit</Link>
+                </Button>
+            </template>
+        </Heading>
 
         <Tabs :model-value="tab" @update:model-value="openTab">
             <TabsList
