@@ -62,7 +62,7 @@ it('lets the Manager change the Goal from its page and come back, then remove it
         ->click('internal:role=button[name="Remove"s]')
         ->click('internal:role=dialog >> internal:role=button[name="Remove Goal"s]')
         ->assertSee('Goal removed.')
-        ->assertSee('The Goals you give for this year appear here.')
+        ->assertSee('No Goals yet')
         ->assertNoJavaScriptErrors();
 
     expect($evaluation->goals()->count())->toBe(0);

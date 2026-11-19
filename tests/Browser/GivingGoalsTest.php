@@ -31,14 +31,15 @@ it('creates a Report\'s Performance Evaluation, gives, changes and removes a Goa
         ->click('internal:role=option[name="Cara"s]')
         ->click('Create Evaluation')
         ->assertSee('Performance Evaluation created.')
-        ->assertSee('The Goals you give for this year appear here.')
-        ->click('internal:role=link[name="Give a Goal"s] >> nth=0')
+        ->assertSee('The Goals you give Cara for 2026 appear here.')
+        ->click('internal:role=link[name="Give the first Goal"s]')
         ->fill('#goal-title', 'Lead the Checkout API')
         ->fill('#goal-description', 'Own its design and delivery.')
         ->click('Give Goal')
         ->assertSee('Goal given.')
         ->assertSee('Lead the Checkout API')
-        ->click('internal:role=link[name="Change Lead the Checkout API"s]')
+        ->click('internal:role=button[name="More for Lead the Checkout API"s]')
+        ->click('internal:role=menuitem[name="Change Lead the Checkout API"s]')
         ->fill('#goal-title', 'Lead the Payments API')
         ->click('Save Goal')
         ->assertSee('Goal changed.')
@@ -57,7 +58,8 @@ it('creates a Report\'s Performance Evaluation, gives, changes and removes a Goa
     actingAs($ben);
 
     visit(route('performance-evaluations.show', PerformanceEvaluation::query()->sole()))
-        ->click('internal:role=button[name="Remove Lead the Payments API"s]')
+        ->click('internal:role=button[name="More for Lead the Payments API"s]')
+        ->click('internal:role=menuitem[name="Remove Lead the Payments API"s]')
         ->click('internal:role=dialog >> internal:role=button[name="Remove Goal"s]')
         ->assertSee('Goal removed.')
         ->assertNoJavaScriptErrors();
