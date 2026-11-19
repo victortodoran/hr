@@ -19,7 +19,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /**
- * An Employee's record, when adding or editing them.
+ * An Employee's record, when adding or editing them. Adding one also asks
+ * for their internal Job Title, which lives on their Internal Assignment
+ * and is changed afterwards on the Assignments tab.
  */
 class EmployeeRequest extends FormRequest
 {
@@ -42,6 +44,10 @@ class EmployeeRequest extends FormRequest
         $employee = $this->route('employee');
         $employee = $employee instanceof Employee ? $employee : null; // @pest-mutate-ignore (the route parameter is always an Employee or absent)
 
+        $jobTitleRules = $employee === null
+            ? ['job_title' => ['required', 'string', 'max:255']]
+            : [];
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(Employee::class)->ignore($employee?->id)],
@@ -52,6 +58,7 @@ class EmployeeRequest extends FormRequest
                 $employee?->employmentStatus() === EmploymentStatus::Former => [Rule::in([$employee->leaving_date?->toDateString()])], // @pest-mutate-ignore (a Former Employee always has a Leaving Date)
                 default => ['bail', 'nullable', 'date', 'after_or_equal:start_date', AssignmentsFit::endOf($employee, ':name has an Assignment starting on :date, so their Leaving Date can\'t be earlier than that.'), WorkEntriesFit::endOf($employee?->workEntries(), __(':name has Work Entries up to :date, so their Leaving Date can\'t be earlier than that.', ['name' => $employee?->name])), TravelRequestsFit::endOf($employee?->travelRequests(), ':name has a Travel Request on :project up to :date, so their Leaving Date can\'t be earlier than that.'), TimeOffFits::endOf($employee?->timeOff(), ':name has Time Off from :first to :last, so their Leaving Date can\'t be earlier than :last.'), $this->keepsSomeoneWhoCanManageRoles($employee)],
             },
+            ...$jobTitleRules,
         ];
     }
 
@@ -161,6 +168,7 @@ class EmployeeRequest extends FormRequest
             'manager_id' => __('Manager'),
             'start_date' => __('Start Date'),
             'leaving_date' => __('Leaving Date'),
+            'job_title' => __('Job Title'),
         ];
     }
 

@@ -290,6 +290,7 @@ it('gives new Employees the Role marked for them on the Role form, so another Ro
         'department_id' => $admin->department_id,
         'manager_id' => $admin->id,
         'start_date' => today()->toDateString(),
+        'job_title' => 'Developer',
     ])->assertRedirect();
 
     expect(Employee::query()->where('email', 'cara@acme.test')->sole()->roles->pluck('name')->all())->toBe(['Staff']);

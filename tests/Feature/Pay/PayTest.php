@@ -243,7 +243,7 @@ it('lets a new Employee see their own Pay through the starter Employee Role', fu
     $admin = app(InstallCompany::class)->install('Acme', 'EUR', 'Engineering', 'Ana', 'ana@acme.test');
     $cara = app(AddEmployee::class)->add($admin, [
         'name' => 'Cara', 'email' => 'cara@acme.test', 'department_id' => Department::query()->value('id'),
-        'manager_id' => $admin->id, 'start_date' => '2026-02-01', 'leaving_date' => null,
+        'manager_id' => $admin->id, 'start_date' => '2026-02-01', 'leaving_date' => null, 'job_title' => 'Developer',
     ]);
     $cara->forceFill(['email_verified_at' => now()])->save(); // as accepting the invitation does
     PayEntry::factory()->for($cara->internalAssignment()->sole())->create(['amount' => 350000]);

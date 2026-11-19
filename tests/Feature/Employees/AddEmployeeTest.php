@@ -41,17 +41,18 @@ function newEmployeeDetails(array $overrides = []): array
         'department_id' => Department::factory()->create(['name' => 'Finance'])->id,
         'manager_id' => Employee::factory()->create(['name' => 'Ben Ford'])->id,
         'start_date' => '2026-12-01',
+        'job_title' => 'Payroll Specialist',
         ...$overrides,
     ];
 }
 
-it('adds an Employee and invites them to set a password', function () {
+it('adds an Employee, invites them to set a password and lands on their Employee page', function () {
     $details = newEmployeeDetails();
 
     $response = actingAs(employeeWhoManagesEmployees())->post(route('employees.store'), $details);
 
     $cara = Employee::query()->where('email', 'cara@acme.test')->sole();
-    $response->assertRedirect(route('employees.edit', $cara))
+    $response->assertRedirect(route('employees.show', $cara))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Employee added. An invitation has been sent to cara@acme.test.']);
 
     expect($cara->name)->toBe('Cara Lane')
@@ -63,7 +64,7 @@ it('adds an Employee and invites them to set a password', function () {
     Notification::assertSentTo($cara, Invitation::class);
 });
 
-it('puts the new Employee on the Internal Project for their whole period of work, with no internal Job Title and 0% capacity', function (?string $leavingDate) {
+it('puts the new Employee on the Internal Project for their whole period of work, with the Job Title given and 0% capacity', function (?string $leavingDate) {
     actingAs(employeeWhoManagesEmployees())->post(route('employees.store'), newEmployeeDetails(['leaving_date' => $leavingDate]));
 
     $internal = Employee::query()->where('email', 'cara@acme.test')->sole()->assignments()->sole();
@@ -72,9 +73,20 @@ it('puts the new Employee on the Internal Project for their whole period of work
         ->and($internal->isInternal())->toBeTrue()
         ->and($internal->start_date->toDateString())->toBe('2026-12-01')
         ->and($internal->end_date?->toDateString())->toBe($leavingDate)
-        ->and($internal->job_title)->toBeNull()
+        ->and($internal->job_title)->toBe('Payroll Specialist')
         ->and($internal->capacity)->toBe(0);
 })->with(['staying' => null, 'leaving' => '2027-05-31']);
+
+it('shows the new Employee\'s Job Title in the Directory', function () {
+    $hr = employeeWith([Permission::ManageEmployees->value => null, Permission::ViewDirectory->value => null]);
+    actingAs($hr)->post(route('employees.store'), newEmployeeDetails(['start_date' => today()->toDateString()]));
+
+    actingAs($hr)->get(route('directory.index', ['search' => 'Cara']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('employees.data', 1)
+            ->where('employees.data.0.job_title', 'Payroll Specialist'),
+        );
+});
 
 it('logs each Role given to a new Employee, with who added them', function () {
     $employeeRole = Role::factory()->create(['name' => 'Employee', 'is_given_to_new_employees' => true]);
@@ -111,6 +123,9 @@ it('refuses an Employee record with a missing or invalid value, and says why', f
     'unknown Department' => ['department_id', 999999, 'The selected Department is invalid.'],
     'no Start Date' => ['start_date', '', 'The Start Date field is required.'],
     'Start Date not a date' => ['start_date', 'next tuesday-ish', 'The Start Date field must be a valid date.'],
+    'no Job Title' => ['job_title', '', 'The Job Title field is required.'],
+    'Job Title not text' => ['job_title', ['Payroll Specialist'], 'The Job Title field must be a string.'],
+    'Job Title too long' => ['job_title', str_repeat('a', 256), 'The Job Title field must not be greater than 255 characters.'],
 ]);
 
 it('shows the add page with the Departments and possible Managers to choose from', function () {

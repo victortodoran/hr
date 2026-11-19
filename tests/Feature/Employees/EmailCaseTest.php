@@ -31,6 +31,7 @@ function detailsWithEmail(string $email): array
         'department_id' => Department::factory()->create()->id,
         'manager_id' => Employee::factory()->create()->id,
         'start_date' => '2025-01-06',
+        'job_title' => 'Developer',
     ];
 }
 

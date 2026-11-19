@@ -48,7 +48,7 @@ it('lets HR add several Employees with no Manager, such as co-founders', functio
     $department = $hr->department_id;
 
     foreach (['ana@acme.test', 'dan@acme.test'] as $email) {
-        actingAs($hr)->post(route('employees.store'), ['name' => 'Founder', 'email' => $email, 'department_id' => $department, 'manager_id' => null, 'start_date' => '2025-01-06'])
+        actingAs($hr)->post(route('employees.store'), ['name' => 'Founder', 'email' => $email, 'department_id' => $department, 'manager_id' => null, 'start_date' => '2025-01-06', 'job_title' => 'Founder'])
             ->assertSessionHasNoErrors();
     }
 
