@@ -35,44 +35,36 @@ const props = defineProps<{
     canViewTravelRequests: boolean;
 }>();
 
-const destinationCrumb: BreadcrumbItem = {
-    title: props.travelRequest.destination,
-    href: show(props.travelRequest.id),
-};
-
 /**
  * Travel › destination for the Employee themselves; Travel Requests ›
  * name · destination for a viewer who may open that page; Employees › name ›
  * destination for anyone else.
  */
-function breadcrumbs(): BreadcrumbItem[] {
-    if (props.isOwn) {
-        return [{ title: 'Travel', href: index() }, destinationCrumb];
-    }
-
-    if (props.canViewTravelRequests) {
-        return [
-            { title: 'Travel Requests', href: travelRequestList() },
+const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
+    ? [{ title: 'Travel', href: index() }]
+    : props.canViewTravelRequests
+      ? [{ title: 'Travel Requests', href: travelRequestList() }]
+      : [
+            { title: 'Employees' },
             {
-                ...destinationCrumb,
-                title: `${props.employee.name} · ${props.travelRequest.destination}`,
+                title: props.employee.name,
+                href: props.canViewEmployee
+                    ? showEmployee(props.employee.id)
+                    : undefined,
             },
         ];
-    }
 
-    return [
-        { title: 'Employees' },
-        {
-            title: props.employee.name,
-            href: props.canViewEmployee
-                ? showEmployee(props.employee.id)
-                : undefined,
-        },
-        destinationCrumb,
-    ];
-}
+const title =
+    !props.isOwn && props.canViewTravelRequests
+        ? `${props.employee.name} · ${props.travelRequest.destination}`
+        : props.travelRequest.destination;
 
-setLayoutProps({ breadcrumbs: breadcrumbs() });
+setLayoutProps({
+    breadcrumbs: [
+        ...leadingBreadcrumbs,
+        { title, href: show(props.travelRequest.id) },
+    ],
+});
 </script>
 
 <template>
