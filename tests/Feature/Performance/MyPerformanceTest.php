@@ -26,7 +26,7 @@ function caraOnMyPerformance(): Employee
 it('opens on this year\'s Performance Evaluation with its Goals, whose Progress the Employee may change, and lists the other years below', function () {
     $cara = caraOnMyPerformance();
     $older = PerformanceEvaluation::factory()->of($cara)->completed()->create(['year' => 2024]);
-    $reopened = PerformanceEvaluation::factory()->of($cara)->create(['year' => 2025]);
+    $stillOpen = PerformanceEvaluation::factory()->of($cara)->create(['year' => 2025]);
     $current = PerformanceEvaluation::factory()->of($cara)->create(['year' => 2026]);
     $goal = Goal::factory()->for($current)->create(['title' => 'Lead the Checkout API', 'description' => 'Own its design.']);
     PerformanceEvaluation::factory()->create();
@@ -42,7 +42,7 @@ it('opens on this year\'s Performance Evaluation with its Goals, whose Progress 
             ->where('current.canChangeProgress', true)
             ->where('current.canSeeOutcomes', false)
             ->where('evaluations', [
-                ['id' => $reopened->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null],
+                ['id' => $stillOpen->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null],
                 ['id' => $older->id, 'year' => 2024, 'state' => 'completed', 'goals_count' => 2, 'at_risk_goals_count' => 0, 'outcome' => 'met'],
             ]));
 });
@@ -70,7 +70,7 @@ it('shows this year\'s Outcome and summary once Completed', function () {
             ->where('evaluations', []));
 });
 
-it('has nothing on top while this year has no Performance Evaluation, and still lists the past years', function () {
+it('has no Evaluation on top while this year has none, and still lists the past years', function () {
     $cara = caraOnMyPerformance();
     $past = PerformanceEvaluation::factory()->of($cara)->create(['year' => 2025]);
 

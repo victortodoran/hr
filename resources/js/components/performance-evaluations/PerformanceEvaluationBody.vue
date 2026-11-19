@@ -20,7 +20,7 @@ const props = defineProps<{
     evaluation: PerformanceEvaluationRecord;
     /** Whether the Performance Evaluation is the viewer's own. */
     isOwn: boolean;
-    /** Whether the viewer may give, change or remove its Goals and their Outcomes. */
+    /** Whether the viewer may give, change or remove its Goals and their Outcomes, and Complete it. */
     canEdit: boolean;
     /** Whether the viewer may change its Goals' Progress. */
     canChangeProgress: boolean;
