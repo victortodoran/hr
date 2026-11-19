@@ -19,7 +19,7 @@ covers(PerformanceEvaluationController::class, GoalOutcomeController::class, Goa
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
-it('saves Progress, Outcomes and the summary as they are given, completes the Evaluation by giving the year its Outcome, and the Employee then reads them', function () {
+it('saves Progress and Outcomes as they are picked and the summary with its button, completes the Evaluation by giving the year its Outcome, and the Employee then reads them', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
     $evaluation = PerformanceEvaluation::factory()->of($cara)->create();
@@ -38,6 +38,9 @@ it('saves Progress, Outcomes and the summary as they are given, completes the Ev
         ->assertAttribute('#evaluation-outcome', 'data-disabled', '')
         ->fill('#evaluation-summary', "A strong year.\nThe Relaunch shipped on time.")
         ->click('internal:role=heading[name="The year as a whole"s]')
+        ->assertSee('Give every Goal an Outcome and write the summary to complete it.')
+        ->click('Save summary')
+        ->assertSee('Summary saved.')
         ->assertDontSee('Give every Goal an Outcome and write the summary to complete it.')
         ->click('#evaluation-outcome')
         ->click('internal:role=option[name="Met"s]')

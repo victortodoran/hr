@@ -8,11 +8,11 @@ import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
-import ProjectForm from '@/components/projects/ProjectForm.vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/dates';
-import { index, show } from '@/routes/projects';
-import type { Choice, ProjectRecord, TableColumn } from '@/types';
+import { create, index, show } from '@/routes/projects';
+import type { ProjectRecord, TableColumn } from '@/types';
 
 defineOptions({
     layout: {
@@ -22,7 +22,6 @@ defineOptions({
 
 defineProps<{
     projects: ProjectRecord[];
-    clients: Choice[];
 }>();
 
 const page = usePage();
@@ -49,7 +48,9 @@ const columns = computed<TableColumn[]>(() => [
                 title="Projects"
                 description="The work Employees can be assigned to"
             />
-            <ProjectForm v-if="canManage" :clients="clients" />
+            <Button v-if="canManage" as-child>
+                <Link :href="create()">New Project</Link>
+            </Button>
         </div>
 
         <DataTable :columns="columns" :rows="projects">
@@ -83,7 +84,6 @@ const columns = computed<TableColumn[]>(() => [
             </template>
             <template #cell-actions="{ row }">
                 <div v-if="!row.is_internal" class="flex justify-end gap-2">
-                    <ProjectForm :clients="clients" :project="row" />
                     <ConfirmDeleteDialog
                         :form="ProjectController.destroy.form(row.id)"
                         :title="`Delete ${row.name}?`"
@@ -97,7 +97,9 @@ const columns = computed<TableColumn[]>(() => [
                     message="Projects are the work Employees can be assigned to. There are none yet."
                 >
                     <template v-if="canManage" #action>
-                        <ProjectForm :clients="clients" />
+                        <Button as-child>
+                            <Link :href="create()">New Project</Link>
+                        </Button>
                     </template>
                 </EmptyState>
             </template>

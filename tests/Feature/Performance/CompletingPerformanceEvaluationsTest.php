@@ -91,6 +91,7 @@ it('lets the Manager save and clear the summary on its own, leaving the Outcomes
 
     actingAs($ben)->put(summaryRoute($evaluation), ['summary' => ' Strong start. '])
         ->assertRedirect(route('performance-evaluations.show', $evaluation))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Summary saved.'])
         ->assertSessionHasNoErrors();
 
     expect($evaluation->refresh()->summary)->toBe('Strong start.')

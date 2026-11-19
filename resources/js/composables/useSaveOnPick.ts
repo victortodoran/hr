@@ -4,16 +4,15 @@ import type { Ref } from 'vue';
 import { onBeforeUnmount, ref, watch } from 'vue';
 
 /**
- * Saves a dropdown's value as soon as it is picked, or a text box's when
- * `save` is called as it loses focus, sending it as `field` in a PUT to
- * `url`. `chosen` is what the dropdown shows: the saved value
+ * Saves a single dropdown's value as soon as it is picked, sending it as
+ * `field` in a PUT to `url`; the page shows the Saved tick from
+ * `justSaved`. `chosen` is what the dropdown shows: the saved value
  * until another is picked, and the saved one again whenever the page's
  * props change it. A save keeps the page's scroll and state, and
  * `justSaved` turns true for two seconds after it. When saving fails,
  * for example because the Performance Evaluation was Completed
  * meanwhile, the dropdown goes back to the saved value and an error
- * toast says why, unless `keepsChosenOnFailure` keeps what was typed so
- * it isn't lost; a refusal (403) also reloads the page, so it stops
+ * toast says why; a refusal (403) also reloads the page, so it stops
  * offering the change.
  */
 export function useSaveOnPick<Value extends string | null>(options: {
@@ -24,8 +23,6 @@ export function useSaveOnPick<Value extends string | null>(options: {
     field: string;
     /** What the value is, as the error toasts name it, e.g. "Progress". */
     label: string;
-    /** Whether a failed save leaves `chosen` as it is, for text that took typing, rather than putting the saved value back. */
-    keepsChosenOnFailure?: boolean;
 }): {
     chosen: Ref<Value>;
     saving: Ref<boolean>;
@@ -50,9 +47,7 @@ export function useSaveOnPick<Value extends string | null>(options: {
         chosen.value = value;
 
         const refuse = (message: string): void => {
-            if (!options.keepsChosenOnFailure) {
-                chosen.value = options.saved();
-            }
+            chosen.value = options.saved();
 
             toast.error(message);
         };

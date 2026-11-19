@@ -54,21 +54,51 @@ it('lists the Projects with their Client and dates, the Internal Project first',
                 ['id' => $internal->id, 'name' => 'Acme Software', 'client' => null, 'start_date' => null, 'end_date' => null, 'is_internal' => true],
                 ['id' => $audit->id, 'name' => 'Audit', 'client' => null, 'start_date' => '2026-03-01', 'end_date' => null, 'is_internal' => false],
                 ['id' => $relaunch->id, 'name' => 'Website relaunch', 'client' => ['id' => $globex->id, 'name' => 'Globex'], 'start_date' => '2026-01-05', 'end_date' => '2026-06-30', 'is_internal' => false],
-            ])
-            ->where('clients', []),
+            ]),
         );
 });
 
-it('offers the Clients by name to an Employee who manages Projects', function () {
+it('offers the Clients by name on the page for creating a Project', function () {
     $initech = Client::factory()->create(['name' => 'Initech']);
     $globex = Client::factory()->create(['name' => 'Globex']);
 
-    actingAs(projectManager())->get(route('projects.index'))
+    actingAs(projectManager())->get(route('projects.create'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('projects', [])
+            ->component('projects/Create')
             ->where('clients', [['id' => $globex->id, 'name' => 'Globex'], ['id' => $initech->id, 'name' => 'Initech']]),
         );
 });
+
+it('refuses the page for creating a Project to an Employee who can only view Projects', function () {
+    actingAs(employeeWith([Permission::ViewProjects->value => null]))
+        ->get(route('projects.create'))
+        ->assertForbidden();
+});
+
+it('lets a Project manager change a Project on its page, offering the Clients', function () {
+    $globex = Client::factory()->create(['name' => 'Globex']);
+    $project = Project::factory()->create();
+
+    actingAs(projectManager())->get(route('projects.show', $project))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('projects/Show')
+            ->where('canManage', true)
+            ->where('clients', [['id' => $globex->id, 'name' => 'Globex']]),
+        );
+});
+
+it('offers no changes on a Project\'s page to an Employee who can only view it, nor on the Internal Project\'s', function (Closure $viewer, Closure $project) {
+    Client::factory()->create();
+
+    actingAs($viewer())->get(route('projects.show', $project()))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('canManage', false)
+            ->where('clients', []),
+        );
+})->with([
+    'viewer' => [fn (): Employee => employeeWith([Permission::ViewProjects->value => null]), fn (): Project => Project::factory()->create()],
+    'Internal Project' => [fn (): Employee => projectManager(), fn (): Project => Project::factory()->internal()->create()],
+]);
 
 it('refuses the Projects page to an Employee who can neither view nor manage Projects', function () {
     actingAs(employeeWith([Permission::ManageClients->value => null]))
@@ -81,7 +111,7 @@ it('lets a Project manager create a Project for a Client, with an end date', fun
 
     actingAs(projectManager())
         ->post(route('projects.store'), projectForm(['client_id' => $globex->id, 'end_date' => '2026-06-30']))
-        ->assertRedirect(route('projects.index'))
+        ->assertRedirect(route('projects.show', Project::query()->sole()))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Project created.']);
 
     $project = Project::query()->sole();
@@ -135,7 +165,7 @@ it('lets a Project manager change a Project\'s name, dates and Client', function
 
     actingAs(projectManager())
         ->patch(route('projects.update', $project), projectForm(['name' => 'Rebrand', 'client_id' => $globex->id, 'start_date' => '2026-02-01', 'end_date' => '2026-12-31']))
-        ->assertRedirect(route('projects.index'))
+        ->assertRedirect(route('projects.show', $project))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Project saved.']);
 
     $project->refresh();
