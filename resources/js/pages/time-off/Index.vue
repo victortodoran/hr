@@ -8,11 +8,12 @@ import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import PaidDaysLeft from '@/components/time-off/PaidDaysLeft.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
 import { Button } from '@/components/ui/button';
 import { formatDateRange } from '@/lib/dates';
 import { create, index } from '@/routes/time-off';
-import type { TableColumn, TimeOffRecord } from '@/types';
+import type { PaidDaysLeftInYear, TableColumn, TimeOffRecord } from '@/types';
 
 defineOptions({
     layout: {
@@ -21,9 +22,8 @@ defineOptions({
 });
 
 defineProps<{
-    year: number;
-    /** Paid Days minus Pending and Approved Paid Time Off this year. */
-    paidDaysLeft: number;
+    /** This year's Paid Days left and, from October, next year's. */
+    paidDaysLeft: PaidDaysLeftInYear[];
     timeOff: TimeOffRecord[];
 }>();
 
@@ -43,16 +43,7 @@ const columns: TableColumn[] = [
         />
 
         <div class="flex flex-wrap items-center justify-between gap-4">
-            <p class="text-sm">
-                <span
-                    class="text-2xl font-semibold tabular-nums"
-                    :class="{ 'text-destructive': paidDaysLeft < 0 }"
-                    >{{ paidDaysLeft }}</span
-                >
-                <span class="ml-2 text-muted-foreground"
-                    >Paid Days left in {{ year }}</span
-                >
-            </p>
+            <PaidDaysLeft :years="paidDaysLeft" />
             <Button as-child>
                 <Link :href="create()">Request Time Off</Link>
             </Button>

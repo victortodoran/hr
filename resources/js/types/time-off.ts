@@ -31,14 +31,21 @@ export type TimeOffRecord = TimeOffDetails & {
 };
 
 /**
- * An Employee's Time Off as their page shows it: this year's Paid Days and
- * Paid Days left, and all their Time Off, latest first.
+ * Paid Days left in a year: Paid Days minus Pending and Approved Paid Time Off.
+ */
+export type PaidDaysLeftInYear = {
+    year: number;
+    days: number;
+};
+
+/**
+ * An Employee's Time Off as their page shows it: their Paid Days, Paid Days
+ * left this year and, from October, next year, and all their Time Off,
+ * latest first.
  */
 export type EmployeeTimeOff = {
-    year: number;
     paid_days: number;
-    /** Paid Days minus Pending and Approved Paid Time Off this year. */
-    paid_days_left: number;
+    paid_days_left: PaidDaysLeftInYear[];
     requests: TimeOffDetails[];
 };
 
@@ -55,7 +62,7 @@ export type TimeOffToApprove = {
     days: number;
     is_paid: boolean;
     /** Paid Days left per year, already counting this Time Off when Paid. */
-    paid_days_left: { year: number; days: number }[];
+    paid_days_left: PaidDaysLeftInYear[];
 };
 
 /**

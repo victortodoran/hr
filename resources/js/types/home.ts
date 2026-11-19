@@ -10,14 +10,6 @@ export type HoursThisMonth = {
     pendingHours: number;
 };
 
-/**
- * Paid Days left in a year: Paid Days minus Pending and Approved Paid Time Off.
- */
-export type PaidDaysLeft = {
-    year: number;
-    days: number;
-};
-
 /** One month of the signed-in Employee's hours this year. */
 export type MonthOfHours = {
     /** The month, as YYYY-MM. */

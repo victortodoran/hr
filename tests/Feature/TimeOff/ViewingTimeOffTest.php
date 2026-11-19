@@ -7,12 +7,13 @@ use App\Http\Controllers\TimeOff\TimeOffController;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Policies\EmployeePolicy;
+use App\Support\PaidDaysLeft;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(EmployeeController::class, EmployeePolicy::class, TimeOffController::class, TimeOff::class, Permission::class);
+covers(EmployeeController::class, EmployeePolicy::class, TimeOffController::class, TimeOff::class, PaidDaysLeft::class, Permission::class);
 
 beforeEach(function () {
     travelTo('2026-03-04 09:00');
@@ -46,9 +47,8 @@ it('shows Cara\'s Paid Days, Paid Days left and Time Off, latest first, on her r
         ->assertInertia(fn (Assert $page) => $page
             ->where('paidDays', null)
             ->where('timeOff', [
-                'year' => 2026,
                 'paid_days' => 20,
-                'paid_days_left' => 13,
+                'paid_days_left' => [['year' => 2026, 'days' => 13]],
                 'requests' => [
                     ['id' => $ids[0], 'first_date' => '2026-06-01', 'last_date' => '2026-06-05', 'days' => 5, 'is_paid' => false, 'state' => 'cancelled', 'decided_by' => null, 'decline_reason' => null],
                     ['id' => $ids[1], 'first_date' => '2026-05-04', 'last_date' => '2026-05-05', 'days' => 2, 'is_paid' => true, 'state' => 'pending', 'decided_by' => null, 'decline_reason' => null],
@@ -103,4 +103,15 @@ it('lets someone with the reports Scope see the Time Off of their Reports only',
     actingAs($ben)->get(route('employees.show', $eve))->assertForbidden();
     actingAs($ben)->get(route('employees.show', $ben))->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('tabs', ['overview']));
+});
+
+it('shows Cara\'s Paid Days left next year beside this year\'s on her record from October', function () {
+    travelTo('2026-10-01 09:00');
+    $cara = caraWithTimeOff(Employee::factory()->create());
+    TimeOff::factory()->for($cara)->create(['first_date' => '2027-01-04', 'last_date' => '2027-01-06']);
+
+    actingAs(employeeWith([Permission::ViewTimeOff->value => Scope::Everyone]))
+        ->get(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('timeOff.paid_days_left', [['year' => 2026, 'days' => 13], ['year' => 2027, 'days' => 17]]));
 });

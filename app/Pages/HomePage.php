@@ -8,6 +8,7 @@ use App\Models\TimeOff;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
+use App\Support\PaidDaysLeft;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Carbon\CarbonPeriod;
@@ -41,10 +42,7 @@ final class HomePage
         return [
             'hoursThisMonth' => $hasHours ? self::hoursThisMonth($employee) : null,
             'hoursThisYear' => $hasHours ? self::hoursThisYear($employee) : null,
-            'paidDaysLeft' => [
-                'year' => today()->year,
-                'days' => $employee->paidDaysLeftIn(today()->year),
-            ],
+            'paidDaysLeft' => PaidDaysLeft::of($employee),
             'nextTimeOff' => $employee->timeOff()
                 ->standing()
                 ->whereDate('last_date', '>=', today())

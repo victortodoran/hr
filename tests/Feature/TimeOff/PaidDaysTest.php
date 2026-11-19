@@ -86,7 +86,7 @@ it('saves Paid Days lowered below what is booked, leaving the booked Time Off as
         ->assertInertia(fn (Assert $page) => $page
             ->where('paidDays', 10)
             ->where('timeOff.paid_days', 10)
-            ->where('timeOff.paid_days_left', -5)
+            ->where('timeOff.paid_days_left', [['year' => 2026, 'days' => -5]])
             ->where('timeOff.requests.0.id', $booked->id)
             ->where('timeOff.requests.0.state', 'approved')
             ->where('timeOff.requests.0.days', 15));

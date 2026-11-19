@@ -8,6 +8,7 @@ use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use App\Pages\HomePage;
+use App\Support\PaidDaysLeft;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -17,7 +18,7 @@ use function Pest\Laravel\get;
 use function Pest\Laravel\post;
 use function Pest\Laravel\travelTo;
 
-covers(HomeController::class, HomePage::class, Employee::class);
+covers(HomeController::class, HomePage::class, PaidDaysLeft::class, Employee::class);
 
 beforeEach(function () {
     travelTo('2026-11-11 09:00');
@@ -54,7 +55,7 @@ it('shows a regular Employee their hours this month, Paid Days left and next Tim
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
             ->where('hoursThisMonth', ['month' => '2026-11', 'hours' => 7.5, 'pendingHours' => 1.5])
-            ->where('paidDaysLeft', ['year' => 2026, 'days' => 17])
+            ->where('paidDaysLeft', [['year' => 2026, 'days' => 17], ['year' => 2027, 'days' => 20]])
             ->where('nextTimeOff.id', $next->id)
             ->where('nextTimeOff.state', 'approved')
             ->where('needsAttention.items.0.date', '2026-11-05')
@@ -143,7 +144,7 @@ it('leaves hours this month and this year out for an Employee with no Manager, w
             ->component('Home')
             ->where('hoursThisMonth', null)
             ->where('hoursThisYear', null)
-            ->where('paidDaysLeft', ['year' => 2026, 'days' => -1])
+            ->where('paidDaysLeft', [['year' => 2026, 'days' => -1], ['year' => 2027, 'days' => 0]])
             ->where('nextTimeOff.first_date', '2026-11-11')
             ->where('waitingForYou', null),
         );
@@ -158,7 +159,7 @@ it('leaves hours this month and this year, and Declined Work Entries, out for an
             ->component('Home')
             ->where('hoursThisMonth', null)
             ->where('hoursThisYear', null)
-            ->where('paidDaysLeft', ['year' => 2026, 'days' => 0])
+            ->where('paidDaysLeft', [['year' => 2026, 'days' => 0], ['year' => 2027, 'days' => 0]])
             ->where('needsAttention', null),
         );
 });
@@ -238,3 +239,20 @@ it('lists at most ten of each kind that needs attention, counting the rest', fun
             ->where('needsAttention.more', 2),
         );
 });
+
+it('shows next year\'s Paid Days left beside this year\'s from 1 October, counting Pending and Approved Paid Time Off', function (string $today, array $shown) {
+    travelTo($today);
+    $cara = recorder(['manager_id' => Employee::factory()->create()->id, 'paid_days' => 20]);
+    TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-12-28', 'last_date' => '2027-01-08']);
+    TimeOff::factory()->for($cara)->create(['first_date' => '2027-02-01', 'last_date' => '2027-02-02']);
+    TimeOff::factory()->for($cara)->declined()->create(['first_date' => '2027-03-01', 'last_date' => '2027-03-05']);
+    TimeOff::factory()->for($cara)->unpaid()->create(['first_date' => '2027-04-05', 'last_date' => '2027-04-09']);
+
+    actingAs($cara)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page->where('paidDaysLeft', $shown));
+})->with([
+    'on 30 September, only this year' => ['2026-09-30 23:59', [['year' => 2026, 'days' => 16]]],
+    'on 1 October, next year too' => ['2026-10-01 00:00', [['year' => 2026, 'days' => 16], ['year' => 2027, 'days' => 12]]],
+    'on 31 December, next year too' => ['2026-12-31 23:59', [['year' => 2026, 'days' => 16], ['year' => 2027, 'days' => 12]]],
+    'on 1 January, only the new year' => ['2027-01-01 00:00', [['year' => 2027, 'days' => 12]]],
+]);
