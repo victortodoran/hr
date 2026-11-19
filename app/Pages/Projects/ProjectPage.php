@@ -20,8 +20,10 @@ final class ProjectPage
      *
      * @return array<string, mixed>
      */
-    public static function props(Employee $actor, Project $project, bool $canManage): array
+    public static function props(Employee $actor, Project $project): array
     {
+        $canManage = $actor->can('update', $project);
+
         return [
             'project' => [
                 'id' => $project->id,

@@ -45,7 +45,7 @@ class ProjectController extends Controller
      */
     public function show(#[CurrentUser] Employee $actor, Project $project): Response
     {
-        return Inertia::render('projects/Show', ProjectPage::props($actor, $project, $actor->can('update', $project)));
+        return Inertia::render('projects/Show', ProjectPage::props($actor, $project));
     }
 
     /**
