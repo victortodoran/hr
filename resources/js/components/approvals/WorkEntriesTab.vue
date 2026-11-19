@@ -44,10 +44,10 @@ const props = defineProps<{
 const columns: TableColumn[] = [
     { key: 'select', label: 'Select' },
     { key: 'date', label: 'Date' },
-    { key: 'employee', label: 'Employee' },
+    { key: 'employee', label: 'Employee', minor: true },
     { key: 'project', label: 'Project', minor: true },
     { key: 'description', label: 'Description', minor: true },
-    { key: 'hours', label: 'Hours', align: 'end' },
+    { key: 'hours', label: 'Hours', align: 'end', minor: true },
     { key: 'answer', label: 'Answer', align: 'end' },
 ];
 
@@ -65,6 +65,11 @@ const {
     prop: 'matchingIds',
     ids: () => props.matchingIds,
 });
+
+/** Whose Work Entry a row is and when, naming its checkbox and buttons. */
+function describe(entry: ApprovalEntry): string {
+    return `${entry.employee.name}'s Work Entry on ${formatDate(entry.date)}`;
+}
 
 function showFiltered(query: Record<string, string>): void {
     clear();
@@ -123,7 +128,7 @@ function approve(): void {
             <template #cell-select="{ row }">
                 <Checkbox
                     :model-value="isSelected(row.id)"
-                    :aria-label="`Select ${row.employee.name}'s Work Entry on ${formatDate(row.date)}`"
+                    :aria-label="`Select ${describe(row)}`"
                     @update:model-value="toggle(row.id, $event === true)"
                 />
             </template>
@@ -131,6 +136,10 @@ function approve(): void {
                 <span class="whitespace-nowrap">{{
                     formatDate(row.date)
                 }}</span>
+                <span
+                    class="block whitespace-nowrap text-muted-foreground tabular-nums sm:hidden"
+                    >{{ formatHours(row.hours) }}</span
+                >
             </template>
             <template #cell-employee="{ row }">
                 {{ row.employee.name }}
@@ -153,7 +162,7 @@ function approve(): void {
                             :processing="approving"
                             variant="outline"
                             size="sm"
-                            :aria-label="`Approve ${row.employee.name}'s Work Entry on ${formatDate(row.date)}`"
+                            :aria-label="`Approve ${describe(row)}`"
                             >Approve</SubmitButton
                         >
                     </Form>
@@ -164,7 +173,7 @@ function approve(): void {
                         description="The Employee sees the reason under it, and can change or delete it. Declined hours aren't counted."
                         placeholder="Interviews go on Internal, not Acme"
                         size="sm"
-                        :label="`Decline ${row.employee.name}'s Work Entry on ${formatDate(row.date)}`"
+                        :accessible-name="`Decline ${describe(row)}`"
                         @declined="toggle(row.id, false)"
                     />
                 </div>

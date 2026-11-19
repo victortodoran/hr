@@ -138,7 +138,7 @@ it('lets a Manager approve two Travel Expenses together and decline another with
     expect($taxi->refresh()->state)->toBe(TravelExpenseState::Declined);
 });
 
-it('lets a Manager approve one Work Entry and decline another from their rows, keeping the rest ticked', function () {
+it('lets a Manager approve one Work Entry and decline another from their rows, keeping the rest ticked, and fits a phone', function () {
     $ben = managerBen();
     $cara = recorder(['manager_id' => $ben->id]);
     $relaunch = assignmentOf($cara);
@@ -165,6 +165,8 @@ it('lets a Manager approve one Work Entry and decline another from their rows, k
         ->assertSee('Checkout API')
         ->assertSee('1 selected')
         ->assertSee('Total of all 1 matching')
+        ->resize(360, 800)
+        ->assertScript('[...document.querySelectorAll("main table")].every((table) => table.parentElement.scrollWidth <= table.parentElement.clientWidth)', true)
         ->assertNoJavaScriptErrors();
 
     expect($review->refresh()->state)->toBe(WorkEntryState::Approved)
@@ -173,7 +175,7 @@ it('lets a Manager approve one Work Entry and decline another from their rows, k
         ->and($checkout->refresh()->state)->toBe(WorkEntryState::Pending);
 });
 
-it('lets a Manager approve one Travel Expense and decline another from their rows', function () {
+it('lets a Manager approve one Travel Expense and decline another from their rows, which fit a phone', function () {
     CompanySettings::factory()->create(['currency' => 'RON']);
     $ben = managerBen();
     $cara = recorder(['manager_id' => $ben->id, 'name' => 'Cara']);
@@ -187,6 +189,8 @@ it('lets a Manager approve one Travel Expense and decline another from their row
         ->click('main table tbody tr:nth-child(1) [aria-label^="Approve "]')
         ->assertSee('1 Travel Expense approved.')
         ->assertDontSee('Flight')
+        ->resize(360, 800)
+        ->assertScript('[...document.querySelectorAll("main table")].every((table) => table.parentElement.scrollWidth <= table.parentElement.clientWidth)', true)
         ->click('main table tbody tr:nth-child(1) [aria-label^="Decline "]')
         ->assertSee('Decline 1 Travel Expense?')
         ->fill('#decline-reason', 'The taxi isn\'t on the receipt.')

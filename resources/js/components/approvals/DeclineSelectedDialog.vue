@@ -37,7 +37,7 @@ const props = defineProps<{
     /** The trigger button's size, smaller in a table row. */
     size?: 'default' | 'sm';
     /** The trigger button's accessible name, telling one row's from another's. */
-    label?: string;
+    accessibleName?: string;
 }>();
 
 const emit = defineEmits<{
@@ -77,7 +77,7 @@ function decline(): void {
             <Button
                 variant="outline"
                 :size="size"
-                :aria-label="label"
+                :aria-label="accessibleName"
                 :disabled="ids !== undefined && ids.length === 0"
                 >Decline…</Button
             >
