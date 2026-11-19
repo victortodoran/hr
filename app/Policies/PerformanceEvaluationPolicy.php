@@ -10,7 +10,7 @@ use App\Models\PerformanceEvaluation;
  * Who may act on Performance Evaluations. Every Employee sees their own
  * with no Permission needed, and the Permissions for reading them
  * (Permission::seeingPerformanceEvaluations()) let others read them, never
- * write them. Only the Employee's effective Manager starts
+ * write them. Only the Employee's effective Manager creates
  * one, gives, changes or removes its Goals, gives their Outcomes and
  * Completes it: no Role grants that, and
  * since nobody is their own effective Manager, nobody sets their own.
@@ -47,17 +47,31 @@ class PerformanceEvaluationPolicy
     }
 
     /**
-     * Only the Employee's effective Manager may start their Performance
-     * Evaluation, and only for the current year, while the Employee works
-     * for the company on some day of it and has none for it yet.
+     * The New Performance Evaluation page is for Employees who may create
+     * at least one: someone they effectively manage still lacks one for
+     * the current or the next year.
      */
-    public function create(Employee $actor, Employee $employee): bool
+    public function createAny(Employee $actor): bool
     {
-        $year = today()->year;
+        foreach (PerformanceEvaluation::creatableYears() as $year) {
+            if (Employee::query()->effectivelyManagedBy($actor)->awaitingPerformanceEvaluationFor($year)->exists()) {
+                return true;
+            }
+        }
 
-        return $this->isEffectiveManagerOf($actor, $employee)
-            && Employee::query()->whereKey($employee->id)->employedDuring($year)->exists()
-            && ! $employee->performanceEvaluations()->where('year', $year)->exists();
+        return false;
+    }
+
+    /**
+     * Only the Employee's effective Manager may create their Performance
+     * Evaluation, and only for the current or the next year, while the
+     * Employee works for the company on some day of it and has none for it
+     * yet.
+     */
+    public function create(Employee $actor, Employee $employee, int $year): bool
+    {
+        return in_array($year, PerformanceEvaluation::creatableYears(), true)
+            && Employee::query()->effectivelyManagedBy($actor)->awaitingPerformanceEvaluationFor($year)->whereKey($employee->id)->exists();
     }
 
     /**

@@ -151,7 +151,7 @@ _Avoid_: Expense type, cost type, category
 ### Performance
 
 **Performance Evaluation**:
-The yearly look at how one Employee did over one calendar year, holding the Goals they were given for it, as in "Cara's 2027 Performance Evaluation". An Employee has at most one per year, and only an Employee with a Manager has one. The Employee's Manager starts it whenever they choose (while that Manager has left, the next Manager up who hasn't); there is no company-wide round that starts them all. It belongs to the Employee, not to the Manager, so a new Manager takes over the same one. It is Open until the Manager Completes it, with no deadline, and is kept after the Employee leaves.
+The yearly look at how one Employee did over one calendar year, holding the Goals they were given for it, as in "Cara's 2027 Performance Evaluation". An Employee has at most one per year, and only an Employee with a Manager has one. The Employee's Manager creates it whenever they choose, for the current or the next year (while that Manager has left, the next Manager up who hasn't); there is no company-wide round that creates them all. It belongs to the Employee, not to the Manager, so a new Manager takes over the same one. It is Open from the moment it is created, with no separate start, until the Manager Completes it, with no deadline, and is kept after the Employee leaves.
 _Avoid_: Review, performance review, appraisal, assessment, evaluation cycle
 
 **Goal**:

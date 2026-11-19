@@ -137,7 +137,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('my-performance-evaluations', MyPerformanceEvaluationController::class)->name('my-performance-evaluations.index');
     Route::get('performance-evaluations', [PerformanceEvaluationController::class, 'index'])->middleware('can:viewList,'.PerformanceEvaluation::class)->name('performance-evaluations.index');
-    Route::post('employees/{employee}/performance-evaluations', [PerformanceEvaluationController::class, 'store'])->middleware('can:create,'.PerformanceEvaluation::class.',employee')->name('employees.performance-evaluations.store');
+    Route::get('performance-evaluations/create', [PerformanceEvaluationController::class, 'create'])->middleware('can:createAny,'.PerformanceEvaluation::class)->name('performance-evaluations.create');
+    Route::post('performance-evaluations', [PerformanceEvaluationController::class, 'store'])->name('performance-evaluations.store');
     Route::get('performance-evaluations/{performanceEvaluation}', [PerformanceEvaluationController::class, 'show'])->middleware('can:view,performanceEvaluation')->name('performance-evaluations.show');
     Route::get('performance-evaluations/{performanceEvaluation}/goals/{goal}', [GoalController::class, 'show'])->middleware('can:view,performanceEvaluation')->scopeBindings()->whereNumber('goal')->name('performance-evaluations.goals.show');
     Route::put('performance-evaluations/{performanceEvaluation}/goals/{goal}/progress', [GoalProgressController::class, 'update'])->middleware('can:changeProgress,performanceEvaluation')->scopeBindings()->name('performance-evaluations.goals.progress.update');

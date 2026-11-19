@@ -500,7 +500,7 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Start the Employee's Performance Evaluation for this year, Open, with
+     * Create the Employee's Performance Evaluation for this year, Open, with
      * the Goals given as title, description, the changes to their
      * Progress, each as the Progress and who changed it, and optionally
      * their Comments, each as who wrote it and what. The Goals were given

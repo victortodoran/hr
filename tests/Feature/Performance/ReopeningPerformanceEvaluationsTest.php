@@ -41,7 +41,7 @@ it('lets someone with reopen performance evaluations send a Completed one back t
     $rae = employeeWith([Permission::ReopenPerformanceEvaluations->value => Scope::Everyone], ['name' => 'Rae']);
 
     actingAs($rae)->get(route('performance-evaluations.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === ['Ben', 'Cara Lane']));
+        ->assertInertia(fn (Assert $page) => $page->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === ['Cara Lane']));
     actingAs($rae)->get(route('performance-evaluations.show', $evaluation))
         ->assertInertia(fn (Assert $page) => $page->where('canReopen', true)->where('canEdit', false));
 

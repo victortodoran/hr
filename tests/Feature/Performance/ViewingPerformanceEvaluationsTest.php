@@ -46,13 +46,14 @@ it('lets someone with view performance evaluations for everyone see the page and
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeePerformanceEvaluations', true));
     actingAs($dana)->get(route('performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === ['Ana', 'Ben', 'Cara', 'Yan', 'Zed'])
-            ->where('employees.data', fn (Collection $rows): bool => $rows->every(fn (array $row): bool => $row['can_start'] === false)));
+            ->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === ['Ben', 'Cara', 'Zed'])
+            ->where('canCreate', false));
 
     $evaluation = $cara->performanceEvaluations()->sole();
     actingAs($dana)->get(route('performance-evaluations.show', $evaluation))
         ->assertInertia(fn (Assert $page) => $page->where('canEdit', false)->where('isOwn', false));
-    actingAs($dana)->post(route('employees.performance-evaluations.store', $ben))->assertForbidden();
+    actingAs($dana)->get(route('performance-evaluations.create'))->assertForbidden();
+    actingAs($dana)->post(route('performance-evaluations.store'), ['year' => 2027, 'employee_id' => $ben->id])->assertSessionHasErrors('employee_id');
     actingAs($dana)->post(route('performance-evaluations.goals.store', $evaluation), ['title' => 'From HR', 'description' => 'Not allowed'])->assertForbidden();
     actingAs($dana)->put(route('performance-evaluations.assessment.update', $evaluation), ['goals' => [], 'outcome' => 'met', 'summary' => 'No'])->assertForbidden();
     actingAs($dana)->post(route('performance-evaluations.completion.store', $evaluation), ['goals' => [], 'outcome' => 'met', 'summary' => 'No'])->assertForbidden();

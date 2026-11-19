@@ -117,7 +117,7 @@ it('gives Travel Expenses only on Travel Requests that take them, each with a PD
             && str_starts_with((string) Storage::disk(TravelExpense::RECEIPT_DISK)->get($expense->receipt_path), '%PDF-')))->toBeTrue();
 });
 
-it('gives some Employees with a Manager an Open Performance Evaluation for this year with two to four Goals, and leaves others to start', function () {
+it('gives some Employees with a Manager an Open Performance Evaluation for this year with two to four Goals, and leaves others to create', function () {
     seed(DemoSeeder::class);
 
     $evaluations = PerformanceEvaluation::query()->where('year', today()->year)->with('employee')->withCount('goals')->get();

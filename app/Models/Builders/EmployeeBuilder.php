@@ -164,6 +164,19 @@ class EmployeeBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to Employees who may still have a Performance
+     * Evaluation created for the year: they work for the company on some
+     * day of it and have none for it yet.
+     */
+    public function awaitingPerformanceEvaluationFor(int $year): static
+    {
+        return $this->scoped(function () use ($year): void {
+            $this->employedDuring($year)
+                ->whereDoesntHave('performanceEvaluations', fn (PerformanceEvaluationBuilder $evaluations) => $evaluations->where('year', $year));
+        });
+    }
+
+    /**
      * Limit the query to Employees who work for the company on at least
      * one day of the calendar year: started by its end, and not left
      * before its start.

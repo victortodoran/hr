@@ -61,7 +61,7 @@ const columns: TableColumn[] = [
             <template #empty>
                 <EmptyState
                     :icon="Target"
-                    message="Your Performance Evaluations appear here once your Manager starts one."
+                    message="Your Performance Evaluations appear here once your Manager creates one."
                 />
             </template>
         </DataTable>
