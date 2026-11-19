@@ -2,6 +2,7 @@
 
 namespace App\Pages\Travel;
 
+use App\Enums\SpreadsheetFormat;
 use App\Models\Builders\EmployeeBuilder;
 use App\Models\Builders\TravelExpenseBuilder;
 use App\Models\Builders\TravelRequestBuilder;
@@ -12,6 +13,8 @@ use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Support\PageWithin;
 use App\Support\Period;
+use App\Support\TravelExpenseSpreadsheet;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * The Travel Requests page as the props it renders: the Travel Requests of
@@ -93,5 +96,26 @@ final class TravelRequestListPage
             'employees' => $employees,
             'projects' => $projects,
         ];
+    }
+
+    /**
+     * The Approved Travel Expenses paid in the Period, of the Employees the
+     * viewer may see travel of, narrowed to the Employee and Project when
+     * one is given, as a CSV or Excel file named after the Period, by date
+     * paid. An Employee the viewer may not see leaves the file empty.
+     *
+     * @param  array{period: Period, employee: int|'all', project: int|null}  $filters
+     */
+    public static function download(Employee $actor, array $filters, SpreadsheetFormat $format): StreamedResponse
+    {
+        $expenses = TravelExpense::query()
+            ->approved()
+            ->ofEmployees(Employee::query()->withTravelVisibleTo($actor))
+            ->filteredBy([...$filters, 'employee' => is_int($filters['employee']) ? $filters['employee'] : null])
+            ->with('travelRequest.employee:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same rows)
+            ->orderBy('paid_on')
+            ->orderBy('id');
+
+        return TravelExpenseSpreadsheet::download($expenses, $format, $filters['period']);
     }
 }

@@ -33,6 +33,7 @@ use App\Http\Controllers\TimeOff\TimeOffPreviewController;
 use App\Http\Controllers\Travel\TravelExpenseApprovalController;
 use App\Http\Controllers\Travel\TravelExpenseController;
 use App\Http\Controllers\Travel\TravelExpenseDeclineController;
+use App\Http\Controllers\Travel\TravelExpenseExportController;
 use App\Http\Controllers\Travel\TravelExpenseReceiptController;
 use App\Http\Controllers\Travel\TravelExpenseReopeningController;
 use App\Http\Controllers\Travel\TravelRequestApprovalController;
@@ -131,6 +132,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('travel-requests/{travelRequest}/expenses/{travelExpense}/edit', [TravelExpenseController::class, 'edit'])->middleware('can:update,travelExpense')->scopeBindings()->name('travel-requests.expenses.edit');
     Route::put('travel-expenses/{travelExpense}', [TravelExpenseController::class, 'update'])->middleware('can:update,travelExpense')->name('travel-expenses.update');
     Route::delete('travel-expenses/{travelExpense}', [TravelExpenseController::class, 'destroy'])->middleware('can:delete,travelExpense')->name('travel-expenses.destroy');
+    Route::get('travel-expenses/export', [TravelExpenseExportController::class, 'show'])->middleware('can:viewList,'.TravelRequest::class)->name('travel-expense-exports.show');
     Route::get('travel-expenses/{travelExpense}/receipt', [TravelExpenseReceiptController::class, 'show'])->middleware('can:view,travelExpense')->name('travel-expenses.receipt.show');
     Route::middleware('can:decide,travelRequest')->group(function () {
         Route::post('travel-requests/{travelRequest}/approval', [TravelRequestApprovalController::class, 'store'])->name('travel-requests.approval.store');

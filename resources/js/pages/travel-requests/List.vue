@@ -8,6 +8,7 @@ import ListFilterBar from '@/components/ListFilterBar.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import TravelExpenseExportMenu from '@/components/travel-requests/TravelExpenseExportMenu.vue';
 import { reloadList } from '@/composables/useListFilters';
 import { formatDateRange } from '@/lib/dates';
 import { index } from '@/routes/travel-request-list';
@@ -74,7 +75,11 @@ function showFiltered(query: Record<string, string>): void {
         <Heading
             title="Travel Requests"
             description="Employees' travel and what they spent on it"
-        />
+        >
+            <template #actions>
+                <TravelExpenseExportMenu :filters="props.filters" />
+            </template>
+        </Heading>
 
         <ListFilterBar
             :filters="props.filters"
