@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
 import { computed } from 'vue';
 import ReopeningController from '@/actions/App/Http/Controllers/WorkEntries/ReopeningController';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import ListFilterBar from '@/components/ListFilterBar.vue';
@@ -10,7 +11,6 @@ import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
-import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -106,8 +106,6 @@ const {
     togglePage,
     selectAllMatching,
     clear,
-    submit,
-    processing,
 } = useBulkSelection(() => selectableOnPage.value, {
     prop: 'matchingIds',
     ids: () => props.matchingIds,
@@ -120,10 +118,6 @@ const canSelectAllMatching = computed(
         props.filters.state === 'approved' &&
         props.canReopen,
 );
-
-function reopen(): void {
-    submit(ReopeningController.store.url());
-}
 
 /**
  * The week on the Work page holding the Work Entry, for its Employee.
@@ -179,14 +173,32 @@ function weekOf(entry: ListedWorkEntry): string {
                 @clear="clear"
             >
                 <template #actions>
-                    <SubmitButton
-                        variant="outline"
-                        :processing="processing"
-                        type="button"
-                        :disabled="selected.length === 0"
-                        @click="reopen"
-                        >Reopen</SubmitButton
+                    <ConfirmDialog
+                        :form="ReopeningController.store.form()"
+                        :title="`Reopen ${selected.length === 1 ? '1 Work Entry' : `${selected.length} Work Entries`}?`"
+                        :description="
+                            selected.length === 1
+                                ? 'It goes back to Pending so it can be corrected.'
+                                : 'They go back to Pending so they can be corrected.'
+                        "
+                        confirm-label="Reopen"
+                        @success="clear"
                     >
+                        <input
+                            v-for="id in selected"
+                            :key="id"
+                            type="hidden"
+                            name="ids[]"
+                            :value="id"
+                        />
+                        <template #trigger>
+                            <Button
+                                variant="outline"
+                                :disabled="selected.length === 0"
+                                >Reopen</Button
+                            >
+                        </template>
+                    </ConfirmDialog>
                 </template>
             </SelectionBar>
 

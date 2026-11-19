@@ -5,7 +5,7 @@ import { Plus, Target } from '@lucide/vue';
 import PerformanceEvaluationCompletionController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationCompletionController';
 import PerformanceEvaluationReopeningController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationReopeningController';
 import PerformanceEvaluationSummaryController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationSummaryController';
-import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import GoalCard from '@/components/performance-evaluations/GoalCard.vue';
@@ -184,7 +184,7 @@ setLayoutProps({
             <Button v-if="isAssessing" as-child>
                 <Link :href="create(evaluation.id)"><Plus />Give a Goal</Link>
             </Button>
-            <ConfirmDeleteDialog
+            <ConfirmDialog
                 v-if="canReopen"
                 :form="
                     PerformanceEvaluationReopeningController.store.form(
@@ -192,14 +192,14 @@ setLayoutProps({
                     )
                 "
                 :title="`Reopen ${evaluation.employee.name}'s ${evaluation.year} Performance Evaluation?`"
-                :description="`It goes back to Open, keeping its Goals, Outcomes and summary, so their Manager can correct it and Complete it again. ${evaluation.employee.name} doesn't see the Outcomes until then.`"
+                :description="`It goes back to Open so it can be corrected. Its Goals, Outcomes and summary stay, but ${evaluation.employee.name} won't see the Outcomes until it's Completed again.`"
                 confirm-label="Reopen"
                 dismiss-label="Keep it Completed"
             >
                 <template #trigger>
                     <Button variant="outline">Reopen</Button>
                 </template>
-            </ConfirmDeleteDialog>
+            </ConfirmDialog>
         </header>
 
         <Card

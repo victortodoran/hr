@@ -128,6 +128,8 @@ it('finds a Travel Request on the Travel Requests page by its state, then reopen
         ->assertPathIs("/travel-requests/{$berlin->id}")
         ->click('[aria-label="Select the Transport expense paid on Dec 3, 2026"]')
         ->click('Reopen')
+        ->assertSee('Reopen 1 Travel Expense?')
+        ->click('internal:role=dialog >> internal:role=button[name="Reopen"s]')
         ->assertSee('1 Travel Expense reopened.')
         ->assertPathIs("/travel-requests/{$berlin->id}")
         ->assertNoJavaScriptErrors();

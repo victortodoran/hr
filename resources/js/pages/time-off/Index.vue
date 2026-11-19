@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { Form, Head, Link } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { CalendarDays } from '@lucide/vue';
 import TimeOffCancellationController from '@/actions/App/Http/Controllers/TimeOff/TimeOffCancellationController';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
-import SubmitButton from '@/components/SubmitButton.vue';
 import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
 import { Button } from '@/components/ui/button';
+import { formatDateRange } from '@/lib/dates';
 import { create, index } from '@/routes/time-off';
 import type { TableColumn, TimeOffRecord } from '@/types';
 
@@ -66,22 +67,26 @@ const columns: TableColumn[] = [
                 <template #cell-state="{ row }">
                     <div class="flex items-center justify-end gap-2">
                         <StatusBadge :state="row.state" />
-                        <Form
+                        <ConfirmDialog
                             v-if="row.can_cancel"
-                            v-bind="
+                            :form="
                                 TimeOffCancellationController.store.form(row.id)
                             "
-                            :options="{ preserveScroll: true }"
-                            v-slot="{ processing }"
+                            :title="`Cancel your Time Off for ${formatDateRange(row.first_date, row.last_date)}?`"
+                            :description="
+                                row.is_paid
+                                    ? 'It stays on record as Cancelled, and its Paid Days are free to use again.'
+                                    : 'It stays on record as Cancelled.'
+                            "
+                            confirm-label="Cancel Time Off"
+                            dismiss-label="Keep it"
                         >
-                            <SubmitButton
-                                :processing="processing"
-                                variant="ghost"
-                                size="sm"
-                                class="text-destructive"
-                                >Cancel</SubmitButton
-                            >
-                        </Form>
+                            <template #trigger>
+                                <Button variant="ghost" size="sm"
+                                    >Cancel</Button
+                                >
+                            </template>
+                        </ConfirmDialog>
                     </div>
                 </template>
                 <template #empty>

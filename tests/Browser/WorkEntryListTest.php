@@ -37,6 +37,8 @@ it('filters to Approved Work Entries, then reopens one and leaves the other Appr
         ->assertDontSee('Writing specs')
         ->click('[aria-label="Select Cara\'s Work Entry on Nov 9, 2026"]')
         ->click('Reopen')
+        ->assertSee('Reopen 1 Work Entry?')
+        ->click('internal:role=dialog >> internal:role=button[name="Reopen"s]')
         ->assertSee('1 Work Entry reopened.')
         ->assertDontSee('Reviewing the API')
         ->assertSee('Fixing the login')
@@ -60,6 +62,8 @@ it('keeps Work Entries ticked across pages, reopening them all and staying on a 
         ->click('[role="checkbox"][aria-label^="Select Cara"] >> nth=0')
         ->assertSee('2 selected')
         ->click('Reopen')
+        ->assertSee('Reopen 2 Work Entries?')
+        ->click('internal:role=dialog >> internal:role=button[name="Reopen"s]')
         ->assertSee('2 Work Entries reopened.')
         ->assertSee('26–34 of 34')
         ->assertNoJavaScriptErrors();
