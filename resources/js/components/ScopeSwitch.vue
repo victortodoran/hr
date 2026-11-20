@@ -60,14 +60,14 @@ const options = computed(() => {
         v-if="options.length > 1"
         aria-label="Whose records"
         data-slot="scope-switch"
-        class="inline-flex gap-0.5 self-start rounded-lg bg-muted p-[3px]"
+        class="inline-flex gap-0.5 self-start rounded-lg bg-muted p-0.75"
     >
         <Link
             v-for="option in options"
             :key="option.label"
             :href="option.href"
             :aria-current="isCurrentUrl(option.href) ? 'page' : undefined"
-            class="inline-flex h-7.5 items-center rounded-md px-3 text-meta font-medium whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-xs"
+            class="inline-flex h-7.5 items-center rounded-md px-3 text-meta font-medium whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:ring-1 aria-[current=page]:ring-border"
         >
             {{ option.label }}
         </Link>

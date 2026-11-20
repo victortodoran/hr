@@ -38,7 +38,7 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                 >{{ item.title }}</Link
             >
         </nav>
-        <div class="max-w-[55rem] min-w-0">
+        <div class="max-w-4xl min-w-0">
             <slot />
         </div>
     </div>

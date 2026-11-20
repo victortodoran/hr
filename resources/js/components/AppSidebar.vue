@@ -13,7 +13,7 @@ import {
     Target,
     UsersRound,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import AppMark from '@/components/AppMark.vue';
 import NavEmployee from '@/components/NavEmployee.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -26,6 +26,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarSeparator,
+    useSidebar,
 } from '@/components/ui/sidebar';
 import { useCompanySettingsLinks } from '@/composables/useCompanySettingsLinks';
 import { landing } from '@/routes';
@@ -49,6 +50,14 @@ const page = usePage();
 const auth = computed(() => page.props.auth);
 
 const settingsLinks = useCompanySettingsLinks();
+
+const { setOpenMobile } = useSidebar();
+
+/** On a phone, the menu sheet closes once a link in it opens a page (rule P2). */
+watch(
+    () => page.url,
+    () => setOpenMobile(false),
+);
 
 const startItems = computed<NavItem[]>(() => [
     { title: 'Home', href: landing(), icon: House },
@@ -107,7 +116,7 @@ const areaItems = computed<NavItem[]>(() => {
 });
 
 const companyItems = computed<NavItem[]>(() => [
-    ...(auth.value.can.includes('view-directory') || auth.value.canSeeTeam
+    ...(auth.value.canSeeDirectory
         ? [{ title: 'Directory', href: directory(), icon: Contact }]
         : []),
     ...(auth.value.canListEmployees

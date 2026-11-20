@@ -79,3 +79,23 @@ it('shows a Manager their Direct Reports on the Directory\'s Reports tab on a ph
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertNoJavaScriptErrors();
 });
+
+it('keeps each area\'s list and its Scope switch inside a phone screen', function (string $list) {
+    CompanySettings::factory()->create();
+    $ana = Employee::factory()->startedLongAgo()->create();
+    giveRole($ana, [
+        Permission::ManageWorkEntries->value => Scope::Own,
+        Permission::ViewWorkEntries->value => Scope::Everyone,
+        Permission::ViewTimeOff->value => Scope::Everyone,
+        Permission::ViewTravel->value => Scope::Everyone,
+        Permission::ViewPerformanceEvaluations->value => Scope::Everyone,
+    ]);
+
+    actingAs($ana);
+
+    visit(route($list))
+        ->resize(390, 844)
+        ->assertAttribute('internal:role=link[name="Everyone"s]', 'aria-current', 'page')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->assertNoJavaScriptErrors();
+})->with(['work-entry-list.index', 'time-off-list.index', 'travel-request-list.index', 'performance-evaluations.index']);

@@ -71,7 +71,7 @@ setLayoutProps({
     <Head :title="travelRequest.destination" />
 
     <PageContainer width="full">
-        <PageHeader :title="travelRequest.destination">
+        <PageHeader :title="title">
             <template #description>
                 <StatusBadge :state="travelRequest.state" />
                 <span>{{

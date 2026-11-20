@@ -78,10 +78,7 @@ const title = computed(() => {
 });
 
 watchEffect(() => {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Company' },
-        { title: 'Roles', href: index() },
-    ];
+    const breadcrumbs: BreadcrumbItem[] = [{ title: 'Roles', href: index() }];
 
     if (props.mode === 'create') {
         breadcrumbs.push({ title: 'New Role', href: create() });

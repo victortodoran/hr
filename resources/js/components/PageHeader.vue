@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { onUnmounted, watchEffect } from 'vue';
+import { usePageTitle } from '@/composables/usePageTitle';
+
 /**
  * A page's header (rule L3): the serif `<h1>`, an optional status badge
  * after it, one sentence of description (or a meta line through the
@@ -6,7 +9,7 @@
  * them `primary` (L4). On a phone it stacks, with the actions full-width
  * under the description (P3).
  */
-defineProps<{
+const props = defineProps<{
     title: string;
     description?: string;
 }>();
@@ -16,6 +19,18 @@ defineSlots<{
     description?: () => unknown;
     actions?: () => unknown;
 }>();
+
+const pageTitle = usePageTitle();
+
+watchEffect(() => {
+    pageTitle.value = props.title;
+});
+
+onUnmounted(() => {
+    if (pageTitle.value === props.title) {
+        pageTitle.value = null;
+    }
+});
 </script>
 
 <template>

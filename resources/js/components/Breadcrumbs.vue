@@ -5,7 +5,6 @@ import {
     BreadcrumbItem,
     BreadcrumbLink,
     BreadcrumbList,
-    BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
@@ -27,7 +26,7 @@ defineProps<{
                     <BreadcrumbLink v-if="item.href" as-child>
                         <Link :href="item.href">{{ item.title }}</Link>
                     </BreadcrumbLink>
-                    <BreadcrumbPage v-else>{{ item.title }}</BreadcrumbPage>
+                    <span v-else>{{ item.title }}</span>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
             </template>

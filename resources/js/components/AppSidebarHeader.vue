@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import { usePageTitle } from '@/composables/usePageTitle';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem } from '@/types';
 
@@ -16,8 +17,12 @@ const props = withDefaults(
 /** The pages above this one; the page's own name is its heading (rule L20). */
 const ancestors = computed(() => props.breadcrumbs.slice(0, -1));
 
-/** The page's name, shown beside the menu on a phone (rule P2). */
-const pageTitle = computed(() => props.breadcrumbs.at(-1)?.title);
+const heading = usePageTitle();
+
+/** The page's `<h1>`, shown beside the menu on a phone (rule P2). */
+const pageTitle = computed(
+    () => heading.value ?? props.breadcrumbs.at(-1)?.title,
+);
 </script>
 
 <template>
@@ -27,7 +32,7 @@ const pageTitle = computed(() => props.breadcrumbs.at(-1)?.title);
         <SidebarTrigger class="size-9 sm:size-7" />
         <span
             v-if="pageTitle"
-            class="truncate text-[15px] font-semibold sm:hidden"
+            class="truncate text-section sm:hidden"
             data-test="top-bar-title"
             >{{ pageTitle }}</span
         >

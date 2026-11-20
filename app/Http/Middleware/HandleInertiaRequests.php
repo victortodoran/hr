@@ -63,6 +63,8 @@ class HandleInertiaRequests extends Middleware
                 'canSeeWorkEntryList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', WorkEntry::class),
                 'canSeeTimeOffList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', TimeOff::class),
                 'canSeeTravelRequestList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', TravelRequest::class),
+                'canSeeDirectory' => fn (): bool => $asManagerOnce()['hasDirectReports']
+                    || ($employee instanceof Employee && $employee->holds(Permission::ViewDirectory)),
                 'canSeeTeam' => fn (): bool => $asManagerOnce()['hasDirectReports'],
                 'canSeeApprovals' => fn (): bool => $asManagerOnce()['managesAnyone'],
                 'approvalsWaiting' => fn (): int => $asManagerOnce()['waiting'],

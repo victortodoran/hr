@@ -32,7 +32,7 @@ const isActive = (item: NavItem): boolean =>
                     as-child
                     :is-active="isActive(item)"
                     :tooltip="item.title"
-                    class="h-9 text-sidebar-foreground/85 data-[active=true]:bg-background data-[active=true]:font-semibold data-[active=true]:text-foreground data-[active=true]:shadow-xs data-[active=true]:ring-1 data-[active=true]:ring-border [&>svg]:text-muted-foreground data-[active=true]:[&>svg]:text-primary"
+                    class="h-9 text-sidebar-foreground/85 data-[active=true]:bg-background data-[active=true]:font-semibold data-[active=true]:text-foreground data-[active=true]:ring-1 data-[active=true]:ring-border [&>svg]:text-muted-foreground data-[active=true]:[&>svg]:text-primary"
                 >
                     <Link :href="item.href">
                         <component :is="item.icon" />

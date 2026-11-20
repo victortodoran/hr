@@ -127,7 +127,7 @@ trait HasAccess
      */
     public function reachesOthersThrough(array $permissions): bool
     {
-        return $this->scopesGivenFor($permissions)->contains(fn (Scope $scope): bool => $scope->coversOthers());
+        return $this->othersReachThrough($permissions) !== null;
     }
 
     /**

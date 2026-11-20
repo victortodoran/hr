@@ -26,6 +26,8 @@ export type Auth = {
     canSeeTimeOffList: boolean;
     /** Whether the signed-in Employee may see the travel of anyone besides themselves, for the Travel Requests page. */
     canSeeTravelRequestList: boolean;
+    /** Whether the signed-in Employee may open the Directory: view directory, or Direct Reports for its Reports tab. */
+    canSeeDirectory: boolean;
     /** Whether the signed-in Employee has Direct Reports, for the Team page. */
     canSeeTeam: boolean;
     /** Whether the signed-in Employee may open the Approvals page. */

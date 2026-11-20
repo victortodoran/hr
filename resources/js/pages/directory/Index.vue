@@ -82,8 +82,8 @@ function openTab(tab: string | number): void {
             title="Directory"
             :description="
                 tab === 'reports'
-                    ? 'The Employees you are the Manager of'
-                    : 'Everyone currently working at the company'
+                    ? 'The Employees who report to you.'
+                    : 'Find anyone currently working at the company.'
             "
         />
 

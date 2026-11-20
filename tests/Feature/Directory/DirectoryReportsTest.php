@@ -88,9 +88,9 @@ it('tells every page whether the viewer has Direct Reports, so the menu shows Di
     $cara = Employee::factory()->reportingTo($ben)->create();
 
     actingAs($ben)->get(route('profile.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeTeam', true));
+        ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeTeam', true)->where('auth.canSeeDirectory', true));
     actingAs($cara)->get(route('profile.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeTeam', false));
+        ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeTeam', false)->where('auth.canSeeDirectory', false));
 });
 
 it('shows both tabs to a Manager with view directory, opening the one asked for', function () {
