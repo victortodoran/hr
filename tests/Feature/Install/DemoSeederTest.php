@@ -28,6 +28,7 @@ use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use App\Policies\PerformanceEvaluationPolicy;
 use Database\Seeders\DemoSeeder;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
@@ -64,6 +65,37 @@ it('gives Ben Pending Work Entries of the Employees he manages to approve, next 
         ->and($pending->filter(fn (WorkEntry $entry): bool => $managedByBen->contains($entry->employee->id))->count())->toBeGreaterThan(1)
         ->and(WorkEntry::query()->where('state', WorkEntryState::Approved)->where('approved_by', $ben->id)->exists())->toBeTrue()
         ->and(WorkEntry::query()->where('state', WorkEntryState::Declined)->where('declined_by', $ben->id)->whereNotNull('decline_reason')->exists())->toBeTrue();
+});
+
+it('gives Ben Work Entries of his own, the older ones Approved by Ana and the recent ones Pending for her', function () {
+    seed(DemoSeeder::class);
+    $ana = Employee::query()->where('email', 'ana@acme.test')->sole();
+    $bensEntries = WorkEntry::query()->whereRelation('employee', 'email', 'ben@acme.test')->get();
+
+    expect($bensEntries->where('state', WorkEntryState::Approved)->every(fn (WorkEntry $entry): bool => $entry->approved_by === $ana->id))->toBeTrue()
+        ->and($bensEntries->where('state', WorkEntryState::Approved)->isNotEmpty())->toBeTrue()
+        ->and($bensEntries->where('state', WorkEntryState::Pending)->isNotEmpty())->toBeTrue();
+});
+
+it('gives Ana Approved Paid Time Off still to come', function () {
+    seed(DemoSeeder::class);
+
+    expect(TimeOff::query()->whereRelation('employee', 'email', 'ana@acme.test')
+        ->where('state', TimeOffState::Approved)->where('is_paid', true)->whereDate('first_date', '>', today())->exists())->toBeTrue();
+});
+
+it('gives every Role to someone', function () {
+    seed(DemoSeeder::class);
+
+    expect(Role::query()->doesntHave('employees')->pluck('name')->all())->toBe([]);
+});
+
+it('prints a working invitation link for the Future Employee', function () {
+    Artisan::call('db:seed', ['--class' => DemoSeeder::class]);
+    preg_match('#/invitation/([^?\s]+)\?email=dan%40acme\.test#', Artisan::output(), $link);
+
+    expect($link)->not->toBeEmpty();
+    expect(Employee::query()->where('email', 'dan@acme.test')->sole()->hasValidInvitation($link[1]))->toBeTrue();
 });
 
 it('gives most Employees Paid Days and one none, and Time Off in every state for their Managers to see', function () {
