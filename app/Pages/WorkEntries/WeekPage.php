@@ -21,7 +21,8 @@ final class WeekPage
 {
     /**
      * The Employee's Work Entries in the Period, as the open tab lays them
-     * out, with the totals that count and those Declined, and what the
+     * out, with the totals that count (and how much of them is Approved or
+     * still Pending) and those Declined, who approves them, and what the
      * viewer may act on.
      *
      * @return array<string, mixed>
@@ -45,7 +46,10 @@ final class WeekPage
             'period' => $period->toArray(),
             'today' => today()->toDateString(),
             'total' => $counted->sum('hours'),
+            'approvedHours' => $counted->reject(fn (WorkEntry $entry): bool => $entry->isPending())->sum('hours'),
+            'pendingHours' => $counted->filter(fn (WorkEntry $entry): bool => $entry->isPending())->sum('hours'),
             'declinedHours' => $declined->sum('hours'),
+            'manager' => $employee->manager?->only('id', 'name'),
             'assignmentTotals' => self::assignmentTotals($counted),
             'assignments' => $canManage ? self::assignments($employee, $period) : [],
             'canManage' => $canManage,

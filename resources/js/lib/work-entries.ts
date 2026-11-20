@@ -1,4 +1,5 @@
-import type { WorkEntryDay } from '@/types';
+import { formatMonth } from '@/lib/dates';
+import type { Period, WorkEntryDay } from '@/types';
 
 /**
  * Hours as people read them, such as "7.5 h".
@@ -17,4 +18,28 @@ export function takesEntries(
     today: string,
 ): boolean {
     return canManage && day.date <= today;
+}
+
+/**
+ * What a Period's hours cover, such as "in November 2026", "in Week 46"
+ * (given the week's ISO number) or "from 1 Oct to 14 Nov".
+ */
+export function describePeriod(period: Period, weekNumber?: number): string {
+    const { mode, from, to } = period;
+
+    if (mode === 'month') {
+        return `in ${formatMonth(from.slice(0, 7))}`;
+    }
+
+    if (mode === 'week') {
+        return `in Week ${weekNumber}`;
+    }
+
+    const short = (date: string): string =>
+        new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+            day: 'numeric',
+            month: 'short',
+        });
+
+    return `from ${short(from)} to ${short(to)}`;
 }

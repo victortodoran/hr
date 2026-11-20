@@ -55,23 +55,28 @@ it('shows the Employee a Declined Work Entry struck through with its reason, unc
     actingAs($cara);
 
     visit(route('work-entries.index'))
-        ->assertSeeIn('[data-test="declined-hours"]', '1.5 h declined, not counted')
+        ->assertSeeIn('[data-slot="stat-strip"]', 'Declined, not counted')
+        ->assertSeeIn('[data-slot="stat-strip"]', '1.5 h')
         ->assertSeeIn('[data-test="decline-reason"]', 'Declined by Ben: Interviews go on Internal, not Acme')
         ->assertSee('Declined')
-        ->click('internal:role=tab[name="Calendar"i]')
+        ->click('internal:role=button[name="Calendar"s]')
         ->assertPresent('[data-date="2026-11-10"] [data-state="declined"]')
         ->assertSeeIn('[aria-label="Legend"]', 'Declined')
-        ->click('[aria-label="Add or view entries, Tuesday 10 November"]')
+        ->click('[data-calendar-day="2026-11-10"]')
         ->assertSeeIn('[data-panel-date="2026-11-10"]', 'Declined by Ben: Interviews go on Internal, not Acme')
+        ->click('[data-panel-date="2026-11-10"] >> internal:role=button[name="Edit"s]')
+        ->assertSeeIn('[data-panel-date="2026-11-10"]', 'Saving sends it back to Pending, for approval again.')
         ->assertNoJavaScriptErrors();
 
     visit(route('work-entries.index'))
-        ->click('[data-test="work-entry"]:has-text("Interviews") [aria-label="Edit Work Entry"]')
+        ->click('[aria-label="More for Interviews on Tuesday 10 November"]')
+        ->click('internal:role=menuitem[name="Edit"s]')
+        ->assertSee('Saving sends it back to Pending, for approval again.')
         ->fill('#work-entry-description-'.$declined->id, 'Interviews, on Internal')
         ->click('Save')
         ->assertSee('Work Entry changed.')
         ->assertNotPresent('[data-test="decline-reason"]')
-        ->assertNotPresent('[data-test="declined-hours"]')
+        ->assertDontSeeIn('[data-slot="stat-strip"]', 'Declined')
         ->assertNoJavaScriptErrors();
 
     expect($declined->refresh()->state)->toBe(WorkEntryState::Pending)

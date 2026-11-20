@@ -109,12 +109,16 @@ final class WorkEntryListPage
      * filters, across all its pages, oldest first like the page, as a CSV
      * or Excel file named after the Period.
      *
+     * With `ownOnly`, the file holds the viewer's own Work Entries under
+     * the filters instead, as their Work page shows them.
+     *
      * @param  array{period: Period, employee: int|'all'|null, project: int|null, state: string|null}  $filters
      */
-    public static function download(Employee $actor, array $filters, SpreadsheetFormat $format): StreamedResponse
+    public static function download(Employee $actor, array $filters, SpreadsheetFormat $format, bool $ownOnly = false): StreamedResponse
     {
-        $entries = WorkEntry::query()
-            ->listedFor($actor, $filters)
+        $entries = ($ownOnly
+            ? WorkEntry::query()->ofEmployees(Employee::query()->whereKey($actor->id))->filteredBy([...$filters, 'employee' => null])
+            : WorkEntry::query()->listedFor($actor, $filters))
             ->with(['assignment.employee:id,name', 'assignment.project:id,name,client_id', 'assignment.project.client:id,name', 'approver:id,name', 'decliner:id,name']) // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same rows)
             ->orderBy('date')
             ->orderBy('id');

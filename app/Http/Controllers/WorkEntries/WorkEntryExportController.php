@@ -11,7 +11,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Downloading the Work Entries page as a file: every Work Entry matching its
- * filters, across all its pages, among those the viewer may see there.
+ * filters, across all its pages, among those the viewer may see there; or
+ * from their own Work page, their own Work Entries in its Period.
  */
 class WorkEntryExportController extends Controller
 {
@@ -21,6 +22,6 @@ class WorkEntryExportController extends Controller
      */
     public function show(#[CurrentUser] Employee $actor, WorkEntryExportRequest $request): StreamedResponse
     {
-        return WorkEntryListPage::download($actor, $request->filters(), $request->spreadsheetFormat());
+        return WorkEntryListPage::download($actor, $request->filters(), $request->spreadsheetFormat(), ownOnly: $request->isOwn($actor));
     }
 }

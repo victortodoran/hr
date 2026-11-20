@@ -73,6 +73,7 @@
 | `FileDrop`                       | Receipt upload: drag/drop, browse, camera on phone, preview, Replace/Remove              | K15      |
 | `MiniBarChart`                   | 12-month hours bars for Home (div-based, sr-only table)                                  | K18      |
 | `WorkDayPanel`                   | See above                                                                                | —        |
+| `WorkWeekAgenda`                 | Phone Calendar: a week's day strip with state icons, then a row per day; ‹ › step weeks  | P10      |
 | `PayHistoryRow`                  | See above                                                                                | —        |
 | `CommandMenu` (phase 6)          | ⌘K search over people, Projects, Clients, pages; built on reka-ui `Combobox` in a Dialog | G12      |
 | Error pages (403/404/500)        | EmptyState-based Inertia pages                                                           | S5       |

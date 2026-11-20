@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { ArrowRight, Pencil, Plus } from '@lucide/vue';
+import { ArrowRight, Plus } from '@lucide/vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
+import RowActions from '@/components/RowActions.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import CopyWorkEntriesButton from '@/components/work-entries/CopyWorkEntriesButton.vue';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
@@ -23,12 +28,13 @@ import type {
 } from '@/types';
 
 /**
- * The List tab: one table of the Period's Work Entries, a row per Work
- * Entry under a row per ISO week. A run of days with the same kind of Time
- * Off and nothing logged folds into one row, and so does a run of future
- * days with nothing logged. On a phone each Work Entry stacks into two
- * lines. The add form opens on one day at a time: from an empty day's
- * quiet row, or the + beside a day that has Work Entries.
+ * The List view: one table of the Period's Work Entries, a row per Work
+ * Entry under a row per ISO week with its hours. A run of days with the
+ * same kind of Time Off and nothing logged folds into one row; days still
+ * to come with nothing on them aren't listed. Each Work Entry's ⋯ menu
+ * Edits or Deletes it (rule K2). On a phone each Work Entry stacks into
+ * two lines. The add form opens on one day at a time: from an empty day's
+ * quiet row, or the add row a day with Work Entries shows on hover.
  */
 const props = defineProps<{
     employee: Choice;
@@ -58,8 +64,7 @@ type Segment =
           from: string;
           to: string;
           weekdays: number;
-      }
-    | { type: 'upcoming'; from: string; to: string };
+      };
 
 const columns =
     'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,12rem)_5.5rem_4.5rem_6.5rem]';
@@ -95,15 +100,6 @@ function takesEntries(day: WorkEntryDay): boolean {
 }
 
 /**
- * Whether a Work Entry row ends with the + adding another entry to its day:
- * the day's first row, while the day's add form isn't open. Where edit or
- * delete is missing, an empty space keeps the + in its place.
- */
-function offersAdd(day: WorkEntryDay, index: number): boolean {
-    return index === 0 && takesEntries(day) && activeDate.value !== day.date;
-}
-
-/**
  * The days listed: every day of the Period, or with weekends hidden, every
  * day but a Saturday or Sunday with no Work Entries, so hours are never out
  * of sight. Should that leave no day at all, every day is listed.
@@ -122,9 +118,9 @@ const shownDays = computed(() => {
 
 /**
  * Folds a week's days into rows: consecutive days with the same kind of
- * Time Off and no Work Entries become one, counting only weekdays, and so
- * do consecutive future days with no Work Entries. A day of Time Off the
- * viewer can still add hours to keeps its own row.
+ * Time Off and no Work Entries become one, counting only weekdays. Future
+ * days with nothing on them are left out. A day of Time Off the viewer can
+ * still add hours to keeps its own row.
  */
 function segmentsOf(days: WorkEntryDay[]): Segment[] {
     const segments: Segment[] = [];
@@ -148,15 +144,7 @@ function segmentsOf(days: WorkEntryDay[]): Segment[] {
                 });
             }
         } else if (day.time_off === null && day.date > props.today) {
-            if (last?.type === 'upcoming') {
-                last.to = day.date;
-            } else {
-                segments.push({
-                    type: 'upcoming',
-                    from: day.date,
-                    to: day.date,
-                });
-            }
+            continue;
         } else {
             segments.push({ type: 'day', day });
         }
@@ -191,6 +179,9 @@ function segmentKey(segment: Segment): string {
 
 /** The Work Entries turned into fields to change them. */
 const editing = reactive(new Set<number>());
+
+/** The Work Entry whose Delete is being confirmed, if any. */
+const deleting = ref<WorkEntryRecord | null>(null);
 
 /** The Assignment of the Work Entry last added on this page. */
 const lastAssignmentId = ref<number | null>(null);
@@ -333,20 +324,23 @@ async function entryAdded(assignmentId: number): Promise<void> {
     await nextTick();
     addRow?.focusDescription();
 }
+
+/** Opens the add form on a day, as the page's Add Work Entry does for today. */
+defineExpose({ addOn: openAdd });
 </script>
 
 <template>
-    <div class="overflow-hidden rounded-lg border text-sm">
+    <div class="overflow-hidden rounded-lg border text-body">
         <div
             :class="columns"
-            class="hidden bg-muted/50 px-4 py-2 font-medium text-muted-foreground sm:grid"
+            class="hidden bg-surface px-4 py-2 text-caption font-medium text-muted-foreground sm:grid"
         >
             <span>Day</span>
             <span>Description</span>
             <span>Project</span>
             <span>Status</span>
             <span class="text-right">Hours</span>
-            <span class="text-right">Actions</span>
+            <span class="sr-only">Actions</span>
         </div>
 
         <section
@@ -356,7 +350,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
             class="first-of-type:[&>h3]:border-t-0 sm:first-of-type:[&>h3]:border-t"
         >
             <h3
-                class="flex items-center justify-between gap-4 border-t bg-muted/30 px-4 py-2 font-medium"
+                class="flex items-center justify-between gap-4 border-t bg-surface px-4 py-2 text-meta font-semibold"
             >
                 <span
                     >Week {{ block.week.number }}
@@ -385,7 +379,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                     <span
                         class="col-span-2 flex items-center gap-2 sm:col-span-5"
                         ><span
-                            class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+                            class="rounded-full bg-muted px-2 py-0.5 text-caption font-medium"
                             >{{ timeOffKindLabel(segment.kind) }}</span
                         ><span class="text-muted-foreground">{{
                             formatDays(segment.weekdays)
@@ -394,23 +388,13 @@ async function entryAdded(assignmentId: number): Promise<void> {
                 </div>
 
                 <div
-                    v-else-if="segment.type === 'upcoming'"
-                    :class="columns"
-                    class="items-center border-t px-4 py-2.5"
-                    data-test="upcoming-run"
+                    v-else
+                    class="group/day border-t"
+                    :data-date="segment.day.date"
                 >
-                    <span class="font-medium">{{
-                        formatRun(segment.from, segment.to)
-                    }}</span>
-                    <span class="text-muted-foreground sm:col-span-5"
-                        >Upcoming</span
-                    >
-                </div>
-
-                <div v-else class="border-t" :data-date="segment.day.date">
                     <p v-if="segment.day.time_off" class="px-4 pt-2">
                         <span
-                            class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+                            class="rounded-full bg-muted px-2 py-0.5 text-caption font-medium"
                             >{{ timeOffKindLabel(segment.day.time_off) }}</span
                         >
                     </p>
@@ -438,7 +422,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                         <div
                             v-else
                             :class="columns"
-                            class="min-h-11 items-center gap-y-0.5 px-4 py-1.5 hover:bg-muted/40"
+                            class="group/row min-h-11 items-center gap-y-0.5 px-4 py-1.5 hover:bg-surface"
                             data-test="work-entry"
                         >
                             <span
@@ -450,11 +434,11 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                     >{{ formatWeekdayAndDay(segment.day.date)
                                     }}<span
                                         v-if="segment.day.date === today"
-                                        class="ml-1 text-xs font-normal text-muted-foreground"
+                                        class="ml-1 text-caption font-normal text-muted-foreground"
                                         >today</span
                                     ><span
                                         v-if="segment.day.entries.length > 1"
-                                        class="ml-1 text-xs font-normal text-muted-foreground tabular-nums"
+                                        class="ml-1 text-caption font-normal text-muted-foreground tabular-nums"
                                         data-test="day-hours"
                                         >{{
                                             formatHours(segment.day.hours)
@@ -492,45 +476,32 @@ async function entryAdded(assignmentId: number): Promise<void> {
                             <span
                                 class="order-3 flex justify-end sm:order-none"
                             >
-                                <Button
-                                    v-if="offersAdd(segment.day, index)"
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    class="text-muted-foreground"
-                                    :aria-label="`Add another entry on ${formatLongDay(segment.day.date)}`"
-                                    @click="openAdd(segment.day.date)"
-                                    ><Plus
-                                /></Button>
-                                <Button
-                                    v-if="entry.can_edit"
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    class="text-muted-foreground"
-                                    aria-label="Edit Work Entry"
-                                    @click="editing.add(entry.id)"
-                                    ><Pencil
-                                /></Button>
-                                <span
-                                    v-else-if="offersAdd(segment.day, index)"
-                                    class="size-8"
-                                    aria-hidden="true"
-                                />
-                                <DeleteWorkEntry
-                                    v-if="entry.can_delete"
-                                    :entry="entry"
-                                    :period-query="period.query"
-                                />
-                                <span
-                                    v-else-if="offersAdd(segment.day, index)"
-                                    class="size-8"
-                                    aria-hidden="true"
-                                />
+                                <RowActions
+                                    v-if="entry.can_edit || entry.can_delete"
+                                    :label="`${entry.description} on ${formatLongDay(segment.day.date)}`"
+                                >
+                                    <template #menu>
+                                        <DropdownMenuItem
+                                            v-if="entry.can_edit"
+                                            @select="editing.add(entry.id)"
+                                            >Edit</DropdownMenuItem
+                                        >
+                                        <template v-if="entry.can_delete">
+                                            <DropdownMenuSeparator
+                                                v-if="entry.can_edit"
+                                            />
+                                            <DropdownMenuItem
+                                                variant="destructive"
+                                                @select="deleting = entry"
+                                                >Delete</DropdownMenuItem
+                                            >
+                                        </template>
+                                    </template>
+                                </RowActions>
                             </span>
                             <span
                                 v-if="entry.declined"
-                                class="order-4 col-span-2 text-xs text-status-declined-foreground sm:order-none sm:col-span-4 sm:col-start-2"
+                                class="order-4 col-span-2 text-caption text-status-declined-foreground sm:order-none sm:col-span-4 sm:col-start-2"
                                 data-test="decline-reason"
                                 >Declined by {{ entry.declined.by }}:
                                 {{ entry.declined.reason }}</span
@@ -556,7 +527,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                 >{{ formatWeekdayAndDay(segment.day.date)
                                 }}<span
                                     v-if="segment.day.date === today"
-                                    class="ml-1 text-xs font-normal text-muted-foreground"
+                                    class="ml-1 text-caption font-normal text-muted-foreground"
                                     >today</span
                                 ></template
                             ></span
@@ -586,7 +557,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                 "
                             />
                             <div
-                                class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground"
+                                class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted-foreground"
                             >
                                 <span
                                     ><kbd
@@ -626,11 +597,25 @@ async function entryAdded(assignmentId: number): Promise<void> {
                     <button
                         v-else-if="
                             takesEntries(segment.day) &&
+                            segment.day.entries.length > 0
+                        "
+                        type="button"
+                        class="flex h-9 w-full items-center gap-2 overflow-hidden px-4 text-left text-meta text-muted-foreground outline-none hover:bg-surface focus-visible:bg-surface sm:h-0 sm:group-hover/day:h-9 sm:focus-visible:h-9"
+                        data-test="add-another"
+                        :aria-label="`Add another Work Entry on ${formatLongDay(segment.day.date)}`"
+                        @click="openAdd(segment.day.date)"
+                    >
+                        <Plus class="size-3.5" aria-hidden="true" />Add another
+                        Work Entry
+                    </button>
+                    <button
+                        v-else-if="
+                            takesEntries(segment.day) &&
                             segment.day.entries.length === 0
                         "
                         type="button"
                         :class="columns"
-                        class="min-h-11 w-full items-center px-4 py-1.5 text-left outline-none hover:bg-muted/40 focus-visible:bg-muted/40"
+                        class="min-h-11 w-full items-center px-4 py-1.5 text-left outline-none hover:bg-surface focus-visible:bg-surface"
                         data-test="add-row"
                         @click="openAdd(segment.day.date)"
                     >
@@ -638,7 +623,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                             >{{ formatWeekdayAndDay(segment.day.date)
                             }}<span
                                 v-if="segment.day.date === today"
-                                class="ml-1 text-xs font-normal text-muted-foreground"
+                                class="ml-1 text-caption font-normal text-muted-foreground"
                                 >today</span
                             ></span
                         >
@@ -666,6 +651,15 @@ async function entryAdded(assignmentId: number): Promise<void> {
                 </div>
             </template>
         </section>
+
+        <DeleteWorkEntry
+            v-if="deleting"
+            :entry="deleting"
+            :period-query="period.query"
+            without-trigger
+            :open="deleting !== null"
+            @update:open="(open) => !open && (deleting = null)"
+        />
 
         <UnsavedWorkEntryDialog
             :open="heldAction !== null"
