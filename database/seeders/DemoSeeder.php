@@ -29,6 +29,7 @@ use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -45,11 +46,11 @@ use Illuminate\Support\Str;
  * and short threads of Comments from both sides on a few,
  * Completed ones for last year for Ben, Cara and Ivan,
  * leaving Hana's and Finn's for Ana to start. Dates are relative
- * to today, so the Future and Former Employees stay that way, and the last two weeks of Work Entries and the Time Off
- * still to come are always Pending, waiting for each Employee's Manager (Ben
- * or Hana) to approve them. Everyone except the Future Employee can sign in
+ * to today, so the Future and Former Employees stay that way, and the last two weeks of Work Entries and some of the Time Off
+ * still to come are always Pending, waiting for each Employee's Manager (Ana, Ben
+ * or Hana) to decide them. Everyone except the Future Employee can sign in
  * with the password "password"; the Future Employee still has an invitation
- * waiting. Invitations are not emailed.
+ * waiting. Invitations are not emailed, so the seeder prints a fresh link to it.
  *
  *   Ana (no Manager, Admin)
  *   ├── Ben (Manager)
@@ -59,7 +60,7 @@ use Illuminate\Support\Str;
  *   │       └── Lia (her Manager has left, so Ben is her effective Manager)
  *   ├── Hana (Manager)
  *   │   └── Ivan (leaving in six months)
- *   └── Finn (Payroll: everyone's Pay)
+ *   └── Finn (Payroll: everyone's Pay; Auditor)
  */
 class DemoSeeder extends Seeder
 {
@@ -106,7 +107,7 @@ class DemoSeeder extends Seeder
             Permission::ViewPay->value => Scope::Everyone->value,
             Permission::ManagePay->value => Scope::Everyone->value,
         ], givenToNewEmployees: false);
-        $this->changeAccess->createRole($ana, 'Auditor', [
+        $auditor = $this->changeAccess->createRole($ana, 'Auditor', [
             Permission::ViewDirectory->value => null,
             Permission::ViewProjects->value => null,
         ], givenToNewEmployees: false);
@@ -125,6 +126,7 @@ class DemoSeeder extends Seeder
         $this->changeAccess->giveRole($ana, $manager, $ben);
         $this->changeAccess->giveRole($ana, $manager, $hana);
         $this->changeAccess->giveRole($ana, $payroll, $finn);
+        $this->changeAccess->giveRole($ana, $auditor, $finn);
 
         $globex = Client::query()->create(['name' => 'Globex']);
         $initech = Client::query()->create(['name' => 'Initech']);
@@ -161,6 +163,7 @@ class DemoSeeder extends Seeder
         $this->recordWeeks($caraOnRelaunch, 5, ['Reviewing pull requests', 'Checkout API', 'Sprint planning', 'Fixing payment bugs'], $ben);
         $this->decline($caraOnRelaunch, today()->startOfWeek(CarbonInterface::MONDAY)->subWeek(), $ben, 'Sprint planning goes on Internal, not Relaunch');
         $this->recordWeeks($liaOnRelaunch, 6, ['Product listing page', 'Unit tests for the cart', 'Pairing with Cara'], $ben);
+        $this->recordWeeks($benOnRelaunch, 2, ['Globex status call', 'Relaunch planning', 'Reviewing the release plan'], $ana);
         $this->recordWeeks($ivanOnWebsite, 4, ['Homepage mock-ups', 'Design review with Hana', 'Icon set'], $hana);
 
         foreach ([$ana, $ben, $hana, $finn, $cara, $eve, $lia, $dan] as $employee) {
@@ -170,6 +173,7 @@ class DemoSeeder extends Seeder
 
         $thisMonday = $today->startOfWeek(CarbonInterface::MONDAY);
         $this->timeOff($ana, $thisMonday->subWeeks(6), 4, true, TimeOffState::Approved);
+        $this->timeOff($ana, $thisMonday->addWeeks(3), 4, true, TimeOffState::Approved);
         $this->timeOff($ben, $thisMonday->addWeeks(4), 4, true, TimeOffState::Approved, $ana);
         $this->timeOff($cara, $thisMonday->subWeeks(5), 2, true, TimeOffState::Approved, $ben);
         $this->timeOff($cara, $thisMonday->addWeeks(2), 4, true);
@@ -234,6 +238,19 @@ class DemoSeeder extends Seeder
         ]);
 
         $this->command?->info('Demo company seeded. Sign in as ana@acme.test (Admin), ben@acme.test, hana@acme.test, finn@acme.test, cara@acme.test, ivan@acme.test or lia@acme.test with the password "password".');
+        $this->command?->info('Dan\'s invitation: '.$this->invitationLink($dan));
+    }
+
+    /**
+     * A fresh link to the Employee's invitation, since the token created
+     * when they were added is stored hashed. It replaces that one.
+     */
+    private function invitationLink(Employee $employee): string
+    {
+        return route('invitation.show', [
+            'token' => Password::broker('invites')->createToken($employee),
+            'email' => $employee->email,
+        ]);
     }
 
     /**
