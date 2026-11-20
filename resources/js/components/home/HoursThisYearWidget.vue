@@ -3,7 +3,7 @@ import { Clock } from '@lucide/vue';
 import { computed } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import HomeWidget from '@/components/home/HomeWidget.vue';
-import MiniBarChart from '@/components/MiniBarChart.vue';
+import HoursBarChart from '@/components/HoursBarChart.vue';
 import { formatMonth, formatShortMonth } from '@/lib/dates';
 import { formatHours } from '@/lib/work-entries';
 import { index as workEntries } from '@/routes/work-entries';
@@ -11,7 +11,7 @@ import type { HoursThisYear } from '@/types';
 
 /**
  * The signed-in Employee's hours this year: the year's total by the title
- * and a MiniBarChart of a bar per month, this month (the last) in
+ * and a HoursBarChart of a bar per month, this month (the last) in
  * `primary`, each opening My Work Entries on its month. With no hours yet
  * this year, it says so instead.
  */
@@ -23,8 +23,8 @@ const bars = computed(() =>
     props.hoursThisYear.months.map((month, position, months) => ({
         label: formatMonth(month.month),
         axisLabel: formatShortMonth(month.month).charAt(0),
-        value: month.hours,
-        pending: month.pendingHours,
+        hours: month.hours,
+        pendingHours: month.pendingHours,
         current: position === months.length - 1,
         href: workEntries({ query: { month: month.month } }),
     })),
@@ -45,12 +45,10 @@ const bars = computed(() =>
             :icon="Clock"
             message="You haven't recorded any hours this year."
         />
-        <MiniBarChart
+        <HoursBarChart
             v-else
             :bars="bars"
             :caption="`Your hours each month of ${hoursThisYear.year}`"
-            period-heading="Month"
-            :format="formatHours"
             note="Declined not counted"
         />
     </HomeWidget>

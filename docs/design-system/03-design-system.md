@@ -59,7 +59,7 @@
 - **L12 Detail template:** PageHeader (record name, StatusBadge, meta line, Edit + ⋯) → optional Callout → Tabs (if more than one section) → per tab: StatStrip → FactList and/or DataTable sections with `text-section` headings and a section action on the right.
 - **L13 Form template:** PageHeader → form column (`width="form"`) of titled sections → footer with Submit (`primary`) + Cancel, bottom-left, aligned to the fields.
 - **L14 Overlay form:** forms with ≤6 fields open in a right `Sheet` (480px) and forms with ≤2 fields in a `Dialog`, over the page they came from; their route renders that page with the overlay open so the URL is shareable.
-- **L15 Dashboard template:** PageHeader → responsive grid of Cards (`grid-cols-1 md:grid-cols-2 xl:grid-cols-3`), each a widget with a `text-section` title, at most 5 rows and a "View all" link.
+- **L15 Dashboard template:** PageHeader → responsive grid of Cards (`grid-cols-1 md:grid-cols-2 xl:grid-cols-3`), each a widget with a `text-section` title, at most 5 rows and a "View all" link (or button, L23).
 - **L16 Settings template:** PageHeader "Company settings" or "Settings" → left sub-nav (200px, text list with active marker) + content column (max 880px) of sections; each section is a FactList or a form with its own Save and `SavedTick`.
 - **L17 Auth template:** centered card (max 400px) on `bg-surface` with `AppMark`, title, one-line description, form, and one secondary link under the button.
 
@@ -70,7 +70,7 @@
 - **L20** The breadcrumb in the top bar lists ancestors only; the current page's name is the `<h1>`.
 - **L21** Nav items appear per permission (unchanged); the Approvals badge shows the Pending count and is `bg-primary`.
 - **L22** An area's sidebar entry opens the person's own page when they have one, else the list of others they may see; it stays active on every page of the area.
-- **L23** A Home widget's "View all n" is a button under its rows that shows the rest in place, since its rows (counters, Declined records of several kinds) have no one page listing them; the widget's link to its area ("Open Approvals", "Open Work") sits on the right of its title.
+- **L23** L15's View all links to the widget's list page; when the widget's rows have no single list page (counters, Declined records of several kinds), View all is a button under the rows that shows the rest in place. A widget shows at most 5 rows, 3 on a phone. The widget's link to its area ("Open Approvals", "Open Work") sits on the right of its title.
 
 ---
 

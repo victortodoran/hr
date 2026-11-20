@@ -54,7 +54,7 @@ it('shows a regular Employee their hours this month, Paid Days left and next Tim
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->where('recordsNoWorkEntries', false)
+            ->where('hasNoManager', false)
             ->where('hoursThisMonth', ['month' => '2026-11', 'hours' => 7.5, 'pendingHours' => 1.5])
             ->where('paidDaysLeft', [['year' => 2026, 'days' => 17], ['year' => 2027, 'days' => 20]])
             ->where('nextTimeOff.id', $next->id)
@@ -143,7 +143,7 @@ it('leaves hours this month and this year out for an Employee with no Manager, s
     actingAs($ana)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->where('recordsNoWorkEntries', true)
+            ->where('hasNoManager', true)
             ->where('hoursThisMonth', null)
             ->where('hoursThisYear', null)
             ->where('paidDaysLeft', [['year' => 2026, 'days' => -1], ['year' => 2027, 'days' => 0]])
@@ -159,7 +159,7 @@ it('leaves hours this month and this year, and Declined Work Entries, out for an
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->where('recordsNoWorkEntries', false)
+            ->where('hasNoManager', false)
             ->where('hoursThisMonth', null)
             ->where('hoursThisYear', null)
             ->where('paidDaysLeft', [['year' => 2026, 'days' => 0], ['year' => 2027, 'days' => 0]])
@@ -172,7 +172,7 @@ it('says nothing about Work Entries to an Employee with no Manager who can\'t se
 
     actingAs($ana)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('recordsNoWorkEntries', false)
+            ->where('hasNoManager', false)
             ->where('hoursThisMonth', null),
         );
 });

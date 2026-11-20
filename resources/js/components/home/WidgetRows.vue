@@ -3,8 +3,8 @@ import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 
 /**
- * A Home widget's rows, separated by hairlines (rule L15): the first five,
- * or three on a phone, with "View all n" under them showing the rest in
+ * A Home widget's rows, separated by hairlines (rules L15, L23): the first
+ * five, or three on a phone, with "View all" under them showing the rest in
  * place when there are more.
  */
 const props = defineProps<{
@@ -60,7 +60,7 @@ const viewAllClass = computed(() =>
             class="self-start text-muted-foreground max-sm:h-11"
             :class="viewAllClass"
             @click="showsAll = true"
-            >View all {{ rows.length }}</Button
+            >View all</Button
         >
     </div>
 </template>

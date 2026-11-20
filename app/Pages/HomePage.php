@@ -20,8 +20,9 @@ use Illuminate\Database\Eloquent\Relations\Relation;
  * Home as the props it renders: a summary of the Employee's hours this
  * month and this year, their Time Off, what of theirs was declined and
  * what waits for them to decide.
- * Each block is null when it doesn't apply to them; `recordsNoWorkEntries`
- * says when the hours are left out because the Employee has no Manager.
+ * Each block is null when it doesn't apply to them; `hasNoManager` says
+ * when the hours are left out because the Employee has no Manager, and is
+ * only true when they can see Work Entries.
  */
 final class HomePage
 {
@@ -33,16 +34,18 @@ final class HomePage
     /**
      * The signed-in Employee's summary.
      *
-     * @return array<string, mixed>
+     * `hasNoManager` is only true when the Employee can see Work Entries.
+     *
+     * @return array{hasNoManager: bool, hoursThisMonth: array<string, mixed>|null, hoursThisYear: array<string, mixed>|null, paidDaysLeft: list<array{year: int, days: int}>, nextTimeOff: array<string, mixed>|null, needsAttention: array{items: list<array<string, mixed>>, more: int}|null, waitingForYou: array{workEntries: int, timeOff: int, travelRequests: int, travelExpenses: int}|null}
      */
     public static function props(Employee $employee): array
     {
         $waiting = $employee->waitingForDecision();
-        $recordsNoWorkEntries = $employee->canSeeWorkEntries() && $employee->hasNoManager();
-        $hasHours = $employee->canSeeWorkEntries() && ! $employee->hasNoManager();
+        $hasNoManager = $employee->canSeeWorkEntries() && $employee->hasNoManager();
+        $hasHours = $employee->canSeeWorkEntries() && ! $hasNoManager;
 
         return [
-            'recordsNoWorkEntries' => $recordsNoWorkEntries,
+            'hasNoManager' => $hasNoManager,
             'hoursThisMonth' => $hasHours ? self::hoursThisMonth($employee) : null,
             'hoursThisYear' => $hasHours ? self::hoursThisYear($employee) : null,
             'paidDaysLeft' => PaidDaysLeft::of($employee),

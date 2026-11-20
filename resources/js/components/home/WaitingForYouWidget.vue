@@ -7,7 +7,7 @@ import { computed } from 'vue';
 import HomeWidget from '@/components/home/HomeWidget.vue';
 import WidgetRows from '@/components/home/WidgetRows.vue';
 import { index as approvals } from '@/routes/approvals';
-import type { ApprovalsWaiting } from '@/types';
+import type { ApprovalsTab, ApprovalsWaiting } from '@/types';
 
 /**
  * What waits for the signed-in Employee to decide: a row per kind with any
@@ -18,7 +18,7 @@ const props = defineProps<{
 }>();
 
 type Counter = {
-    tab: string;
+    tab: ApprovalsTab;
     label: string;
     icon: Component;
     count: number;
@@ -28,34 +28,36 @@ type Counter = {
 const counters = computed<Counter[]>(() =>
     (
         [
-            [
-                'work-entries',
-                'Work Entries',
-                Clock,
-                props.waitingForYou.workEntries,
-            ],
-            ['time-off', 'Time Off', CalendarDays, props.waitingForYou.timeOff],
-            [
-                'travel-requests',
-                'Travel Requests',
-                Plane,
-                props.waitingForYou.travelRequests,
-            ],
-            [
-                'travel-expenses',
-                'Travel Expenses',
-                Receipt,
-                props.waitingForYou.travelExpenses,
-            ],
-        ] as const
+            {
+                tab: 'work-entries',
+                label: 'Work Entries',
+                icon: Clock,
+                count: props.waitingForYou.workEntries,
+            },
+            {
+                tab: 'time-off',
+                label: 'Time Off',
+                icon: CalendarDays,
+                count: props.waitingForYou.timeOff,
+            },
+            {
+                tab: 'travel-requests',
+                label: 'Travel Requests',
+                icon: Plane,
+                count: props.waitingForYou.travelRequests,
+            },
+            {
+                tab: 'travel-expenses',
+                label: 'Travel Expenses',
+                icon: Receipt,
+                count: props.waitingForYou.travelExpenses,
+            },
+        ] satisfies Omit<Counter, 'href'>[]
     )
-        .filter(([, , , count]) => count > 0)
-        .map(([tab, label, icon, count]) => ({
-            tab,
-            label,
-            icon,
-            count,
-            href: approvals({ query: { tab } }),
+        .filter((counter) => counter.count > 0)
+        .map((counter) => ({
+            ...counter,
+            href: approvals({ query: { tab: counter.tab } }),
         })),
 );
 </script>

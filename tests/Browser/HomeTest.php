@@ -77,7 +77,7 @@ it('shows an Employee their hours this year month by month on a phone, opening a
         ->resize(390, 844)
         ->assertSee('Hours this year')
         ->assertSeeIn('[data-test="hours-this-year"]', '9.5 h')
-        ->assertCount('[data-test="mini-bar"]', 3)
+        ->assertCount('[data-test="hours-bar"]', 3)
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->click('[aria-label="October 2026: 8 h"]')
         ->assertQueryStringHas('month', '2026-10')
@@ -90,7 +90,7 @@ it('tells an Employee with no hours this month or year that none count yet, open
     visit(route('landing'))
         ->assertSee('No hours this month yet. Declined ones don\'t count.')
         ->assertSee("You haven't recorded any hours this year.")
-        ->assertNotPresent('[data-test="mini-bar"]')
+        ->assertNotPresent('[data-test="hours-bar"]')
         ->click('Open Work')
         ->assertQueryStringHas('month', '2026-11')
         ->assertNoJavaScriptErrors();
@@ -126,7 +126,7 @@ it('shows a widget\'s first three rows on a phone, the rest after View all', fun
         ->resize(390, 844)
         ->assertScript($visibleRows, 3)
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
-        ->click('View all 5')
+        ->click('View all')
         ->assertScript($visibleRows, 5)
         ->assertNoJavaScriptErrors();
 });

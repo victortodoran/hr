@@ -31,8 +31,8 @@ defineOptions({
  * priority order. Each block is null when it doesn't apply to the Employee.
  */
 defineProps<{
-    /** Whether the Employee can see Work Entries but has no Manager, so records none. */
-    recordsNoWorkEntries: boolean;
+    /** Whether the Employee has no Manager, so records no Work Entries; only true when they can see Work Entries. */
+    hasNoManager: boolean;
     /** Null for an Employee with no Manager and anyone who can't see Work Entries. */
     hoursThisMonth: HoursThisMonth | null;
     /** Null exactly when hoursThisMonth is. */
@@ -54,7 +54,7 @@ defineProps<{
     <PageContainer width="full">
         <PageHeader
             title="Home"
-            description="What's waiting for you, and your own hours and Time Off."
+            description="What's waiting for you, and your own hours and Time Off"
         />
 
         <div
@@ -76,7 +76,7 @@ defineProps<{
                 :hours-this-month="hoursThisMonth"
             />
 
-            <HomeWidget v-if="recordsNoWorkEntries" title="Work">
+            <HomeWidget v-if="hasNoManager" title="Work">
                 <EmptyState
                     :icon="Clock"
                     message="You have no Manager, so you don't record Work Entries."
