@@ -4,34 +4,50 @@ An HR system that a company runs for itself, one installation per company, to ma
 
 - **Employees**: Future, current and Former Employees, each with a Manager, a Department and a Reporting Chain.
 - **Projects and Pay**: Clients, Projects and Assignments, with Pay attached to each Assignment.
-- **Work Entries**: Employees log their time, and their Manager approves it.
+- **Work Entries**: Employees log their time, and their Manager approves each Work Entry.
 - **Time Off**: paid and unpaid requests, approved by the Manager and counted against each Employee's Paid Days.
+- **Travel**: Travel Requests approved by the Manager, then Travel Expenses with receipts, each approved on its own and exported for pay-back.
+- **Performance**: one Performance Evaluation per Employee per year, holding the Goals their Manager gives them, with Progress, Comments and an Outcome.
 - **Access**: custom Roles and Permissions, with an Access Log.
 
-The domain terms are defined in [`GLOSSARY.md`](GLOSSARY.md), and the design decisions are recorded in [`docs/adr/`](docs/adr).
+Every Employee starts on **Home**, which shows what's waiting for them and their own hours and Time Off. Managers decide everything in one **Approvals** inbox. The **Directory** lists everyone, and the command menu (⌘K) finds people and Projects from any page.
+
+The domain terms are defined in [`GLOSSARY.md`](GLOSSARY.md), and the design decisions are recorded in [`docs/adr/`](docs/adr). The UI follows the design system in [`docs/design-system/`](docs/design-system).
 
 ## Screenshots
 
-**My Page**: an Employee's record and Reporting Chain, with tabs for Assignments & Pay and Time Off.
+**Home**: what's waiting for a Manager, what was declined and why, and their own hours and Time Off.
 
-![My Page](docs/screenshots/my-page.png)
+![Home](docs/screenshots/home.png)
 
-**My Work Entries**, as a list for one week:
+**Work**: an Employee's Work Entries, as a list for one week:
 
-![My Work Entries, list view](docs/screenshots/work-entries-list.png)
+![Work, list view](docs/screenshots/work-entries-list.png)
 
 and as a calendar for one month:
 
-![My Work Entries, calendar view](docs/screenshots/work-entries-calendar.png)
+![Work, calendar view](docs/screenshots/work-entries-calendar.png)
 
-**Approvals**: a Manager's Pending Work Entries and Time Off, approved or declined in bulk.
+**Approvals**: a Manager's Pending Work Entries, Time Off, Travel Requests and Travel Expenses in one place.
 
 ![Approvals](docs/screenshots/approvals.png)
+
+**Travel Request**: an Approved Travel Request with its Travel Expenses, each Pending, Approved or Declined on its own.
+
+![Travel Request](docs/screenshots/travel-request.png)
+
+**Performance Evaluation**: a Manager's view of a Report's Goals for the year, with Progress, Comments and Outcomes.
+
+![Performance Evaluation](docs/screenshots/performance-evaluation.png)
+
+**Employee page**: an Employee's record and Reporting Chain, with tabs for Assignments & Pay, Time Off, Work and Travel.
+
+![Employee page](docs/screenshots/my-page.png)
 
 ## Tech stack
 
 - **Backend**: PHP 8.4, Laravel 13, Laravel Fortify (authentication), PostgreSQL
-- **Frontend**: Inertia v3, Vue 3, TypeScript, Tailwind CSS 4, Laravel Wayfinder (typed routes)
+- **Frontend**: Inertia v3, Vue 3, TypeScript, Tailwind CSS 4, Reka UI, Laravel Wayfinder (typed routes)
 - **Tooling**: Vite+, Pest 5 (including browser tests), Larastan, Pint
 
 ## Running locally
