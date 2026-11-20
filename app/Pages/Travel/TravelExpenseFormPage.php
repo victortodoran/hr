@@ -3,62 +3,74 @@
 namespace App\Pages\Travel;
 
 use App\Models\CompanySettings;
+use App\Models\Employee;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Support\Currency;
-use App\Support\TravelHistory;
 
 /**
- * The Travel Expense forms as the props they render: recording one on a
- * Travel Request, and changing one, each leading back to the Travel
- * Request's page.
+ * The Travel Request's page with the Add or Edit Travel Expense sheet open
+ * over it (rule L14), as the props it renders.
  */
 final class TravelExpenseFormPage
 {
     /**
-     * The form for recording a Travel Expense on the Travel Request, named
-     * at its top, with the company currency and today, the latest date one
-     * can be paid on.
+     * The Travel Request's page (TravelRequestPage) with the sheet for
+     * adding a Travel Expense, the company currency and today, the latest
+     * date one can be paid on.
      *
-     * @return array{travelRequest: array{id: int, destination: string, first_date: string, last_date: string}, currency: array{code: string, decimals: int}, today: string}
+     * @return array<string, mixed>
      */
-    public static function create(TravelRequest $travelRequest): array
+    public static function create(TravelRequest $travelRequest, Employee $actor): array
     {
-        return self::shared($travelRequest, CompanySettings::payCurrency());
+        return [
+            ...TravelRequestPage::props($travelRequest, $actor),
+            'expenseSheet' => 'add',
+            ...self::shared(CompanySettings::payCurrency()),
+        ];
     }
 
     /**
-     * The form for changing a Travel Expense, filled in as it would be
-     * typed; its receipt is kept unless a new file is chosen.
+     * The Travel Request's page (TravelRequestPage) with the sheet for
+     * editing a Travel Expense, filled in as it would be
+     * typed, with its receipt's file name, the receipt kept unless a new file is chosen; for a
+     * Declined one, who declined it and why, and the effective Manager it
+     * goes back to as Pending once saved, or null when nobody is left to
+     * decide and saving Approves it at once.
      *
-     * @return array{travelRequest: array{id: int, destination: string, first_date: string, last_date: string}, currency: array{code: string, decimals: int}, today: string, travelExpense: array{id: int, paid_on: string, category: string, amount: string, description: string}}
+     * @return array<string, mixed>
      */
-    public static function edit(TravelRequest $travelRequest, TravelExpense $travelExpense): array
+    public static function edit(TravelRequest $travelRequest, TravelExpense $travelExpense, Employee $actor): array
     {
         $currency = CompanySettings::payCurrency();
 
         return [
-            ...self::shared($travelRequest, $currency),
+            ...TravelRequestPage::props($travelRequest, $actor),
+            'expenseSheet' => 'edit',
+            ...self::shared($currency),
             'travelExpense' => [
                 'id' => $travelExpense->id,
                 'paid_on' => $travelExpense->paid_on->toDateString(),
                 'category' => $travelExpense->category->value,
                 'amount' => $currency->toAmount($travelExpense->amount),
                 'description' => $travelExpense->description,
+                'state' => $travelExpense->state->value,
+                'decline_reason' => $travelExpense->decline_reason,
+                'declined_by' => $travelExpense->decliner?->name,
+                'receipt_name' => 'Receipt.'.strtolower(pathinfo($travelExpense->receipt_path, PATHINFO_EXTENSION)),
             ],
+            'manager' => Employee::query()->withEffectiveManager()->with('effectiveManager:id,name')->findOrFail($actor->id)->effectiveManager?->name,
         ];
     }
 
     /**
-     * What both Travel Expense forms carry: the Travel Request it is on,
-     * the company currency, and today.
+     * What both sheets carry: the company currency and today.
      *
-     * @return array{travelRequest: array{id: int, destination: string, first_date: string, last_date: string}, currency: array{code: string, decimals: int}, today: string}
+     * @return array{currency: array{code: string, decimals: int}, today: string}
      */
-    private static function shared(TravelRequest $travelRequest, Currency $currency): array
+    private static function shared(Currency $currency): array
     {
         return [
-            'travelRequest' => TravelHistory::summary($travelRequest),
             'currency' => ['code' => $currency->code, 'decimals' => $currency->decimals()],
             'today' => today()->toDateString(),
         ];

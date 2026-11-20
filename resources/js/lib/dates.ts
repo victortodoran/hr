@@ -30,16 +30,6 @@ export function formatPeriod(start: string, end: string | null): string {
 }
 
 /**
- * The days from a first to a last date as people read them, such as
- * "3 Dec 2026 – 5 Dec 2026", or one date when they are the same.
- */
-export function formatDateRange(first: string, last: string): string {
-    return first === last
-        ? formatDate(first)
-        : `${formatDate(first)} – ${formatDate(last)}`;
-}
-
-/**
  * Today in the viewer's time zone, as a YYYY-MM-DD date.
  */
 export function today(): string {
@@ -115,4 +105,44 @@ export function mondayOf(date: string): string {
         String(day.getMonth() + 1).padStart(2, '0'),
         String(day.getDate()).padStart(2, '0'),
     ].join('-');
+}
+
+/**
+ * The days from a first to a last date as people read them, sharing what
+ * the two have in common (rule C9): "Nov 30 – Dec 4, 2026",
+ * "Nov 16 – 22, 2026", or one date when they are the same.
+ */
+export function formatDateRange(first: string, last: string): string {
+    return new Intl.DateTimeFormat(undefined, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    }).formatRange(new Date(`${first}T00:00:00`), new Date(`${last}T00:00:00`));
+}
+
+/**
+ * How many days run from a first to a last date, both counted; only
+ * Mondays to Fridays when `weekdaysOnly` is set. None when the last date
+ * comes before the first.
+ */
+export function countDays(
+    first: string,
+    last: string,
+    weekdaysOnly = false,
+): number {
+    const day = new Date(`${first}T00:00:00`);
+    const end = new Date(`${last}T00:00:00`);
+    let days = 0;
+
+    while (day <= end) {
+        const weekday = day.getDay();
+
+        if (!weekdaysOnly || (weekday !== 0 && weekday !== 6)) {
+            days++;
+        }
+
+        day.setDate(day.getDate() + 1);
+    }
+
+    return days;
 }

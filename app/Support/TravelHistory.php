@@ -26,7 +26,7 @@ final class TravelHistory
      * Declined and the total of those Approved. It also carries how
      * many are Declined.
      *
-     * @return array{upcoming: array<int, array{id: int, destination: string, first_date: string, last_date: string, client: string|null, state: string, takes_expenses: bool, entered_total: string|null, approved_total: string|null, declined_expenses: int}>, past: array<int, array{id: int, destination: string, first_date: string, last_date: string, client: string|null, state: string, takes_expenses: bool, entered_total: string|null, approved_total: string|null, declined_expenses: int}>}
+     * @return array{upcoming: array<int, array{id: int, destination: string, first_date: string, last_date: string, project: string, client: string|null, state: string, takes_expenses: bool, entered_total: string|null, approved_total: string|null, declined_expenses: int}>, past: array<int, array{id: int, destination: string, first_date: string, last_date: string, project: string, client: string|null, state: string, takes_expenses: bool, entered_total: string|null, approved_total: string|null, declined_expenses: int}>}
      */
     public static function of(Employee $employee, Currency $currency): array
     {
@@ -46,6 +46,7 @@ final class TravelHistory
             'destination' => $travelRequest->destination,
             'first_date' => $travelRequest->first_date->toDateString(),
             'last_date' => $travelRequest->last_date->toDateString(),
+            'project' => $travelRequest->assignment->project->name,
             'client' => $travelRequest->assignment->project->client?->name,
             'state' => $travelRequest->state->value,
             'takes_expenses' => $travelRequest->takesExpenses(),
@@ -68,7 +69,7 @@ final class TravelHistory
      * whether the actor may record more and change, delete, decide or reopen
      * each.
      *
-     * @return array{id: int, project: string, client: string|null, destination: string, first_date: string, last_date: string, days: int, purpose: string, state: string, decided_by: string|null, decline_reason: string|null, can_cancel: bool, can_decide: bool, expenses: array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, can_change: bool, can_decide: bool, can_reopen: bool}>, total: string, can_create: bool}|null}
+     * @return array{id: int, project: string, client: string|null, destination: string, first_date: string, last_date: string, days: int, purpose: string, state: string, decided_by: string|null, decline_reason: string|null, can_cancel: bool, can_decide: bool, expenses: array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, declined_by: string|null, receipt_is_image: bool, can_change: bool, can_decide: bool, can_reopen: bool}>, total: string, approved_total: string, pending_total: string, declined_total: string, can_create: bool}|null}
      */
     public static function detail(TravelRequest $travelRequest, Currency $currency, Employee $actor): array
     {
@@ -93,36 +94,26 @@ final class TravelHistory
     }
 
     /**
-     * What names a Travel Request at the top of a Travel Expense's form.
-     *
-     * @return array{id: int, destination: string, first_date: string, last_date: string}
-     */
-    public static function summary(TravelRequest $travelRequest): array
-    {
-        return [
-            'id' => $travelRequest->id,
-            'destination' => $travelRequest->destination,
-            'first_date' => $travelRequest->first_date->toDateString(),
-            'last_date' => $travelRequest->last_date->toDateString(),
-        ];
-    }
-
-    /**
      * The Travel Expenses of a Travel Request that takes them, in the order
-     * they were paid, with the total of those not Declined in the company
-     * currency, and whether the actor may change each, decide it, reopen it
-     * and record more. Deciding is for a Pending one of an Employee the
-     * actor effectively manages, as TravelExpensePolicy::decide has it.
-     * Reopening is for an Approved one of an Employee the actor's reopen
-     * Scope covers, never their own.
+     * they were paid, each with who declined it and whether its receipt is
+     * a picture; the totals, in the company currency, of those entered and
+     * not Declined, and of those Approved, Pending and Declined; and whether
+     * the actor may change each, decide it, reopen it and record more.
+     * Deciding is for a Pending one of an Employee the actor effectively
+     * manages, as TravelExpensePolicy::decide has it. Reopening is for an
+     * Approved one of an Employee the actor's reopen Scope covers, never
+     * their own.
      *
-     * @return array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, can_change: bool, can_decide: bool, can_reopen: bool}>, total: string, can_create: bool}
+     * @return array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, declined_by: string|null, receipt_is_image: bool, can_change: bool, can_decide: bool, can_reopen: bool}>, total: string, approved_total: string, pending_total: string, declined_total: string, can_create: bool}
      */
     private static function expenses(TravelRequest $travelRequest, Currency $currency, Employee $actor): array
     {
-        $travelExpenses = $travelRequest->travelExpenses()->orderBy('paid_on')->orderBy('id')->get();
+        $travelExpenses = $travelRequest->travelExpenses()->with('decliner:id,name')->orderBy('paid_on')->orderBy('id')->get(); // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
         $reopensForEmployee = Employee::query()->reopenableBy($actor, Permission::ReopenTravelExpenses)->whereKey($travelRequest->employee_id)->exists();
         $decidesForEmployee = Employee::query()->effectivelyManagedBy($actor)->whereKey($travelRequest->employee_id)->exists();
+        $total = fn (TravelExpenseState $state): string => $currency->format((int) $travelExpenses
+            ->filter(fn (TravelExpense $travelExpense): bool => $travelExpense->state === $state)
+            ->sum('amount'));
 
         return [
             'items' => $travelExpenses
@@ -137,6 +128,8 @@ final class TravelHistory
                         'amount' => $currency->format($travelExpense->amount),
                         'state' => $travelExpense->state->value,
                         'decline_reason' => $travelExpense->decline_reason,
+                        'declined_by' => $travelExpense->decliner?->name,
+                        'receipt_is_image' => $travelExpense->receiptIsImage(),
                         'can_change' => $actor->can('update', $travelExpense),
                         'can_decide' => $decidesForEmployee && $travelExpense->state === TravelExpenseState::Pending,
                         'can_reopen' => $reopensForEmployee && $travelExpense->state === TravelExpenseState::Approved,
@@ -146,6 +139,9 @@ final class TravelHistory
             'total' => $currency->format((int) $travelExpenses
                 ->reject(fn (TravelExpense $travelExpense): bool => $travelExpense->state === TravelExpenseState::Declined)
                 ->sum('amount')),
+            'approved_total' => $total(TravelExpenseState::Approved),
+            'pending_total' => $total(TravelExpenseState::Pending),
+            'declined_total' => $total(TravelExpenseState::Declined),
             'can_create' => $actor->can('create', [TravelExpense::class, $travelRequest]),
         ];
     }

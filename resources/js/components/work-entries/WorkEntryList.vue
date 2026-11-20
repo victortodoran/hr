@@ -177,8 +177,12 @@ function segmentKey(segment: Segment): string {
         : `${segment.type}-${segment.from}`;
 }
 
-/** The Work Entries turned into fields to change them. */
-const editing = reactive(new Set<number>());
+/**
+ * The Work Entries turned into fields to change them, each with the day it
+ * was opened on: one saved onto another day shows there as saved, since
+ * its row on the old day is gone before it can say it was saved.
+ */
+const editing = reactive(new Map<number, string>());
 
 /** The Work Entry whose Delete is being confirmed, if any. */
 const deleting = ref<WorkEntryRecord | null>(null);
@@ -403,7 +407,7 @@ defineExpose({ addOn: openAdd });
                         :key="entry.id"
                     >
                         <div
-                            v-if="editing.has(entry.id)"
+                            v-if="editing.get(entry.id) === segment.day.date"
                             class="mx-2 my-2 rounded-md px-2 py-2 ring-2 ring-primary"
                         >
                             <WorkEntryRow
@@ -483,7 +487,12 @@ defineExpose({ addOn: openAdd });
                                     <template #menu>
                                         <DropdownMenuItem
                                             v-if="entry.can_edit"
-                                            @select="editing.add(entry.id)"
+                                            @select="
+                                                editing.set(
+                                                    entry.id,
+                                                    segment.day.date,
+                                                )
+                                            "
                                             >Edit</DropdownMenuItem
                                         >
                                         <template v-if="entry.can_delete">

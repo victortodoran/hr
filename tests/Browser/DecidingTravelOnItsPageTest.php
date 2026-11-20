@@ -42,14 +42,14 @@ it('lets the Manager decline a Pending Travel Request on its page with a reason,
     actingAs($ben);
 
     visit(route('travel-requests.show', $berlin))
-        ->assertSee('Approve')
+        ->assertSee('Approve Travel Request')
         ->click('Decline…')
         ->assertSee('Decline Travel Request')
         ->fill('#decline-reason', 'The release is that week.')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertSee('Travel Request declined.')
         ->assertPathIs("/travel-requests/{$berlin->id}")
-        ->assertSee('Why it was declined')
+        ->assertSeeIn('[data-test="decline-reason"]', 'The release is that week.')
         ->assertDontSee('Decline…')
         ->assertNoJavaScriptErrors();
 
@@ -65,7 +65,7 @@ it('lets the Manager approve a Pending Travel Expense on its Travel Request\'s p
 
     visit(route('travel-requests.show', $berlin))
         ->assertSee('Hotel')
-        ->click('Approve')
+        ->click('[aria-label^="Approve the"]')
         ->assertSee('1 Travel Expense approved.')
         ->assertPathIs("/travel-requests/{$berlin->id}")
         ->assertDontSee('Decline…')

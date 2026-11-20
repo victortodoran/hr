@@ -32,7 +32,7 @@ it('opens Reports from Time Off, narrows it to a state, and goes to an Employee\
         ->click('internal:role=option[name="Approved"s]')
         ->assertQueryStringHas('state', 'approved')
         ->assertDontSee('Unpaid')
-        ->assertSee('Dec 22, 2026')
+        ->assertSee('Dec 22 – 24, 2026')
         ->click('internal:role=link[name="Cara"s]')
         ->assertPathIs("/employees/{$cara->id}")
         ->assertQueryStringHas('tab', 'time-off')

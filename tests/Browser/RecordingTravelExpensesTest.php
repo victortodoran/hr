@@ -25,59 +25,69 @@ beforeEach(function () {
     Storage::fake(TravelExpense::RECEIPT_DISK);
 });
 
-it('adds an expense with its receipt to an Approved Travel Request opened from its Expenses link, which the Travel page then shows as entered', function () {
+/**
+ * A PDF receipt in a temporary file, for attaching to the receipt field.
+ */
+function travelReceiptFile(string $contents = '%PDF-1.4 hotel'): string
+{
+    $receipt = tempnam(sys_get_temp_dir(), 'receipt').'.pdf';
+    file_put_contents($receipt, $contents);
+
+    return $receipt;
+}
+
+it('adds a Travel Expense with its receipt in a sheet over an Approved Travel Request opened from the Travel page, which then shows it as entered', function () {
     $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
     $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
-    $receipt = tempnam(sys_get_temp_dir(), 'receipt').'.pdf';
-    file_put_contents($receipt, '%PDF-1.4 hotel');
 
     actingAs($cara);
 
-    visit(route('travel-requests.index'))
-        ->click('internal:role=link[name="Expenses"s]')
+    $page = visit(route('travel-requests.index'))
+        ->click('internal:role=link[name="Berlin"s]')
         ->assertPathIs("/travel-requests/{$berlin->id}")
         ->assertSee('Money paid for this travel appears here')
-        ->click('Add expense')
+        ->assertSee('Declined, not counted')
+        ->click('internal:role=link[name="Add Travel Expense"s]')
         ->assertPathIs("/travel-requests/{$berlin->id}/expenses/create")
-        ->assertSee('Berlin')
-        ->fill('#travel-expense-paid-on', '2026-12-05')
+        ->assertSeeIn('internal:role=dialog', 'Berlin');
+
+    pickDate($page, '#travel-expense-paid-on', '2026-12-05')
         ->fill('#travel-expense-amount', '1990')
         ->click('#travel-expense-category')
         ->click('[role="option"] >> text=Accommodation')
         ->fill('#travel-expense-description', 'Hotel, three nights')
-        ->attach('#travel-expense-receipt', $receipt)
-        ->click('button[type="submit"]')
+        ->attach('#travel-expense-receipt', travelReceiptFile())
+        ->assertSeeIn('[data-test="file-drop-file"]', '.pdf')
+        ->click('internal:role=dialog >> internal:role=button[name="Add Travel Expense"s]')
         ->assertSee('Travel Expense added.')
         ->assertPathIs("/travel-requests/{$berlin->id}")
+        ->assertNotPresent('internal:role=dialog')
         ->assertSee('Hotel, three nights')
-        ->assertSeeLink('Receipt')
-        ->assertSeeLink('Edit')
+        ->assertPresent('internal:role=link[name="Receipt for the Accommodation expense paid on Dec 5, 2026"s]')
         ->navigate(route('travel-requests.index'))
-        ->assertSeeIn('td:nth-child(3)', "RON\u{a0}1,990.00")
-        ->assertSeeIn('td:nth-child(4)', "RON\u{a0}0.00")
+        ->assertSeeIn('td:nth-child(5)', "RON\u{a0}1,990.00")
+        ->assertSeeIn('td:nth-child(6)', "RON\u{a0}0.00")
         ->assertNoJavaScriptErrors();
 
     $expense = TravelExpense::query()->sole();
+    expect($expense->paid_on->toDateString())->toBe('2026-12-05');
     expect($expense->amount)->toBe(199000);
     expect($expense->category)->toBe(TravelExpenseCategory::Accommodation);
     expect($expense->state)->toBe(TravelExpenseState::Pending);
     Storage::disk(TravelExpense::RECEIPT_DISK)->assertExists($expense->receipt_path);
 });
 
-it('keeps the expense form from being sent while no category is chosen', function () {
+it('keeps the Add Travel Expense sheet from being sent while no Category is chosen', function () {
     $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
     $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
-    $receipt = tempnam(sys_get_temp_dir(), 'receipt').'.pdf';
-    file_put_contents($receipt, '%PDF-1.4 hotel');
 
     actingAs($cara);
 
-    $page = visit(route('travel-requests.expenses.create', $berlin))
-        ->fill('#travel-expense-paid-on', '2026-12-05')
+    $page = pickDate(visit(route('travel-requests.expenses.create', $berlin)), '#travel-expense-paid-on', '2026-12-05')
         ->fill('#travel-expense-amount', '1990')
         ->fill('#travel-expense-description', 'Hotel, three nights')
-        ->attach('#travel-expense-receipt', $receipt)
-        ->click('button[type="submit"]')
+        ->attach('#travel-expense-receipt', travelReceiptFile())
+        ->click('internal:role=dialog >> internal:role=button[name="Add Travel Expense"s]')
         ->assertPathIs("/travel-requests/{$berlin->id}/expenses/create")
         ->assertNoJavaScriptErrors();
 
@@ -85,26 +95,85 @@ it('keeps the expense form from being sent while no category is chosen', functio
     expect(TravelExpense::query()->exists())->toBeFalse();
 });
 
-it('shows the current receipt when changing an expense, and saves a new file chosen to replace it', function () {
-    $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
-    $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
-    $expense = TravelExpense::factory()->for($berlin)->create(['paid_on' => '2026-12-04']);
+it('edits a Declined Travel Expense from the Callout under it, showing why and that saving sends it back as Pending, with a new receipt', function () {
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($mona = Employee::factory()->create(['name' => 'Mona']))->create(['name' => 'Cara']);
+    $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+    $expense = TravelExpense::factory()->for($berlin)->declined()->create(['paid_on' => '2026-12-04', 'category' => TravelExpenseCategory::Meals, 'description' => 'Team dinner', 'declined_by' => $mona->id, 'decline_reason' => 'Only your own meal.']);
     Storage::disk(TravelExpense::RECEIPT_DISK)->put($expense->receipt_path, '%PDF-1.4 old');
-    $receipt = tempnam(sys_get_temp_dir(), 'receipt').'.pdf';
-    file_put_contents($receipt, '%PDF-1.4 new');
 
     actingAs($cara);
 
-    visit(route('travel-requests.expenses.edit', ['travelRequest' => $berlin, 'travelExpense' => $expense]))
-        ->assertSee('Current receipt')
-        ->assertSeeLink('Open the receipt')
-        ->attach('#travel-expense-receipt', $receipt)
-        ->click('Save')
+    visit(route('travel-requests.show', $berlin))
+        ->assertSee('Declined by Mona:')
+        ->assertSee('Only your own meal.')
+        ->click('internal:role=link[name="Edit the Meals expense paid on Dec 4, 2026"s]')
+        ->assertPathIs("/travel-requests/{$berlin->id}/expenses/{$expense->id}/edit")
+        ->assertSeeIn('internal:role=dialog', 'Edit Travel Expense')
+        ->assertSeeIn('internal:role=dialog', 'Receipt.pdf')
+        ->assertSeeIn('internal:role=dialog', 'Saving sends this Travel Expense back to Mona as Pending.')
+        ->fill('#travel-expense-description', 'My own dinner')
+        ->attach('#travel-expense-receipt', travelReceiptFile('%PDF-1.4 new'))
+        ->click('internal:role=dialog >> internal:role=button[name="Save Travel Expense"s]')
         ->assertSee('Travel Expense changed.')
         ->assertPathIs("/travel-requests/{$berlin->id}")
+        ->assertNotPresent('internal:role=dialog')
+        ->assertDontSee('Only your own meal.')
         ->assertNoJavaScriptErrors();
 
-    expect($expense->fresh()?->receipt_path)->not->toBe($expense->receipt_path);
+    $changed = $expense->fresh();
+    expect($changed?->description)->toBe('My own dinner');
+    expect($changed?->state)->toBe(TravelExpenseState::Pending);
+    expect($changed?->receipt_path)->not->toBe($expense->receipt_path);
+});
+
+it('deletes a Travel Expense from its row\'s menu after asking', function () {
+    $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
+    $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+    TravelExpense::factory()->for($berlin)->create(['paid_on' => '2026-12-04', 'category' => TravelExpenseCategory::Transport, 'description' => 'Taxi']);
+
+    actingAs($cara);
+
+    visit(route('travel-requests.show', $berlin))
+        ->click('internal:role=button[name="More for the Transport expense paid on Dec 4, 2026"s]')
+        ->click('internal:role=menuitem[name="Delete"s]')
+        ->assertSee('and its receipt are deleted for good.')
+        ->click('internal:role=dialog >> internal:role=button[name="Delete Travel Expense"s]')
+        ->assertSee('Travel Expense deleted.')
+        ->assertDontSee('Taxi')
+        ->assertNoJavaScriptErrors();
+
+    expect(TravelExpense::query()->exists())->toBeFalse();
+});
+
+it('adds a Travel Expense from the bottom sheet on a phone, attaching its receipt, without scrolling sideways', function () {
+    $cara = Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
+    $berlin = TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
+    TravelExpense::factory()->for($berlin)->declined()->create(['paid_on' => '2026-12-03', 'description' => 'Taxi', 'decline_reason' => 'Use the train.']);
+
+    actingAs($cara);
+
+    $page = visit(route('travel-requests.show', $berlin))
+        ->resize(390, 844)
+        ->assertSee('Use the train.')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('internal:role=link[name="Add Travel Expense"s]')
+        ->assertPathIs("/travel-requests/{$berlin->id}/expenses/create")
+        ->assertSee('Take photo');
+
+    pickDate($page, '#travel-expense-paid-on', '2026-12-05')
+        ->fill('#travel-expense-amount', '1990')
+        ->click('#travel-expense-category')
+        ->click('[role="option"] >> text=Accommodation')
+        ->fill('#travel-expense-description', 'Hotel, three nights')
+        ->attach('#travel-expense-receipt', travelReceiptFile())
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('internal:role=dialog >> internal:role=button[name="Add Travel Expense"s]')
+        ->assertSee('Travel Expense added.')
+        ->assertSee('Hotel, three nights')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->assertNoJavaScriptErrors();
+
+    expect(TravelExpense::query()->where('description', 'Hotel, three nights')->exists())->toBeTrue();
 });
 
 it('finds a Travel Request on the Travel Requests page by its state, then reopens one of its expenses on its page and leaves the other Approved', function () {
@@ -128,9 +197,9 @@ it('finds a Travel Request on the Travel Requests page by its state, then reopen
         ->click('internal:role=link[name="Berlin"s]')
         ->assertPathIs("/travel-requests/{$berlin->id}")
         ->click('[aria-label="Select the Transport expense paid on Dec 3, 2026"]')
-        ->click('Reopen')
+        ->click('internal:role=button[name="Reopen 1 Travel Expense…"s]')
         ->assertSee('Reopen 1 Travel Expense?')
-        ->click('internal:role=dialog >> internal:role=button[name="Reopen"s]')
+        ->click('internal:role=dialog >> internal:role=button[name="Reopen 1 Travel Expense"s]')
         ->assertSee('1 Travel Expense reopened.')
         ->assertPathIs("/travel-requests/{$berlin->id}")
         ->assertNoJavaScriptErrors();

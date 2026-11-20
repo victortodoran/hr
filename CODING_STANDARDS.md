@@ -55,6 +55,7 @@ List each piece of a diff that sits in the wrong layer. These hold from the firs
 - **F18** One border per surface: hairline `border-border`; never a bordered box inside a bordered box (no card in card, no bordered table inside a card).
 - **F19** Icons are lucide, 16px (`size-4`) with `stroke-width` 2; 14px only inside badges and dense rows; 20px only in EmptyState.
 - **F20** An icon sits beside text; an icon-only button has `aria-label` and a `Tooltip` with the same words.
+- **F21** A `Callout` takes its tone's status colours (`bg-status-attention`/`text-status-attention-foreground`, `bg-status-declined`/`text-status-declined-foreground`, info on `bg-surface` with `border-border`), never other colours; its icon matches the tone (`text-status-attention-icon`, `text-status-declined-icon`, `text-muted-foreground` for info).
 
 ---
 

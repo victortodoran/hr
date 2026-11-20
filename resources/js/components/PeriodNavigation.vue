@@ -2,10 +2,10 @@
 import { usePage } from '@inertiajs/vue3';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import DatePicker from '@/components/DatePicker.vue';
 import InputError from '@/components/InputError.vue';
 import MonthPicker from '@/components/MonthPicker.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDate } from '@/lib/dates';
 import type { Period } from '@/types';
@@ -155,24 +155,25 @@ const errors = computed(() => usePage().props.errors);
         >
             <div class="grid gap-1">
                 <Label for="period-from">From</Label>
-                <Input
+                <DatePicker
                     id="period-from"
                     v-model="from"
-                    type="date"
                     :max="noFuture ? today : undefined"
-                    class="w-40"
+                    :invalid="!!errors.from"
+                    class="w-44"
                     required
                 />
                 <InputError :message="errors.from" />
             </div>
             <div class="grid gap-1">
                 <Label for="period-to">To</Label>
-                <Input
+                <DatePicker
                     id="period-to"
                     v-model="to"
-                    type="date"
+                    :min="from || undefined"
                     :max="noFuture ? today : undefined"
-                    class="w-40"
+                    :invalid="!!errors.to"
+                    class="w-44"
                     required
                 />
                 <InputError :message="errors.to" />

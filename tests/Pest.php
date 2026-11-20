@@ -12,6 +12,9 @@ use OpenSpout\Reader\CSV\Reader as CsvReader;
 use OpenSpout\Reader\ReaderInterface;
 use OpenSpout\Reader\SheetIteratorInterface;
 use OpenSpout\Reader\XLSX\Reader as XlsxReader;
+use Pest\Browser\Api\AwaitableWebpage;
+use Pest\Browser\Api\PendingAwaitablePage;
+use Pest\Browser\Api\Webpage;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Browser\BrowserTestCase;
 use Tests\TestCase;
@@ -171,6 +174,45 @@ function assignmentOf(Employee $employee, string $project = 'Relaunch', array $a
 function workEntryForm(Assignment $assignment, array $changes = []): array
 {
     return ['assignment_id' => $assignment->id, 'date' => '2026-11-10', 'hours' => '3', 'description' => 'Reviewing the API', ...$changes];
+}
+
+/**
+ * Types a date into a DatePicker's month, day and year, as someone using
+ * the keyboard would. The field is the selector of the picker's `id`, such
+ * as "#period-from"; the date is YYYY-MM-DD.
+ */
+function pickDate(AwaitableWebpage|PendingAwaitablePage|Webpage $page, string $field, string $date): AwaitableWebpage|PendingAwaitablePage|Webpage
+{
+    return typeDateSegments($page, "[role=\"group\"]:has(> {$field})", $date);
+}
+
+/**
+ * Types a first and a last date into a DateRangePicker, as someone using the
+ * keyboard would. The field is the selector of the picker's `id`; the dates
+ * are YYYY-MM-DD.
+ */
+function pickDateRange(AwaitableWebpage|PendingAwaitablePage|Webpage $page, string $field, string $start, string $end): AwaitableWebpage|PendingAwaitablePage|Webpage
+{
+    $group = "[role=\"group\"]:has(> {$field})";
+
+    typeDateSegments($page, $group, $start, '[data-reka-date-range-field-segment-type="start"]');
+
+    return typeDateSegments($page, $group, $end, '[data-reka-date-range-field-segment-type="end"]');
+}
+
+/**
+ * Types a YYYY-MM-DD date into the month, day and year segments inside a
+ * date field, those of one end of a range when a segment filter is given.
+ */
+function typeDateSegments(AwaitableWebpage|PendingAwaitablePage|Webpage $page, string $group, string $date, string $segmentFilter = ''): AwaitableWebpage|PendingAwaitablePage|Webpage
+{
+    [$year, $month, $day] = explode('-', $date);
+
+    foreach (['month' => $month, 'day' => $day, 'year' => $year] as $part => $digits) {
+        $page->keys("{$group} [data-reka-date-field-segment=\"{$part}\"]{$segmentFilter}", str_split($digits));
+    }
+
+    return $page;
 }
 
 /**

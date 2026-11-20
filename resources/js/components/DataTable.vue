@@ -18,6 +18,9 @@ import type { TableColumn } from '@/types';
  *   header, each ticking the rows it covers;
  * - `onRowClick` opens a row's record when the row is clicked, ignoring
  *   clicks on its own buttons, links and tick-boxes;
+ * - `hasAfterRow` gives the rows it picks a full-width line under them,
+ *   filled by the `after-row` slot, such as a Declined record's reason in
+ *   a Callout (rule G4);
  * - columns with a `phone` place stack each row on a phone (rule P4).
  */
 const props = defineProps<{
@@ -34,6 +37,8 @@ const props = defineProps<{
     /** Names a group for its tick-box, such as "Week 46". */
     groupLabel?: (group: string) => string;
     onRowClick?: (row: Row) => void;
+    /** Whether a row has a full-width line under it, from the `after-row` slot. */
+    hasAfterRow?: (row: Row) => boolean;
 }>();
 
 defineSlots<
@@ -41,6 +46,7 @@ defineSlots<
         empty?: () => unknown;
         group?: (props: { group: string; rows: Row[] }) => unknown;
         lead?: () => unknown;
+        'after-row'?: (props: { row: Row }) => unknown;
     } & {
         [slot: `cell-${string}`]: (props: { row: Row }) => unknown;
     } & {
@@ -135,6 +141,10 @@ function clicked(row: Row, event: MouseEvent): void {
     }
 }
 
+function hasAfter(row: Row): boolean {
+    return props.hasAfterRow?.(row) ?? false;
+}
+
 function cellClass(column: TableColumn): string[] {
     return [
         'px-3 py-2 sm:px-4',
@@ -181,6 +191,7 @@ function cellClass(column: TableColumn): string[] {
                 :class="[
                     isRowSelected(line.row) ? 'bg-primary-soft' : '',
                     onRowClick ? 'cursor-pointer' : '',
+                    hasAfter(line.row) ? 'border-b-0' : '',
                 ]"
                 @click="clicked(line.row, $event)"
             >
@@ -229,6 +240,13 @@ function cellClass(column: TableColumn): string[] {
                         }}</slot>
                     </div>
                 </div>
+            </div>
+            <div
+                v-if="line.kind === 'row' && hasAfter(line.row)"
+                data-slot="after-row"
+                class="border-b px-4 pb-3 last:border-b-0"
+            >
+                <slot name="after-row" :row="line.row" />
             </div>
         </template>
         <slot v-if="rows.length === 0" name="empty" />
@@ -317,6 +335,7 @@ function cellClass(column: TableColumn): string[] {
                                   ? 'hover:bg-surface'
                                   : '',
                             onRowClick ? 'cursor-pointer' : '',
+                            hasAfter(line.row) ? 'border-b-0' : '',
                         ]"
                         @click="clicked(line.row, $event)"
                     >
@@ -346,6 +365,17 @@ function cellClass(column: TableColumn): string[] {
                                 :row="line.row"
                                 >{{ fieldOf(line.row, column.key) }}</slot
                             >
+                        </td>
+                    </tr>
+                    <tr
+                        v-if="line.kind === 'row' && hasAfter(line.row)"
+                        data-slot="after-row"
+                    >
+                        <td
+                            :colspan="columnCount"
+                            class="px-3 pt-0 pb-3 sm:px-4"
+                        >
+                            <slot name="after-row" :row="line.row" />
                         </td>
                     </tr>
                 </template>

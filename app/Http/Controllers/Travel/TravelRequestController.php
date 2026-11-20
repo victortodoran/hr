@@ -17,7 +17,7 @@ use Inertia\Response;
 
 /**
  * The Travel page: the signed-in Employee's own Travel Requests, making
- * one, and the page of each Travel Request.
+ * one in a sheet over it, and the page of each Travel Request.
  */
 class TravelRequestController extends Controller
 {
@@ -30,12 +30,13 @@ class TravelRequestController extends Controller
     }
 
     /**
-     * Show the form for making a Travel Request, with the Assignments the
-     * Employee can still travel on (TravelRequestFormPage).
+     * Show the Travel page with the sheet for requesting travel open over
+     * it (rule L14), so the form has a URL of its own, with the Assignments
+     * the Employee can still travel on (TravelRequestFormPage).
      */
     public function create(#[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('travel-requests/Create', TravelRequestFormPage::create($actor));
+        return Inertia::render('travel-requests/Index', TravelRequestFormPage::create($actor));
     }
 
     /**

@@ -160,6 +160,27 @@ it('forgets unsaved changes to a Work Entry deleted while open', function () {
     expect($entry->fresh())->toBeNull();
 });
 
+it('moves a Work Entry to another day by typing its date into the date field', function () {
+    $cara = recorder();
+    $entry = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10', 'description' => 'Reviewing the API']);
+
+    actingAs($cara);
+
+    $page = visit(route('work-entries.index'))
+        ->click('[aria-label="More for Reviewing the API on Tuesday 10 November"]')
+        ->click('internal:role=menuitem[name="Edit"s]')
+        ->assertSee('Nov 10, 2026');
+
+    pickDate($page, '#work-entry-date-'.$entry->id, '2026-11-12')
+        ->assertValue('#work-entry-date-'.$entry->id, '2026-11-12')
+        ->click('Save')
+        ->assertDontSee('Save')
+        ->assertPresent('[data-date="2026-11-12"] [aria-label="More for Reviewing the API on Thursday 12 November"]')
+        ->assertNoJavaScriptErrors();
+
+    expect($entry->fresh()?->date->toDateString())->toBe('2026-11-12');
+});
+
 it('asks before reloading or closing the tab only while a Work Entry is typed but not saved', function () {
     $cara = recorder();
     assignmentOf($cara);

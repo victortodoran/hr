@@ -99,39 +99,48 @@ it('lets Cara record a 1,990 RON Accommodation expense with a PDF receipt on her
     Storage::disk(TravelExpense::RECEIPT_DISK)->assertExists($expense->receipt_path);
 });
 
-it('lists the expenses of a Travel Request that takes them on its page, in the order paid, with the total of those not Declined', function () {
+it('lists the expenses of a Travel Request that takes them on its page, in the order paid, with who declined each and whether its receipt is a picture, and the totals entered, Approved, Pending and Declined', function () {
     $cara = expenseRecorder();
     $berlin = berlinTrip($cara);
-    $hotel = recordedExpense($berlin, 'declined', ['paid_on' => '2026-12-05', 'amount' => 199000, 'category' => TravelExpenseCategory::Accommodation, 'description' => 'Hotel', 'decline_reason' => 'Book through travel desk']);
-    $train = recordedExpense($berlin, 'approved', ['paid_on' => '2026-12-03', 'amount' => 25050, 'category' => TravelExpenseCategory::Transport, 'description' => 'Train']);
+    $hotel = recordedExpense($berlin, 'declined', ['paid_on' => '2026-12-05', 'amount' => 199000, 'category' => TravelExpenseCategory::Accommodation, 'description' => 'Hotel', 'decline_reason' => 'Book through travel desk', 'declined_by' => Employee::query()->where('name', 'Mona')->sole()->id]);
+    $train = recordedExpense($berlin, 'approved', ['paid_on' => '2026-12-03', 'amount' => 25050, 'category' => TravelExpenseCategory::Transport, 'description' => 'Train', 'receipt_path' => TravelExpense::RECEIPT_FOLDER.'/ticket.JPG']);
+    $taxi = recordedExpense($berlin, 'pending', ['paid_on' => '2026-12-04', 'amount' => 3000, 'category' => TravelExpenseCategory::Transport, 'description' => 'Taxi']);
     $pending = berlinTrip($cara, 'cancelled');
 
     actingAs($cara)->get(route('travel-requests.show', $berlin))
         ->assertInertia(fn (Assert $page) => $page
             ->component('travel-requests/Show')
+            ->missing('expenseSheet')
             ->where('travelRequest.expenses', [
                 'items' => [
-                    ['id' => $train->id, 'paid_on' => '2026-12-03', 'category' => 'transport', 'description' => 'Train', 'amount' => "RON\u{a0}250.50", 'state' => 'approved', 'decline_reason' => null, 'can_change' => false, 'can_decide' => false, 'can_reopen' => false],
-                    ['id' => $hotel->id, 'paid_on' => '2026-12-05', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'declined', 'decline_reason' => 'Book through travel desk', 'can_change' => true, 'can_decide' => false, 'can_reopen' => false],
+                    ['id' => $train->id, 'paid_on' => '2026-12-03', 'category' => 'transport', 'description' => 'Train', 'amount' => "RON\u{a0}250.50", 'state' => 'approved', 'decline_reason' => null, 'declined_by' => null, 'receipt_is_image' => true, 'can_change' => false, 'can_decide' => false, 'can_reopen' => false],
+                    ['id' => $taxi->id, 'paid_on' => '2026-12-04', 'category' => 'transport', 'description' => 'Taxi', 'amount' => "RON\u{a0}30.00", 'state' => 'pending', 'decline_reason' => null, 'declined_by' => null, 'receipt_is_image' => false, 'can_change' => true, 'can_decide' => false, 'can_reopen' => false],
+                    ['id' => $hotel->id, 'paid_on' => '2026-12-05', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'declined', 'decline_reason' => 'Book through travel desk', 'declined_by' => 'Mona', 'receipt_is_image' => false, 'can_change' => true, 'can_decide' => false, 'can_reopen' => false],
                 ],
-                'total' => "RON\u{a0}250.50",
+                'total' => "RON\u{a0}280.50",
+                'approved_total' => "RON\u{a0}250.50",
+                'pending_total' => "RON\u{a0}30.00",
+                'declined_total' => "RON\u{a0}1,990.00",
                 'can_create' => true,
             ]));
     actingAs($cara)->get(route('travel-requests.show', $pending))
         ->assertInertia(fn (Assert $page) => $page->where('travelRequest.expenses', null));
 });
 
-it('opens the form for adding an expense with the Travel Request named, the company currency and today', function () {
+it('opens the Add Travel Expense sheet over the Travel Request\'s page, with the company currency and today', function () {
     $cara = expenseRecorder();
     $berlin = berlinTrip($cara);
 
     actingAs($cara)->get(route('travel-requests.expenses.create', $berlin))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('travel-expenses/Create')
-            ->where('travelRequest', ['id' => $berlin->id, 'destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05'])
+            ->component('travel-requests/Show')
+            ->where('travelRequest.id', $berlin->id)
+            ->where('travelRequest.expenses.can_create', true)
+            ->where('expenseSheet', 'add')
             ->where('currency', ['code' => 'RON', 'decimals' => 2])
-            ->where('today', '2026-12-10'));
+            ->where('today', '2026-12-10')
+            ->missing('travelExpense'));
 });
 
 it('refuses the form for adding an expense on a Travel Request that was never Approved, or someone else\'s', function () {
@@ -142,19 +151,37 @@ it('refuses the form for adding an expense on a Travel Request that was never Ap
     actingAs($mona)->get(route('travel-requests.expenses.create', berlinTrip($cara)))->assertForbidden();
 });
 
-it('opens the form for changing an expense filled in as it would be typed', function () {
+it('opens the Edit Travel Expense sheet over the Travel Request\'s page, filled in as it would be typed, with why it was declined and the Manager it goes back to', function () {
     $cara = expenseRecorder();
     $berlin = berlinTrip($cara);
-    $expense = recordedExpense($berlin, 'declined', ['paid_on' => '2026-12-04', 'amount' => 25050, 'category' => TravelExpenseCategory::Transport, 'description' => 'Train']);
+    $expense = recordedExpense($berlin, 'declined', ['paid_on' => '2026-12-04', 'amount' => 25050, 'category' => TravelExpenseCategory::Transport, 'description' => 'Train', 'decline_reason' => 'Book through travel desk', 'declined_by' => $cara->manager_id, 'receipt_path' => TravelExpense::RECEIPT_FOLDER.'/ticket.PNG']);
 
     actingAs($cara)->get(route('travel-requests.expenses.edit', [$berlin, $expense]))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('travel-expenses/Edit')
+            ->component('travel-requests/Show')
             ->where('travelRequest.id', $berlin->id)
+            ->where('expenseSheet', 'edit')
             ->where('currency', ['code' => 'RON', 'decimals' => 2])
             ->where('today', '2026-12-10')
-            ->where('travelExpense', ['id' => $expense->id, 'paid_on' => '2026-12-04', 'category' => 'transport', 'amount' => '250.50', 'description' => 'Train']));
+            ->where('travelExpense', ['id' => $expense->id, 'paid_on' => '2026-12-04', 'category' => 'transport', 'amount' => '250.50', 'description' => 'Train', 'state' => 'declined', 'decline_reason' => 'Book through travel desk', 'declined_by' => 'Mona', 'receipt_name' => 'Receipt.png'])
+            ->where('manager', 'Mona'));
+});
+
+it('names the next Manager up as the one a Declined expense goes back to once Cara\'s own Manager has left, or nobody when everyone above has left', function () {
+    $dana = Employee::factory()->startedLongAgo()->create(['name' => 'Dana']);
+    $mona = Employee::factory()->former()->reportingTo($dana)->create(['name' => 'Mona']);
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($mona)->create(['name' => 'Cara']);
+    $berlin = berlinTrip($cara);
+    $expense = recordedExpense($berlin, 'declined', ['declined_by' => $mona->id]);
+
+    actingAs($cara)->get(route('travel-requests.expenses.edit', [$berlin, $expense]))
+        ->assertInertia(fn (Assert $page) => $page->where('manager', 'Dana'));
+
+    $dana->update(['leaving_date' => today()->subDay()->toDateString()]);
+
+    actingAs($cara)->get(route('travel-requests.expenses.edit', [$berlin, $expense]))
+        ->assertInertia(fn (Assert $page) => $page->where('manager', null));
 });
 
 it('refuses the form for changing an expense once Approved, someone else\'s, or under another Travel Request', function () {
