@@ -87,6 +87,7 @@ List each piece of a diff that sits in the wrong layer. These hold from the firs
 - **L19** Team-wide and company-wide views of an area use the `ScopeSwitch` (`?scope=mine|reports|everyone`) on the area page, showing only the Scopes the person holds and hidden when there is one.
 - **L20** The breadcrumb in the top bar lists ancestors only; the current page's name is the `<h1>`.
 - **L21** Nav items appear per permission (unchanged); the Approvals badge shows the Pending count and is `bg-primary`.
+- **L22** An area's sidebar entry opens the person's own page when they have one, else the list of others they may see; it stays active on every page of the area.
 
 ---
 
