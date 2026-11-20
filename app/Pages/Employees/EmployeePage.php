@@ -31,6 +31,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * on the edit form too.
  *
  * @phpstan-import-type PaidDaysLeftInYear from PaidDaysLeft
+ *
+ * @phpstan-type PayChangeRow array{id: int, effective_from: string, until: string|null, kind: string, amount: string, state: 'upcoming'|'in_effect'|'past'}
+ * @phpstan-type AssignmentRow array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, is_active: bool, has_ended: bool, can_delete: bool, pay?: list<PayChangeRow>}
+ * @phpstan-type AssignmentStats array{capacity_assigned: int, active: int, ended: int, pay_in_effect?: list<array{project: string, is_internal: bool, kind: string, amount: string}>}
  */
 final class EmployeePage
 {
@@ -205,17 +209,66 @@ final class EmployeePage
 
     /**
      * The Assignments & Pay tab: the Employee's Assignments, with Pay when
-     * a currency is given, and the Projects they can be put on, to those
-     * who may manage their Assignments.
+     * a currency is given, the numbers summing them up, and the Projects
+     * they can be put on, to those who may manage their Assignments.
      *
-     * @return array{assignments: array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, has_ended: bool, can_delete: bool, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>, projects: array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>}
+     * @return array{assignments: list<AssignmentRow>, assignmentStats: AssignmentStats, projects: array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>}
      */
     private static function assignmentsTab(Employee $employee, ?Currency $currency, bool $canManage): array
     {
+        $assignments = self::assignments($employee, $currency, $canManage);
+
         return [
-            'assignments' => self::assignments($employee, $currency, $canManage),
+            'assignments' => $assignments,
+            'assignmentStats' => self::assignmentStats($assignments, $currency !== null),
             'projects' => $canManage ? self::openProjects() : [],
         ];
+    }
+
+    /**
+     * The numbers over the Assignments: the Capacity of those running today
+     * added up, how many run today and how many have ended, and, when Pay
+     * is shown, the Pay in effect on each one running today.
+     *
+     * @param  list<AssignmentRow>  $assignments
+     * @return AssignmentStats
+     */
+    private static function assignmentStats(array $assignments, bool $withPay): array
+    {
+        $active = array_values(array_filter($assignments, fn (array $assignment): bool => $assignment['is_active']));
+
+        return [
+            'capacity_assigned' => array_sum(array_column($active, 'capacity')),
+            'active' => count($active),
+            'ended' => count(array_filter($assignments, fn (array $assignment): bool => $assignment['has_ended'])),
+            ...($withPay ? ['pay_in_effect' => self::payInEffect($active)] : []),
+        ];
+    }
+
+    /**
+     * The Pay in effect today on each of the Assignments that has one.
+     *
+     * @param  list<AssignmentRow>  $assignments
+     * @return list<array{project: string, is_internal: bool, kind: string, amount: string}>
+     */
+    private static function payInEffect(array $assignments): array
+    {
+        $inEffect = [];
+
+        foreach ($assignments as $assignment) {
+            foreach ($assignment['pay'] ?? [] as $entry) {
+                if ($entry['state'] === 'in_effect') {
+                    $inEffect[] = [
+                        'project' => $assignment['project']['name'],
+                        'is_internal' => $assignment['project']['is_internal'],
+                        'kind' => $entry['kind'],
+                        'amount' => $entry['amount'],
+                    ];
+                }
+            }
+        }
+
+        return $inEffect;
     }
 
     /**
@@ -295,46 +348,60 @@ final class EmployeePage
     }
 
     /**
-     * The Employee's Assignments, earliest first, each with its Pay history
-     * when a currency is given, which only happens for viewers allowed to see
-     * the Employee's Pay, and whether each can be deleted, for viewers who
-     * may manage the Employee's Assignments.
+     * The Employee's Assignments, earliest first with those that have ended
+     * last, each with its Pay history when a currency is given, which only
+     * happens for viewers allowed to see the Employee's Pay, and whether
+     * each can be deleted, for viewers who may manage the Employee's
+     * Assignments. An Assignment is active from its start date until it
+     * ends.
      *
-     * @return array<int, array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, has_ended: bool, can_delete: bool, pay?: array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>}>
+     * @return list<AssignmentRow>
      */
     private static function assignments(Employee $employee, ?Currency $currency, bool $canManage): array
     {
-        return $employee->assignments()
+        $assignments = $employee->assignments()
             ->with('project.client')
             ->when($canManage, fn (Builder $query) => $query->withExists(['workEntries', 'travelRequests']))
             ->when($currency !== null, fn (Builder $query) => $query->with(['payEntries' => fn (HasMany $entries) => $entries->orderByDesc('effective_from')]))
             ->orderBy('start_date')
             ->orderBy('id')
             ->get()
-            ->map(fn (Assignment $assignment): array => [
-                'id' => $assignment->id,
-                'project' => [
-                    'id' => $assignment->project->id,
-                    'name' => $assignment->project->name,
-                    'client' => $assignment->project->client?->name,
-                    'is_internal' => $assignment->project->is_internal,
-                ],
-                'job_title' => $assignment->job_title,
-                'start_date' => $assignment->start_date->toDateString(),
-                'end_date' => $assignment->end_date?->toDateString(),
-                'capacity' => $assignment->capacity,
-                'has_ended' => $assignment->end_date !== null && $assignment->end_date->isBefore(today()),
-                'can_delete' => $canManage && $assignment->canBeDeleted(),
-                ...($currency === null ? [] : ['pay' => self::payHistory($assignment, $currency)]),
-            ])
+            ->sortBy(fn (Assignment $assignment): bool => self::hasEnded($assignment))
             ->all();
+
+        return array_map(fn (Assignment $assignment): array => [
+            'id' => $assignment->id,
+            'project' => [
+                'id' => $assignment->project->id,
+                'name' => $assignment->project->name,
+                'client' => $assignment->project->client?->name,
+                'is_internal' => $assignment->project->is_internal,
+            ],
+            'job_title' => $assignment->job_title,
+            'start_date' => $assignment->start_date->toDateString(),
+            'end_date' => $assignment->end_date?->toDateString(),
+            'capacity' => $assignment->capacity,
+            'is_active' => ! self::hasEnded($assignment) && ! $assignment->start_date->isAfter(today()),
+            'has_ended' => self::hasEnded($assignment),
+            'can_delete' => $canManage && $assignment->canBeDeleted(),
+            ...($currency === null ? [] : ['pay' => self::payHistory($assignment, $currency)]),
+        ], array_values($assignments));
     }
 
     /**
-     * The Assignment's Pay history, newest first, marking the entry in
-     * effect today.
+     * Whether the Assignment ended before today.
+     */
+    private static function hasEnded(Assignment $assignment): bool
+    {
+        return $assignment->end_date !== null && $assignment->end_date->isBefore(today());
+    }
+
+    /**
+     * The Assignment's Pay history, newest first: each Pay change with the
+     * last day it applies, the day before the next one or the Assignment's
+     * end date, and whether it is Upcoming, in effect today, or Past.
      *
-     * @return array<int, array{id: int, effective_from: string, kind: string, amount: string, is_in_effect: bool}>
+     * @return list<PayChangeRow>
      */
     private static function payHistory(Assignment $assignment, Currency $currency): array
     {
@@ -342,16 +409,22 @@ final class EmployeePage
             $assignment->payEntries->keyBy(fn (PayEntry $entry): string => $entry->effective_from->toDateString())->all(),
             today(),
         );
+        $entries = array_values($assignment->payEntries->all());
 
-        return $assignment->payEntries
-            ->map(fn (PayEntry $entry): array => [
-                'id' => $entry->id,
-                'effective_from' => $entry->effective_from->toDateString(),
-                'kind' => $entry->kind->value,
-                'amount' => $currency->format($entry->amount),
-                'is_in_effect' => $entry->is($inEffect),
-            ])
-            ->all();
+        return array_map(fn (PayEntry $entry, int $index): array => [
+            'id' => $entry->id,
+            'effective_from' => $entry->effective_from->toDateString(),
+            'until' => $index === 0
+                ? $assignment->end_date?->toDateString()
+                : $entries[$index - 1]->effective_from->copy()->subDay()->toDateString(),
+            'kind' => $entry->kind->value,
+            'amount' => $currency->format($entry->amount),
+            'state' => match (true) {
+                $entry->is($inEffect) => 'in_effect',
+                $entry->effective_from->isAfter(today()) => 'upcoming',
+                default => 'past',
+            },
+        ], $entries, array_keys($entries));
     }
 
     /**

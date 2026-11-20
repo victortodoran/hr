@@ -206,15 +206,22 @@ function pickDateRange(AwaitableWebpage|PendingAwaitablePage|Webpage $page, stri
 /**
  * Types a YYYY-MM-DD date into the month, day and year segments inside a
  * date field, those of one end of a range when a segment filter is given.
- * Each segment is cleared first, so a keystroke that lands after the field
- * moved focus on by itself can't leave a stray digit behind.
+ * Under load a keystroke can land after the field has moved focus on by
+ * itself, so each segment is cleared, typed, and typed again until it
+ * holds its number, a few tries at most.
  */
 function typeDateSegments(AwaitableWebpage|PendingAwaitablePage|Webpage $page, string $group, string $date, string $segmentFilter = ''): AwaitableWebpage|PendingAwaitablePage|Webpage
 {
     [$year, $month, $day] = explode('-', $date);
 
     foreach (['month' => $month, 'day' => $day, 'year' => $year] as $part => $digits) {
-        $page->keys("{$group} [data-reka-date-field-segment=\"{$part}\"]{$segmentFilter}", ['Backspace', 'Backspace', 'Backspace', 'Backspace', ...str_split($digits)]);
+        $segment = "{$group} [data-reka-date-field-segment=\"{$part}\"]{$segmentFilter}";
+        $attempts = 0;
+
+        do {
+            $page->keys($segment, ['Backspace', 'Backspace', 'Backspace', 'Backspace', ...str_split($digits)]);
+            $typed = $page->script('document.querySelector('.json_encode($segment).")?.getAttribute('aria-valuenow')");
+        } while ((int) $typed !== (int) $digits && ++$attempts < 3);
     }
 
     return $page;

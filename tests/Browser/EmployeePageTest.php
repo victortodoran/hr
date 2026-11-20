@@ -10,6 +10,7 @@ use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\PerformanceEvaluation;
+use App\Models\Project;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 
@@ -59,33 +60,109 @@ it('opens every tab of an Employee\'s page, keeping the header and its facts, le
         ->assertNoJavaScriptErrors();
 });
 
-it('gives the Pay button only to those who manage Pay, while those who only view it see the Pay in effect', function () {
+it('opens the Pay history under an Assignment, read-only to those who only view Pay', function () {
+    CompanySettings::factory()->create();
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara Lane']);
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-01-05', 'capacity' => 60]);
+    PayEntry::factory()->for($relaunch)->create(['effective_from' => '2026-01-05', 'kind' => PayKind::Hourly, 'amount' => 2500]);
+    PayEntry::factory()->for($relaunch)->create(['effective_from' => '2027-01-04', 'kind' => PayKind::Hourly, 'amount' => 2800]);
+
+    actingAs(employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+        Permission::ViewPay->value => Scope::Everyone,
+    ]));
+
+    visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
+        ->assertSeeIn('[data-test="assignment-stats"]', 'Hourly Pay on Relaunch')
+        ->assertSee('€25.00 per hour')
+        ->assertSee('Jan 4, 2027')
+        ->click('internal:role=button[name="Show Pay history on Relaunch"s]')
+        ->assertSeeIn("[data-test=\"pay-history-{$relaunch->id}\"]", '€28.00 per hour')
+        ->assertSeeIn("[data-test=\"pay-history-{$relaunch->id}\"]", 'Upcoming')
+        ->assertSeeIn("[data-test=\"pay-history-{$relaunch->id}\"]", 'In effect')
+        ->assertMissing('[aria-label="More for the Pay change from Jan 5, 2026"]')
+        ->assertDontSee('Add Pay change')
+        ->assertNoJavaScriptErrors();
+});
+
+it('adds a Pay change inline under the Assignment on a phone, the history staying open', function () {
     CompanySettings::factory()->create();
     $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara Lane']);
     $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-01-05']);
-    PayEntry::factory()->for($relaunch)->create(['effective_from' => '2026-01-05', 'kind' => PayKind::Hourly, 'amount' => 2500]);
-    $viewsPay = employeeWith([
-        Permission::ViewEmployeeRecords->value => Scope::Everyone,
-        Permission::ViewPay->value => Scope::Everyone,
-    ]);
-    $managesPay = employeeWith([
+    PayEntry::factory()->for($relaunch)->create(['effective_from' => '2026-01-05', 'kind' => PayKind::Fixed, 'amount' => 480000]);
+
+    actingAs(employeeWith([
         Permission::ViewEmployeeRecords->value => Scope::Everyone,
         Permission::ManagePay->value => Scope::Everyone,
-    ]);
+    ]));
 
-    actingAs($viewsPay);
-
-    visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
-        ->assertSeeIn('[data-test="assignment"]', '€25.00 per hour')
-        ->assertMissing('[aria-label="Pay on Relaunch"]')
+    $page = visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
+        ->resize(390, 844)
+        ->click('internal:role=button[name="Show Pay history on Relaunch"s]')
+        ->click('internal:role=button[name="Hourly"s]')
+        ->fill("#pay-amount-{$relaunch->id}", '30');
+    pickDate($page, "#pay-effective-from-{$relaunch->id}", '2026-12-01')
+        ->click('Add Pay change')
+        ->assertSee('Pay added.')
+        ->assertSeeIn("[data-test=\"pay-history-{$relaunch->id}\"]", '€30.00 per hour')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertNoJavaScriptErrors();
 
-    actingAs($managesPay);
+    $added = $relaunch->payEntries()->latest('effective_from')->firstOrFail();
+    expect($added->kind)->toBe(PayKind::Hourly)
+        ->and($added->amount)->toBe(3000);
+});
+
+it('removes a Pay change from its menu after asking', function () {
+    CompanySettings::factory()->create();
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara Lane']);
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-01-05']);
+    PayEntry::factory()->for($relaunch)->create(['effective_from' => '2026-01-05', 'kind' => PayKind::Fixed, 'amount' => 480000]);
+    $mistake = PayEntry::factory()->for($relaunch)->create(['effective_from' => '2026-06-01', 'kind' => PayKind::Fixed, 'amount' => 52000]);
+
+    actingAs(employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+        Permission::ManagePay->value => Scope::Everyone,
+    ]));
 
     visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
-        ->click('[aria-label="Pay on Relaunch"]')
-        ->assertSee('Add Pay')
+        ->click('internal:role=button[name="Show Pay history on Relaunch"s]')
+        ->click('internal:role=button[name="More for the Pay change from Jun 1, 2026"s]')
+        ->click('internal:role=menuitem[name="Remove…"s]')
+        ->assertSee('Remove the Pay change from Jun 1, 2026?')
+        ->click('internal:role=button[name="Remove Pay change"s]')
+        ->assertSee('Pay removed.')
+        ->assertDontSee('€520.00 per month')
         ->assertNoJavaScriptErrors();
+
+    expect($mistake->fresh())->toBeNull();
+});
+
+it('assigns an Employee to a Project in a sheet', function () {
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara Lane']);
+    Project::factory()->create(['name' => 'Relaunch', 'start_date' => '2026-01-05']);
+
+    actingAs(employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+        Permission::ManageAssignments->value => Scope::Everyone,
+    ]));
+
+    $page = visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
+        ->click('internal:role=button[name="Assign to a Project"s]')
+        ->click('#assignment-project-new')
+        ->click('internal:role=option >> text=Relaunch')
+        ->fill('#assignment-job-title-new', 'Tech Lead');
+    pickDate($page, '#assignment-start-new', '2026-09-07')
+        ->fill('#assignment-capacity-new', '60')
+        ->click('Assign to the Project')
+        ->assertSee('Tech Lead')
+        ->assertSeeIn('[data-test="assignment-stats"]', 'Capacity assigned')
+        ->assertNoJavaScriptErrors();
+
+    $assigned = $cara->assignments()->sole();
+    expect($assigned->job_title)->toBe('Tech Lead')
+        ->and($assigned->capacity)->toBe(60)
+        ->and($assigned->start_date->toDateString())->toBe('2026-09-07');
 });
 
 it('drops an Assignment edit that was cancelled, so reopening shows what is saved and saving another change leaves it out', function () {
@@ -99,10 +176,12 @@ it('drops an Assignment edit that was cancelled, so reopening shows what is save
     actingAs($manager);
 
     visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
-        ->click('[aria-label="Edit the Assignment to Relaunch"]')
+        ->click('internal:role=button[name="More for the Assignment to Relaunch"s]')
+        ->click('internal:role=menuitem[name="Edit"s]')
         ->fill("#assignment-capacity-{$relaunch->id}", '50')
         ->click('Cancel')
-        ->click('[aria-label="Edit the Assignment to Relaunch"]')
+        ->click('internal:role=button[name="More for the Assignment to Relaunch"s]')
+        ->click('internal:role=menuitem[name="Edit"s]')
         ->assertValue("#assignment-capacity-{$relaunch->id}", '100')
         ->fill("#assignment-job-title-{$relaunch->id}", 'Lead Developer')
         ->click('Save')
@@ -126,12 +205,15 @@ it('deletes an unused Assignment after asking, and offers no Delete on one with 
     ]));
 
     visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
-        ->assertMissing('[aria-label="Delete the Assignment to Data Audit"]')
-        ->click('[aria-label="Delete the Assignment to Relaunch"]')
+        ->click('internal:role=button[name="More for the Assignment to Relaunch"s]')
+        ->click('internal:role=menuitem[name="Delete…"s]')
         ->assertSee('Delete the Assignment to Relaunch?')
-        ->click('internal:role=button[name="Delete"s]')
+        ->click('internal:role=button[name="Delete Assignment"s]')
         ->assertSee('Assignment deleted.')
         ->assertDontSeeIn('[data-test="assignment"]', 'Relaunch')
+        ->click('internal:role=button[name="More for the Assignment to Data Audit"s]')
+        ->assertPresent('internal:role=menuitem[name="Edit"s]')
+        ->assertNotPresent('internal:role=menuitem[name="Delete…"s]')
         ->assertNoJavaScriptErrors();
 
     expect(Assignment::query()->whereKey($mistake->id)->exists())->toBeFalse();

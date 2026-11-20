@@ -4,7 +4,8 @@
  * Cancelled are Time Off and Travel Request states; Upcoming is a Future
  * Employee, who hasn't started yet; Open and Completed are Performance
  * Evaluation states; Not Started, On Track, At Risk and Done are a Goal's
- * Progress.
+ * Progress; In effect, Upcoming and Past are a Pay change's, and Ended an
+ * Assignment's that ended before today.
  */
 export type StatusBadgeState =
     | 'pending'
@@ -17,4 +18,7 @@ export type StatusBadgeState =
     | 'not-started'
     | 'on-track'
     | 'at-risk'
-    | 'done';
+    | 'done'
+    | 'in-effect'
+    | 'past'
+    | 'ended';

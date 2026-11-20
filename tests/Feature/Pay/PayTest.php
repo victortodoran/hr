@@ -74,7 +74,7 @@ it('lets someone who manages Pay give an Assignment Fixed or Hourly Pay, from an
     actingAs($manager)->get(route('employees.show', ['employee' => $assignment->employee_id, 'tab' => 'assignments']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('assignments.0.pay', [
-                ['id' => $assignment->payEntries()->sole()->id, 'effective_from' => $effectiveFrom, 'kind' => $kind, 'amount' => $shown, 'is_in_effect' => $effectiveFrom <= '2026-03-01'],
+                ['id' => $assignment->payEntries()->sole()->id, 'effective_from' => $effectiveFrom, 'until' => '2026-12-31', 'kind' => $kind, 'amount' => $shown, 'state' => $effectiveFrom <= '2026-03-01' ? 'in_effect' : 'upcoming'],
             ]));
 })->with([
     'Fixed Pay from the first day' => ['fixed', '4500.50', '2026-02-01', '€4,500.50'],
@@ -92,7 +92,7 @@ it('lets the Internal Assignment have either kind of Pay', function (string $kin
     expect($internal->payEntries()->sole()->kind)->toBe(PayKind::from($kind));
 })->with(['fixed', 'hourly']);
 
-it('shows the Pay history newest first and which entry is in effect on the day', function (string $day, string $inEffect) {
+it('shows the Pay history newest first, each change applying until the day before the next one, as Upcoming, in effect on the day, or Past', function (string $day, array $states) {
     $assignment = relaunchAssignment();
     PayEntry::factory()->for($assignment)->create(['effective_from' => '2026-02-01', 'kind' => PayKind::Fixed, 'amount' => 400000]);
     PayEntry::factory()->for($assignment)->hourly()->create(['effective_from' => '2026-06-01', 'amount' => 3000]);
@@ -106,15 +106,52 @@ it('shows the Pay history newest first and which entry is in effect on the day',
             ->where('assignments.0.pay.1.kind', 'hourly')
             ->where('assignments.0.pay.1.amount', '€30.00')
             ->where('assignments.0.pay.2.effective_from', '2026-02-01')
-            ->where('assignments.0.pay.0.is_in_effect', $inEffect === '2026-09-01')
-            ->where('assignments.0.pay.1.is_in_effect', $inEffect === '2026-06-01')
-            ->where('assignments.0.pay.2.is_in_effect', $inEffect === '2026-02-01'));
+            ->where('assignments.0.pay.0.until', '2026-12-31')
+            ->where('assignments.0.pay.1.until', '2026-08-31')
+            ->where('assignments.0.pay.2.until', '2026-05-31')
+            ->where('assignments.0.pay.0.state', $states[0])
+            ->where('assignments.0.pay.1.state', $states[1])
+            ->where('assignments.0.pay.2.state', $states[2]));
 })->with([
-    'from the first entry' => ['2026-03-01', '2026-02-01'],
-    'once the raise takes effect' => ['2026-06-01', '2026-06-01'],
-    'the day before the planned raise' => ['2026-08-31', '2026-06-01'],
-    'after the last entry' => ['2026-10-15', '2026-09-01'],
+    'from the first entry' => ['2026-03-01', ['upcoming', 'upcoming', 'in_effect']],
+    'once the raise takes effect' => ['2026-06-01', ['upcoming', 'in_effect', 'past']],
+    'the day before the planned raise' => ['2026-08-31', ['upcoming', 'in_effect', 'past']],
+    'after the last entry' => ['2026-10-15', ['in_effect', 'past', 'past']],
 ]);
+
+it('lets the latest Pay change of an open-ended Assignment apply with no last day', function () {
+    $cara = Employee::factory()->startedLongAgo()->create();
+    $assignment = Assignment::factory()->for($cara)->create(['start_date' => '2026-02-01', 'end_date' => null]);
+    PayEntry::factory()->for($assignment)->create(['effective_from' => '2026-02-01']);
+
+    actingAs(payManager())->get(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
+        ->assertInertia(fn (Assert $page) => $page->where('assignments.0.pay.0.until', null));
+});
+
+it('sums up the Pay in effect today on each Assignment running today, leaving out those not started yet or ended', function () {
+    $cara = Employee::factory()->create(['start_date' => '2025-01-06']);
+    $internal = Assignment::factory()->internal()->for($cara)->create();
+    PayEntry::factory()->for($internal)->create(['effective_from' => '2025-01-06', 'kind' => PayKind::Fixed, 'amount' => 480000]);
+    $relaunch = Assignment::factory()->for($cara)->for(Project::factory()->create(['name' => 'Relaunch', 'start_date' => '2025-01-06']))
+        ->create(['start_date' => '2026-01-05', 'end_date' => null, 'capacity' => 60]);
+    PayEntry::factory()->for($relaunch)->create(['effective_from' => '2026-01-05', 'kind' => PayKind::Hourly, 'amount' => 2500]);
+    PayEntry::factory()->for($relaunch)->create(['effective_from' => '2026-06-01', 'kind' => PayKind::Hourly, 'amount' => 2800]);
+    $later = Assignment::factory()->for($cara)->create(['start_date' => '2026-04-01', 'end_date' => null, 'capacity' => 20]);
+    PayEntry::factory()->for($later)->create(['effective_from' => '2026-04-01']);
+    $ended = Assignment::factory()->for($cara)->create(['start_date' => '2025-02-01', 'end_date' => '2026-02-28', 'capacity' => 30]);
+    PayEntry::factory()->for($ended)->create(['effective_from' => '2025-02-01']);
+
+    actingAs(payManager())->get(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
+        ->assertInertia(fn (Assert $page) => $page->where('assignmentStats', [
+            'capacity_assigned' => 60,
+            'active' => 2,
+            'ended' => 1,
+            'pay_in_effect' => [
+                ['project' => $internal->project->name, 'is_internal' => true, 'kind' => 'fixed', 'amount' => '€4,800.00'],
+                ['project' => 'Relaunch', 'is_internal' => false, 'kind' => 'hourly', 'amount' => '€25.00'],
+            ],
+        ]));
+});
 
 it('shows an Assignment with no Pay yet as having none', function () {
     $assignment = relaunchAssignment();
@@ -210,10 +247,10 @@ it('sends Pay only to viewers whose view pay or manage pay covers the Employee',
     $page->assertInertia(fn (Assert $page) => $page
         ->where('canViewPay', $seesPay)
         ->where('canManagePay', $managesPay)
-        ->when($seesPay, fn (Assert $page) => $page->has('assignments.0.pay', 1))
+        ->when($seesPay, fn (Assert $page) => $page->has('assignments.0.pay', 1)->has('assignmentStats.pay_in_effect'))
         ->when($managesPay, fn (Assert $page) => $page->where('currency', 'EUR'))
         ->when(! $managesPay, fn (Assert $page) => $page->missing('currency'))
-        ->when(! $seesPay, fn (Assert $page) => $page->missing('assignments.0.pay')->missing('currency')));
+        ->when(! $seesPay, fn (Assert $page) => $page->missing('assignments.0.pay')->missing('assignmentStats.pay_in_effect')->missing('currency')));
 })->with([
     'a Manager without view pay' => [fn (Employee $ben): Employee => tap($ben, fn () => giveRole($ben, [Permission::ViewAssignments->value => Scope::Reports, Permission::ManageAssignments->value => Scope::Reports])), false, false],
     'view pay for their Reports' => [fn (Employee $ben): Employee => tap($ben, fn () => giveRole($ben, [Permission::ViewAssignments->value => Scope::Reports, Permission::ViewPay->value => Scope::Reports])), true, false],

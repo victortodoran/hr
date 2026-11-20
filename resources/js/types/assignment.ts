@@ -1,5 +1,5 @@
 import type { Choice } from './employee-record';
-import type { PayEntryRecord } from './pay';
+import type { PayEntryRecord, PayInEffect } from './pay';
 
 /**
  * One of an Employee's Assignments, as their Assignments page shows it.
@@ -13,6 +13,8 @@ export type AssignmentRecord = {
     end_date: string | null;
     /** A whole percentage of the Employee's time, from 0 to 100. */
     capacity: number;
+    /** Whether it runs today: started, and not ended. */
+    is_active: boolean;
     /** Whether the Assignment ended before today. */
     has_ended: boolean;
     /**
@@ -22,6 +24,18 @@ export type AssignmentRecord = {
     can_delete: boolean;
     /** The Pay history, newest first; only sent to viewers who may see it. */
     pay?: PayEntryRecord[];
+};
+
+/**
+ * The numbers over an Employee's Assignments: the Capacity of those running
+ * today added up, how many run today and how many have ended, and the Pay
+ * in effect on each running one, for viewers who may see Pay.
+ */
+export type AssignmentStats = {
+    capacity_assigned: number;
+    active: number;
+    ended: number;
+    pay_in_effect?: PayInEffect[];
 };
 
 /**
