@@ -13,6 +13,9 @@ parameters:
 
     level: 8
 
+    # Inside the checkout, so full runs in parallel worktrees don't share a cache.
+    tmpDir: storage/framework/cache/phpstan
+
     # Pest's arch() DSL resolves preset()/expect() through magic methods that
     # PHPStan can't type. The file is itself a static check, so it is skipped.
     excludePaths:

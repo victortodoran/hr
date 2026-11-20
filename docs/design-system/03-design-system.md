@@ -1,6 +1,6 @@
 # UI rules (Ledger)
 
-> Replaces the UI section of `CODING_STANDARDS.md`. Each rule is one line a reviewer can check against a diff. Cite rules by ID in review comments ("breaks L8"). Tokens live in `resources/css/app.css` (see `04-tokens.css`). Mockups: `mockups/`.
+> The UI rules reviewers apply; `CODING_STANDARDS.md` points here. Each rule is one line a reviewer can check against a diff. Cite rules by ID in review comments ("breaks L8"). Tokens live in `resources/css/app.css` (see `04-tokens.css`). Mockups: `mockups/`.
 
 **The idea in one line:** grayscale ledger, numbers that line up, hairlines instead of boxes, and one violet `primary` used only for the main action, focus and selection.
 

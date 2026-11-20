@@ -75,6 +75,7 @@ export default defineConfig({
             'resources/js/components/ui/*',
             'resources/views/mail/*',
             'docs/design-system/mockups/**',
+            'docs/design-system/05-components.md',
         ],
         sortTailwindcss: {
             functions: ['clsx', 'cn', 'cva'],

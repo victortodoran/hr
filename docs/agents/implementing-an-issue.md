@@ -18,6 +18,7 @@ Point it at this doc for the rest.
 
 - Pipe long commands through `tail`, and re-run one in full only when it fails: `composer ci:check 2>&1 | tail -40`, `npm run build 2>&1 | tail -20`.
 - Run single test files with `php artisan test --compact <path>`, one test command at a time: overlapping runs on one database deadlock.
+- Every targeted run includes `tests/Unit/ArchitectureTest.php`.
 - When tests fail, list them one per line with `composer test:failures -- <path>`, and read why with `composer test:readable -- <path>`.
 - Open the files the brief points to and their direct imports. Read the parent spec or the whole glossary only when the issue is unclear without them.
 - Read files in ranges when only part is needed.
