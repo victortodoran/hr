@@ -5,7 +5,7 @@ import TravelRequestCancellationController from '@/actions/App/Http/Controllers/
 import TravelRequestDeclineController from '@/actions/App/Http/Controllers/Travel/TravelRequestDeclineController';
 import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -70,8 +70,8 @@ setLayoutProps({
 <template>
     <Head :title="travelRequest.destination" />
 
-    <PageContainer width="wide">
-        <Heading :title="travelRequest.destination">
+    <PageContainer width="full">
+        <PageHeader :title="travelRequest.destination">
             <template #description>
                 <StatusBadge :state="travelRequest.state" />
                 <span>{{
@@ -135,7 +135,7 @@ setLayoutProps({
                     </template>
                 </ConfirmDialog>
             </template>
-        </Heading>
+        </PageHeader>
 
         <dl class="grid gap-4 text-sm sm:grid-cols-2">
             <div>

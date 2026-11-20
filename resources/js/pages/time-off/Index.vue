@@ -5,7 +5,8 @@ import TimeOffCancellationController from '@/actions/App/Http/Controllers/TimeOf
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import ScopeSwitch from '@/components/ScopeSwitch.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import PaidDaysLeft from '@/components/time-off/PaidDaysLeft.vue';
@@ -36,11 +37,12 @@ const columns: TableColumn[] = [
 <template>
     <Head title="Time Off" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Time Off"
             description="Request days away from work, Paid or Unpaid, and cancel them before they start"
         />
+        <ScopeSwitch area="timeOff" />
 
         <div class="flex flex-wrap items-center justify-between gap-4">
             <PaidDaysLeft :paid-days-left="paidDaysLeft" />

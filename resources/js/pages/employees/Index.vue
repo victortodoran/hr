@@ -7,7 +7,7 @@ import EmptyState from '@/components/EmptyState.vue';
 import FilterBar from '@/components/FilterBar.vue';
 import FilterSearch from '@/components/FilterSearch.vue';
 import FilterSelect from '@/components/FilterSelect.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
@@ -57,8 +57,8 @@ const filters = useListFilters(index.url, {
 <template>
     <Head title="Employees" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Employees"
             description="Everyone whose record you may see: future, current and former"
         >
@@ -67,7 +67,7 @@ const filters = useListFilters(index.url, {
                     <Link :href="create()">Add Employee</Link>
                 </Button>
             </template>
-        </Heading>
+        </PageHeader>
 
         <FilterBar>
             <FilterSearch v-model="filters.search" />

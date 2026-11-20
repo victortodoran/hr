@@ -2,7 +2,8 @@
 import { Head, router, setLayoutProps } from '@inertiajs/vue3';
 import { useLocalStorage } from '@vueuse/core';
 import { computed, reactive } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import ScopeSwitch from '@/components/ScopeSwitch.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -125,11 +126,12 @@ const guard = useUnsavedChanges(
 <template>
     <Head :title="title" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             :title="title"
             :description="`Hours ${employee.name} worked`"
         />
+        <ScopeSwitch area="work" />
 
         <div class="flex flex-wrap items-center gap-3">
             <Tabs :model-value="tab" @update:model-value="openTab">

@@ -9,6 +9,9 @@ export type Employee = {
     [key: string]: unknown;
 };
 
+/** An area whose records the ScopeSwitch splits into the Employee's own and others' (rule L19). */
+export type ScopedArea = 'work' | 'timeOff' | 'travel' | 'performance';
+
 export type Auth = {
     employee: Employee;
     /** Company-wide Permissions the signed-in Employee holds. */
@@ -31,4 +34,6 @@ export type Auth = {
     approvalsWaiting: number;
     /** Whether the signed-in Employee effectively manages anyone, for the Performance Evaluations page. */
     canSeePerformanceEvaluations: boolean;
+    /** Per area, how far beyond themselves the signed-in Employee sees: everyone, reports, or nobody else (null). */
+    othersReach: Record<ScopedArea, 'reports' | 'everyone' | null>;
 };

@@ -12,6 +12,8 @@ export type NavItem = {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon;
     isActive?: boolean;
+    /** Other pages of the same area that also mark this link active (rule L18). */
+    activeOn?: NonNullable<InertiaLinkProps['href']>[];
     /** A count shown beside the link; hidden when zero or missing. */
     badge?: number;
 };

@@ -8,7 +8,7 @@ import GoalProgressController from '@/actions/App/Http/Controllers/Performance/G
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import SavedTick from '@/components/SavedTick.vue';
 import GoalFields from '@/components/performance-evaluations/GoalFields.vue';
@@ -190,8 +190,8 @@ setLayoutProps({
 <template>
     <Head :title="`Goal · ${goal.title}`" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             :title="goal.title"
             :description="`${evaluation.employee.name} · ${evaluation.year} Performance Evaluation`"
         >
@@ -213,7 +213,7 @@ setLayoutProps({
                     </template>
                 </ConfirmDeleteDialog>
             </template>
-        </Heading>
+        </PageHeader>
 
         <div class="flex flex-wrap items-start gap-6">
             <div class="flex min-w-0 flex-[999_1_28rem] flex-col gap-8">

@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
 import { computed } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import NeedsAttentionCard from '@/components/home/NeedsAttentionCard.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -65,8 +65,8 @@ const thisMonthsWorkEntries = computed(() =>
 <template>
     <Head title="Home" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Home"
             description="Your hours and Time Off at a glance"
         />

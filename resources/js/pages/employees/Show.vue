@@ -8,7 +8,7 @@ import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import EmployeePageSection from '@/components/employees/EmployeePageSection.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -170,8 +170,8 @@ setLayoutProps({
 <template>
     <Head :title="employee.name" />
 
-    <PageContainer width="wide">
-        <Heading :title="employee.name">
+    <PageContainer width="full">
+        <PageHeader :title="employee.name">
             <template #description>
                 <span>{{ employee.job_title ?? 'Employee' }}</span>
                 <template v-if="standing">
@@ -184,7 +184,7 @@ setLayoutProps({
                     <Link :href="edit(employee.id)">Edit</Link>
                 </Button>
             </template>
-        </Heading>
+        </PageHeader>
 
         <Tabs :model-value="tab" @update:model-value="openTab">
             <TabsList

@@ -4,7 +4,7 @@ import EmployeeController from '@/actions/App/Http/Controllers/Employees/Employe
 import EmployeeInvitationController from '@/actions/App/Http/Controllers/Employees/EmployeeInvitationController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { edit, show } from '@/routes/employees';
@@ -29,14 +29,14 @@ setLayoutProps({
 <template>
     <Head :title="employee.name" />
 
-    <PageContainer width="narrow">
-        <Heading :title="employee.name">
+    <PageContainer width="form">
+        <PageHeader :title="employee.name">
             <template #description>
                 <span>Employee record</span>
                 <span aria-hidden="true">·</span>
                 <EmploymentStatusBadge :status="employee.status" />
             </template>
-        </Heading>
+        </PageHeader>
 
         <div
             v-if="reportsNeedingAManager.length > 0"

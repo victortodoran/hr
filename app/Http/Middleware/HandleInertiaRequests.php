@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\Permission;
+use App\Enums\Scope;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Models\TravelRequest;
@@ -67,6 +68,13 @@ class HandleInertiaRequests extends Middleware
                 'approvalsWaiting' => fn (): int => $asManagerOnce()['waiting'],
                 'canSeePerformanceEvaluations' => fn (): bool => $asManagerOnce()['managesAnyone']
                     || ($employee instanceof Employee && $employee->seesOthersPerformanceEvaluations()),
+                'othersReach' => fn (): array => $employee instanceof Employee ? [
+                    'work' => $employee->othersReachThrough(Permission::seeingWorkEntries()),
+                    'timeOff' => $employee->othersReachThrough(Permission::seeingTimeOff()),
+                    'travel' => $employee->othersReachThrough(Permission::seeingTravel()),
+                    'performance' => $employee->othersReachThrough(Permission::seeingPerformanceEvaluations())
+                        ?? ($asManagerOnce()['managesAnyone'] ? Scope::Reports : null),
+                ] : [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

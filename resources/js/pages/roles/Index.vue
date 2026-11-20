@@ -3,7 +3,9 @@ import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import { Plus, ShieldCheck } from '@lucide/vue';
 import { computed, ref, watch, watchEffect } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import SettingsFrame from '@/components/SettingsFrame.vue';
+import { useCompanySettingsLinks } from '@/composables/useCompanySettingsLinks';
 import PageContainer from '@/components/PageContainer.vue';
 import RoleEditor from '@/components/roles/RoleEditor.vue';
 import RoleList from '@/components/roles/RoleList.vue';
@@ -92,13 +94,15 @@ watchEffect(() => {
 
     setLayoutProps({ breadcrumbs });
 });
+
+const settingsLinks = useCompanySettingsLinks();
 </script>
 
 <template>
     <Head :title="title === 'Roles' ? 'Roles' : `${title} · Roles`" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Roles"
             description="What each Role allows, and who holds it"
         >
@@ -110,51 +114,57 @@ watchEffect(() => {
                     </Link>
                 </Button>
             </template>
-        </Heading>
+        </PageHeader>
 
-        <div class="grid items-start gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
-            <RoleList
-                class="lg:sticky lg:top-4"
-                :roles="roles"
-                :selected="selected"
-                :mode="mode"
-                :permission-count="permissionCount"
-                :new-name="draftName"
-            />
+        <SettingsFrame :items="settingsLinks" label="Company settings">
+            <div class="flex flex-col gap-8">
+                <div
+                    class="grid items-start gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]"
+                >
+                    <RoleList
+                        class="lg:sticky lg:top-4"
+                        :roles="roles"
+                        :selected="selected"
+                        :mode="mode"
+                        :permission-count="permissionCount"
+                        :new-name="draftName"
+                    />
 
-            <section class="min-w-0" aria-label="Selected Role">
-                <RoleEditor
-                    v-if="mode === 'create'"
-                    key="create"
-                    v-model:draft-name="draftName"
-                    :role="null"
-                    :roles="roles"
-                    :permissions="permissions"
-                    :employees="employees"
-                    :cancel-to="cancelNewTo"
-                />
-                <RoleEditor
-                    v-else-if="mode === 'edit' && selectedRole"
-                    :key="`edit-${selectedRole.id}`"
-                    :role="selectedRole"
-                    :roles="roles"
-                    :permissions="permissions"
-                    :employees="employees"
-                    :cancel-to="show(selectedRole.id).url"
-                />
-                <RoleView
-                    v-else-if="selectedRole"
-                    :key="selectedRole.id"
-                    :role="selectedRole"
-                    :permissions="permissions"
-                    :employees="employees"
-                />
-                <EmptyState
-                    v-else
-                    :icon="ShieldCheck"
-                    message="Roles say what the Employees holding them may do. There are none yet."
-                />
-            </section>
-        </div>
+                    <section class="min-w-0" aria-label="Selected Role">
+                        <RoleEditor
+                            v-if="mode === 'create'"
+                            key="create"
+                            v-model:draft-name="draftName"
+                            :role="null"
+                            :roles="roles"
+                            :permissions="permissions"
+                            :employees="employees"
+                            :cancel-to="cancelNewTo"
+                        />
+                        <RoleEditor
+                            v-else-if="mode === 'edit' && selectedRole"
+                            :key="`edit-${selectedRole.id}`"
+                            :role="selectedRole"
+                            :roles="roles"
+                            :permissions="permissions"
+                            :employees="employees"
+                            :cancel-to="show(selectedRole.id).url"
+                        />
+                        <RoleView
+                            v-else-if="selectedRole"
+                            :key="selectedRole.id"
+                            :role="selectedRole"
+                            :permissions="permissions"
+                            :employees="employees"
+                        />
+                        <EmptyState
+                            v-else
+                            :icon="ShieldCheck"
+                            message="Roles say what the Employees holding them may do. There are none yet."
+                        />
+                    </section>
+                </div>
+            </div>
+        </SettingsFrame>
     </PageContainer>
 </template>

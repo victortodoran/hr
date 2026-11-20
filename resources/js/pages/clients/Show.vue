@@ -3,7 +3,7 @@ import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import { FolderKanban } from '@lucide/vue';
 import TeamTable from '@/components/assignments/TeamTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import { formatPeriod } from '@/lib/dates';
 import { index, show } from '@/routes/clients';
@@ -26,8 +26,8 @@ setLayoutProps({
 <template>
     <Head :title="client.name" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             :title="client.name"
             description="Its Projects, and who is assigned to each today"
         />

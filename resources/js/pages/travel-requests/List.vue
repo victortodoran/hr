@@ -3,7 +3,8 @@ import { Head, Link } from '@inertiajs/vue3';
 import { Luggage } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import ScopeSwitch from '@/components/ScopeSwitch.vue';
 import ListFilterBar from '@/components/ListFilterBar.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
@@ -71,15 +72,16 @@ function showFiltered(query: Record<string, string>): void {
 <template>
     <Head title="Travel Requests" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Travel Requests"
             description="Employees' travel and what they spent on it"
         >
             <template #actions>
                 <TravelExpenseExportMenu :filters="props.filters" />
             </template>
-        </Heading>
+        </PageHeader>
+        <ScopeSwitch area="travel" />
 
         <ListFilterBar
             :filters="props.filters"

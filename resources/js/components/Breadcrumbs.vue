@@ -10,11 +10,13 @@ import {
 } from '@/components/ui/breadcrumb';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
-type Props = {
+/**
+ * The ancestors of the current page, each followed by a separator that
+ * leads to the page's own heading (rule L20).
+ */
+defineProps<{
     breadcrumbs: BreadcrumbItemType[];
-};
-
-defineProps<Props>();
+}>();
 </script>
 
 <template>
@@ -22,18 +24,12 @@ defineProps<Props>();
         <BreadcrumbList>
             <template v-for="(item, index) in breadcrumbs" :key="index">
                 <BreadcrumbItem>
-                    <template
-                        v-if="index === breadcrumbs.length - 1 || !item.href"
-                    >
-                        <BreadcrumbPage>{{ item.title }}</BreadcrumbPage>
-                    </template>
-                    <template v-else>
-                        <BreadcrumbLink as-child>
-                            <Link :href="item.href">{{ item.title }}</Link>
-                        </BreadcrumbLink>
-                    </template>
+                    <BreadcrumbLink v-if="item.href" as-child>
+                        <Link :href="item.href">{{ item.title }}</Link>
+                    </BreadcrumbLink>
+                    <BreadcrumbPage v-else>{{ item.title }}</BreadcrumbPage>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator v-if="index !== breadcrumbs.length - 1" />
+                <BreadcrumbSeparator />
             </template>
         </BreadcrumbList>
     </Breadcrumb>

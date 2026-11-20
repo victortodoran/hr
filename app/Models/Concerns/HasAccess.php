@@ -131,6 +131,24 @@ trait HasAccess
     }
 
     /**
+     * How far beyond themselves any of the Permissions reaches for the
+     * Employee: everyone when one gives Everyone, reports when one only
+     * covers their Reports, null when none reaches anyone else.
+     *
+     * @param  list<Permission>  $permissions
+     */
+    public function othersReachThrough(array $permissions): ?Scope
+    {
+        $scopes = $this->scopesGivenFor($permissions);
+
+        if ($scopes->contains(Scope::Everyone)) {
+            return Scope::Everyone;
+        }
+
+        return $scopes->contains(fn (Scope $scope): bool => $scope->coversOthers()) ? Scope::Reports : null;
+    }
+
+    /**
      * Limit a query of Employees to those any of the Permissions reaches for
      * the Employee: the query counterpart of reachesThrough(). Nobody, when
      * none of them is granted.

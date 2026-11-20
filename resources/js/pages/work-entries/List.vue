@@ -6,7 +6,8 @@ import ReopeningController from '@/actions/App/Http/Controllers/WorkEntries/Reop
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import ScopeSwitch from '@/components/ScopeSwitch.vue';
 import ListFilterBar from '@/components/ListFilterBar.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
@@ -126,8 +127,8 @@ function weekOf(entry: ListedWorkEntry): string {
 <template>
     <Head title="Work Entries" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Work Entries"
             :description="
                 canReopen
@@ -141,7 +142,8 @@ function weekOf(entry: ListedWorkEntry): string {
                     :disabled="entries.total === 0"
                 />
             </template>
-        </Heading>
+        </PageHeader>
+        <ScopeSwitch area="work" />
 
         <ListFilterBar
             :filters="filters"
