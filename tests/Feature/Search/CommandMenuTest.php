@@ -50,16 +50,16 @@ it('finds everyone the Directory lists for a viewer with view directory, opening
 it('finds the people whose Employee page the viewer may open, opening it, and leaves out Former Employees and those outside their Scope', function () {
     $ben = managerBen();
     giveRole($ben, [Permission::ViewEmployeeRecords->value => Scope::Reports]);
-    $report = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Dan Report']);
-    $futureReport = Employee::factory()->future()->reportingTo($ben)->create(['name' => 'Dana Soon']);
+    $report = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Dana Report']);
+    $futureReport = Employee::factory()->future()->reportingTo($ben)->create(['name' => 'Dane Soon']);
     Employee::factory()->former()->reportingTo($ben)->create(['name' => 'Dani Gone']);
     Employee::factory()->startedLongAgo()->create(['name' => 'Dan Elsewhere']);
 
     actingAs($ben)->getJson(route('search', ['search' => 'dan']))
         ->assertOk()
         ->assertJsonPath('people', [
-            ['id' => $report->id, 'name' => 'Dan Report', 'job_title' => null, 'canViewEmployee' => true],
-            ['id' => $futureReport->id, 'name' => 'Dana Soon', 'job_title' => null, 'canViewEmployee' => true],
+            ['id' => $report->id, 'name' => 'Dana Report', 'job_title' => null, 'canViewEmployee' => true],
+            ['id' => $futureReport->id, 'name' => 'Dane Soon', 'job_title' => null, 'canViewEmployee' => true],
         ]);
 });
 
