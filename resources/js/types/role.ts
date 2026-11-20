@@ -27,7 +27,7 @@ export type PermissionChoice = {
     label: string;
     /** The Scopes it can be given with, narrowest first; none when company-wide. */
     scopes: Scope[];
-    /** The area it is about, such as "Work entries", in the Roles page's order. */
+    /** The area it is about, such as "Work Entries", in the Roles page's order. */
     group: string;
 };
 

@@ -1,5 +1,6 @@
 <script setup lang="ts" generic="Row extends TeamAssignment">
 import { UsersRound } from '@lucide/vue';
+import CapacityBar from '@/components/assignments/CapacityBar.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PersonCell from '@/components/PersonCell.vue';
@@ -10,8 +11,8 @@ import type { TableColumn, TeamAssignment } from '@/types';
 
 /**
  * A team as a Project's or a Client's page lists it: each Assignment's
- * Employee (K13), Job Title, dates and Capacity, the Capacity as a small
- * bar beside its percentage (F11). Given `groupBy` and `groups`, it groups
+ * Employee (K13), Job Title, dates and Capacity, the Capacity as a
+ * `CapacityBar` (F11). Given `groupBy` and `groups`, it groups
  * the Assignments, such as by Project on a Client's page, each group row
  * filled by the `group` slot.
  */
@@ -59,23 +60,7 @@ const columns: TableColumn[] = [
             }}</span>
         </template>
         <template #cell-capacity="{ row }">
-            <span
-                class="inline-flex items-center justify-end gap-2"
-                data-test="capacity"
-            >
-                <span
-                    class="hidden h-1.5 w-16 overflow-hidden rounded-full bg-muted sm:block"
-                    aria-hidden="true"
-                >
-                    <span
-                        class="block h-full rounded-full bg-chart-bar-strong"
-                        :style="{ width: `${Math.min(row.capacity, 100)}%` }"
-                    />
-                </span>
-                <span class="w-10 text-right tabular-nums"
-                    >{{ row.capacity }}%</span
-                >
-            </span>
+            <CapacityBar :capacity="row.capacity" />
         </template>
         <template #empty>
             <EmptyState :icon="UsersRound" :message="empty" />

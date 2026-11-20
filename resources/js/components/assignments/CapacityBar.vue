@@ -2,7 +2,8 @@
 /**
  * An Assignment's Capacity as a small bar beside its percentage (rule F11),
  * such as "▰▰▱ 60%". The bar only repeats the number, so it is hidden from
- * screen readers; on a phone only the percentage shows.
+ * screen readers; on a phone only the percentage shows. The percentage
+ * keeps one width, so the bars line up down a right-aligned column.
  */
 defineProps<{
     /** A whole percentage of the Employee's time, from 0 to 100. */
@@ -21,6 +22,6 @@ defineProps<{
                 :style="{ width: `${capacity}%` }"
             />
         </span>
-        <span class="tabular-nums">{{ capacity }}%</span>
+        <span class="w-10 text-right tabular-nums">{{ capacity }}%</span>
     </span>
 </template>
