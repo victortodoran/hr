@@ -35,7 +35,7 @@ class PerformanceEvaluationController extends Controller
      */
     public function index(PerformanceEvaluationListRequest $request, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationListPage::props($actor, $request->year(), $request->search(), $request->state(), $request->employeeId()));
+        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationListPage::props($actor, $request));
     }
 
     /**
@@ -46,7 +46,7 @@ class PerformanceEvaluationController extends Controller
      */
     public function create(PerformanceEvaluationListRequest $request, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationFormPage::create($actor, $request->year(), $request->search(), $request->state(), $request->employeeId()));
+        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationFormPage::create($actor, $request));
     }
 
     /**

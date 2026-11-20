@@ -6,7 +6,6 @@ import GoalCard from '@/components/performance-evaluations/GoalCard.vue';
 import NoGoalsYet from '@/components/performance-evaluations/NoGoalsYet.vue';
 import StatStrip from '@/components/StatStrip.vue';
 import { Button } from '@/components/ui/button';
-import { firstName } from '@/lib/goals';
 import { outcomes } from '@/lib/outcomes';
 import { create } from '@/routes/performance-evaluations/goals';
 import type { PerformanceEvaluationRecord } from '@/types';
@@ -28,12 +27,11 @@ const props = defineProps<{
     canChangeProgress: boolean;
     /** Whether the viewer sees its Outcomes and summary. */
     canSeeOutcomes: boolean;
+    /** Whether the Manager is giving Outcomes in the Year as a whole panel beside the Goals, which then shows the Outcome and summary instead (never on the Employee's Performance page, which has no panel). */
+    isAssessing: boolean;
+    /** What the Goals' empty state calls the Employee ("Cara"). */
+    employeeFirstName: string;
 }>();
-
-/** Whether the Manager is giving Outcomes, which the Year as a whole panel beside the Goals does instead. */
-const isAssessing = computed(
-    () => props.canEdit && props.evaluation.goals.length > 0,
-);
 
 /** The Outcome of the year as a whole and how many Goals it weighed. */
 const stats = computed(() =>
@@ -46,11 +44,6 @@ const stats = computed(() =>
               },
           ]
         : [],
-);
-
-/** What the Goals' empty state calls the Employee. */
-const employeeFirstName = computed(() =>
-    firstName(props.evaluation.employee.name),
 );
 </script>
 

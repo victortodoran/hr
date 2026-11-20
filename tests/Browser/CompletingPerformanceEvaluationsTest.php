@@ -39,7 +39,7 @@ it('saves Progress and Outcomes as they are picked and the summary with its butt
         ->assertSee('Pick an Outcome for every Goal and save the summary to Complete it.')
         ->fill('#evaluation-summary', "A strong year.\nThe Relaunch shipped on time.")
         ->click('internal:role=heading[name="Year as a whole"s]')
-        ->assertSee('Pick an Outcome for every Goal and save the summary to Complete it.')
+        ->assertSee('Save the summary first to Complete it.')
         ->click('Save summary')
         ->assertSee('Summary saved.')
         ->assertSee('Pick the Outcome of the year as a whole to Complete it.')

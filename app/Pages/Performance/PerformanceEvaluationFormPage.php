@@ -2,7 +2,7 @@
 
 namespace App\Pages\Performance;
 
-use App\Enums\PerformanceEvaluationState;
+use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
 
@@ -21,10 +21,10 @@ final class PerformanceEvaluationFormPage
      *
      * @return array<string, mixed>
      */
-    public static function create(Employee $actor, int $year, string $search, ?PerformanceEvaluationState $state, ?int $employeeId): array
+    public static function create(Employee $actor, PerformanceEvaluationListRequest $filters): array
     {
         return [
-            ...PerformanceEvaluationListPage::props($actor, $year, $search, $state, $employeeId),
+            ...PerformanceEvaluationListPage::props($actor, $filters),
             'creating' => true,
             'creatableYears' => array_map(fn (int $creatable): array => [
                 'year' => $creatable,

@@ -13,6 +13,7 @@ import PerformanceEvaluationBody from '@/components/performance-evaluations/Perf
 import StatusBadge from '@/components/StatusBadge.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { firstName } from '@/composables/useInitials';
 import { formatDate } from '@/lib/dates';
 import { outcomes } from '@/lib/outcomes';
 import { index } from '@/routes/my-performance-evaluations';
@@ -133,6 +134,10 @@ const otherYearsTitle = computed(() =>
                 :can-edit="current.canEdit"
                 :can-change-progress="current.canChangeProgress"
                 :can-see-outcomes="current.canSeeOutcomes"
+                :is-assessing="false"
+                :employee-first-name="
+                    firstName(current.evaluation.employee.name)
+                "
             />
             <NoGoalsYet v-else
                 >Your Manager hasn't added your {{ year }} Goals yet. They
@@ -177,8 +182,7 @@ const otherYearsTitle = computed(() =>
             </FactList>
             <p class="text-body">
                 <TextLink :href="show(selectedOther.id)"
-                    >Open the {{ selectedOther.year }} Performance
-                    Evaluation</TextLink
+                    >{{ selectedOther.year }} Performance Evaluation</TextLink
                 >
             </p>
         </section>

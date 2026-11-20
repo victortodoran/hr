@@ -1,10 +1,4 @@
-/**
- * The first word of a person's name, as the Performance pages call the
- * Employee in sentences ("Cara").
- */
-export function firstName(name: string): string {
-    return name.trim().split(/\s+/u)[0];
-}
+import { firstName } from '@/composables/useInitials';
 
 /**
  * What a Goal's Outcome field is labelled for its Manager while the

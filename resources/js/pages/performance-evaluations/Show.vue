@@ -11,6 +11,7 @@ import PageContainer from '@/components/PageContainer.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import GoalSheet from '@/components/performance-evaluations/GoalSheet.vue';
 import PerformanceEvaluationBody from '@/components/performance-evaluations/PerformanceEvaluationBody.vue';
+import SidePanel from '@/components/SidePanel.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
@@ -28,9 +29,10 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { firstName } from '@/composables/useInitials';
 import { useOverlayRoute } from '@/composables/useOverlayRoute';
 import { formatDate } from '@/lib/dates';
-import { firstName, goalOutcomeLabel } from '@/lib/goals';
+import { goalOutcomeLabel } from '@/lib/goals';
 import { outcomes } from '@/lib/outcomes';
 import { index as mine } from '@/routes/my-performance-evaluations';
 import { index, show } from '@/routes/performance-evaluations';
@@ -94,16 +96,23 @@ function saveSummary(): void {
 /** The Outcome of the whole that Complete sends: the one kept after a Reopen, until another is picked. */
 const pickedOutcome = ref<Outcome | ''>(props.evaluation.outcome ?? '');
 
-/** Whether every Goal has an Outcome and the summary is written and saved. */
+/** Whether every Goal has an Outcome and the saved summary is written. */
 const goalsAndSummaryReady = computed(
     () =>
         props.evaluation.goals.every((goal) => goal.outcome !== null) &&
-        Boolean(props.evaluation.summary?.trim()) &&
-        !summaryForm.isDirty,
+        Boolean(props.evaluation.summary?.trim()),
 );
 
 /** Why Complete can't be pressed yet, or null once it can. */
 const notReadyReason = computed(() => {
+    /**
+     * Deliberately stricter than the server: Completing sends no summary,
+     * so with unsaved edits it would Complete with the old saved one.
+     */
+    if (summaryForm.isDirty) {
+        return 'Save the summary first to Complete it.';
+    }
+
     if (!goalsAndSummaryReady.value) {
         return 'Pick an Outcome for every Goal and save the summary to Complete it.';
     }
@@ -130,7 +139,10 @@ const isAssessing = computed(
     () => props.canEdit && props.evaluation.goals.length > 0,
 );
 
-const employeeFirstName = firstName(props.evaluation.employee.name);
+/** What the page's sentences call the Employee ("Cara"). */
+const employeeFirstName = computed(() =>
+    firstName(props.evaluation.employee.name),
+);
 
 const title = props.isOwn
     ? String(props.evaluation.year)
@@ -200,13 +212,11 @@ setLayoutProps({
                 :can-edit="canEdit"
                 :can-change-progress="canChangeProgress"
                 :can-see-outcomes="canSeeOutcomes"
+                :is-assessing="isAssessing"
+                :employee-first-name="employeeFirstName"
             />
 
-            <aside
-                v-if="isAssessing"
-                class="flex flex-col gap-5 rounded-lg border bg-surface p-5 xl:sticky xl:top-6"
-                aria-labelledby="year-as-a-whole"
-            >
+            <SidePanel v-if="isAssessing" aria-labelledby="year-as-a-whole">
                 <div class="flex flex-col gap-1">
                     <h2 id="year-as-a-whole" class="text-section">
                         Year as a whole
@@ -305,7 +315,7 @@ setLayoutProps({
                         {{ notReadyReason }}
                     </p>
                 </div>
-            </aside>
+            </SidePanel>
         </div>
 
         <GoalSheet

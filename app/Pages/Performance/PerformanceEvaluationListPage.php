@@ -2,7 +2,7 @@
 
 namespace App\Pages\Performance;
 
-use App\Enums\PerformanceEvaluationState;
+use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
 use App\Models\Builders\EmployeeBuilder;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
@@ -29,8 +29,13 @@ final class PerformanceEvaluationListPage
      *
      * @return array<string, mixed>
      */
-    public static function props(Employee $actor, int $year, string $search, ?PerformanceEvaluationState $state, ?int $employeeId): array
+    public static function props(Employee $actor, PerformanceEvaluationListRequest $filters): array
     {
+        $year = $filters->year();
+        $search = $filters->search();
+        $state = $filters->state();
+        $employeeId = $filters->employeeId();
+
         $askedEmployee = $employeeId === null ? null : Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->whereKey($employeeId)->first(['employees.id', 'name']);
 
         $latestYear = max(PerformanceEvaluation::creatableYears());

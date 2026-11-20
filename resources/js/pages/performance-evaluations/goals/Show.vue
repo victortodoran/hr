@@ -13,6 +13,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import GoalOutcomeSelect from '@/components/performance-evaluations/GoalOutcomeSelect.vue';
 import GoalProgressSelect from '@/components/performance-evaluations/GoalProgressSelect.vue';
 import GoalSheet from '@/components/performance-evaluations/GoalSheet.vue';
+import SidePanel from '@/components/SidePanel.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -128,6 +129,9 @@ const shownHistoryRows = computed(() =>
         : historyRows.value.slice(0, historyPreviewLength),
 );
 
+/** Whose Performance Evaluation the Goal belongs to, under its title and in its sheet. */
+const evaluationDescription = `${props.evaluation.employee.name} · ${props.evaluation.year} Performance Evaluation`;
+
 const evaluationTitle = props.isOwn
     ? String(props.evaluation.year)
     : `${props.evaluation.employee.name} · ${props.evaluation.year}`;
@@ -155,10 +159,7 @@ setLayoutProps({
     <Head :title="`Goal · ${goal.title}`" />
 
     <PageContainer width="full">
-        <PageHeader
-            :title="goal.title"
-            :description="`${evaluation.employee.name} · ${evaluation.year} Performance Evaluation`"
-        >
+        <PageHeader :title="goal.title" :description="evaluationDescription">
             <template v-if="canEdit" #actions>
                 <Button variant="secondary" as-child>
                     <Link
@@ -272,10 +273,7 @@ setLayoutProps({
                 </section>
             </div>
 
-            <aside
-                class="flex flex-col gap-5 rounded-lg border bg-surface p-5"
-                aria-label="Progress, Outcome and History"
-            >
+            <SidePanel aria-label="Progress, Outcome and History">
                 <section class="flex flex-col gap-2">
                     <h2 class="text-meta font-medium text-muted-foreground">
                         Progress
@@ -345,7 +343,7 @@ setLayoutProps({
                         }}
                     </Button>
                 </section>
-            </aside>
+            </SidePanel>
         </div>
 
         <template v-if="canEdit">
@@ -353,7 +351,7 @@ setLayoutProps({
                 :open="editOpen"
                 :performance-evaluation-id="evaluation.id"
                 :goal="goal"
-                :description="`${evaluation.employee.name} · ${evaluation.year} Performance Evaluation`"
+                :description="evaluationDescription"
                 @update:open="setEditOpen"
             />
             <ConfirmDeleteDialog

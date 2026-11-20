@@ -2,6 +2,18 @@ export type UseInitialsReturn = {
     getInitials: (fullName?: string) => string;
 };
 
+/** The words of a person's name, without the surrounding blanks. */
+function nameParts(fullName: string): string[] {
+    return fullName.trim().split(/\s+/u).filter(Boolean);
+}
+
+/**
+ * The first word of a person's name, as sentences call them ("Cara").
+ */
+export function firstName(fullName: string): string {
+    return nameParts(fullName)[0] ?? '';
+}
+
 function getInitial(name: string): string {
     return Array.from(name)[0] ?? '';
 }
@@ -11,7 +23,7 @@ export function getInitials(fullName?: string): string {
         return '';
     }
 
-    const names = fullName.trim().split(/\s+/u).filter(Boolean);
+    const names = nameParts(fullName);
 
     if (names.length === 0) {
         return '';
