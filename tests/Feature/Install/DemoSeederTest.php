@@ -97,10 +97,10 @@ it('gives every Role to someone', function () {
 
 it('prints a working invitation link for the Future Employee', function () {
     Artisan::call('db:seed', ['--class' => DemoSeeder::class]);
-    preg_match('#/invitation/([^?\s]+)\?email=dan%40acme\.test#', Artisan::output(), $link);
+    $printed = preg_match('#/invitation/([^?\s]+)\?email=dan%40acme\.test#', Artisan::output(), $link);
 
-    expect($link)->not->toBeEmpty();
-    expect(Employee::query()->where('email', 'dan@acme.test')->sole()->hasValidInvitation($link[1]))->toBeTrue();
+    expect($printed)->toBe(1)
+        ->and(Employee::query()->where('email', 'dan@acme.test')->sole()->hasValidInvitation($link[1] ?? ''))->toBeTrue();
 });
 
 it('gives most Employees Paid Days and one none, and Time Off in every state for their Managers to see', function () {
