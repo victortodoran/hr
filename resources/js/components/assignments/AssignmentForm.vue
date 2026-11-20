@@ -20,7 +20,7 @@ import { formatPeriod } from '@/lib/dates';
 import type { AssignmentRecord, Choice, OpenProject } from '@/types';
 
 /**
- * Assigning an Employee to a Project, or editing one of their Assignments,
+ * Adding an Assignment of an Employee to a Project, or editing one of their Assignments,
  * in a sheet over their page (rule L14): the Project, for a new one, its
  * Job Title, dates and Capacity. The Internal Assignment's dates follow
  * the Employee's, so its form leaves them out. Each opening starts from
@@ -30,7 +30,7 @@ import type { AssignmentRecord, Choice, OpenProject } from '@/types';
 const props = defineProps<{
     employee: Choice;
     projects: OpenProject[];
-    /** The Assignment being edited; none to assign to a Project. */
+    /** The Assignment being edited; none to add a new one. */
     assignment?: AssignmentRecord | null;
 }>();
 
@@ -47,7 +47,7 @@ const fieldId = (field: string): string =>
 
 const title = computed(() => {
     if (!props.assignment) {
-        return 'Assign to a Project';
+        return 'Add Assignment';
     }
 
     return isInternal.value
@@ -150,7 +150,7 @@ function submit(): void {
         >
             <div v-if="!assignment" class="grid gap-2">
                 <Label :for="fieldId('project')">Project</Label>
-                <Select v-model="form.project_id">
+                <Select v-model="form.project_id" name="project_id" required>
                     <SelectTrigger :id="fieldId('project')" class="w-full">
                         <SelectValue placeholder="Choose a Project" />
                     </SelectTrigger>
@@ -236,7 +236,7 @@ function submit(): void {
                 >Cancel</Button
             >
             <SubmitButton :form="FORM_ID" :processing="form.processing">{{
-                assignment ? 'Save' : 'Assign to the Project'
+                assignment ? 'Save' : 'Add Assignment'
             }}</SubmitButton>
         </template>
     </FormSheet>

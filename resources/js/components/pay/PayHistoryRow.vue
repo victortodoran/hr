@@ -9,24 +9,20 @@ import InputError from '@/components/InputError.vue';
 import RowActions from '@/components/RowActions.vue';
 import SegmentedControl from '@/components/SegmentedControl.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import StatusIcon from '@/components/StatusIcon.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDate, formatDateRange } from '@/lib/dates';
-import { formatPay } from '@/lib/pay';
-import type {
-    AssignmentRecord,
-    PayChangeState,
-    PayEntryRecord,
-    PayKind,
-    StatusBadgeState,
-} from '@/types';
+import { formatPay, payKindNames } from '@/lib/pay';
+import type { AssignmentRecord, PayEntryRecord, PayKind } from '@/types';
 
 /**
  * An Assignment's Pay history, opened in place under its row (rules K2,
- * S9): each Pay change newest first on a timeline, with the days it
- * applies and whether it is Upcoming, In effect or Past. Those who may
+ * K21, S9): each Pay change newest first on a timeline, with the days it
+ * applies and whether it is Upcoming, In effect or Past, its status icon
+ * marking it on the timeline beside the badge naming it (S10). Those who may
  * manage Pay remove a change from its ⋯ menu, after confirming, and add
  * one with the inline form under the timeline. A change can't be edited:
  * a correction is a Remove and an Add.
@@ -37,21 +33,9 @@ const props = defineProps<{
     currency?: string;
 }>();
 
-const badgeStates: Record<PayChangeState, StatusBadgeState> = {
-    upcoming: 'upcoming',
-    in_effect: 'in-effect',
-    past: 'past',
-};
-
-const dotClasses: Record<PayChangeState, string> = {
-    upcoming: 'border-dashed border-status-upcoming-icon bg-background',
-    in_effect: 'border-status-approved-icon bg-status-approved-icon',
-    past: 'border-border-strong bg-background',
-};
-
 const kinds: { value: PayKind; label: string }[] = [
-    { value: 'fixed', label: 'Fixed, per month' },
-    { value: 'hourly', label: 'Hourly' },
+    { value: 'fixed', label: payKindNames.fixed },
+    { value: 'hourly', label: payKindNames.hourly },
 ];
 
 const fieldId = (field: string): string =>
@@ -98,7 +82,7 @@ function askToRemove(entry: PayEntryRecord): void {
     <div
         data-slot="pay-history"
         :data-test="`pay-history-${assignment.id}`"
-        class="flex flex-col gap-3 rounded-md bg-surface px-4 py-3"
+        class="flex flex-col gap-3 rounded-lg bg-surface px-4 py-3"
     >
         <ol
             v-if="assignment.pay.length > 0"
@@ -114,13 +98,13 @@ function askToRemove(entry: PayEntryRecord): void {
             >
                 <span
                     v-if="index < assignment.pay.length - 1"
-                    class="absolute top-1/2 bottom-[-50%] left-[5px] w-px bg-border-strong max-sm:hidden"
+                    class="absolute top-1/2 left-1.5 h-full w-px bg-border-strong max-sm:hidden"
                     aria-hidden="true"
                 />
-                <span
-                    class="absolute top-1/2 left-0 size-[11px] -translate-y-1/2 rounded-full border-2"
-                    :class="dotClasses[entry.state]"
-                    aria-hidden="true"
+                <StatusIcon
+                    :state="entry.state"
+                    labelled
+                    class="absolute top-1/2 left-0 -translate-y-1/2 rounded-full bg-surface"
                 />
                 <div class="min-w-0 sm:contents">
                     <span
@@ -138,7 +122,7 @@ function askToRemove(entry: PayEntryRecord): void {
                     >
                 </div>
                 <div class="flex items-center justify-end gap-1 sm:contents">
-                    <StatusBadge :state="badgeStates[entry.state]" />
+                    <StatusBadge :state="entry.state" />
                     <RowActions v-if="currency" :label="describe(entry)">
                         <template #menu>
                             <DropdownMenuItem
@@ -173,16 +157,26 @@ function askToRemove(entry: PayEntryRecord): void {
                 <InputError :message="form.errors.kind" />
             </div>
             <div class="grid gap-1.5">
-                <Label :for="fieldId('amount')">Amount ({{ currency }})</Label>
-                <Input
-                    :id="fieldId('amount')"
-                    v-model="form.amount"
-                    inputmode="decimal"
-                    placeholder="e.g. 4500.00"
-                    class="tabular-nums max-sm:h-11 sm:w-36"
-                    required
-                    :aria-invalid="Boolean(form.errors.amount) || undefined"
-                />
+                <Label :for="fieldId('amount')">Amount</Label>
+                <div class="relative">
+                    <span
+                        class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-body text-muted-foreground"
+                        aria-hidden="true"
+                        >{{ currency }}</span
+                    >
+                    <Input
+                        :id="fieldId('amount')"
+                        v-model="form.amount"
+                        inputmode="decimal"
+                        placeholder="e.g. 4500.00"
+                        class="tabular-nums max-sm:h-11 sm:w-40"
+                        :style="{
+                            paddingLeft: `calc(${currency.length}ch + 1.25rem)`,
+                        }"
+                        required
+                        :aria-invalid="Boolean(form.errors.amount) || undefined"
+                    />
+                </div>
                 <InputError :message="form.errors.amount" />
             </div>
             <div class="grid gap-1.5">
@@ -200,7 +194,10 @@ function askToRemove(entry: PayEntryRecord): void {
                 />
                 <InputError :message="form.errors.effective_from" />
             </div>
-            <div class="grid gap-1.5 sm:pt-[1.625rem]">
+            <div class="grid gap-1.5">
+                <span class="text-meta max-sm:hidden" aria-hidden="true"
+                    >&nbsp;</span
+                >
                 <SubmitButton
                     :processing="form.processing"
                     variant="secondary"
@@ -209,7 +206,8 @@ function askToRemove(entry: PayEntryRecord): void {
                 >
             </div>
             <p class="text-caption text-muted-foreground sm:basis-full">
-                Each Pay applies from its date until the next one.
+                Fixed Pay is an amount per month, Hourly Pay per hour. Each Pay
+                applies from its date until the next one.
             </p>
         </form>
 
@@ -220,8 +218,8 @@ function askToRemove(entry: PayEntryRecord): void {
             :form="
                 PayEntryController.destroy.form([assignment.id, removing.id])
             "
-            :title="`Remove the Pay change from ${formatDate(removing.effective_from)}?`"
-            :description="`${formatPay(removing)} on ${assignment.project.name} is removed, and the Pay before it applies until the next change. This can't be undone.`"
+            :title="'Remove this Pay change'"
+            :description="`${formatPay(removing)} from ${formatDate(removing.effective_from)} on ${assignment.project.name} is removed, and the Pay before it applies until the next change. This can't be undone.`"
             confirm-label="Remove Pay change"
         />
     </div>

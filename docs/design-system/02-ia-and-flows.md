@@ -161,7 +161,7 @@ On a phone, the sheets become full-height bottom sheets with a sticky footer but
     - A StatStrip: Capacity assigned, Active Assignments, Pay in effect.
     - A table: Project/Client · Job Title · Dates · Capacity bar · Pay in effect · Next change · ⋯.
     - The chevron expands the **Pay history** timeline: Upcoming · In effect · Past, each with an ⋯ menu, and "Add a Pay change" inline (Kind, Amount, Takes effect from).
-    - Ended Assignments sit at the bottom. **Assign to a Project** opens a sheet.
+    - Ended Assignments sit at the bottom. **Add Assignment** opens a sheet.
 4. **Roles (settings template).**
     - Sub-nav · Role list · Role detail. The detail shows Name, "Give to new Employees" and a **permission matrix**: groups (Employees, Assignments, Pay, …) with "n of m", one row per Permission, and a `ScopeControl` per row (None · Own · Reports · Everyone, with only valid options enabled).
     - A sticky save bar ("3 unsaved changes · Cancel · Save changes") and People holding the Role below.

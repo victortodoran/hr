@@ -29,13 +29,16 @@ export type AssignmentRecord = {
 /**
  * The numbers over an Employee's Assignments: the Capacity of those running
  * today added up, how many run today and how many have ended, and the Pay
- * in effect on each running one, for viewers who may see Pay.
+ * in effect on each running one, for viewers who may see Pay: as many as
+ * the stat strip holds, with how many more there are.
  */
 export type AssignmentStats = {
     capacity_assigned: number;
     active: number;
     ended: number;
     pay_in_effect?: PayInEffect[];
+    /** How many Pay in effect are left out of `pay_in_effect`. */
+    more_pay_in_effect?: number;
 };
 
 /**

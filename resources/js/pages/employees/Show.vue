@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
-import { useMediaQuery } from '@vueuse/core';
+import { createReusableTemplate, useMediaQuery } from '@vueuse/core';
 import {
     Briefcase,
     Building2,
@@ -196,14 +196,19 @@ const isPhone = useMediaQuery('(max-width: 639px)');
  * next change for viewers who may see Pay, and the ⋯ menu for those who
  * manage Assignments. On a phone each row stacks: the Project over its
  * Client, Job Title and Capacity, with the Pay in effect and the buttons
- * at the right.
+ * at the right, where the chevron moves too.
  */
 const assignmentColumns = computed<TableColumn[]>(() => [
     ...(props.canViewPay ? [{ key: 'expand', label: '' }] : []),
     { key: 'project', label: 'Project', phone: 'primary' as const },
     { key: 'job_title', label: 'Job Title', phone: 'secondary' as const },
     { key: 'dates', label: 'Dates' },
-    { key: 'capacity', label: 'Capacity', phone: 'secondary' as const },
+    {
+        key: 'capacity',
+        label: 'Capacity',
+        align: 'end' as const,
+        phone: 'secondary' as const,
+    },
     ...(props.canViewPay
         ? [
               {
@@ -215,7 +220,7 @@ const assignmentColumns = computed<TableColumn[]>(() => [
               { key: 'next', label: 'Next change' },
           ]
         : []),
-    ...(props.canManage || props.canViewPay
+    ...(props.canManage || (isPhone.value && props.canViewPay)
         ? [
               {
                   key: 'actions',
@@ -249,24 +254,59 @@ function payHistoryLabel(assignment: AssignmentRecord): string {
     return `${isPayHistoryOpen(assignment) ? 'Hide' : 'Show'} Pay history on ${assignment.project.name}`;
 }
 
+/** The chevron opening an Assignment's Pay history, wherever its row puts it. */
+const [DefinePayHistoryToggle, PayHistoryToggle] = createReusableTemplate<{
+    row: AssignmentRecord;
+}>();
+
 /**
- * The Pay change in effect today, or null when none has taken effect yet.
+ * Each Assignment's Pay as its row shows it: the change in effect today,
+ * or null when none has taken effect yet, and the soonest Upcoming one, the
+ * last of those listed newest first.
  */
-function payInEffect(assignment: AssignmentRecord): PayEntryRecord | null {
-    return assignment.pay?.find((entry) => entry.state === 'in_effect') ?? null;
+const rowPay = computed(
+    () =>
+        new Map(
+            (props.assignments ?? []).map((assignment) => [
+                assignment.id,
+                {
+                    inEffect:
+                        assignment.pay?.find(
+                            (entry) => entry.state === 'in-effect',
+                        ) ?? null,
+                    next:
+                        assignment.pay?.findLast(
+                            (entry) => entry.state === 'upcoming',
+                        ) ?? null,
+                },
+            ]),
+        ),
+);
+
+function payOf(assignment: AssignmentRecord): {
+    inEffect: PayEntryRecord | null;
+    next: PayEntryRecord | null;
+} {
+    return rowPay.value.get(assignment.id) ?? { inEffect: null, next: null };
 }
 
-/** The soonest Upcoming Pay change, the last of those listed newest first. */
-function nextPayChange(assignment: AssignmentRecord): PayEntryRecord | null {
-    return (
-        assignment.pay?.findLast((entry) => entry.state === 'upcoming') ?? null
-    );
+/** What a row says under its Project: Internal Assignment, or its Client. */
+function assignmentContext(assignment: AssignmentRecord): string {
+    return assignment.project.is_internal
+        ? 'Internal Assignment'
+        : (assignment.project.client ?? 'No Client');
+}
+
+/** An Assignment that has ended reads muted, its Ended badge aside. */
+function assignmentRowClass(assignment: AssignmentRecord): string {
+    return assignment.has_ended ? 'text-muted-foreground' : '';
 }
 
 /**
  * The numbers over the Assignments (rule K10): the Capacity assigned, how
  * many are active and have ended, then the Pay in effect on each active
- * one, for viewers who may see Pay, at most six numbers in all.
+ * one, for viewers who may see Pay. The server sends as many Pay as fit in
+ * six numbers and counts the rest, shown as one last number.
  */
 const assignmentStatItems = computed(() => {
     const stats = props.assignmentStats;
@@ -281,20 +321,28 @@ const assignmentStatItems = computed(() => {
             label: `Active ${stats.active === 1 ? 'Assignment' : 'Assignments'}${stats.ended > 0 ? ` · ${stats.ended} Ended` : ''}`,
             value: String(stats.active),
         },
-        ...(stats.pay_in_effect ?? []).slice(0, 4).map((pay) => ({
+        ...(stats.pay_in_effect ?? []).map((pay) => ({
             label: pay.is_internal
                 ? `${payKindNames[pay.kind]} ${payPeriods[pay.kind]}, in effect`
                 : `${payKindNames[pay.kind]} on ${pay.project}`,
             value: pay.amount,
         })),
+        ...(stats.more_pay_in_effect
+            ? [
+                  {
+                      label: 'Pay in effect on other Assignments',
+                      value: `+${stats.more_pay_in_effect} more`,
+                  },
+              ]
+            : []),
     ];
 });
 
-/** The Assignment the sheet edits; none while assigning to a Project. */
+/** The Assignment the sheet edits; none while adding one. */
 const editingAssignment = ref<AssignmentRecord | null>(null);
 const assignmentFormOpen = ref(false);
 
-function assignToAProject(): void {
+function addAssignment(): void {
     editingAssignment.value = null;
     assignmentFormOpen.value = true;
 }
@@ -504,35 +552,37 @@ setLayoutProps({
                     <template v-if="canManage" #action>
                         <Button
                             class="max-sm:h-11 max-sm:w-full"
-                            @click="assignToAProject"
-                            ><Plus />Assign to a Project</Button
+                            @click="addAssignment"
+                            ><Plus />Add Assignment</Button
                         >
                     </template>
 
+                    <DefinePayHistoryToggle v-slot="{ row }">
+                        <IconButton
+                            :label="payHistoryLabel(row)"
+                            :aria-expanded="isPayHistoryOpen(row)"
+                            class="max-sm:size-11"
+                            @click="togglePayHistory(row)"
+                            ><ChevronDown
+                                v-if="isPayHistoryOpen(row)" /><ChevronRight
+                                v-else
+                        /></IconButton>
+                    </DefinePayHistoryToggle>
                     <DataTable
                         :columns="assignmentColumns"
                         :rows="assignments"
                         :has-after-row="isPayHistoryOpen"
+                        :row-class="assignmentRowClass"
                     >
                         <template #head-expand>
                             <span class="sr-only">Pay history</span>
                         </template>
                         <template #cell-expand="{ row }">
-                            <IconButton
-                                :label="payHistoryLabel(row)"
-                                :aria-expanded="isPayHistoryOpen(row)"
-                                @click="togglePayHistory(row)"
-                                ><ChevronDown
-                                    v-if="isPayHistoryOpen(row)" /><ChevronRight
-                                    v-else
-                            /></IconButton>
+                            <PayHistoryToggle :row="row" />
                         </template>
                         <template #cell-project="{ row }">
                             <span
                                 class="flex flex-wrap items-center gap-x-2"
-                                :class="
-                                    row.has_ended && 'text-muted-foreground'
-                                "
                                 data-test="assignment"
                             >
                                 <span class="font-medium">{{
@@ -545,72 +595,46 @@ setLayoutProps({
                             </span>
                             <span
                                 class="block text-meta font-normal text-muted-foreground max-sm:hidden"
-                                >{{
-                                    row.project.is_internal
-                                        ? 'Internal Assignment'
-                                        : (row.project.client ?? 'No Client')
-                                }}</span
+                                >{{ assignmentContext(row) }}</span
                             >
                         </template>
                         <template #cell-job_title="{ row }">
                             <span v-if="isPhone"
-                                >{{
-                                    row.project.is_internal
-                                        ? 'Internal'
-                                        : (row.project.client ?? 'No Client')
-                                }}
-                                · </span
-                            ><span
-                                :class="
-                                    row.has_ended && 'text-muted-foreground'
-                                "
-                                ><ValueOr :value="row.job_title"
-                            /></span>
+                                >{{ assignmentContext(row) }} · </span
+                            ><ValueOr :value="row.job_title" />
                         </template>
                         <template #cell-dates="{ row }">
-                            <span
-                                class="whitespace-nowrap tabular-nums"
-                                :class="
-                                    row.has_ended && 'text-muted-foreground'
-                                "
-                                >{{
-                                    formatPeriod(row.start_date, row.end_date)
-                                }}</span
-                            >
+                            <span class="whitespace-nowrap tabular-nums">{{
+                                formatPeriod(row.start_date, row.end_date)
+                            }}</span>
                         </template>
                         <template #cell-capacity="{ row }">
-                            <CapacityBar
-                                :capacity="row.capacity"
-                                :class="
-                                    row.has_ended && 'text-muted-foreground'
-                                "
-                            />
+                            <CapacityBar :capacity="row.capacity" />
                         </template>
                         <template #cell-pay="{ row }">
                             <span
-                                v-if="payInEffect(row)"
+                                v-if="payOf(row).inEffect"
                                 class="whitespace-nowrap tabular-nums"
-                                :class="
-                                    row.has_ended && 'text-muted-foreground'
-                                "
                                 ><span class="font-semibold">{{
-                                    payInEffect(row)?.amount
+                                    payOf(row).inEffect!.amount
                                 }}</span>
-                                {{ payPeriods[payInEffect(row)!.kind] }}</span
+                                {{
+                                    payPeriods[payOf(row).inEffect!.kind]
+                                }}</span
                             ><span v-else class="text-muted-foreground"
                                 >None in effect</span
                             >
                         </template>
                         <template #cell-next="{ row }">
-                            <StatusBadge
-                                v-if="nextPayChange(row)"
-                                state="upcoming"
-                                >{{
-                                    formatDate(
-                                        nextPayChange(row)!.effective_from,
-                                    )
-                                }}</StatusBadge
-                            ><span v-else class="text-muted-foreground"
+                            <span
+                                v-if="payOf(row).next"
+                                class="inline-flex flex-wrap items-center gap-2"
+                                ><span class="whitespace-nowrap tabular-nums">{{
+                                    formatDate(payOf(row).next!.effective_from)
+                                }}</span
+                                ><StatusBadge state="upcoming"
+                            /></span>
+                            <span v-else class="text-muted-foreground"
                                 >None</span
                             >
                         </template>
@@ -619,17 +643,10 @@ setLayoutProps({
                         </template>
                         <template #cell-actions="{ row }">
                             <div class="flex items-center justify-end gap-1">
-                                <IconButton
+                                <PayHistoryToggle
                                     v-if="isPhone && canViewPay"
-                                    :label="payHistoryLabel(row)"
-                                    :aria-expanded="isPayHistoryOpen(row)"
-                                    class="size-11"
-                                    @click="togglePayHistory(row)"
-                                    ><ChevronDown
-                                        v-if="
-                                            isPayHistoryOpen(row)
-                                        " /><ChevronRight v-else
-                                /></IconButton>
+                                    :row="row"
+                                />
                                 <RowActions
                                     v-if="canManage"
                                     :label="`the Assignment to ${row.project.name}`"
@@ -683,7 +700,7 @@ setLayoutProps({
                     :form="
                         AssignmentController.destroy.form(deletingAssignment.id)
                     "
-                    :title="`Delete the Assignment to ${deletingAssignment.project.name}?`"
+                    :title="`Delete the Assignment to ${deletingAssignment.project.name}`"
                     description="Its Pay is deleted with it. This can't be undone."
                     confirm-label="Delete Assignment"
                 />

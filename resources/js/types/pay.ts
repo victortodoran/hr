@@ -1,3 +1,5 @@
+import type { StatusBadgeState } from './status';
+
 /**
  * The two kinds of Pay: Fixed Pay per month or Hourly Pay.
  */
@@ -5,9 +7,13 @@ export type PayKind = 'fixed' | 'hourly';
 
 /**
  * Where a Pay change stands today: not taken effect yet, the one in effect,
- * or replaced by a later one.
+ * or replaced by a later one (the PayChangeState enum). Each is also the
+ * status its badge shows.
  */
-export type PayChangeState = 'upcoming' | 'in_effect' | 'past';
+export type PayChangeState = Extract<
+    StatusBadgeState,
+    'upcoming' | 'in-effect' | 'past'
+>;
 
 /**
  * One Pay change in an Assignment's Pay history.

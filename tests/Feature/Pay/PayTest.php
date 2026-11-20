@@ -74,7 +74,7 @@ it('lets someone who manages Pay give an Assignment Fixed or Hourly Pay, from an
     actingAs($manager)->get(route('employees.show', ['employee' => $assignment->employee_id, 'tab' => 'assignments']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('assignments.0.pay', [
-                ['id' => $assignment->payEntries()->sole()->id, 'effective_from' => $effectiveFrom, 'until' => '2026-12-31', 'kind' => $kind, 'amount' => $shown, 'state' => $effectiveFrom <= '2026-03-01' ? 'in_effect' : 'upcoming'],
+                ['id' => $assignment->payEntries()->sole()->id, 'effective_from' => $effectiveFrom, 'until' => '2026-12-31', 'kind' => $kind, 'amount' => $shown, 'state' => $effectiveFrom <= '2026-03-01' ? 'in-effect' : 'upcoming'],
             ]));
 })->with([
     'Fixed Pay from the first day' => ['fixed', '4500.50', '2026-02-01', '€4,500.50'],
@@ -113,10 +113,10 @@ it('shows the Pay history newest first, each change applying until the day befor
             ->where('assignments.0.pay.1.state', $states[1])
             ->where('assignments.0.pay.2.state', $states[2]));
 })->with([
-    'from the first entry' => ['2026-03-01', ['upcoming', 'upcoming', 'in_effect']],
-    'once the raise takes effect' => ['2026-06-01', ['upcoming', 'in_effect', 'past']],
-    'the day before the planned raise' => ['2026-08-31', ['upcoming', 'in_effect', 'past']],
-    'after the last entry' => ['2026-10-15', ['in_effect', 'past', 'past']],
+    'from the first entry' => ['2026-03-01', ['upcoming', 'upcoming', 'in-effect']],
+    'once the raise takes effect' => ['2026-06-01', ['upcoming', 'in-effect', 'past']],
+    'the day before the planned raise' => ['2026-08-31', ['upcoming', 'in-effect', 'past']],
+    'after the last entry' => ['2026-10-15', ['in-effect', 'past', 'past']],
 ]);
 
 it('lets the latest Pay change of an open-ended Assignment apply with no last day', function () {
@@ -150,8 +150,23 @@ it('sums up the Pay in effect today on each Assignment running today, leaving ou
                 ['project' => $internal->project->name, 'is_internal' => true, 'kind' => 'fixed', 'amount' => '€4,800.00'],
                 ['project' => 'Relaunch', 'is_internal' => false, 'kind' => 'hourly', 'amount' => '€25.00'],
             ],
+            'more_pay_in_effect' => 0,
         ]));
 });
+
+it('lists as many Pay in effect as the numbers have room for and counts the rest, never leaving one out unsaid', function (int $running, int $listed, int $more) {
+    $cara = Employee::factory()->create(['start_date' => '2025-01-06']);
+    Assignment::factory()->for($cara)->count($running)->create(['start_date' => '2026-01-05', 'end_date' => null, 'capacity' => 10])
+        ->each(fn (Assignment $assignment) => PayEntry::factory()->for($assignment)->create(['effective_from' => '2026-01-05']));
+
+    actingAs(payManager())->get(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('assignmentStats.pay_in_effect', $listed)
+            ->where('assignmentStats.more_pay_in_effect', $more));
+})->with([
+    'four, all fitting' => [4, 4, 0],
+    'five, one too many' => [5, 3, 2],
+]);
 
 it('shows an Assignment with no Pay yet as having none', function () {
     $assignment = relaunchAssignment();

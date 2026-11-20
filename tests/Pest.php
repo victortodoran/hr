@@ -208,7 +208,8 @@ function pickDateRange(AwaitableWebpage|PendingAwaitablePage|Webpage $page, stri
  * date field, those of one end of a range when a segment filter is given.
  * Under load a keystroke can land after the field has moved focus on by
  * itself, so each segment is cleared, typed, and typed again until it
- * holds its number, a few tries at most.
+ * holds its number, a few tries at most; a segment that never takes it
+ * fails the test.
  */
 function typeDateSegments(AwaitableWebpage|PendingAwaitablePage|Webpage $page, string $group, string $date, string $segmentFilter = ''): AwaitableWebpage|PendingAwaitablePage|Webpage
 {
@@ -222,6 +223,8 @@ function typeDateSegments(AwaitableWebpage|PendingAwaitablePage|Webpage $page, s
             $page->keys($segment, ['Backspace', 'Backspace', 'Backspace', 'Backspace', ...str_split($digits)]);
             $typed = $page->script('document.querySelector('.json_encode($segment).")?.getAttribute('aria-valuenow')");
         } while ((int) $typed !== (int) $digits && ++$attempts < 3);
+
+        expect((int) $typed)->toBe((int) $digits, "The {$part} of {$date} didn't take after {$attempts} retries.");
     }
 
     return $page;

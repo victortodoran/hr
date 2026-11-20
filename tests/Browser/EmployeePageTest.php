@@ -76,6 +76,7 @@ it('opens the Pay history under an Assignment, read-only to those who only view 
         ->assertSeeIn('[data-test="assignment-stats"]', 'Hourly Pay on Relaunch')
         ->assertSee('€25.00 per hour')
         ->assertSee('Jan 4, 2027')
+        ->assertScript("[...document.querySelectorAll('th')].some((th) => th.textContent.trim() === 'Actions')", false)
         ->click('internal:role=button[name="Show Pay history on Relaunch"s]')
         ->assertSeeIn("[data-test=\"pay-history-{$relaunch->id}\"]", '€28.00 per hour')
         ->assertSeeIn("[data-test=\"pay-history-{$relaunch->id}\"]", 'Upcoming')
@@ -99,7 +100,7 @@ it('adds a Pay change inline under the Assignment on a phone, the history stayin
     $page = visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
         ->resize(390, 844)
         ->click('internal:role=button[name="Show Pay history on Relaunch"s]')
-        ->click('internal:role=button[name="Hourly"s]')
+        ->click('internal:role=button[name="Hourly Pay"s]')
         ->fill("#pay-amount-{$relaunch->id}", '30');
     pickDate($page, "#pay-effective-from-{$relaunch->id}", '2026-12-01')
         ->click('Add Pay change')
@@ -129,7 +130,7 @@ it('removes a Pay change from its menu after asking', function () {
         ->click('internal:role=button[name="Show Pay history on Relaunch"s]')
         ->click('internal:role=button[name="More for the Pay change from Jun 1, 2026"s]')
         ->click('internal:role=menuitem[name="Remove…"s]')
-        ->assertSee('Remove the Pay change from Jun 1, 2026?')
+        ->assertSee('Remove this Pay change')
         ->click('internal:role=button[name="Remove Pay change"s]')
         ->assertSee('Pay removed.')
         ->assertDontSee('€520.00 per month')
@@ -138,7 +139,7 @@ it('removes a Pay change from its menu after asking', function () {
     expect($mistake->fresh())->toBeNull();
 });
 
-it('assigns an Employee to a Project in a sheet', function () {
+it('adds an Assignment to a Project in a sheet', function () {
     $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara Lane']);
     Project::factory()->create(['name' => 'Relaunch', 'start_date' => '2026-01-05']);
 
@@ -148,13 +149,13 @@ it('assigns an Employee to a Project in a sheet', function () {
     ]));
 
     $page = visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
-        ->click('internal:role=button[name="Assign to a Project"s]')
+        ->click('internal:role=button[name="Add Assignment"s]')
         ->click('#assignment-project-new')
         ->click('internal:role=option >> text=Relaunch')
         ->fill('#assignment-job-title-new', 'Tech Lead');
     pickDate($page, '#assignment-start-new', '2026-09-07')
         ->fill('#assignment-capacity-new', '60')
-        ->click('Assign to the Project')
+        ->click('internal:role=dialog >> internal:role=button[name="Add Assignment"s]')
         ->assertSee('Tech Lead')
         ->assertSeeIn('[data-test="assignment-stats"]', 'Capacity assigned')
         ->assertNoJavaScriptErrors();
@@ -207,7 +208,7 @@ it('deletes an unused Assignment after asking, and offers no Delete on one with 
     visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
         ->click('internal:role=button[name="More for the Assignment to Relaunch"s]')
         ->click('internal:role=menuitem[name="Delete…"s]')
-        ->assertSee('Delete the Assignment to Relaunch?')
+        ->assertSee('Delete the Assignment to Relaunch')
         ->click('internal:role=button[name="Delete Assignment"s]')
         ->assertSee('Assignment deleted.')
         ->assertDontSeeIn('[data-test="assignment"]', 'Relaunch')

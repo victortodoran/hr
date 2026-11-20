@@ -88,7 +88,7 @@
 
 ### Picking a component
 
-- **K1** `DataTable` for any list of records; mark minor columns `hideOnPhone` (P4). No hand-written `<table>` or bordered `<ul>`. Exceptions: `WorkEntryList` (week rows, folded days, inline forms), Comment threads (plain stacked list), Goal cards (`GoalCard`), Goal History (timeline). All still stack on a phone.
+- **K1** `DataTable` for any list of records; mark minor columns `hideOnPhone` (P4). No hand-written `<table>` or bordered `<ul>`. Exceptions: `WorkEntryList` (week rows, folded days, inline forms), Comment threads (plain stacked list), Goal cards (`GoalCard`), Goal History (timeline), Pay history (timeline, K21). All still stack on a phone.
 - **K2** `RowActions` for row-level actions: at most one or two frequent actions as `ghost` icon buttons revealed on row hover/focus, everything else in the ⋯ menu; destructive items last, red, after a separator.
 - **K3** `Tabs` (underline style) switch between sections of one page; `SegmentedControl` switches the view of the same data (List · Calendar, Week · Month · Custom, Paid · Unpaid); `ScopeSwitch` switches whose data.
 - **K4** Tabs and segmented values live in the URL (`?tab=`, `?view=`, `?scope=`), resolve through an enum, fall back to the default when unknown or not allowed, and only the open tab's data loads.
@@ -108,7 +108,7 @@
 - **K18** Charts are drawn with Tailwind divs or inline SVG (no chart library): grayscale bars, current period `bg-primary`, Pending as a hatched segment, axis labels in `text-caption`, and an sr-only table of the values.
 - **K19** A detail page's tab that shows one Employee's records from a list across Employees (Work Entries, Travel Requests) is read-only; a secondary **Open in …** section action opens the full list filtered to that Employee, where its actions and Export live.
 - **K20** Status filter chips (All plus each state, each with its count) may offer more than V8's three options, since the counts are what the chips add over a `Select`.
-- **K21** A row whose history is read and changed in place (an Assignment's Pay history) opens it under itself, as the `DataTable` row's full-width `after-row` on a `bg-surface` panel, through a chevron `IconButton` in the first column (at the row's right on a phone) with `aria-expanded` and "Show/Hide … on …" as its label; the row's other actions stay in its ⋯ menu (K2).
+- **K21** A row whose history is read and changed in place (an Assignment's Pay history) opens it under itself, as the `DataTable` row's full-width `after-row` on a `bg-surface` panel holding a timeline (a K1 exception), through a chevron `IconButton` in the first column (at the row's right on a phone) with `aria-expanded` and "Show/Hide … on …" as its label; the row's other actions stay in its ⋯ menu (K2).
 
 ---
 

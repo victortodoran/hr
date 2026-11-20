@@ -4,11 +4,11 @@ namespace App\Pages\Employees;
 
 use App\Enums\EmployeePageTab;
 use App\Enums\EmploymentStatus;
+use App\Enums\PayChangeState;
 use App\Enums\Permission;
 use App\Models\Assignment;
 use App\Models\CompanySettings;
 use App\Models\Employee;
-use App\Models\PayEntry;
 use App\Models\PerformanceEvaluation;
 use App\Models\Project;
 use App\Models\TimeOff;
@@ -22,7 +22,6 @@ use App\Support\PayHistory;
 use App\Support\Period;
 use App\Support\ReportingChain;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * The Employee page as the props it renders, in tabs: Overview,
@@ -32,12 +31,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @phpstan-import-type PaidDaysLeftInYear from PaidDaysLeft
  *
- * @phpstan-type PayChangeRow array{id: int, effective_from: string, until: string|null, kind: string, amount: string, state: 'upcoming'|'in_effect'|'past'}
+ * @phpstan-type PayChangeRow array{id: int, effective_from: string, until: string|null, kind: string, amount: string, state: value-of<PayChangeState>}
  * @phpstan-type AssignmentRow array{id: int, project: array{id: int, name: string, client: string|null, is_internal: bool}, job_title: string|null, start_date: string, end_date: string|null, capacity: int, is_active: bool, has_ended: bool, can_delete: bool, pay?: list<PayChangeRow>}
- * @phpstan-type AssignmentStats array{capacity_assigned: int, active: int, ended: int, pay_in_effect?: list<array{project: string, is_internal: bool, kind: string, amount: string}>}
+ * @phpstan-type AssignmentStats array{capacity_assigned: int, active: int, ended: int, pay_in_effect?: list<array{project: string, is_internal: bool, kind: string, amount: string}>, more_pay_in_effect?: int}
  */
 final class EmployeePage
 {
+    /**
+     * The most Pay items the Assignments' stat strip holds beside its two
+     * other numbers, keeping it within six (rule K10).
+     */
+    private const int MOST_PAY_SHOWN = 4;
+
     /**
      * An Employee's page in tabs, each offered only when the viewer may see
      * something on it. Overview: their Reporting Chain unless they have
@@ -228,7 +233,10 @@ final class EmployeePage
     /**
      * The numbers over the Assignments: the Capacity of those running today
      * added up, how many run today and how many have ended, and, when Pay
-     * is shown, the Pay in effect on each one running today.
+     * is shown, the Pay in effect on each one running today. At most
+     * MOST_PAY_SHOWN Pay are listed, so the numbers fit one strip (rule
+     * K10); when more are in effect, one fewer is listed and the rest are
+     * counted.
      *
      * @param  list<AssignmentRow>  $assignments
      * @return AssignmentStats
@@ -241,7 +249,26 @@ final class EmployeePage
             'capacity_assigned' => array_sum(array_column($active, 'capacity')),
             'active' => count($active),
             'ended' => count(array_filter($assignments, fn (array $assignment): bool => $assignment['has_ended'])),
-            ...($withPay ? ['pay_in_effect' => self::payInEffect($active)] : []),
+            ...($withPay ? self::payInEffectShown(self::payInEffect($active)) : []),
+        ];
+    }
+
+    /**
+     * The Pay in effect as the strip lists it: all of it when it fits,
+     * otherwise all but the room for one item counting the rest.
+     *
+     * @param  list<array{project: string, is_internal: bool, kind: string, amount: string}>  $payInEffect
+     * @return array{pay_in_effect: list<array{project: string, is_internal: bool, kind: string, amount: string}>, more_pay_in_effect: int}
+     */
+    private static function payInEffectShown(array $payInEffect): array
+    {
+        $shown = count($payInEffect) > self::MOST_PAY_SHOWN
+            ? array_slice($payInEffect, 0, self::MOST_PAY_SHOWN - 1)
+            : $payInEffect;
+
+        return [
+            'pay_in_effect' => $shown,
+            'more_pay_in_effect' => count($payInEffect) - count($shown),
         ];
     }
 
@@ -257,7 +284,7 @@ final class EmployeePage
 
         foreach ($assignments as $assignment) {
             foreach ($assignment['pay'] ?? [] as $entry) {
-                if ($entry['state'] === 'in_effect') {
+                if ($entry['state'] === PayChangeState::InEffect->value) {
                     $inEffect[] = [
                         'project' => $assignment['project']['name'],
                         'is_internal' => $assignment['project']['is_internal'],
@@ -362,11 +389,11 @@ final class EmployeePage
         $assignments = $employee->assignments()
             ->with('project.client')
             ->when($canManage, fn (Builder $query) => $query->withExists(['workEntries', 'travelRequests']))
-            ->when($currency !== null, fn (Builder $query) => $query->with(['payEntries' => fn (HasMany $entries) => $entries->orderByDesc('effective_from')]))
+            ->when($currency !== null, fn (Builder $query) => $query->with('payEntries'))
             ->orderBy('start_date')
             ->orderBy('id')
             ->get()
-            ->sortBy(fn (Assignment $assignment): bool => self::hasEnded($assignment))
+            ->sortBy(fn (Assignment $assignment): bool => $assignment->hasEndedBefore(today()))
             ->all();
 
         return array_map(fn (Assignment $assignment): array => [
@@ -381,50 +408,29 @@ final class EmployeePage
             'start_date' => $assignment->start_date->toDateString(),
             'end_date' => $assignment->end_date?->toDateString(),
             'capacity' => $assignment->capacity,
-            'is_active' => ! self::hasEnded($assignment) && ! $assignment->start_date->isAfter(today()),
-            'has_ended' => self::hasEnded($assignment),
+            'is_active' => $assignment->isRunningOn(today()),
+            'has_ended' => $assignment->hasEndedBefore(today()),
             'can_delete' => $canManage && $assignment->canBeDeleted(),
             ...($currency === null ? [] : ['pay' => self::payHistory($assignment, $currency)]),
         ], array_values($assignments));
     }
 
     /**
-     * Whether the Assignment ended before today.
-     */
-    private static function hasEnded(Assignment $assignment): bool
-    {
-        return $assignment->end_date !== null && $assignment->end_date->isBefore(today());
-    }
-
-    /**
      * The Assignment's Pay history, newest first: each Pay change with the
-     * last day it applies, the day before the next one or the Assignment's
-     * end date, and whether it is Upcoming, in effect today, or Past.
+     * last day it applies and where it stands today (PayHistory::changes()).
      *
      * @return list<PayChangeRow>
      */
     private static function payHistory(Assignment $assignment, Currency $currency): array
     {
-        $inEffect = PayHistory::inEffectOn(
-            $assignment->payEntries->keyBy(fn (PayEntry $entry): string => $entry->effective_from->toDateString())->all(),
-            today(),
-        );
-        $entries = array_values($assignment->payEntries->all());
-
-        return array_map(fn (PayEntry $entry, int $index): array => [
-            'id' => $entry->id,
-            'effective_from' => $entry->effective_from->toDateString(),
-            'until' => $index === 0
-                ? $assignment->end_date?->toDateString()
-                : $entries[$index - 1]->effective_from->copy()->subDay()->toDateString(),
-            'kind' => $entry->kind->value,
-            'amount' => $currency->format($entry->amount),
-            'state' => match (true) {
-                $entry->is($inEffect) => 'in_effect',
-                $entry->effective_from->isAfter(today()) => 'upcoming',
-                default => 'past',
-            },
-        ], $entries, array_keys($entries));
+        return array_map(fn (array $change): array => [
+            'id' => $change['entry']->id,
+            'effective_from' => $change['entry']->effective_from->toDateString(),
+            'until' => $change['until']?->toDateString(),
+            'kind' => $change['entry']->kind->value,
+            'amount' => $currency->format($change['entry']->amount),
+            'state' => $change['state']->value,
+        ], PayHistory::changes($assignment, today()));
     }
 
     /**
