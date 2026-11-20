@@ -197,7 +197,7 @@ class DemoSeeder extends Seeder
         $this->timeOff($ivan, $thisMonday->addWeeks(3)->addDays(4), 0, false);
         $this->yearOfTimeOff($thisMonday, $ana, $ben, $hana, $finn, $cara, $eve, $lia, $ivan);
 
-        $this->yearOfWork($ana, $ben, $hana, $finn, $eve, $lia, $caraOnRelaunch, $caraOnAudit, $benOnRelaunch, $eveOnAudit, $liaOnRelaunch, $ivanOnWebsite);
+        $this->yearOfWork($ana, $ben, $hana, $finn, $eve, $lia, $ivan, $caraOnRelaunch, $caraOnAudit, $benOnRelaunch, $eveOnAudit, $liaOnRelaunch, $ivanOnWebsite);
         $this->decline($caraOnRelaunch, $thisMonday->subWeek(), $ben, 'Sprint planning goes on Internal, not Relaunch');
         $this->decline($ivanOnWebsite, $thisMonday->subWeek()->addDays(2), $hana, 'This looks like a copy of Monday. Could you check the hours?');
 
@@ -213,7 +213,7 @@ class DemoSeeder extends Seeder
         $this->travelExpense($workshop, $workshop->first_date->addDay(), TravelExpenseCategory::Meals, 14250, 'Team dinner with Globex', TravelExpenseState::Declined, $ben, self::CLIENT_DINNER_DECLINED);
         $this->travelExpense($investors, $today->subDays(3), TravelExpenseCategory::Transport, 32000, 'Flights to London, booked early', TravelExpenseState::Approved);
         $this->bensTravel($benOnRelaunch, $ben->internalAssignment()->sole(), $ana, $thisMonday, $today);
-        $this->yearOfTravel($thisMonday, $ana, $ben, $hana, $finn, $eve, $lia, $caraOnRelaunch, $caraOnAudit, $eveOnAudit, $liaOnRelaunch, $ivanOnWebsite);
+        $this->yearOfTravel($thisMonday, $ana, $ben, $hana, $finn, $eve, $lia, $ivan, $caraOnRelaunch, $caraOnAudit, $eveOnAudit, $liaOnRelaunch, $ivanOnWebsite);
 
         $this->completedPerformanceEvaluation($ben, [
             ['Take over the Engineering team', 'Run planning and one-to-ones for everyone on the team.', Outcome::Exceeded],
@@ -356,7 +356,7 @@ class DemoSeeder extends Seeder
      * goes on. Ana has no Manager, so she records none, and Ben records
      * only his Relaunch hours.
      */
-    private function yearOfWork(Employee $ana, Employee $ben, Employee $hana, Employee $finn, Employee $eve, Employee $lia, Assignment $caraOnRelaunch, Assignment $caraOnAudit, Assignment $benOnRelaunch, Assignment $eveOnAudit, Assignment $liaOnRelaunch, Assignment $ivanOnWebsite): void
+    private function yearOfWork(Employee $ana, Employee $ben, Employee $hana, Employee $finn, Employee $eve, Employee $lia, Employee $ivan, Assignment $caraOnRelaunch, Assignment $caraOnAudit, Assignment $benOnRelaunch, Assignment $eveOnAudit, Assignment $liaOnRelaunch, Assignment $ivanOnWebsite): void
     {
         $auditEnded = $caraOnAudit->end_date?->toImmutable() ?? today();
         $relaunchJoined = $liaOnRelaunch->start_date->toImmutable();
@@ -364,7 +364,7 @@ class DemoSeeder extends Seeder
         $eveLeft = $eve->leaving_date?->toImmutable() ?? today();
         $liasManager = fn (CarbonInterface $approvedAt): Employee => $approvedAt->isAfter($eveLeft) ? $ben : $eve;
         $liaInternal = $lia->internalAssignment()->sole();
-        $ivanInternal = $ivanOnWebsite->employee->internalAssignment()->sole();
+        $ivanInternal = $ivan->internalAssignment()->sole();
 
         $this->recordWork($caraOnRelaunch, 300, [
             ['Checkout API design', 'Payment provider research', 'Sprint planning', 'Reviewing pull requests'],
@@ -537,12 +537,12 @@ class DemoSeeder extends Seeder
      * before this year is left out. None shares a day with the
      * traveller's Time Off.
      */
-    private function yearOfTravel(CarbonInterface $thisMonday, Employee $ana, Employee $ben, Employee $hana, Employee $finn, Employee $eve, Employee $lia, Assignment $caraOnRelaunch, Assignment $caraOnAudit, Assignment $eveOnAudit, Assignment $liaOnRelaunch, Assignment $ivanOnWebsite): void
+    private function yearOfTravel(CarbonInterface $thisMonday, Employee $ana, Employee $ben, Employee $hana, Employee $finn, Employee $eve, Employee $lia, Employee $ivan, Assignment $caraOnRelaunch, Assignment $caraOnAudit, Assignment $eveOnAudit, Assignment $liaOnRelaunch, Assignment $ivanOnWebsite): void
     {
         $approvedTrip = TravelRequestState::Approved;
         [$transport, $accommodation, $meals, $other] = [TravelExpenseCategory::Transport, TravelExpenseCategory::Accommodation, TravelExpenseCategory::Meals, TravelExpenseCategory::Other];
         [$pendingExpense, $approvedExpense, $declinedExpense] = [TravelExpenseState::Pending, TravelExpenseState::Approved, TravelExpenseState::Declined];
-        $ivanInternal = $ivanOnWebsite->employee->internalAssignment()->sole();
+        $ivanInternal = $ivan->internalAssignment()->sole();
 
         /**
          * Each trip: Assignment, weeks before this Monday, weekday (0 for
@@ -563,7 +563,7 @@ class DemoSeeder extends Seeder
                 [1, $accommodation, 13900, 'Hotel, one night', $approvedExpense, null],
                 [0, $meals, 3800, 'Dinner on the road', $approvedExpense, null],
             ]],
-            [$liaOnRelaunch->employee->internalAssignment()->sole(), 35, 3, 1, 'Cluj', 'Speaking at a JavaScript meetup', $approvedTrip, $eve, $eve, [
+            [$lia->internalAssignment()->sole(), 35, 3, 1, 'Cluj', 'Speaking at a JavaScript meetup', $approvedTrip, $eve, $eve, [
                 [0, $transport, 6200, 'Train to Cluj and back', $approvedExpense, null],
                 [1, $accommodation, 8500, 'Hotel, one night', $approvedExpense, null],
             ]],
@@ -601,7 +601,7 @@ class DemoSeeder extends Seeder
                 [1, $accommodation, 16000, 'Hotel, one night', $approvedExpense, null],
                 [1, $meals, 4500, 'Lunch for the test participants', $declinedExpense, 'The participants\' lunch went on the company card. Could you remove it?'],
             ]],
-            [$liaOnRelaunch, 9, 1, 2, 'Berlin', 'Cart pairing with the Globex team', $approvedTrip, $eve, $ben, [
+            [$liaOnRelaunch, 11, 1, 2, 'Berlin', 'Cart pairing with the Globex team', $approvedTrip, $eve, $eve, [
                 [0, $transport, 19900, 'Train to Berlin and back', $approvedExpense, null],
                 [2, $accommodation, 35000, 'Hotel, two nights', $approvedExpense, null],
             ]],
@@ -624,12 +624,35 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * The given moment, or the given number of days ago if that is
-     * earlier, so a demo decision never lands in the future.
+     * When Time Off or a Travel Request starting on the day was asked for:
+     * two weeks before, on a weekday, or two days ago if that is earlier.
+     */
+    private function requestedAt(CarbonInterface $first): CarbonInterface
+    {
+        return $this->notAfter($first->subDays(14)->setTime(9, 0), daysAgo: 2);
+    }
+
+    /**
+     * When Time Off or a Travel Request starting on the day was decided:
+     * the working day after it was asked for, or as it was asked for when
+     * nobody decided it, since an Employee with no Manager has theirs
+     * Approved straight away.
+     */
+    private function decidedAt(CarbonInterface $first, ?Employee $decider): CarbonInterface
+    {
+        return $decider === null ? $this->requestedAt($first) : $this->notAfter($first->subDays(13)->setTime(11, 0));
+    }
+
+    /**
+     * The moment, moved off a weekend to the Monday after, or the given
+     * number of days ago if that is earlier, so a demo decision lands on
+     * a working day and never in the future.
      */
     private function notAfter(CarbonInterface $moment, int $daysAgo = 1): CarbonInterface
     {
-        return $moment->min(now()->subDays($daysAgo));
+        $onAWeekday = $moment->isWeekend() ? $moment->next(CarbonInterface::MONDAY)->setTimeFrom($moment) : $moment;
+
+        return $onAWeekday->min(now()->subDays($daysAgo));
     }
 
     /**
@@ -638,7 +661,7 @@ class DemoSeeder extends Seeder
      */
     private function decline(Assignment $assignment, CarbonInterface $date, Employee $decliner, string $reason): void
     {
-        $workEntry = $assignment->workEntries()->where('state', WorkEntryState::Pending)->whereDate('date', '>=', $date)->orderBy('date')->firstOrFail();
+        $workEntry = $assignment->workEntries()->pending()->whereDate('date', '>=', $date)->orderBy('date')->firstOrFail();
 
         $workEntry->forceFill([
             'state' => WorkEntryState::Declined,
@@ -675,10 +698,10 @@ class DemoSeeder extends Seeder
         $timeOff->forceFill([
             'state' => $state,
             'decided_by' => $decider?->id,
-            'decided_at' => in_array($state, [TimeOffState::Approved, TimeOffState::Declined], true) ? $this->notAfter($first->subDays(13)->setTime(11, 0)) : null,
+            'decided_at' => in_array($state, [TimeOffState::Approved, TimeOffState::Declined], true) ? $this->decidedAt($first, $decider) : null,
             'decline_reason' => $declineReason,
             'cancelled_at' => $state === TimeOffState::Cancelled ? $this->notAfter($first->subDays(3)->setTime(15, 0)) : null,
-            'created_at' => $this->notAfter($first->subDays(14)->setTime(9, 0), 2),
+            'created_at' => $this->requestedAt($first),
         ])->save();
     }
 
@@ -855,10 +878,10 @@ class DemoSeeder extends Seeder
         $travelRequest->forceFill([
             'state' => $state,
             'decided_by' => $decider?->id,
-            'decided_at' => in_array($state, [TravelRequestState::Approved, TravelRequestState::Declined], true) || ($state === TravelRequestState::Cancelled && $decider !== null) ? $this->notAfter($first->subDays(13)->setTime(11, 0)) : null,
+            'decided_at' => in_array($state, [TravelRequestState::Approved, TravelRequestState::Declined], true) || ($state === TravelRequestState::Cancelled && $decider !== null) ? $this->decidedAt($first, $decider) : null,
             'decline_reason' => $declineReason,
             'cancelled_at' => $state === TravelRequestState::Cancelled ? $this->notAfter($first->subDays(3)->setTime(15, 0)) : null,
-            'created_at' => $this->notAfter($first->subDays(14)->setTime(9, 0), 2),
+            'created_at' => $this->requestedAt($first),
         ])->save();
 
         return $travelRequest;
