@@ -183,7 +183,10 @@ function workEntryForm(Assignment $assignment, array $changes = []): array
  */
 function pickDate(AwaitableWebpage|PendingAwaitablePage|Webpage $page, string $field, string $date): AwaitableWebpage|PendingAwaitablePage|Webpage
 {
-    return typeDateSegments($page, "[role=\"group\"]:has(> {$field})", $date);
+    typeDateSegments($page, "[role=\"group\"]:has(> {$field})", $date);
+    $page->assertValue($field, $date);
+
+    return $page;
 }
 
 /**
@@ -203,13 +206,15 @@ function pickDateRange(AwaitableWebpage|PendingAwaitablePage|Webpage $page, stri
 /**
  * Types a YYYY-MM-DD date into the month, day and year segments inside a
  * date field, those of one end of a range when a segment filter is given.
+ * Each segment is cleared first, so a keystroke that lands after the field
+ * moved focus on by itself can't leave a stray digit behind.
  */
 function typeDateSegments(AwaitableWebpage|PendingAwaitablePage|Webpage $page, string $group, string $date, string $segmentFilter = ''): AwaitableWebpage|PendingAwaitablePage|Webpage
 {
     [$year, $month, $day] = explode('-', $date);
 
     foreach (['month' => $month, 'day' => $day, 'year' => $year] as $part => $digits) {
-        $page->keys("{$group} [data-reka-date-field-segment=\"{$part}\"]{$segmentFilter}", str_split($digits));
+        $page->keys("{$group} [data-reka-date-field-segment=\"{$part}\"]{$segmentFilter}", ['Backspace', 'Backspace', 'Backspace', 'Backspace', ...str_split($digits)]);
     }
 
     return $page;
