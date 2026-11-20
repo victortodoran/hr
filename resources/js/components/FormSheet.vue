@@ -33,12 +33,37 @@ defineSlots<{
 const open = defineModel<boolean>('open', { required: true });
 
 const isPhone = useMediaQuery('(max-width: 639px)');
+
+/** The kinds of element a person types or picks a value in. */
+const fieldSelector = [
+    'input:not([type="hidden"]):not([type="file"]):not([disabled]):not([tabindex="-1"])',
+    'textarea:not([disabled])',
+    '[role="spinbutton"]',
+    'button[role="combobox"]',
+].join(', ');
+
+/**
+ * Opens with the cursor in the first field rather than on the first
+ * focusable control, which is often a picker's icon button whose Tooltip
+ * would cover the field's label.
+ */
+function focusFirstField(event: Event): void {
+    const field = (
+        event.target as HTMLElement | null
+    )?.querySelector<HTMLElement>(fieldSelector);
+
+    if (field) {
+        event.preventDefault();
+        field.focus();
+    }
+}
 </script>
 
 <template>
     <Sheet v-model:open="open">
         <SheetContent
             data-slot="form-sheet"
+            @open-auto-focus="focusFirstField"
             :side="isPhone ? 'bottom' : 'right'"
             class="gap-0 max-sm:h-[calc(100dvh-3rem)] max-sm:rounded-t-xl"
         >
