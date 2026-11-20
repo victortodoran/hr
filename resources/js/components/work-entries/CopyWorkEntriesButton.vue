@@ -9,7 +9,8 @@ import type { Choice } from '@/types';
 
 /**
  * Copies the Work Entries of the latest earlier day with any onto a day,
- * such as "Copy entries from Thu 12", saying why when it's refused.
+ * such as "Copy Thursday's Work Entries", saying why when it's refused. It is a
+ * plain button, so it can sit inside the day panel's add form.
  */
 const props = defineProps<{
     employee: Choice;
@@ -34,32 +35,41 @@ function copy(): void {
 }
 
 /**
- * The day copied from, such as "Thu 12", naming its month when it falls in
- * another one than the day copied onto: "Fri 30 Oct".
+ * What the button says: "Copy Thursday's Work Entries" when the day copied from
+ * is in the week before, else "Copy Work Entries from Thu 12", naming the month
+ * when it falls in another one than the day copied onto: "Fri 30 Oct".
  */
-function formatSource(): string {
-    if (props.copyFrom.slice(0, 7) === props.date.slice(0, 7)) {
-        return formatWeekdayAndDay(props.copyFrom);
+function label(): string {
+    const from = new Date(`${props.copyFrom}T00:00:00`);
+    const daysBefore =
+        (new Date(`${props.date}T00:00:00`).getTime() - from.getTime()) /
+        86_400_000;
+
+    if (daysBefore < 7) {
+        return `Copy ${from.toLocaleDateString(undefined, { weekday: 'long' })}'s Work Entries`;
     }
 
-    const month = new Date(`${props.copyFrom}T00:00:00`).toLocaleDateString(
-        undefined,
-        { month: 'short' },
-    );
+    if (props.copyFrom.slice(0, 7) === props.date.slice(0, 7)) {
+        return `Copy Work Entries from ${formatWeekdayAndDay(props.copyFrom)}`;
+    }
 
-    return `${formatWeekdayAndDay(props.copyFrom)} ${month}`;
+    const month = from.toLocaleDateString(undefined, { month: 'short' });
+
+    return `Copy Work Entries from ${formatWeekdayAndDay(props.copyFrom)} ${month}`;
 }
 </script>
 
 <template>
-    <form class="flex flex-col items-start gap-1" @submit.prevent="copy">
+    <div class="flex flex-col items-start gap-1">
         <SubmitButton
+            type="button"
             :processing="form.processing"
             variant="ghost"
             size="sm"
-            class="h-7 text-foreground"
-            ><Copy />Copy entries from {{ formatSource() }}</SubmitButton
+            class="text-foreground"
+            @click="copy"
+            ><Copy />{{ label() }}</SubmitButton
         >
         <InputError :message="form.errors.date" />
-    </form>
+    </div>
 </template>

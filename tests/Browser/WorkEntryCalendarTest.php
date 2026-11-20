@@ -21,7 +21,7 @@ it('shows a month as a calendar, a line per Work Entry with a dot for its state,
     actingAs($cara);
 
     visit(route('work-entries.index', ['week' => '2026-10-06']))
-        ->click('internal:role=tab[name="Calendar"i]')
+        ->click('internal:role=button[name="Calendar"s]')
         ->assertQueryStringHas('tab', 'calendar')
         ->assertQueryStringHas('month', '2026-10')
         ->assertSee('W41')
@@ -39,22 +39,27 @@ it('shows a month as a calendar, a line per Work Entry with a dot for its state,
         ->assertQueryStringHas('month', '2026-12')
         ->click('Show weekends')
         ->assertDontSee('Sun')
-        ->click('internal:role=tab[name="List"i]')
+        ->click('internal:role=button[name="List"s]')
         ->assertQueryStringMissing('tab')
         ->assertQueryStringHas('month', '2026-12')
         ->assertNoJavaScriptErrors();
 });
 
-it('fits a phone, showing each day\'s hours and a dot per state instead of its Work Entry lines', function () {
+it('fits a phone as a week at a time, a row per day with its Work Entries, stepping back a week', function () {
     $cara = recorder();
     WorkEntry::factory()->for(assignmentOf($cara))->approved()->create(['date' => '2026-11-03', 'minutes' => 450, 'description' => 'A long description of the work']);
 
     actingAs($cara);
 
     visit(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']))
-        ->resize(360, 800)
-        ->assertSee('7.5 h')
-        ->assertScript('document.querySelector(\'[data-date="2026-11-03"]\').innerText.includes("A long description of the work")', false)
+        ->resize(390, 844)
+        ->assertSeeIn('[data-slot="week-agenda"]', 'Week 46')
+        ->assertPresent('[data-agenda-day="2026-11-13"]')
+        ->assertNotPresent('[data-agenda-day="2026-11-03"]')
+        ->click('[aria-label="Previous week"]')
+        ->assertSeeIn('[data-slot="week-agenda"]', 'Week 45')
+        ->assertSeeIn('[data-agenda-day="2026-11-03"]', 'A long description of the work')
+        ->assertSeeIn('[data-agenda-day="2026-11-03"]', '7.5 h')
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->resize(1280, 800)
         ->assertSeeIn('[data-date="2026-11-03"]', 'A long description of the work')
@@ -74,7 +79,7 @@ it('shows at most three Work Entries on a day, then how many more, and shades we
         ->assertSeeIn('[data-date="2026-11-03"]', 'Three')
         ->assertDontSeeIn('[data-date="2026-11-03"]', 'Four')
         ->assertSeeIn('[data-date="2026-11-03"]', '+2 more')
-        ->assertScript('document.querySelector(\'[data-date="2026-11-07"]\').classList.contains("bg-muted/20")', true)
-        ->assertScript('document.querySelector(\'[data-date="2026-11-06"]\').classList.contains("bg-muted/20")', false)
+        ->assertScript('document.querySelector(\'[data-date="2026-11-07"]\').classList.contains("bg-surface/60")', true)
+        ->assertScript('document.querySelector(\'[data-date="2026-11-06"]\').classList.contains("bg-surface/60")', false)
         ->assertNoJavaScriptErrors();
 });

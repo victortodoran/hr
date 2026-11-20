@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { formatMonth } from '@/lib/dates';
-import { formatHours } from '@/lib/work-entries';
+import { describePeriod, formatHours } from '@/lib/work-entries';
 import type { WorkEntryAssignmentTotal, Period } from '@/types';
 
 /**
@@ -24,13 +23,6 @@ const props = withDefaults(
     { period: undefined, caption: undefined, assignmentTotals: () => [] },
 );
 
-function formatShort(date: string): string {
-    return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-        day: 'numeric',
-        month: 'short',
-    });
-}
-
 /**
  * What the total covers, such as "in November 2026", "in Week 46" or
  * "from 1 Oct to 14 Nov".
@@ -40,17 +32,7 @@ const covers = computed((): string => {
         return props.caption ?? '';
     }
 
-    const { mode, from, to } = props.period;
-
-    if (mode === 'month') {
-        return `in ${formatMonth(from.slice(0, 7))}`;
-    }
-
-    if (mode === 'week') {
-        return `in Week ${props.weekNumber}`;
-    }
-
-    return `from ${formatShort(from)} to ${formatShort(to)}`;
+    return describePeriod(props.period, props.weekNumber);
 });
 </script>
 

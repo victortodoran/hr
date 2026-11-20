@@ -118,3 +118,22 @@ it('leaves out an Employee the viewer may not see, even when asked for by ID', f
 
     expect($rows)->toHaveCount(1);
 });
+
+it('lets an Employee download their own Work Entries for a Period from their Work page', function () {
+    $cara = recorder();
+    WorkEntry::factory()->for(assignmentOf($cara, 'Relaunch'))->create(['date' => '2026-11-03', 'minutes' => 300, 'description' => 'Checkout API']);
+    WorkEntry::factory()->for(assignmentOf(Employee::factory()->create()))->create(['date' => '2026-11-03']);
+
+    $response = actingAs($cara)->get(route('work-entry-exports.show', ['month' => '2026-11', 'employee' => (string) $cara->id, 'format' => 'csv']));
+
+    $response->assertOk();
+    expect(array_column(csvRows($response), 5))->toBe(['Description', 'Checkout API']);
+});
+
+it('refuses someone who sees no one else\'s Work Entries a download of another Employee\'s or everyone\'s', function (string $employee) {
+    $cara = recorder();
+    $other = Employee::factory()->create();
+
+    actingAs($cara)->get(route('work-entry-exports.show', ['month' => '2026-11', 'employee' => $employee === 'other' ? (string) $other->id : 'all', 'format' => 'csv']))
+        ->assertForbidden();
+})->with(['other', 'all']);

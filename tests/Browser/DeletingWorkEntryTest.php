@@ -19,10 +19,12 @@ it('asks before deleting a Work Entry, and Cancel keeps it', function () {
     actingAs($cara);
 
     visit(route('work-entries.index'))
-        ->click('[aria-label="Delete Work Entry"]')
-        ->assertSee('Delete this Work Entry?')
-        ->click('internal:role=dialog[name="Delete this Work Entry?"s] >> internal:role=button[name="Cancel"s]')
-        ->assertDontSee('Delete this Work Entry?')
+        ->click('[aria-label="More for Reviewing the API on Tuesday 10 November"]')
+        ->click('internal:role=menuitem[name="Delete"s]')
+        ->assertSee('Delete Work Entry')
+        ->click('internal:role=dialog[name="Delete Work Entry"s] >> internal:role=button[name="Cancel"s]')
+        ->assertNotPresent('internal:role=dialog')
+        ->assertSee('Reviewing the API')
         ->assertNoJavaScriptErrors();
 
     expect($entry->fresh())->not->toBeNull();

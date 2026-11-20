@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Ellipsis } from '@lucide/vue';
+import { ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -28,6 +29,12 @@ defineSlots<{
     default?: () => unknown;
     menu?: () => unknown;
 }>();
+
+/**
+ * The ⋯ button. Its Tooltip sits between it and the menu, so the menu is
+ * anchored to it by hand: reka-ui would otherwise anchor it to the Tooltip.
+ */
+const trigger = ref<InstanceType<typeof Button> | null>(null);
 </script>
 
 <template>
@@ -41,6 +48,7 @@ defineSlots<{
                 <DropdownMenuTrigger as-child>
                     <TooltipTrigger as-child>
                         <Button
+                            ref="trigger"
                             variant="ghost"
                             size="icon-sm"
                             :aria-label="`More for ${label}`"
@@ -51,7 +59,10 @@ defineSlots<{
                 </DropdownMenuTrigger>
                 <TooltipContent>More</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent
+                align="end"
+                :reference="trigger?.$el as HTMLElement | undefined"
+            >
                 <slot name="menu" />
             </DropdownMenuContent>
         </DropdownMenu>

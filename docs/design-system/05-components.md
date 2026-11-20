@@ -65,6 +65,7 @@
 | `FactList`                       | Definition list for one record                                                           | L8, K11  |
 | `Callout`                        | info · attention · declined sentence with optional action                                | K12      |
 | `RowActions`                     | Hover icon buttons + ⋯ menu                                                              | K2       |
+| `IconButton`                     | Ghost icon-only button with its Tooltip, same words as its `aria-label`                  | F20      |
 | `RecordSheet`                    | Full record in a side sheet (`?record=`)                                                 | K8       |
 | `DecideDialog`                   | Decline with required reason, for 1…N records of one type                                | X5       |
 | `PersonCell`                     | Avatar + name (+ Job Title)                                                              | K13      |
@@ -73,6 +74,7 @@
 | `FileDrop`                       | Receipt upload: drag/drop, browse, camera on phone, preview, Replace/Remove              | K15      |
 | `MiniBarChart`                   | 12-month hours bars for Home (div-based, sr-only table)                                  | K18      |
 | `WorkDayPanel`                   | See above                                                                                | —        |
+| `WorkWeekAgenda`                 | Phone Calendar: a week's day strip with state icons, then a row per day; ‹ › step weeks  | P10      |
 | `PayHistoryRow`                  | See above                                                                                | —        |
 | `CommandMenu` (phase 6)          | ⌘K search over people, Projects, Clients, pages; built on reka-ui `Combobox` in a Dialog | G12      |
 | Error pages (403/404/500)        | EmptyState-based Inertia pages                                                           | S5       |

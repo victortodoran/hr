@@ -7,6 +7,7 @@ import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -35,8 +36,17 @@ const props = defineProps<{
     entry?: WorkEntryRecord;
     /** The Assignment last added on this page, picked when it runs on the day. */
     lastAssignmentId?: number | null;
-    /** Lays a new row out for a narrow panel: Description above the rest, with no close button. */
+    /**
+     * Lays the row out for the day panel: labelled fields, Assignment and
+     * Hours above Description, and its buttons in a footer, after the
+     * `footer` slot's.
+     */
     compact?: boolean;
+}>();
+
+defineSlots<{
+    /** Buttons before the panel's own, such as copying the previous day. */
+    footer?: () => unknown;
 }>();
 
 const emit = defineEmits<{
@@ -58,6 +68,7 @@ const form = useForm({
 });
 
 const descriptionInput = ref<InstanceType<typeof Input> | null>(null);
+const hoursInput = ref<InstanceType<typeof Input> | null>(null);
 
 /** Whether the Assignment was picked by hand, so it's no longer pre-picked. */
 const assignmentPickedByHand = ref(false);
@@ -154,23 +165,32 @@ function focusDescription(): void {
     element?.focus();
 }
 
-defineExpose({ focusDescription });
+/**
+ * Puts the cursor in Hours, the day panel's first field to type in once
+ * its Assignment is picked.
+ */
+function focusHours(): void {
+    const element = hoursInput.value?.$el as HTMLInputElement | undefined;
+    element?.focus();
+}
+
+defineExpose({ focusDescription, focusHours });
 </script>
 
 <template>
     <form
-        class="grid gap-2 sm:items-start"
+        class="grid gap-2"
         :class="
             compact
-                ? 'grid-cols-[minmax(0,1fr)_5rem_auto] items-start'
+                ? 'grid-cols-[minmax(0,1fr)_5.5rem] gap-x-2 gap-y-3'
                 : entry
-                  ? 'sm:grid-cols-[9rem_minmax(0,1fr)_12rem_5rem_auto]'
-                  : 'sm:grid-cols-[minmax(0,1fr)_12rem_5rem_auto]'
+                  ? 'sm:grid-cols-[9rem_minmax(0,1fr)_12rem_5rem_auto] sm:items-start'
+                  : 'sm:grid-cols-[minmax(0,1fr)_12rem_5rem_auto] sm:items-start'
         "
         @submit.prevent="save"
         @keydown.esc.prevent="emit('dismiss')"
     >
-        <div v-if="entry" class="grid min-w-0 gap-1">
+        <div v-if="entry && !compact" class="grid min-w-0 gap-1">
             <label :for="fieldId('date')" class="sr-only">Date</label>
             <Input
                 :id="fieldId('date')"
@@ -181,22 +201,31 @@ defineExpose({ focusDescription });
             />
             <InputError :message="form.errors.date" />
         </div>
-        <div class="grid min-w-0 gap-1" :class="compact && 'col-span-3'">
-            <label :for="fieldId('description')" class="sr-only"
-                >Description</label
+        <div
+            class="grid min-w-0 gap-1.5"
+            :class="compact && 'order-3 col-span-2'"
+        >
+            <Label
+                :for="fieldId('description')"
+                :class="compact ? '' : 'sr-only'"
+                >Description</Label
             >
             <Input
                 :id="fieldId('description')"
                 ref="descriptionInput"
                 v-model="form.description"
-                placeholder="Description"
+                :placeholder="
+                    compact ? 'e.g. Release checklist' : 'Description'
+                "
                 required
             />
             <InputError :message="form.errors.description" />
         </div>
-        <div class="grid min-w-0 gap-1">
-            <label :for="fieldId('assignment')" class="sr-only"
-                >Assignment</label
+        <div class="grid min-w-0 gap-1.5" :class="compact && 'order-1'">
+            <Label
+                :for="fieldId('assignment')"
+                :class="compact ? '' : 'sr-only'"
+                >Assignment</Label
             >
             <Select
                 :model-value="form.assignment_id"
@@ -229,32 +258,75 @@ defineExpose({ focusDescription });
             </Select>
             <p
                 v-if="runningAssignments.length === 0"
-                class="text-xs text-muted-foreground"
+                class="text-caption text-muted-foreground"
             >
                 No Assignment runs on this day.
             </p>
             <InputError :message="form.errors.assignment_id" />
         </div>
-        <div class="grid min-w-0 gap-1">
-            <label :for="fieldId('hours')" class="sr-only">Hours</label>
+        <div class="grid min-w-0 gap-1.5" :class="compact && 'order-2'">
+            <Label :for="fieldId('hours')" :class="compact ? '' : 'sr-only'"
+                >Hours</Label
+            >
             <Input
                 :id="fieldId('hours')"
+                ref="hoursInput"
                 v-model="form.hours"
                 type="number"
                 min="0.25"
                 max="24"
                 step="0.25"
-                placeholder="Hours"
+                :placeholder="compact ? '' : 'Hours'"
+                class="tabular-nums"
                 required
             />
             <InputError :message="form.errors.hours" />
         </div>
-        <div class="flex items-center gap-1">
+        <p
+            v-if="entry?.state === 'declined'"
+            class="text-meta text-muted-foreground"
+            :class="
+                compact
+                    ? 'order-4 col-span-2'
+                    : 'sm:order-first sm:col-span-full'
+            "
+        >
+            Saving sends it back to Pending, for approval again.
+        </p>
+        <div
+            v-if="compact"
+            class="order-5 col-span-2 flex flex-wrap items-center gap-2 max-sm:sticky max-sm:bottom-0 max-sm:-mx-4 max-sm:border-t max-sm:bg-background max-sm:px-4 max-sm:py-3"
+        >
+            <slot name="footer" />
+            <div class="ml-auto flex items-center gap-2 max-sm:w-full">
+                <Button
+                    v-if="entry"
+                    type="button"
+                    variant="ghost"
+                    @click="emit('cancel')"
+                    >Cancel</Button
+                >
+                <SubmitButton
+                    :processing="form.processing"
+                    class="max-sm:flex-1"
+                >
+                    <template v-if="entry">Save</template>
+                    <template v-else
+                        >Add Work Entry<kbd
+                            class="ml-1 rounded border border-primary-foreground/40 px-1 text-caption max-sm:hidden"
+                            aria-hidden="true"
+                            >↵</kbd
+                        ></template
+                    >
+                </SubmitButton>
+            </div>
+        </div>
+        <div v-else class="flex items-center gap-1">
             <SubmitButton :processing="form.processing">{{
-                entry ? 'Save' : 'Add'
+                entry ? 'Save' : 'Add Work Entry'
             }}</SubmitButton>
             <Button
-                v-if="!entry && !compact"
+                v-if="!entry"
                 type="button"
                 variant="ghost"
                 size="icon"

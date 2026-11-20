@@ -63,6 +63,29 @@ it('shows the week holding the given day, with totals for each day, each Assignm
         ->where('total', 4.25));
 });
 
+it('splits the hours that count into Approved and Pending, keeps Declined ones apart, and names who approves them', function () {
+    $cara = recorder();
+    $relaunch = assignmentOf($cara);
+    WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-03', 'minutes' => 300]);
+    WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-04', 'minutes' => 90]);
+    WorkEntry::factory()->for($relaunch)->declined()->create(['date' => '2026-11-05', 'minutes' => 60]);
+
+    actingAs($cara)->get(route('work-entries.index', ['week' => '2026-11-02']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('total', 6.5)
+            ->where('approvedHours', 5)
+            ->where('pendingHours', 1.5)
+            ->where('declinedHours', 1)
+            ->where('manager', ['id' => $cara->manager_id, 'name' => 'Mona']));
+});
+
+it('names no one approving the Work Entries of an Employee with no Manager', function () {
+    $ana = recorder(['manager_id' => null]);
+
+    actingAs($ana)->get(route('work-entries.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('manager', null));
+});
+
 it('shows a month day by day, with totals for the month', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-10-01']);

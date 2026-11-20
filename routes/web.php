@@ -107,7 +107,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('approvals/travel-expenses/declines', [TravelExpenseDeclineController::class, 'store'])->name('approvals.travel-expenses.declines.store');
     });
     Route::get('work-entries/all', [WorkEntryListController::class, 'index'])->middleware('can:viewList,'.WorkEntry::class)->name('work-entry-list.index');
-    Route::get('work-entries/export', [WorkEntryExportController::class, 'show'])->middleware('can:viewList,'.WorkEntry::class)->name('work-entry-exports.show');
+    Route::get('work-entries/export', [WorkEntryExportController::class, 'show'])->name('work-entry-exports.show');
     Route::post('reopenings', [ReopeningController::class, 'store'])->middleware('can:reopen,'.WorkEntry::class)->name('reopenings.store');
     Route::patch('work-entries/{workEntry}', [WorkEntryController::class, 'update'])->middleware('can:update,workEntry')->name('work-entries.update');
     Route::delete('work-entries/{workEntry}', [WorkEntryController::class, 'destroy'])->middleware('can:delete,workEntry')->name('work-entries.destroy');

@@ -17,7 +17,7 @@ beforeEach(function () {
     travelTo('2026-11-13 09:00');
 });
 
-it('adds, copies and deletes Work Entries from a Calendar day, and moves on to the next empty day', function () {
+it('adds, copies and deletes Work Entries from a Calendar day, stepping between days with the keyboard', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'minutes' => 300, 'description' => 'Checkout API']);
@@ -25,26 +25,33 @@ it('adds, copies and deletes Work Entries from a Calendar day, and moves on to t
     actingAs($cara);
 
     visit(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']))
-        ->assertSeeIn('[aria-label="Legend"]', 'Click a day to add or see its entries')
-        ->click('[aria-label="Add or view entries, Wednesday 11 November"]')
-        ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-11')
-        ->click('Copy entries from Tue 10')
+        ->assertSeeIn('[aria-label="Legend"]', 'Select a day')
+        ->click('[data-calendar-day="2026-11-11"]')
+        ->assertScript('document.activeElement.id', 'work-entry-hours-2026-11-11')
+        ->click("Copy Tuesday's Work Entries")
         ->assertSee('Copied 1 Work Entry from Tue 10.')
         ->assertSeeIn('[data-date="2026-11-11"]', 'Checkout API')
         ->assertSeeIn('[data-panel-date="2026-11-11"]', 'Checkout API')
-        ->click('Next empty day · Thu 12')
+        ->click('[data-panel-date="2026-11-11"] [aria-label="Next day"]')
         ->assertPresent('[data-panel-date="2026-11-12"]')
-        ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-12')
+        ->assertScript('document.activeElement.id', 'work-entry-hours-2026-11-12')
         ->fill('#work-entry-description-2026-11-12', 'Sprint planning')
         ->fill('#work-entry-hours-2026-11-12', '2')
         ->keys('#work-entry-hours-2026-11-12', 'Enter')
         ->assertSeeIn('[data-date="2026-11-12"]', 'Sprint planning')
         ->assertValue('#work-entry-description-2026-11-12', '')
-        ->keys('#work-entry-description-2026-11-12', 'Escape')
+        ->assertScript('document.activeElement.id', 'work-entry-hours-2026-11-12')
+        ->keys('#work-entry-hours-2026-11-12', 'Escape')
         ->assertNotPresent('[data-panel-date="2026-11-12"]')
-        ->click('[aria-label="Add or view entries, Tuesday 10 November"]')
-        ->click('[data-panel-date="2026-11-10"] [aria-label="Delete Work Entry"]')
-        ->click('internal:role=dialog[name="Delete this Work Entry?"s] >> internal:role=button[name="Delete"s]')
+        ->assertScript('document.activeElement.dataset.calendarDay', '2026-11-12')
+        ->keys('[data-calendar-day="2026-11-12"]', 'ArrowLeft')
+        ->assertScript('document.activeElement.dataset.calendarDay', '2026-11-11')
+        ->keys('[data-calendar-day="2026-11-11"]', 'ArrowLeft')
+        ->keys('[data-calendar-day="2026-11-10"]', 'Enter')
+        ->assertPresent('[data-panel-date="2026-11-10"]')
+        ->click('[data-panel-date="2026-11-10"] [aria-label="More for Checkout API"]')
+        ->click('internal:role=menuitem[name="Delete"s]')
+        ->click('internal:role=dialog[name="Delete Work Entry"s] >> internal:role=button[name="Delete Work Entry"s]')
         ->assertDontSeeIn('[data-date="2026-11-10"]', 'Checkout API')
         ->assertNoJavaScriptErrors();
 
@@ -58,50 +65,51 @@ it('says why a day of Time Off or still to come takes no hours', function () {
     actingAs($cara);
 
     visit(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']))
-        ->click('[aria-label="View, Monday 23 November"]')
+        ->click('[data-calendar-day="2026-11-23"]')
         ->assertSeeIn('[data-panel-date="2026-11-23"]', 'Paid Time Off. No hours to log.')
         ->assertNotPresent('#work-entry-description-2026-11-23')
-        ->click('[aria-label="View, Monday 16 November"]')
+        ->click('[data-panel-date="2026-11-23"] [aria-label="Close"]')
+        ->click('[data-calendar-day="2026-11-16"]')
         ->assertSeeIn('[data-panel-date="2026-11-16"]', 'Hours can\'t be logged on days still to come.')
         ->assertNotPresent('#work-entry-description-2026-11-16')
         ->assertNoJavaScriptErrors();
 });
 
-it('shows someone who can only look a day\'s Work Entries, with nothing to add or delete', function () {
+it('shows someone who can only look a day\'s Work Entries, with nothing to add, change or delete', function () {
     $cara = Employee::factory()->create(['name' => 'Cara']);
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10', 'description' => 'Checkout API']);
 
     actingAs(employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]));
 
     visit(route('work-entries.index', ['employee' => $cara->id, 'tab' => 'calendar', 'month' => '2026-11']))
-        ->assertSeeIn('[aria-label="Legend"]', 'Click a day to see its entries')
-        ->click('[aria-label="View, Tuesday 10 November"]')
+        ->click('[data-calendar-day="2026-11-10"]')
         ->assertSeeIn('[data-panel-date="2026-11-10"]', 'Checkout API')
-        ->assertNotPresent('[data-panel-date="2026-11-10"] [aria-label="Delete Work Entry"]')
+        ->assertNotPresent('[data-panel-date="2026-11-10"] [aria-label="More for Checkout API"]')
         ->assertNotPresent('#work-entry-description-2026-11-10')
         ->assertNoJavaScriptErrors();
 });
 
-it('opens a day as a sheet from the bottom on a phone', function () {
+it('opens a day from the week agenda as a sheet from the bottom on a phone, adding with its sticky button', function () {
     $cara = recorder();
     assignmentOf($cara);
 
     actingAs($cara);
 
     visit(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']))
-        ->resize(360, 800)
-        ->click('[aria-label="Add or view entries, Thursday 12 November"]')
+        ->resize(390, 844)
+        ->click('[data-agenda-day="2026-11-12"]')
         ->assertPresent('[data-slot="sheet-content"] [data-panel-date="2026-11-12"]')
         ->fill('#work-entry-description-2026-11-12', 'From my phone')
         ->fill('#work-entry-hours-2026-11-12', '1')
         ->keys('#work-entry-hours-2026-11-12', 'Enter')
         ->assertSeeIn('[data-panel-date="2026-11-12"]', 'From my phone')
-        ->click('Next empty day · Fri 13')
+        ->click('[data-slot="sheet-content"] [aria-label="Next day"]')
         ->assertPresent('[data-slot="sheet-content"] [data-panel-date="2026-11-13"]')
         ->fill('#work-entry-description-2026-11-13', 'Next day from my phone')
         ->fill('#work-entry-hours-2026-11-13', '1')
-        ->keys('#work-entry-hours-2026-11-13', 'Enter')
+        ->click('[data-panel-date="2026-11-13"] >> internal:role=button[name="Add Work Entry"s]')
         ->assertSeeIn('[data-panel-date="2026-11-13"]', 'Next day from my phone')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertNoJavaScriptErrors();
 
     expect(WorkEntry::query()->where('description', 'Next day from my phone')->sole()->date->toDateString())->toBe('2026-11-13');
@@ -114,20 +122,20 @@ it('asks before closing a day, or opening another, with unsaved typing in its ad
     actingAs($cara);
 
     visit(route('work-entries.index', ['tab' => 'calendar', 'month' => '2026-11']))
-        ->click('[aria-label="Add or view entries, Thursday 12 November"]')
+        ->click('[data-calendar-day="2026-11-12"]')
         ->fill('#work-entry-description-2026-11-12', 'Half typed')
         ->keys('#work-entry-description-2026-11-12', 'Escape')
         ->assertSee('You have an unsaved Work Entry. Leave anyway?')
         ->click('Stay')
         ->assertValue('#work-entry-description-2026-11-12', 'Half typed')
-        ->click('Next empty day · Fri 13')
+        ->click('[data-panel-date="2026-11-12"] [aria-label="Next day"]')
         ->assertSee('You have an unsaved Work Entry. Leave anyway?')
         ->click('Stay')
         ->assertValue('#work-entry-description-2026-11-12', 'Half typed')
-        ->click('Next empty day · Fri 13')
+        ->click('[data-panel-date="2026-11-12"] [aria-label="Next day"]')
         ->click('Leave')
         ->assertNotPresent('[data-panel-date="2026-11-12"]')
-        ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-13')
+        ->assertScript('document.activeElement.id', 'work-entry-hours-2026-11-13')
         ->click('[aria-label="Previous month"]')
         ->assertQueryStringHas('month', '2026-10')
         ->assertDontSee('Leave without saving?')

@@ -43,10 +43,12 @@ it('adds Work Entries one day at a time, staying on the day, moving on with Next
         ->assertSee('Fixing the login')
         ->keys('#work-entry-description-2026-11-11', 'Escape')
         ->assertNotPresent('#work-entry-description-2026-11-11')
-        ->click('[data-date="2026-11-11"] [aria-label="Edit Work Entry"]')
+        ->click('[aria-label="More for Fixing the login on Wednesday 11 November"]')
+        ->click('internal:role=menuitem[name="Edit"s]')
         ->keys('#work-entry-hours-'.WorkEntry::query()->where('description', 'Fixing the login')->sole()->id, 'Escape')
         ->assertDontSee('Save')
-        ->click('[data-date="2026-11-11"] [aria-label="Edit Work Entry"]')
+        ->click('[aria-label="More for Fixing the login on Wednesday 11 November"]')
+        ->click('internal:role=menuitem[name="Edit"s]')
         ->fill('#work-entry-hours-'.WorkEntry::query()->where('description', 'Fixing the login')->sole()->id, '6')
         ->keys('#work-entry-hours-'.WorkEntry::query()->where('description', 'Fixing the login')->sole()->id, 'Escape')
         ->assertSee('You have an unsaved Work Entry. Leave anyway?')
@@ -63,24 +65,21 @@ it('adds Work Entries one day at a time, staying on the day, moving on with Next
     ]);
 });
 
-it('adds another Work Entry to a day that has one with its + button, which keeps its place on a day it can\'t edit', function () {
+it('adds another Work Entry to a day that has some from its add row, and offers no Edit or Delete on an Approved one', function () {
     $cara = recorder();
     $relaunch = assignmentOf($cara);
     WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-10', 'description' => 'Reviewing the API']);
     WorkEntry::factory()->for($relaunch)->approved()->create(['date' => '2026-11-11', 'description' => 'Approved']);
-    $plusLeft = fn (string $day): string => "Math.round(document.querySelector('[aria-label=\"Add another entry on {$day}\"]').getBoundingClientRect().left)";
 
     actingAs($cara);
 
-    $page = visit(route('work-entries.index'));
-
-    expect($page->script($plusLeft('Tuesday 10 November')))->toBe($page->script($plusLeft('Wednesday 11 November')));
-
-    $page
-        ->assertNotPresent('[data-date="2026-11-11"] [aria-label="Edit Work Entry"]')
-        ->assertNotPresent('[data-date="2026-11-11"] [aria-label="Delete Work Entry"]')
+    visit(route('work-entries.index'))
+        ->assertPresent('[aria-label="More for Reviewing the API on Tuesday 10 November"]')
+        ->assertNotPresent('[aria-label="More for Approved on Wednesday 11 November"]')
         ->assertNotPresent('[data-date="2026-11-10"] [data-test="add-row"]')
-        ->click('[aria-label="Add another entry on Tuesday 10 November"]')
+        ->assertPresent('[aria-label="Add another Work Entry on Wednesday 11 November"]')
+        ->hover('[data-date="2026-11-10"] [data-test="work-entry"]')
+        ->click('[aria-label="Add another Work Entry on Tuesday 10 November"]')
         ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-10')
         ->assertNoJavaScriptErrors();
 });
@@ -95,9 +94,9 @@ it('copies the Work Entries of the latest earlier day onto a day from its add fo
 
     visit(route('work-entries.index'))
         ->click('[data-date="2026-11-09"] [data-test="add-row"]')
-        ->assertDontSee('Copy entries from')
+        ->assertDontSeeIn('[data-date="2026-11-09"]', 'Copy')
         ->click('[data-date="2026-11-13"] [data-test="add-row"]')
-        ->click('Copy entries from Thu 12')
+        ->click("Copy Thursday's Work Entries")
         ->assertSee('Copied 2 Work Entries from Thu 12.')
         ->assertSeeIn('[data-date="2026-11-13"]', 'Checkout API')
         ->assertSeeIn('[data-date="2026-11-13"]', 'Team meeting')
@@ -147,10 +146,11 @@ it('forgets unsaved changes to a Work Entry deleted while open', function () {
     actingAs($cara);
 
     visit(route('work-entries.index'))
-        ->click('[aria-label="Edit Work Entry"]')
+        ->click('[aria-label="More for Reviewing the API on Tuesday 10 November"]')
+        ->click('internal:role=menuitem[name="Edit"s]')
         ->fill('#work-entry-hours-'.$entry->id, '6')
-        ->click('[aria-label="Delete Work Entry"]')
-        ->click('internal:role=dialog[name="Delete this Work Entry?"s] >> internal:role=button[name="Delete"s]')
+        ->click('[data-date="2026-11-10"] [aria-label="Delete Work Entry"]')
+        ->click('internal:role=dialog[name="Delete Work Entry"s] >> internal:role=button[name="Delete Work Entry"s]')
         ->assertDontSee('Reviewing the API')
         ->click('[aria-label="Previous week"]')
         ->assertSee('Nov 2, 2026')

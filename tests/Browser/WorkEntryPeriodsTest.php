@@ -79,7 +79,7 @@ it('hides empty weekend days when weekends are switched off, keeping ones with h
         ->assertNoJavaScriptErrors();
 });
 
-it('heads each week with its number and hours, in a single week too, dropping a week of hidden weekend days', function () {
+it('heads each week with its number and hours, in a single week too, dropping a week of hidden weekend days and weeks still to come', function () {
     $cara = recorder();
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-03', 'minutes' => 450]);
 
@@ -91,7 +91,8 @@ it('heads each week with its number and hours, in a single week too, dropping a 
         ->assertSee('Week 44')
         ->assertSee('Week 45')
         ->assertSee('7.5 h')
-        ->assertSee('Week 48')
+        ->assertSee('Week 46')
+        ->assertDontSee('Week 48')
         ->click('Show weekends')
         ->assertDontSee('Week 44')
         ->assertSee('Week 45')

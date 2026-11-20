@@ -191,6 +191,7 @@ List each piece of a diff that sits in the wrong layer. These hold from the firs
 - **C9** Dates: "Nov 20, 2026"; ranges collapse a shared year/month ("Nov 30 – Dec 4, 2026", "Nov 16 – 22, 2026"); weekdays short ("Fri, Nov 20"); relative words only for today/yesterday.
 - **C10** Column headers are nouns ("Status", "Decided by"), never verbs or questions ("Answer").
 - **C11** **Open** shows a record or file without changing it: the ⋯ menu's "Open" opens a row's RecordSheet (the keyboard route to it, as a row click is mouse-only), and "Open receipt" shows a Travel Expense's receipt. It never labels a button that changes anything.
+- **C12** **Copy** duplicates records onto another place without changing the originals: the Work day panel's "Copy Thursday's Work Entries" (or "Copy Work Entries from Thu 12" when the day is a week or more back) adds that day's Work Entries to the day open, as Pending.
 
 ---
 
