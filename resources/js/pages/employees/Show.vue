@@ -1,48 +1,74 @@
 <script setup lang="ts">
 import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
-import { CalendarDays, FolderKanban, TriangleAlert } from '@lucide/vue';
+import {
+    Briefcase,
+    Building2,
+    CalendarDays,
+    FolderKanban,
+    Mail,
+    Pencil,
+    Target,
+    UserRound,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AssignmentController from '@/actions/App/Http/Controllers/Assignments/AssignmentController';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
+import Callout from '@/components/Callout.vue';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
-import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
-import EmptyState from '@/components/EmptyState.vue';
+import DataTable from '@/components/DataTable.vue';
 import EmployeePageSection from '@/components/employees/EmployeePageSection.vue';
-import PageHeader from '@/components/PageHeader.vue';
-import PageContainer from '@/components/PageContainer.vue';
-import PayDialog from '@/components/pay/PayDialog.vue';
-import StatusBadge from '@/components/StatusBadge.vue';
-import PaidDaysForm from '@/components/time-off/PaidDaysForm.vue';
-import PaidDaysLeft from '@/components/time-off/PaidDaysLeft.vue';
-import TimeOffSummary from '@/components/time-off/TimeOffSummary.vue';
+import EmployeeTravelTab from '@/components/employees/EmployeeTravelTab.vue';
+import EmployeeWorkTab from '@/components/employees/EmployeeWorkTab.vue';
+import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import ReportingChain from '@/components/employees/ReportingChain.vue';
+import EmptyState from '@/components/EmptyState.vue';
+import FactList from '@/components/FactList.vue';
+import PageContainer from '@/components/PageContainer.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import PayDialog from '@/components/pay/PayDialog.vue';
+import PersonCell from '@/components/PersonCell.vue';
+import StatStrip from '@/components/StatStrip.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
+import TextLink from '@/components/TextLink.vue';
+import PaidDaysDialog from '@/components/time-off/PaidDaysDialog.vue';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ValueOr from '@/components/ValueOr.vue';
-import { formatDate, formatPeriod } from '@/lib/dates';
+import { getInitials } from '@/composables/useInitials';
+import { formatDate, formatDateRange, formatPeriod } from '@/lib/dates';
+import { outcomes } from '@/lib/outcomes';
 import { formatPay } from '@/lib/pay';
+import { formatDays } from '@/lib/time-off';
 import { edit, show } from '@/routes/employees';
-import { index as performanceEvaluationList } from '@/routes/performance-evaluations';
-import { index as travelRequestList } from '@/routes/travel-request-list';
-import { index as workEntryList } from '@/routes/work-entry-list';
+import { show as performanceEvaluationPage } from '@/routes/performance-evaluations';
 import type {
     AssignmentRecord,
     Choice,
     EmployeePageRecord,
     EmployeePageTab,
-    EmployeeSeeAlso,
     EmployeeStanding,
     EmployeeTimeOff,
+    ListedTravelRequest,
+    ListedWorkEntry,
     OpenProject,
+    OwnPerformanceEvaluation,
+    Paginated,
     PayEntryRecord,
+    Period,
     ReportingChainView,
+    ReportNeedingAManager,
+    TableColumn,
 } from '@/types';
 
 /**
- * Only the open tab's props are sent: `record`, `reportsNeedingAManager`,
- * `reportingChain` and `seeAlso` on Overview, `assignments` and `projects` on Assignments &
- * Pay, and `paidDays` and `timeOff` on Time Off.
+ * An Employee's page (rule L12): the header with their facts on every tab,
+ * an attention Callout while Employees still report to them after they
+ * left, then a tab per section. Only the open tab's props are sent:
+ * `reportingChain` on Overview, `assignments` and `projects` on
+ * Assignments & Pay, `paidDays` and `timeOff` on Time Off, `work` on Work,
+ * `travel` on Travel and `performanceEvaluations` on Performance.
  */
 const props = withDefaults(
     defineProps<{
@@ -51,12 +77,11 @@ const props = withDefaults(
         /** The tabs the viewer may open, Overview always first. */
         tabs: EmployeePageTab[];
         /** Null when the viewer may not see the Employee's record. */
-        record?: EmployeePageRecord | null;
-        reportsNeedingAManager?: Choice[];
+        record: EmployeePageRecord | null;
+        /** Those still reporting to the Employee after they left. */
+        reportsNeedingAManager: ReportNeedingAManager[];
         /** Null for a Former Employee, who is no longer in the reporting line. */
         reportingChain?: ReportingChainView | null;
-        /** Which lists across Employees the viewer may open filtered to them. */
-        seeAlso?: EmployeeSeeAlso;
         assignments?: AssignmentRecord[];
         projects?: OpenProject[];
         canManage: boolean;
@@ -71,24 +96,32 @@ const props = withDefaults(
         paidDays?: number | null;
         /** Null unless the viewer may see the Employee's Time Off. */
         timeOff?: EmployeeTimeOff | null;
+        work?: {
+            today: string;
+            period: Period;
+            entries: Paginated<ListedWorkEntry>;
+            total: number;
+            declinedTotal: number;
+        };
+        travel?: {
+            today: string;
+            period: Period;
+            travelRequests: Paginated<ListedTravelRequest>;
+            total: string;
+        };
+        /** Every year's, newest first. */
+        performanceEvaluations?: OwnPerformanceEvaluation[];
     }>(),
-    { reportsNeedingAManager: () => [], projects: () => [] },
+    { projects: () => [] },
 );
-
-/** The Record's fields, in groups: how to reach them, where they sit, and when they work. */
-const recordGroups = ['Contact', 'Organisation', 'Employment'] as const;
-
-/** A label beside its value from `sm` up, above it on a phone. */
-const rowClass = 'grid gap-0.5 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4';
-
-/** A link inside text: underlined, so it reads as one without hovering. */
-const linkClass =
-    'rounded-sm underline decoration-current/40 underline-offset-4 hover:decoration-current focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
 const tabLabels = computed<Record<EmployeePageTab, string>>(() => ({
     overview: 'Overview',
     assignments: props.canViewPay ? 'Assignments & Pay' : 'Assignments',
     'time-off': 'Time Off',
+    work: 'Work',
+    travel: 'Travel',
+    performance: 'Performance',
 }));
 
 function openTab(tab: string | number): void {
@@ -96,31 +129,51 @@ function openTab(tab: string | number): void {
 }
 
 /**
- * The Overview's links to the lists across Employees, filtered to this
- * Employee, each only where the viewer may see them there.
+ * When they started, or start, or when they left.
  */
-const seeAlsoLinks = computed(() => {
-    const employee = props.employee.id;
-    const year = props.seeAlso?.performance;
+const since = computed(() => {
+    if (!props.record || !props.standing) {
+        return null;
+    }
 
-    return [
-        {
-            label: 'Work',
-            shown: props.seeAlso?.work,
-            href: workEntryList({ query: { employee } }),
-        },
-        {
-            label: 'Travel',
-            shown: props.seeAlso?.travel,
-            href: travelRequestList({ query: { employee } }),
-        },
-        {
-            label: 'Performance',
-            shown: year != null,
-            href: performanceEvaluationList({ query: { employee, year } }),
-        },
-    ].filter((link) => link.shown);
+    if (props.standing.status === 'future') {
+        return `Starts ${formatDate(props.record.start_date)}`;
+    }
+
+    if (props.standing.status === 'former' && props.record.leaving_date) {
+        return `Left ${formatDate(props.record.leaving_date)}`;
+    }
+
+    return `Since ${formatDate(props.record.start_date)}`;
 });
+
+/** The one Report a Callout action can name, when there is just one to edit. */
+const onlyReport = computed(() =>
+    props.reportsNeedingAManager.length === 1 &&
+    props.reportsNeedingAManager[0].can_edit
+        ? props.reportsNeedingAManager[0]
+        : null,
+);
+
+const recordFacts = computed(() =>
+    props.record
+        ? [
+              { label: 'Email', value: props.record.email },
+              { label: 'Department', value: props.record.department },
+              { label: 'Manager', value: props.record.manager?.name ?? null },
+              {
+                  label: 'Start Date',
+                  value: formatDate(props.record.start_date),
+              },
+              {
+                  label: 'Leaving Date',
+                  value: props.record.leaving_date
+                      ? formatDate(props.record.leaving_date)
+                      : null,
+              },
+          ]
+        : [],
+);
 
 const hasActions = computed(() => props.canManage || props.canManagePay);
 
@@ -160,6 +213,37 @@ function payInEffect(assignment: AssignmentRecord): PayEntryRecord | null {
     return assignment.pay?.find((entry) => entry.is_in_effect) ?? null;
 }
 
+/** The Paid Days per year, from whichever the viewer gets. */
+const paidDaysPerYear = computed(() =>
+    typeof props.paidDays === 'number'
+        ? props.paidDays
+        : (props.timeOff?.paid_days ?? null),
+);
+
+const paidDaysStats = computed(() =>
+    (props.timeOff?.paid_days_left ?? []).map((inYear) => ({
+        label: `Paid Days left in ${inYear.year}`,
+        value: String(inYear.days),
+    })),
+);
+
+const timeOffColumns: TableColumn[] = [
+    { key: 'dates', label: 'Dates', phone: 'primary' },
+    { key: 'days', label: 'Days', phone: 'secondary' },
+    { key: 'kind', label: 'Kind', phone: 'secondary' },
+    { key: 'state', label: 'Status', phone: 'end' },
+    { key: 'decided_by', label: 'Decided by', minor: true },
+];
+
+const performanceColumns: TableColumn[] = [
+    { key: 'year', label: 'Year' },
+    { key: 'goals_count', label: 'Goals', align: 'end' },
+    { key: 'state', label: 'Status', align: 'end' },
+];
+
+/** The FactList slot that puts Edit beside the Paid Days per year. */
+const paidDaysSlot = 'fact-Paid Days per year';
+
 setLayoutProps({
     breadcrumbs: [
         { title: props.employee.name, href: show(props.employee.id) },
@@ -172,25 +256,109 @@ setLayoutProps({
 
     <PageContainer width="full">
         <PageHeader :title="employee.name">
+            <template #lead>
+                <Avatar class="size-12 shrink-0 sm:size-14">
+                    <AvatarFallback class="text-section text-foreground">{{
+                        getInitials(employee.name)
+                    }}</AvatarFallback>
+                </Avatar>
+            </template>
+            <template v-if="standing" #status>
+                <EmploymentStatusBadge :status="standing.status" />
+            </template>
             <template #description>
-                <span>{{ employee.job_title ?? 'Employee' }}</span>
-                <template v-if="standing">
-                    <span aria-hidden="true">·</span>
-                    <EmploymentStatusBadge :status="standing.status" />
-                </template>
+                <ul
+                    class="flex flex-wrap items-center gap-x-4 gap-y-1 text-meta"
+                    aria-label="Key facts"
+                >
+                    <li
+                        v-if="employee.job_title"
+                        class="inline-flex items-center gap-1.5"
+                    >
+                        <Briefcase class="size-4" aria-hidden="true" />{{
+                            employee.job_title
+                        }}
+                    </li>
+                    <template v-if="record">
+                        <li
+                            v-if="record.department"
+                            class="inline-flex items-center gap-1.5"
+                        >
+                            <Building2 class="size-4" aria-hidden="true" />{{
+                                record.department
+                            }}
+                        </li>
+                        <li class="inline-flex items-center gap-1.5">
+                            <UserRound class="size-4" aria-hidden="true" />
+                            <template v-if="record.manager"
+                                >Manager
+                                <TextLink :href="show(record.manager.id)">{{
+                                    record.manager.name
+                                }}</TextLink></template
+                            >
+                            <template v-else>No Manager</template>
+                        </li>
+                        <li
+                            v-if="since"
+                            class="inline-flex items-center gap-1.5"
+                        >
+                            <CalendarDays class="size-4" aria-hidden="true" />{{
+                                since
+                            }}
+                        </li>
+                        <li
+                            class="inline-flex min-w-0 items-center gap-1.5 break-all"
+                        >
+                            <Mail
+                                class="size-4 shrink-0"
+                                aria-hidden="true"
+                            />{{ record.email }}
+                        </li>
+                    </template>
+                </ul>
             </template>
             <template v-if="canEdit" #actions>
                 <Button variant="secondary" as-child>
-                    <Link :href="edit(employee.id)">Edit</Link>
+                    <Link :href="edit(employee.id)"><Pencil />Edit</Link>
                 </Button>
             </template>
         </PageHeader>
 
-        <Tabs :model-value="tab" @update:model-value="openTab">
-            <TabsList
-                v-if="tabs.length > 1"
-                class="max-w-full justify-start self-start overflow-x-auto"
+        <Callout
+            v-if="record && reportsNeedingAManager.length > 0"
+            tone="attention"
+            data-test="reports-needing-a-manager"
+        >
+            {{ employee.name }} has left, but
+            <template
+                v-for="(report, position) in reportsNeedingAManager"
+                :key="report.id"
+                ><template v-if="position > 0">{{
+                    position === reportsNeedingAManager.length - 1
+                        ? ' and '
+                        : ', '
+                }}</template
+                ><TextLink
+                    :href="report.can_edit ? edit(report.id) : show(report.id)"
+                    >{{ report.name }}</TextLink
+                ></template
             >
+            still
+            {{ reportsNeedingAManager.length === 1 ? 'reports' : 'report' }}
+            to them and
+            {{ reportsNeedingAManager.length === 1 ? 'needs' : 'need' }} a new
+            Manager.
+            <template v-if="onlyReport" #action>
+                <Button variant="secondary" size="sm" as-child>
+                    <Link :href="edit(onlyReport.id)"
+                        >Choose a new Manager for {{ onlyReport.name }}</Link
+                    >
+                </Button>
+            </template>
+        </Callout>
+
+        <Tabs :model-value="tab" @update:model-value="openTab">
+            <TabsList v-if="tabs.length > 1">
                 <TabsTrigger
                     v-for="offered in tabs"
                     :key="offered"
@@ -198,149 +366,28 @@ setLayoutProps({
                     >{{ tabLabels[offered] }}</TabsTrigger
                 >
             </TabsList>
-            <TabsContent value="overview" class="mt-6 flex flex-col gap-10">
-                <nav
-                    v-if="seeAlsoLinks.length > 0"
-                    aria-label="See also"
-                    class="-mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm"
-                >
-                    <span class="text-muted-foreground">See also</span>
-                    <Link
-                        v-for="link in seeAlsoLinks"
-                        :key="link.label"
-                        :href="link.href"
-                        :class="linkClass"
-                        >{{ link.label }} →</Link
-                    >
-                </nav>
+            <TabsContent value="overview" class="mt-6">
                 <div
-                    v-if="record && reportsNeedingAManager.length > 0"
-                    class="flex gap-3 rounded-lg bg-status-pending p-4 text-sm text-status-pending-foreground"
+                    class="grid gap-10"
+                    :class="
+                        record && reportingChain
+                            ? 'lg:grid-cols-[minmax(0,1fr)_20rem]'
+                            : ''
+                    "
                 >
-                    <TriangleAlert
-                        class="mt-0.5 size-4 shrink-0"
-                        aria-hidden="true"
-                    />
-                    <div class="grid gap-1">
-                        <p class="font-medium">
-                            {{ employee.name }} has left, but these Employees
-                            still report to them and need a new Manager:
-                        </p>
-                        <ul class="flex flex-wrap gap-x-4 gap-y-1">
-                            <li
-                                v-for="report in reportsNeedingAManager"
-                                :key="report.id"
-                            >
-                                <Link
-                                    :href="show(report.id)"
-                                    :class="linkClass"
-                                    >{{ report.name }}</Link
-                                >
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="flex flex-col gap-10">
                     <EmployeePageSection v-if="record" title="Record">
-                        <div class="divide-y rounded-lg border text-sm">
-                            <div
-                                v-for="group in recordGroups"
-                                :key="group"
-                                class="grid gap-3 p-4"
-                            >
-                                <h3
-                                    class="text-xs font-medium text-muted-foreground"
-                                >
-                                    {{ group }}
-                                </h3>
-                                <dl class="grid gap-3">
-                                    <template v-if="group === 'Contact'">
-                                        <div :class="rowClass">
-                                            <dt class="text-muted-foreground">
-                                                Email
-                                            </dt>
-                                            <dd class="break-all">
-                                                {{ record.email }}
-                                            </dd>
-                                        </div>
-                                    </template>
-                                    <template
-                                        v-else-if="group === 'Organisation'"
-                                    >
-                                        <div :class="rowClass">
-                                            <dt class="text-muted-foreground">
-                                                Department
-                                            </dt>
-                                            <dd>
-                                                <ValueOr
-                                                    :value="record.department"
-                                                />
-                                            </dd>
-                                        </div>
-                                        <div :class="rowClass">
-                                            <dt class="text-muted-foreground">
-                                                Manager
-                                            </dt>
-                                            <dd>
-                                                <Link
-                                                    v-if="record.manager"
-                                                    :href="
-                                                        show(record.manager.id)
-                                                    "
-                                                    :class="linkClass"
-                                                    >{{
-                                                        record.manager.name
-                                                    }}</Link
-                                                >
-                                                <span
-                                                    v-else
-                                                    class="text-muted-foreground"
-                                                    >None</span
-                                                >
-                                            </dd>
-                                        </div>
-                                    </template>
-                                    <template v-else>
-                                        <div :class="rowClass">
-                                            <dt class="text-muted-foreground">
-                                                Start Date
-                                            </dt>
-                                            <dd>
-                                                {{
-                                                    formatDate(
-                                                        record.start_date,
-                                                    )
-                                                }}
-                                            </dd>
-                                        </div>
-                                        <div :class="rowClass">
-                                            <dt class="text-muted-foreground">
-                                                Leaving Date
-                                            </dt>
-                                            <dd>
-                                                <ValueOr
-                                                    :value="
-                                                        record.leaving_date
-                                                            ? formatDate(
-                                                                  record.leaving_date,
-                                                              )
-                                                            : null
-                                                    "
-                                                    fallback="Not set"
-                                                />
-                                            </dd>
-                                        </div>
-                                    </template>
-                                </dl>
-                            </div>
-                        </div>
+                        <FactList :facts="recordFacts">
+                            <template v-if="record.manager" #fact-Manager>
+                                <TextLink :href="show(record.manager.id)">{{
+                                    record.manager.name
+                                }}</TextLink>
+                            </template>
+                        </FactList>
                     </EmployeePageSection>
 
                     <EmployeePageSection
                         v-if="reportingChain"
                         title="Reporting Chain"
-                        class="max-w-xl"
                     >
                         <ReportingChain :chain="reportingChain" />
                     </EmployeePageSection>
@@ -511,56 +558,145 @@ setLayoutProps({
                     </div>
                 </EmployeePageSection>
             </TabsContent>
+
             <TabsContent value="time-off" class="mt-6 flex flex-col gap-10">
+                <StatStrip
+                    v-if="paidDaysStats.length > 0"
+                    :stats="paidDaysStats"
+                    data-test="paid-days-left"
+                />
+
                 <EmployeePageSection
-                    v-if="
-                        timeOff || (paidDays !== null && paidDays !== undefined)
-                    "
+                    v-if="paidDaysPerYear !== null"
                     title="Paid Days"
                 >
-                    <PaidDaysLeft
-                        v-if="timeOff"
-                        :paid-days-left="timeOff.paid_days_left"
-                        :paid-days="timeOff.paid_days"
-                        data-test="paid-days-left"
-                    />
-                    <div
-                        v-if="typeof paidDays === 'number'"
-                        class="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-end sm:justify-between"
+                    <FactList
+                        :facts="[
+                            {
+                                label: 'Paid Days per year',
+                                value: String(paidDaysPerYear),
+                            },
+                        ]"
                     >
-                        <p class="max-w-sm text-sm text-muted-foreground">
-                            Days of Paid Time Off {{ employee.name }} gets each
-                            year. Changing this also changes past years.
-                        </p>
-                        <PaidDaysForm
-                            :employee="employee"
-                            :paid-days="paidDays"
-                        />
-                    </div>
+                        <template #[paidDaysSlot]>
+                            <span class="inline-flex items-center gap-3">
+                                <span class="tabular-nums">{{
+                                    formatDays(paidDaysPerYear)
+                                }}</span>
+                                <PaidDaysDialog
+                                    v-if="typeof paidDays === 'number'"
+                                    :employee="employee"
+                                    :paid-days="paidDays"
+                                />
+                            </span>
+                        </template>
+                    </FactList>
                 </EmployeePageSection>
 
                 <EmployeePageSection v-if="timeOff" title="Time Off">
-                    <div class="overflow-hidden rounded-lg border text-sm">
-                        <ul v-if="timeOff.requests.length > 0" class="divide-y">
-                            <li
-                                v-for="request in timeOff.requests"
-                                :key="request.id"
-                                class="flex items-start justify-between gap-4 px-4 py-3"
-                                data-test="time-off"
+                    <DataTable
+                        :columns="timeOffColumns"
+                        :rows="timeOff.requests"
+                    >
+                        <template #cell-dates="{ row }">
+                            <span class="tabular-nums" data-test="time-off">{{
+                                formatDateRange(row.first_date, row.last_date)
+                            }}</span>
+                            <span
+                                v-if="row.decline_reason"
+                                class="block text-caption font-normal text-status-declined-foreground"
+                                >Declined<template v-if="row.decided_by">
+                                    by {{ row.decided_by }}</template
+                                >: {{ row.decline_reason }}</span
                             >
-                                <TimeOffSummary :time-off="request" />
+                        </template>
+                        <template #cell-days="{ row }">
+                            <span class="whitespace-nowrap tabular-nums">{{
+                                formatDays(row.days)
+                            }}</span>
+                        </template>
+                        <template #cell-kind="{ row }">
+                            {{ row.is_paid ? 'Paid' : 'Unpaid' }}
+                        </template>
+                        <template #cell-state="{ row }">
+                            <StatusBadge :state="row.state" />
+                        </template>
+                        <template #cell-decided_by="{ row }">
+                            <PersonCell
+                                v-if="row.decided_by"
+                                :name="row.decided_by"
+                            />
+                        </template>
+                        <template #empty>
+                            <EmptyState
+                                :icon="CalendarDays"
+                                :message="`${employee.name}'s Time Off requests appear here. They haven't requested any yet.`"
+                            />
+                        </template>
+                    </DataTable>
+                </EmployeePageSection>
+            </TabsContent>
+            <TabsContent value="work" class="mt-6">
+                <EmployeeWorkTab
+                    v-if="work"
+                    :employee="employee"
+                    :work="work"
+                />
+            </TabsContent>
+            <TabsContent value="travel" class="mt-6">
+                <EmployeeTravelTab
+                    v-if="travel"
+                    :employee="employee"
+                    :travel="travel"
+                />
+            </TabsContent>
+            <TabsContent value="performance" class="mt-6">
+                <EmployeePageSection
+                    v-if="performanceEvaluations"
+                    title="Performance Evaluations"
+                >
+                    <DataTable
+                        :columns="performanceColumns"
+                        :rows="performanceEvaluations"
+                    >
+                        <template #cell-year="{ row }">
+                            <Link
+                                :href="performanceEvaluationPage(row.id)"
+                                class="font-medium underline-offset-4 hover:underline"
+                                data-test="performance-evaluation"
+                                >{{ row.year }}</Link
+                            >
+                        </template>
+                        <template #cell-goals_count="{ row }">
+                            <span class="tabular-nums">{{
+                                row.goals_count
+                            }}</span>
+                        </template>
+                        <template #cell-state="{ row }">
+                            <div
+                                class="flex items-center justify-end gap-2 whitespace-nowrap"
+                            >
+                                <span
+                                    v-if="row.outcome"
+                                    class="text-muted-foreground"
+                                    >{{ outcomes[row.outcome] }}</span
+                                >
+                                <StatusBadge :state="row.state" />
                                 <StatusBadge
-                                    :state="request.state"
-                                    class="mt-0.5"
-                                />
-                            </li>
-                        </ul>
-                        <EmptyState
-                            v-else
-                            :icon="CalendarDays"
-                            :message="`${employee.name}'s Time Off requests appear here. They haven't requested any yet.`"
-                        />
-                    </div>
+                                    v-if="row.at_risk_goals_count > 0"
+                                    state="at-risk"
+                                    >{{ row.at_risk_goals_count }} At
+                                    Risk</StatusBadge
+                                >
+                            </div>
+                        </template>
+                        <template #empty>
+                            <EmptyState
+                                :icon="Target"
+                                :message="`${employee.name}'s Performance Evaluations appear here. There are none yet.`"
+                            />
+                        </template>
+                    </DataTable>
                 </EmployeePageSection>
             </TabsContent>
         </Tabs>

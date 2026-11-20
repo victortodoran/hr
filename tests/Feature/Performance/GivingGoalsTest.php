@@ -106,7 +106,7 @@ it('lists, for the year, the Employees the viewer effectively manages who have a
             ->where('years', [2027, 2026, 2025])
             ->where('canCreate', true)
             ->where('employees.data', [
-                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 3, 'at_risk_goals_count' => 0, 'outcome' => null]],
+                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'year' => 2026, 'state' => 'open', 'goals_count' => 3, 'at_risk_goals_count' => 0, 'outcome' => null]],
             ]));
 });
 
@@ -121,7 +121,7 @@ it('shows a past year with the Employees who have an Evaluation for it, Former E
         ->assertInertia(fn (Assert $page) => $page
             ->where('year', 2025)
             ->where('employees.data', [
-                ['id' => $ola->id, 'name' => 'Ola', 'evaluation' => ['id' => $evaluation->id, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null]],
+                ['id' => $ola->id, 'name' => 'Ola', 'evaluation' => ['id' => $evaluation->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null]],
             ]));
 });
 

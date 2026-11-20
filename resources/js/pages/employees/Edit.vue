@@ -1,16 +1,29 @@
 <script setup lang="ts">
-import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
+import { Form, Head, Link, setLayoutProps, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import EmployeeController from '@/actions/App/Http/Controllers/Employees/EmployeeController';
 import EmployeeInvitationController from '@/actions/App/Http/Controllers/Employees/EmployeeInvitationController';
+import Callout from '@/components/Callout.vue';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
-import { edit, show } from '@/routes/employees';
+import TextLink from '@/components/TextLink.vue';
+import { Button } from '@/components/ui/button';
+import UnsavedChangesDialog from '@/components/UnsavedChangesDialog.vue';
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges';
+import { employeeFields, employeePayload } from '@/lib/employees';
+import { edit, index, show } from '@/routes/employees';
 import type { Choice, EmployeeRecord, ManagerChoice } from '@/types';
-import { withNoManagerAsEmpty } from '@/lib/employees';
 
+/**
+ * Editing an Employee's record (rule L13), with their status after the
+ * title. Above the form, one Callout at most (K12): an Employee who has
+ * left with reports still under them asks for those reports' new Manager
+ * (attention); one who hasn't set a password yet offers to resend the
+ * invitation (info). Leaving with unsaved changes asks first (V9).
+ */
 const props = defineProps<{
     employee: EmployeeRecord;
     departments: Choice[];
@@ -20,79 +33,106 @@ const props = defineProps<{
 
 setLayoutProps({
     breadcrumbs: [
+        { title: 'Employees', href: index() },
         { title: props.employee.name, href: show(props.employee.id) },
         { title: 'Edit', href: edit(props.employee.id) },
     ],
 });
+
+const form = useForm(employeeFields(props.employee));
+
+function save(): void {
+    form.transform(employeePayload).submit(
+        EmployeeController.update(props.employee.id),
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                form.defaults(employeeFields(props.employee));
+                form.reset();
+            },
+        },
+    );
+}
+
+const guard = useUnsavedChanges(computed(() => form.isDirty));
 </script>
 
 <template>
-    <Head :title="employee.name" />
+    <Head :title="`Edit ${employee.name}`" />
 
     <PageContainer width="form">
-        <PageHeader :title="employee.name">
-            <template #description>
-                <span>Employee record</span>
-                <span aria-hidden="true">·</span>
+        <PageHeader :title="`Edit ${employee.name}`">
+            <template #status>
                 <EmploymentStatusBadge :status="employee.status" />
             </template>
         </PageHeader>
 
-        <div
+        <Callout
             v-if="reportsNeedingAManager.length > 0"
-            class="grid gap-2 rounded-lg border border-status-attention-icon/30 bg-status-attention p-4 text-body text-status-attention-foreground"
+            tone="attention"
+            data-test="reports-needing-a-manager"
         >
-            <p class="font-medium">
+            <p>
                 {{ employee.name }} has left, but these Employees still report
                 to them. Pick them a new Manager:
             </p>
-            <ul class="list-inside list-disc">
+            <ul class="mt-1 list-inside list-disc">
                 <li v-for="report in reportsNeedingAManager" :key="report.id">
-                    <Link :href="edit(report.id)" class="underline">{{
+                    <TextLink :href="edit(report.id)">{{
                         report.name
-                    }}</Link>
+                    }}</TextLink>
                 </li>
             </ul>
-        </div>
+        </Callout>
 
-        <div
-            v-if="employee.can_resend_invitation"
-            class="flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4"
-        >
-            <p class="text-sm text-muted-foreground">
-                {{ employee.name }} hasn't set a password yet.
-            </p>
-            <Form
-                v-bind="EmployeeInvitationController.store.form(employee.id)"
-                :options="{ preserveScroll: true }"
-                v-slot="{ processing }"
-            >
-                <SubmitButton
-                    :processing="processing"
-                    variant="secondary"
-                    size="sm"
-                    >Resend invitation</SubmitButton
+        <Callout v-else-if="employee.can_resend_invitation" tone="info">
+            {{ employee.name }} hasn't set a password yet.
+            <template #action>
+                <Form
+                    v-bind="
+                        EmployeeInvitationController.store.form(employee.id)
+                    "
+                    :options="{ preserveScroll: true }"
+                    v-slot="{ processing }"
                 >
-            </Form>
-        </div>
+                    <SubmitButton
+                        :processing="processing"
+                        variant="secondary"
+                        size="sm"
+                        >Resend invitation</SubmitButton
+                    >
+                </Form>
+            </template>
+        </Callout>
 
-        <Form
-            v-bind="EmployeeController.update.form(employee.id)"
-            :options="{ preserveScroll: true }"
-            :transform="withNoManagerAsEmpty"
-            class="grid gap-6"
-            v-slot="{ errors, processing }"
-        >
+        <form class="flex flex-col gap-8" @submit.prevent="save">
             <EmployeeFields
-                :employee="employee"
+                v-model:name="form.name"
+                v-model:email="form.email"
+                v-model:department-id="form.department_id"
+                v-model:manager-id="form.manager_id"
+                v-model:start-date="form.start_date"
+                v-model:leaving-date="form.leaving_date"
+                :status="employee.status"
                 :departments="departments"
                 :managers="managers"
-                :errors="errors"
+                :errors="form.errors"
             />
 
-            <div>
-                <SubmitButton :processing="processing">Save</SubmitButton>
+            <div class="flex flex-wrap gap-2">
+                <SubmitButton :processing="form.processing">Save</SubmitButton>
+                <Button variant="secondary" as-child>
+                    <Link :href="show(employee.id)">Cancel</Link>
+                </Button>
             </div>
-        </Form>
+        </form>
+
+        <UnsavedChangesDialog
+            :open="guard.pending.value !== null"
+            title="Discard changes"
+            :description="`Your changes to ${employee.name}'s record aren't saved yet.`"
+            @keep="guard.keep"
+            @discard="guard.discard"
+        />
     </PageContainer>
 </template>

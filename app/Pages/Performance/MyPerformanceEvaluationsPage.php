@@ -35,14 +35,7 @@ final class MyPerformanceEvaluationsPage
                 ->withAtRiskGoalsCount()
                 ->orderByDesc('year')
                 ->get()
-                ->map(fn (PerformanceEvaluation $evaluation): array => [
-                    'id' => $evaluation->id,
-                    'year' => $evaluation->year,
-                    'state' => $evaluation->state->value,
-                    'goals_count' => $evaluation->goals_count,
-                    'at_risk_goals_count' => $evaluation->openAtRiskGoalsCount(),
-                    'outcome' => $evaluation->completedOutcome()?->value,
-                ])
+                ->map(fn (PerformanceEvaluation $evaluation): array => $evaluation->listed())
                 ->all(),
         ];
     }

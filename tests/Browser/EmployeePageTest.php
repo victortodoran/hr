@@ -10,6 +10,7 @@ use App\Models\CompanySettings;
 use App\Models\Employee;
 use App\Models\PayEntry;
 use App\Models\PerformanceEvaluation;
+use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 
 use function Pest\Laravel\actingAs;
@@ -21,7 +22,7 @@ beforeEach(function () {
     travelTo('2026-11-13 09:00');
 });
 
-it('opens every tab of an Employee\'s page, keeping the header, leading Time Off with the Paid Days left, and shows each Assignment\'s Pay on a phone', function () {
+it('opens every tab of an Employee\'s page, keeping the header and its facts, leading Time Off with the Paid Days left, and shows each Assignment\'s Pay on a phone', function () {
     CompanySettings::factory()->create();
     $ana = Employee::factory()->create(['name' => 'Ana Popescu']);
     $cara = Employee::factory()->reportingTo($ana)->create(['name' => 'Cara Lane']);
@@ -39,9 +40,10 @@ it('opens every tab of an Employee\'s page, keeping the header, leading Time Off
 
     visit(route('employees.show', $cara))
         ->assertSee('Current Employee')
-        ->assertSee('Organisation')
+        ->assertSee('Reporting Chain')
         ->assertSeeLink('Ana Popescu')
         ->click('internal:role=tab[name="Assignments & Pay"s]')
+        ->assertSeeLink('Ana Popescu')
         ->assertSee('Current Employee')
         ->assertSeeIn('[data-test="assignment"]', 'Relaunch')
         ->assertSee('Ended')
@@ -151,13 +153,15 @@ it('removes an Employee\'s Manager by choosing No Manager', function () {
     expect($cara->refresh()->manager_id)->toBeNull();
 });
 
-it('links an Employee\'s Overview to their Work Entries, Travel Requests and Performance Evaluations, each list opening narrowed to them', function () {
+it('shows an Employee\'s Work Entries, Travel Requests and Performance Evaluations in tabs, opening the full list on the same Period, and fits a phone', function () {
     CompanySettings::factory()->create();
     $ana = Employee::factory()->create(['name' => 'Ana Popescu']);
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ana)->create(['name' => 'Cara Lane']);
     $bea = Employee::factory()->startedLongAgo()->reportingTo($ana)->create(['name' => 'Bea Dunn']);
-    WorkEntry::factory()->for(assignmentOf($bea, 'Relaunch'))->create(['date' => '2026-11-10']);
-    PerformanceEvaluation::factory()->of($bea)->create();
+    WorkEntry::factory()->for(assignmentOf($cara, 'Relaunch'))->create(['date' => '2026-11-10', 'description' => 'Wrote the release notes']);
+    WorkEntry::factory()->for(assignmentOf($bea, 'Relaunch'))->create(['date' => '2026-11-10', 'description' => 'Fixed the login page']);
+    TravelRequest::factory()->on(assignmentOf($cara, 'Data Audit'))->create(['destination' => 'Lisbon', 'first_date' => '2026-11-20', 'last_date' => '2026-11-22']);
+    PerformanceEvaluation::factory()->of($cara)->create(['year' => 2026]);
     $viewer = employeeWith([
         Permission::ViewEmployeeRecords->value => Scope::Everyone,
         Permission::ViewWorkEntries->value => Scope::Everyone,
@@ -168,24 +172,64 @@ it('links an Employee\'s Overview to their Work Entries, Travel Requests and Per
     actingAs($viewer);
 
     visit(route('employees.show', $cara))
-        ->click('internal:role=link[name="Travel →"s]')
-        ->assertPathIs(route('travel-request-list.index', absolute: false))
-        ->assertSeeIn('[aria-label="Employee"]', 'Cara Lane (0)')
+        ->click('internal:role=tab[name="Work"s]')
+        ->assertSee('Wrote the release notes')
+        ->assertDontSee('Fixed the login page')
+        ->click('internal:role=tab[name="Travel"s]')
+        ->assertSeeIn('[data-test="travel-request"]', 'Lisbon')
+        ->click('internal:role=tab[name="Performance"s]')
+        ->assertSeeIn('[data-test="performance-evaluation"]', '2026')
         ->assertNoJavaScriptErrors();
 
-    visit(route('employees.show', $cara))
-        ->assertSee('See also')
-        ->click('internal:role=link[name="Work →"s]')
+    visit(route('employees.show', ['employee' => $cara, 'tab' => 'work']))
+        ->click('internal:role=link[name="Open in Work Entries"s]')
         ->assertPathIs(route('work-entry-list.index', absolute: false))
         ->assertQueryStringHas('employee', (string) $cara->id)
-        ->assertSeeIn('[aria-label="Employee"]', 'Cara Lane (0)')
+        ->assertQueryStringHas('month', '2026-11')
+        ->assertSeeIn('[aria-label="Employee"]', 'Cara Lane (1)')
         ->assertNoJavaScriptErrors();
 
-    visit(route('employees.show', $cara))
-        ->click('internal:role=link[name="Performance →"s]')
-        ->assertPathIs(route('performance-evaluations.index', absolute: false))
-        ->assertSeeIn('[aria-label="Employee"]', 'Cara Lane')
-        ->assertSee('Cara Lane')
-        ->assertDontSee('Bea Dunn')
+    visit(route('employees.show', ['employee' => $cara, 'tab' => 'work']))
+        ->resize(390, 844)
+        ->assertSeeIn('[data-test="work-entry"]', 'Tue 10')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertNoJavaScriptErrors();
+});
+
+it('asks for a new Manager for the one Employee still reporting to a Former Employee, and fits a phone', function () {
+    $ana = Employee::factory()->create(['name' => 'Ana Popescu']);
+    $ben = Employee::factory()->former()->reportingTo($ana)->create(['name' => 'Ben Ionescu']);
+    $lia = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Lia Rusu']);
+
+    actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ManageEmployees->value => Scope::Everyone]));
+
+    visit(route('employees.show', $ben))
+        ->resize(390, 844)
+        ->assertSee('Former Employee')
+        ->assertSeeIn('[data-test="reports-needing-a-manager"]', 'Ben Ionescu has left, but Lia Rusu still reports to them')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('internal:role=link[name="Choose a new Manager for Lia Rusu"s]')
+        ->assertPathIs(route('employees.edit', $lia, absolute: false))
+        ->assertNoJavaScriptErrors();
+});
+
+it('edits an Employee\'s Paid Days per year in a dialog that warns it changes past years too', function () {
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara Lane', 'paid_days' => 20]);
+
+    actingAs(employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+        Permission::ViewTimeOff->value => Scope::Everyone,
+        Permission::ManagePaidDays->value => Scope::Everyone,
+    ]));
+
+    visit(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
+        ->assertSee('20 days')
+        ->click('internal:role=button[name="Edit Paid Days per year…"s]')
+        ->assertSee('This also changes past years')
+        ->fill('#paid-days', '25')
+        ->click('internal:role=button[name="Save"s]')
+        ->assertSee('25 days')
+        ->assertNoJavaScriptErrors();
+
+    expect($cara->refresh()->paid_days)->toBe(25);
 });

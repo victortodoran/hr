@@ -6,7 +6,8 @@ import { computed } from 'vue';
  * A sentence the person must read on this page (rule K12): a decline
  * reason, "Eve Stan has left…", "No Manager…". `info` is neutral,
  * `attention` needs them, `declined` was refused. It may carry one action
- * in the `action` slot; a page shows at most one above its content.
+ * in the `action` slot, which moves under the sentence on a phone; a page
+ * shows at most one above its content.
  */
 const props = defineProps<{
     tone: 'info' | 'attention' | 'declined';
@@ -43,7 +44,7 @@ const look = computed(
     <div
         data-slot="callout"
         :data-tone="tone"
-        class="flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-body"
+        class="flex flex-wrap items-start gap-x-2.5 gap-y-2 rounded-lg border px-3 py-2.5 text-body"
         :class="look.box"
     >
         <component
@@ -53,6 +54,11 @@ const look = computed(
             aria-hidden="true"
         />
         <div class="min-w-0 flex-1"><slot /></div>
-        <div v-if="$slots.action" class="shrink-0"><slot name="action" /></div>
+        <div
+            v-if="$slots.action"
+            class="shrink-0 max-sm:basis-full max-sm:pl-6.5"
+        >
+            <slot name="action" />
+        </div>
     </div>
 </template>

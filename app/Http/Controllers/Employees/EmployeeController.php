@@ -12,6 +12,7 @@ use App\Models\Employee;
 use App\Pages\Employees\EmployeeFormPage;
 use App\Pages\Employees\EmployeeListPage;
 use App\Pages\Employees\EmployeePage;
+use App\Support\Period;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,11 +27,11 @@ class EmployeeController extends Controller
 {
     /**
      * List the Employees whose record the viewer may see, optionally
-     * narrowed to one status or part of a name.
+     * narrowed to part of a name, a Department, a Manager and a status.
      */
     public function index(#[CurrentUser] Employee $actor, EmployeeListRequest $request): Response
     {
-        return Inertia::render('employees/Index', EmployeeListPage::props($actor, $request->search(), $request->status()));
+        return Inertia::render('employees/Index', EmployeeListPage::props($actor, $request->filters()));
     }
 
     /**
@@ -62,13 +63,13 @@ class EmployeeController extends Controller
 
     /**
      * Show an Employee's page on the tab asked for, as far as the viewer may
-     * see it.
+     * see it, with the Work and Travel tabs on the Period asked for.
      */
     public function show(#[CurrentUser] Employee $actor, Employee $employee, Request $request): Response
     {
         $tab = $request->query('tab');
 
-        return Inertia::render('employees/Show', EmployeePage::props($actor, $employee, is_string($tab) ? EmployeePageTab::tryFrom($tab) : null));
+        return Inertia::render('employees/Show', EmployeePage::props($actor, $employee, is_string($tab) ? EmployeePageTab::tryFrom($tab) : null, Period::fromQuery($request->query()) ?? Period::month(today()->format('Y-m'))));
     }
 
     /**

@@ -60,13 +60,7 @@ final class PerformanceEvaluationListPage
                 return [
                     'id' => $employee->id,
                     'name' => $employee->name,
-                    'evaluation' => [
-                        'id' => $evaluation->id,
-                        'state' => $evaluation->state->value,
-                        'goals_count' => $evaluation->goals_count,
-                        'at_risk_goals_count' => $evaluation->openAtRiskGoalsCount(),
-                        'outcome' => $evaluation->completedOutcome()?->value,
-                    ],
+                    'evaluation' => $evaluation->listed(),
                 ];
             }),
         ];

@@ -3,8 +3,8 @@ import { onUnmounted, watchEffect } from 'vue';
 import { usePageTitle } from '@/composables/usePageTitle';
 
 /**
- * A page's header (rule L3): the serif `<h1>`, an optional status badge
- * after it, one sentence of description (or a meta line through the
+ * A page's header (rule L3): an optional avatar or icon before the title in
+ * the `lead` slot, the serif `<h1>`, an optional status badge after it, one sentence of description (or a meta line through the
  * description slot) and the page's actions on the right, at most one of
  * them `primary` (L4). On a phone it stacks, with the actions full-width
  * under the description (P3).
@@ -15,6 +15,7 @@ const props = defineProps<{
 }>();
 
 defineSlots<{
+    lead?: () => unknown;
     status?: () => unknown;
     description?: () => unknown;
     actions?: () => unknown;
@@ -38,22 +39,28 @@ onUnmounted(() => {
         data-slot="page-header"
         class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
     >
-        <div class="flex min-w-0 flex-col gap-1">
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h1 class="font-display text-title-sm sm:text-title">
-                    {{ title }}
-                </h1>
-                <slot name="status" />
+        <div class="flex min-w-0 items-center gap-3 sm:gap-4">
+            <slot name="lead" />
+            <div class="flex min-w-0 flex-col gap-1">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h1 class="font-display text-title-sm sm:text-title">
+                        {{ title }}
+                    </h1>
+                    <slot name="status" />
+                </div>
+                <div
+                    v-if="$slots.description"
+                    class="flex flex-wrap items-center gap-x-2 gap-y-1 text-body text-muted-foreground"
+                >
+                    <slot name="description" />
+                </div>
+                <p
+                    v-else-if="description"
+                    class="text-body text-muted-foreground"
+                >
+                    {{ description }}
+                </p>
             </div>
-            <div
-                v-if="$slots.description"
-                class="flex flex-wrap items-center gap-x-2 gap-y-1 text-body text-muted-foreground"
-            >
-                <slot name="description" />
-            </div>
-            <p v-else-if="description" class="text-body text-muted-foreground">
-                {{ description }}
-            </p>
         </div>
         <div
             v-if="$slots.actions"

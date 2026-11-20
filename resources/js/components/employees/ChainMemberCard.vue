@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
+import PersonCell from '@/components/PersonCell.vue';
 import { show as directoryPage } from '@/routes/directory';
 import { show as employeePage } from '@/routes/employees';
 import type { ChainMember } from '@/types';
 
+/**
+ * One person in a Reporting Chain, on one compact line: a PersonCell with
+ * their initials, name and Job Title. The viewed Employee is marked rather than linked; a
+ * Future Employee elsewhere in the chain says so, while the viewed one's
+ * status is already in the page header.
+ */
 const props = defineProps<{
     member: ChainMember;
     /** Whether this is the Employee whose Reporting Chain is shown. */
@@ -14,7 +20,7 @@ const props = defineProps<{
 
 /**
  * Where the member's name leads: their Employee page or their Directory
- * page. Null on the viewed Employee's own card, and when the viewer may open
+ * page. Null on the viewed Employee's own line, and when the viewer may open
  * neither page (`link` is null).
  */
 const href = computed(() => {
@@ -33,30 +39,21 @@ const href = computed(() => {
 </script>
 
 <template>
-    <component
-        :is="href ? Link : 'div'"
-        :href="href ?? undefined"
+    <div
         :aria-current="isViewed ? 'page' : undefined"
-        class="block w-full max-w-xs rounded-lg border px-4 py-3 text-center"
-        :class="
-            isViewed
-                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : href
-                  ? 'transition-colors hover:bg-accent'
-                  : ''
-        "
+        class="flex min-h-11 items-center gap-3 rounded-md px-2 py-1.5"
+        :class="isViewed ? 'bg-muted font-medium' : ''"
     >
-        <p class="font-medium">{{ member.name }}</p>
-        <p v-if="member.job_title" class="text-sm text-muted-foreground">
-            {{ member.job_title }}
-        </p>
-        <p v-if="member.department" class="text-xs text-muted-foreground">
-            {{ member.department }}
-        </p>
-        <EmploymentStatusBadge
-            v-if="member.status === 'future'"
-            :status="member.status"
-            class="mt-1"
+        <PersonCell
+            :name="member.name"
+            :detail="member.job_title"
+            :href="href ?? undefined"
+            class="flex-1"
         />
-    </component>
+        <EmploymentStatusBadge
+            v-if="!isViewed && member.status === 'future'"
+            :status="member.status"
+            short
+        />
+    </div>
 </template>

@@ -111,6 +111,25 @@ class PerformanceEvaluation extends Model
     }
 
     /**
+     * It as a row on the lists of Performance Evaluations: its year, its
+     * state, how many Goals it holds (from goals_count), how many of them
+     * are At Risk while Open and, once Completed, the Outcome of the whole.
+     *
+     * @return array{id: int, year: int, state: string, goals_count: int, at_risk_goals_count: int, outcome: string|null}
+     */
+    public function listed(): array
+    {
+        return [
+            'id' => $this->id,
+            'year' => $this->year,
+            'state' => $this->state->value,
+            'goals_count' => (int) $this->goals_count,
+            'at_risk_goals_count' => $this->openAtRiskGoalsCount(),
+            'outcome' => $this->completedOutcome()?->value,
+        ];
+    }
+
+    /**
      * The Goals the Employee's Manager gave for it, in the order given.
      *
      * @return HasMany<Goal, $this>
