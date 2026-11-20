@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
 import { Check, Plane, X } from '@lucide/vue';
 import { computed } from 'vue';
 import TravelRequestApprovalController from '@/actions/App/Http/Controllers/Travel/TravelRequestApprovalController';
@@ -10,6 +9,7 @@ import EmptyState from '@/components/EmptyState.vue';
 import FactList from '@/components/FactList.vue';
 import RecordSheet from '@/components/RecordSheet.vue';
 import RowActions from '@/components/RowActions.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import {
@@ -17,6 +17,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useApproveOne } from '@/composables/useApproveOne';
 import { useRecordInUrl } from '@/composables/useRecordInUrl';
 import { formatDate, formatDateRange } from '@/lib/dates';
 import { formatDays } from '@/lib/time-off';
@@ -40,21 +41,22 @@ const columns: TableColumn[] = [
     { key: 'actions', label: '', align: 'end', minor: true },
 ];
 
-const { recordId, openRecord, closeRecord } = useRecordInUrl();
-
-const record = computed(
-    () =>
-        props.toApprove.find((travel) => travel.id === recordId.value) ?? null,
+const { record, recordOpen, openRecord, closeRecord } = useRecordInUrl(
+    () => props.toApprove,
 );
 
-const recordOpen = computed({
-    get: () => record.value !== null,
-    set: (open: boolean) => {
-        if (!open) {
-            closeRecord();
-        }
-    },
-});
+const { approving, approveOne } = useApproveOne();
+
+/** The Employee's other Pending Travel Requests, for the RecordSheet. */
+const otherPending = computed(() =>
+    record.value === null
+        ? []
+        : props.toApprove.filter(
+              (travel) =>
+                  travel.employee.id === record.value?.employee.id &&
+                  travel.id !== record.value.id,
+          ),
+);
 
 /** Whose Travel Request a row is and where to, naming its buttons. */
 function describe(travel: TravelRequestToApprove): string {
@@ -66,10 +68,11 @@ function summaryOf(travel: TravelRequestToApprove): string {
 }
 
 function approve(travel: TravelRequestToApprove): void {
-    router.post(
+    approveOne(
+        travel.id,
         TravelRequestApprovalController.store.url(travel.id),
         {},
-        { preserveScroll: true, onSuccess: () => closeRecord() },
+        closeRecord,
     );
 }
 
@@ -120,6 +123,7 @@ const declinePlaceholder = 'The client meeting moved online';
                                 variant="ghost"
                                 size="icon-sm"
                                 :aria-label="`Approve ${describe(row)}`"
+                                :disabled="approving !== null"
                                 @click="approve(row)"
                                 ><Check
                             /></Button>
@@ -188,6 +192,19 @@ const declinePlaceholder = 'The client meeting moved online';
                 <h3 class="text-meta text-muted-foreground">Purpose</h3>
                 <p class="whitespace-pre-line">{{ record.purpose }}</p>
             </section>
+            <section
+                v-if="otherPending.length > 0"
+                class="flex flex-col gap-1.5"
+            >
+                <h3 class="text-meta text-muted-foreground">
+                    Other Pending Travel Requests
+                </h3>
+                <ul class="flex flex-col gap-1">
+                    <li v-for="other in otherPending" :key="other.id">
+                        {{ summaryOf(other) }}
+                    </li>
+                </ul>
+            </section>
             <template #footer>
                 <DecideDialog
                     :action="TravelRequestDeclineController.store(record.id)"
@@ -197,8 +214,11 @@ const declinePlaceholder = 'The client meeting moved online';
                     :placeholder="declinePlaceholder"
                     @declined="closeRecord"
                 />
-                <Button @click="approve(record)"
-                    ><Check />Approve Travel Request</Button
+                <SubmitButton
+                    type="button"
+                    :processing="approving === record.id"
+                    @click="approve(record)"
+                    ><Check />Approve Travel Request</SubmitButton
                 >
             </template>
         </RecordSheet>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
 import { Check, Receipt, X } from '@lucide/vue';
 import { computed } from 'vue';
 import TravelExpenseApprovalController from '@/actions/App/Http/Controllers/Travel/TravelExpenseApprovalController';
@@ -21,9 +20,13 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useBulkSelection } from '@/composables/useBulkSelection';
+import { useApproveOne } from '@/composables/useApproveOne';
 import { useRecordInUrl } from '@/composables/useRecordInUrl';
 import { formatDate, formatDateRange } from '@/lib/dates';
-import { travelExpenseCategories } from '@/lib/travel-expenses';
+import {
+    formatMinorUnits,
+    travelExpenseCategories,
+} from '@/lib/travel-expenses';
 import type { TableColumn, TravelExpensesToApprove } from '@/types';
 
 /**
@@ -34,6 +37,8 @@ import type { TableColumn, TravelExpensesToApprove } from '@/types';
  */
 const props = defineProps<{
     toApprove: TravelExpensesToApprove[];
+    /** The company currency's code, for adding up the selection. */
+    currency: string;
 }>();
 
 type Expense = TravelExpensesToApprove['expenses'][number] & {
@@ -61,24 +66,30 @@ const expenses = computed<Expense[]>(() =>
 const selection = useBulkSelection(() => expenses.value);
 const { selected, clear, processing, submit } = selection;
 
-const { recordId, openRecord, closeRecord } = useRecordInUrl();
-
-const record = computed(
-    () =>
-        expenses.value.find((expense) => expense.id === recordId.value) ?? null,
+const { record, recordOpen, openRecord, closeRecord } = useRecordInUrl(
+    () => expenses.value,
 );
 
-const recordOpen = computed({
-    get: () => record.value !== null,
-    set: (open: boolean) => {
-        if (!open) {
-            closeRecord();
-        }
-    },
-});
+const { approving, approveOne: approve } = useApproveOne();
+
+/** The other Pending expenses of the open one's Travel Request. */
+const otherPending = computed(() =>
+    record.value === null
+        ? []
+        : record.value.travelRequest.expenses.filter(
+              (expense) => expense.id !== record.value?.id,
+          ),
+);
 
 const travelRequestOf = (id: string): TravelExpensesToApprove | undefined =>
     props.toApprove.find((travelRequest) => String(travelRequest.id) === id);
+
+/** Whose Travel Request a group is, naming its tick-box. */
+function groupName(id: string): string {
+    const travelRequest = travelRequestOf(id);
+
+    return `${travelRequest?.employee.name}'s Travel Expenses for ${travelRequest?.destination}`;
+}
 
 /** Whose Travel Expense a row is and what for, naming its tick-box and buttons. */
 function describe(expense: Expense): string {
@@ -102,18 +113,27 @@ const selectedExpenses = computed(() =>
     expenses.value.filter((expense) => selection.isSelected(expense.id)),
 );
 
+/** What the ticked expenses add up to, in the company currency. */
+const selectedTotal = computed(() =>
+    formatMinorUnits(
+        selectedExpenses.value.reduce(
+            (sum, expense) => sum + expense.amount_minor,
+            0,
+        ),
+        props.currency,
+    ),
+);
+
 function approveSelected(): void {
     submit(TravelExpenseApprovalController.store.url());
 }
 
 function approveOne(expense: Expense): void {
-    router.post(
+    approve(
+        expense.id,
         TravelExpenseApprovalController.store.url(),
         { ids: [expense.id] },
-        {
-            preserveScroll: true,
-            onSuccess: () => declinedOrApproved(expense),
-        },
+        () => declinedOrApproved(expense),
     );
 }
 
@@ -142,6 +162,7 @@ const declinePlaceholder = "The receipt doesn't show the amount";
             :group-by="(expense) => String(expense.travelRequest.id)"
             :selection="selection"
             :row-label="describe"
+            :group-label="groupName"
             :on-row-click="(expense) => openRecord(expense.id)"
         >
             <template #group="{ group }">
@@ -182,6 +203,7 @@ const declinePlaceholder = "The receipt doesn't show the amount";
                                 variant="ghost"
                                 size="icon-sm"
                                 :aria-label="`Approve ${describe(row)}`"
+                                :disabled="approving !== null"
                                 @click="approveOne(row)"
                                 ><Check
                             /></Button>
@@ -231,7 +253,11 @@ const declinePlaceholder = "The receipt doesn't show the amount";
             </template>
         </DataTable>
 
-        <SelectionBar :count="selected.length" @clear="clear">
+        <SelectionBar
+            :count="selected.length"
+            :total="selectedTotal"
+            @clear="clear"
+        >
             <template #actions>
                 <DecideDialog
                     :ids="selected"
@@ -286,6 +312,21 @@ const declinePlaceholder = "The receipt doesn't show the amount";
                 <h3 class="text-meta text-muted-foreground">Description</h3>
                 <p class="whitespace-pre-line">{{ record.description }}</p>
             </section>
+            <section
+                v-if="otherPending.length > 0"
+                class="flex flex-col gap-1.5"
+            >
+                <h3 class="text-meta text-muted-foreground">
+                    Other Pending Travel Expenses on this Travel Request
+                </h3>
+                <ul class="flex flex-col gap-1">
+                    <li v-for="other in otherPending" :key="other.id">
+                        {{ formatDate(other.paid_on) }} ·
+                        {{ travelExpenseCategories[other.category] }} ·
+                        {{ other.amount }}
+                    </li>
+                </ul>
+            </section>
             <section class="flex flex-col gap-1.5">
                 <h3 class="text-meta text-muted-foreground">Receipt</h3>
                 <img
@@ -312,8 +353,11 @@ const declinePlaceholder = "The receipt doesn't show the amount";
                     :placeholder="declinePlaceholder"
                     @declined="declinedOrApproved(record)"
                 />
-                <Button @click="approveOne(record)"
-                    ><Check />Approve Travel Expense</Button
+                <SubmitButton
+                    type="button"
+                    :processing="approving === record.id"
+                    @click="approveOne(record)"
+                    ><Check />Approve Travel Expense</SubmitButton
                 >
             </template>
         </RecordSheet>

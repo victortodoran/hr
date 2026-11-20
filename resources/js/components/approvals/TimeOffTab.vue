@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
-import { CalendarCheck, Check, X } from '@lucide/vue';
+import { CalendarCheck, Check, TriangleAlert, X } from '@lucide/vue';
 import { computed } from 'vue';
-import { toast } from 'vue-sonner';
 import TimeOffApprovalController from '@/actions/App/Http/Controllers/TimeOff/TimeOffApprovalController';
 import TimeOffDeclineController from '@/actions/App/Http/Controllers/TimeOff/TimeOffDeclineController';
 import DataTable from '@/components/DataTable.vue';
@@ -11,13 +9,14 @@ import EmptyState from '@/components/EmptyState.vue';
 import FactList from '@/components/FactList.vue';
 import RecordSheet from '@/components/RecordSheet.vue';
 import RowActions from '@/components/RowActions.vue';
+import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useApproveOne } from '@/composables/useApproveOne';
 import { useRecordInUrl } from '@/composables/useRecordInUrl';
 import { formatDate, formatDateRange } from '@/lib/dates';
 import { formatDays } from '@/lib/time-off';
@@ -40,22 +39,11 @@ const columns: TableColumn[] = [
     { key: 'actions', label: '', align: 'end', minor: true },
 ];
 
-const { recordId, openRecord, closeRecord } = useRecordInUrl();
-
-const record = computed(
-    () =>
-        props.toApprove.find((timeOff) => timeOff.id === recordId.value) ??
-        null,
+const { record, recordOpen, openRecord, closeRecord } = useRecordInUrl(
+    () => props.toApprove,
 );
 
-const recordOpen = computed({
-    get: () => record.value !== null,
-    set: (open: boolean) => {
-        if (!open) {
-            closeRecord();
-        }
-    },
-});
+const { approving, approveOne } = useApproveOne();
 
 /** The Employee's other Pending Time Off, for the RecordSheet. */
 const otherPending = computed(() =>
@@ -85,18 +73,18 @@ function summaryOf(timeOff: TimeOffToApprove): string {
 }
 
 function approve(timeOff: TimeOffToApprove): void {
-    router.post(
+    approveOne(
+        timeOff.id,
         TimeOffApprovalController.store.url(timeOff.id),
         {},
-        {
-            preserveScroll: true,
-            onSuccess: () => closeRecord(),
-            onError: (errors) => {
-                if (errors.approval) {
-                    toast.error(errors.approval);
-                }
-            },
-        },
+        closeRecord,
+    );
+}
+
+/** Whether a paid request takes a year below zero Paid Days. */
+function overdraws(timeOff: TimeOffToApprove): boolean {
+    return (
+        timeOff.is_paid && timeOff.paid_days_left.some((left) => left.days < 0)
     );
 }
 
@@ -137,11 +125,13 @@ const declinePlaceholder = 'Two of the team are already away that week';
                     v-if="row.is_paid"
                     class="tabular-nums"
                     :class="{
-                        'text-destructive': row.paid_days_left.some(
-                            (left) => left.days < 0,
-                        ),
+                        'text-status-attention-foreground': overdraws(row),
                     }"
-                    >{{ paidDaysLeft(row) }},
+                    ><TriangleAlert
+                        v-if="overdraws(row)"
+                        class="mr-1 inline size-4 align-text-bottom text-status-attention-icon"
+                        aria-hidden="true"
+                    />{{ paidDaysLeft(row) }},
                     <span class="text-muted-foreground"
                         >this request included</span
                     ></span
@@ -156,6 +146,7 @@ const declinePlaceholder = 'Two of the team are already away that week';
                                 variant="ghost"
                                 size="icon-sm"
                                 :aria-label="`Approve ${describe(row)}`"
+                                :disabled="approving !== null"
                                 @click="approve(row)"
                                 ><Check
                             /></Button>
@@ -241,8 +232,11 @@ const declinePlaceholder = 'Two of the team are already away that week';
                     :placeholder="declinePlaceholder"
                     @declined="closeRecord"
                 />
-                <Button @click="approve(record)"
-                    ><Check />Approve Time Off</Button
+                <SubmitButton
+                    type="button"
+                    :processing="approving === record.id"
+                    @click="approve(record)"
+                    ><Check />Approve Time Off</SubmitButton
                 >
             </template>
         </RecordSheet>

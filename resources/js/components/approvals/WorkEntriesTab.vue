@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
 import { Check, CheckCheck, X } from '@lucide/vue';
 import { computed } from 'vue';
 import ApprovalController from '@/actions/App/Http/Controllers/WorkEntries/ApprovalController';
@@ -23,6 +22,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useBulkSelection } from '@/composables/useBulkSelection';
 import { reloadList } from '@/composables/useListFilters';
+import { useApproveOne } from '@/composables/useApproveOne';
 import { useRecordInUrl } from '@/composables/useRecordInUrl';
 import { formatDate, formatWeekdayAndDay, mondayOf } from '@/lib/dates';
 import { formatHours } from '@/lib/work-entries';
@@ -72,20 +72,23 @@ const selection = useBulkSelection(() => props.entries.data, {
 });
 const { selected, clear, processing, submit } = selection;
 
-const { recordId, openRecord, closeRecord } = useRecordInUrl();
-
-const record = computed(
-    () =>
-        props.entries.data.find((entry) => entry.id === recordId.value) ?? null,
+const { record, recordOpen, openRecord, closeRecord } = useRecordInUrl(
+    () => props.entries.data,
 );
 
-const recordOpen = computed({
-    get: () => record.value !== null,
-    set: (open: boolean) => {
-        if (!open) {
-            closeRecord();
-        }
-    },
+const { approving, approveOne: approve } = useApproveOne();
+
+/** The other Pending Work Entries of the open one's week, on this page. */
+const otherPending = computed(() => {
+    const open = record.value;
+
+    return open === null
+        ? []
+        : props.entries.data.filter(
+              (entry) =>
+                  entry.id !== open.id &&
+                  mondayOf(entry.date) === mondayOf(open.date),
+          );
 });
 
 const employeeName = computed(
@@ -104,12 +107,28 @@ const projectName = computed(
 const weekOf = (monday: string): ApprovalWeek | undefined =>
     props.weeks.find((week) => week.starts_on === monday);
 
-/** Hours of the ticked Work Entries shown on this page. */
-const selectedHours = computed(() =>
-    props.entries.data
-        .filter((entry) => selection.isSelected(entry.id))
-        .reduce((sum, entry) => sum + entry.hours, 0),
+const selectedOnPage = computed(() =>
+    props.entries.data.filter((entry) => selection.isSelected(entry.id)),
 );
+
+/**
+ * The ticked Work Entries' hours, when they are known: all on this page,
+ * or every matching one. A selection spread over pages has no total, as
+ * only this page's hours are here.
+ */
+const selectedHours = computed((): string | undefined => {
+    if (selected.value.length === props.entries.total) {
+        return formatHours(props.total);
+    }
+
+    if (selected.value.length !== selectedOnPage.value.length) {
+        return undefined;
+    }
+
+    return formatHours(
+        selectedOnPage.value.reduce((sum, entry) => sum + entry.hours, 0),
+    );
+});
 
 /** Whose Work Entry a row is and when, naming its tick-box and buttons. */
 function describe(entry: ApprovalEntry): string {
@@ -127,10 +146,6 @@ function summaryOf(entries: ApprovalEntry[]): string {
     return `${employeeName.value} · ${days} · ${formatHours(hours)} on ${projectName.value}`;
 }
 
-const selectedOnPage = computed(() =>
-    props.entries.data.filter((entry) => selection.isSelected(entry.id)),
-);
-
 function showFiltered(query: Record<string, string>): void {
     clear();
     reloadList(index.url({ query: { ...query, tab: 'work-entries' } }));
@@ -141,16 +156,8 @@ function approveSelected(): void {
 }
 
 function approveOne(entry: ApprovalEntry): void {
-    router.post(
-        ApprovalController.store.url(),
-        { ids: [entry.id] },
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                selection.toggle(entry.id, false);
-                closeRecord();
-            },
-        },
+    approve(entry.id, ApprovalController.store.url(), { ids: [entry.id] }, () =>
+        declinedOne(entry),
     );
 }
 
@@ -200,6 +207,7 @@ const declinePlaceholder = 'Interviews go on Internal, not Acme';
             :group-by="(entry) => mondayOf(entry.date)"
             :selection="selection"
             :row-label="describe"
+            :group-label="(monday) => `Week ${weekOf(monday)?.number}`"
             :on-row-click="(entry) => openRecord(entry.id)"
         >
             <template #lead>
@@ -261,6 +269,7 @@ const declinePlaceholder = 'Interviews go on Internal, not Acme';
                                 variant="ghost"
                                 size="icon-sm"
                                 :aria-label="`Approve ${describe(row)}`"
+                                :disabled="approving !== null"
                                 @click="approveOne(row)"
                                 ><Check
                             /></Button>
@@ -308,11 +317,7 @@ const declinePlaceholder = 'Interviews go on Internal, not Acme';
                     ? entries.total
                     : undefined
             "
-            :total="
-                selected.length === selectedOnPage.length
-                    ? formatHours(selectedHours)
-                    : undefined
-            "
+            :total="selectedHours"
             @select-all="selection.selectAllMatching"
             @clear="clear"
         >
@@ -368,6 +373,21 @@ const declinePlaceholder = 'Interviews go on Internal, not Acme';
                 <h3 class="text-meta text-muted-foreground">Description</h3>
                 <p class="whitespace-pre-line">{{ record.description }}</p>
             </section>
+            <section
+                v-if="otherPending.length > 0"
+                class="flex flex-col gap-1.5"
+            >
+                <h3 class="text-meta text-muted-foreground">
+                    Other Pending Work Entries that week
+                </h3>
+                <ul class="flex flex-col gap-1">
+                    <li v-for="other in otherPending" :key="other.id">
+                        {{ formatWeekdayAndDay(other.date) }} ·
+                        {{ formatHours(other.hours) }} ·
+                        {{ other.description }}
+                    </li>
+                </ul>
+            </section>
             <template #footer>
                 <DecideDialog
                     :ids="[record.id]"
@@ -378,8 +398,11 @@ const declinePlaceholder = 'Interviews go on Internal, not Acme';
                     :placeholder="declinePlaceholder"
                     @declined="declinedOne(record)"
                 />
-                <Button @click="approveOne(record)"
-                    ><Check />Approve Work Entry</Button
+                <SubmitButton
+                    type="button"
+                    :processing="approving === record.id"
+                    @click="approveOne(record)"
+                    ><Check />Approve Work Entry</SubmitButton
                 >
             </template>
         </RecordSheet>

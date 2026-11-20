@@ -31,6 +31,8 @@ const props = defineProps<{
     };
     /** Names a row for its tick-box, such as "Cara Lane's Work Entry on Nov 10". */
     rowLabel?: (row: Row) => string;
+    /** Names a group for its tick-box, such as "Week 46". */
+    groupLabel?: (group: string) => string;
     onRowClick?: (row: Row) => void;
 }>();
 
@@ -165,7 +167,7 @@ function cellClass(column: TableColumn): string[] {
                 <Checkbox
                     v-if="selection"
                     :model-value="stateOf(line.rows)"
-                    aria-label="Select this group"
+                    :aria-label="`Select ${groupLabel?.(line.group) ?? 'this group'}`"
                     @update:model-value="tickAll(line.rows, $event === true)"
                 />
                 <div class="min-w-0 flex-1">
@@ -287,7 +289,7 @@ function cellClass(column: TableColumn): string[] {
                         <td v-if="selection" class="px-3 py-2 sm:px-4">
                             <Checkbox
                                 :model-value="stateOf(line.rows)"
-                                aria-label="Select this group"
+                                :aria-label="`Select ${groupLabel?.(line.group) ?? 'this group'}`"
                                 @update:model-value="
                                     tickAll(line.rows, $event === true)
                                 "

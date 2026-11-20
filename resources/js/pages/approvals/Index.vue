@@ -54,6 +54,8 @@ const props = defineProps<{
     travelRequestsToApprove?: TravelRequestToApprove[];
     /** Pending Travel Expenses of the Employees the viewer manages, by Travel Request. */
     travelExpensesToApprove?: TravelExpensesToApprove[];
+    /** The company currency's code, on the Travel Expenses tab. */
+    currency?: string;
 }>();
 
 /** "24 items are waiting for your decision." */
@@ -138,6 +140,7 @@ function openTab(tab: string | number): void {
                 <TravelExpensesTab
                     v-if="tab === 'travel-expenses' && travelExpensesToApprove"
                     :to-approve="travelExpensesToApprove"
+                    :currency="currency ?? 'EUR'"
                 />
             </TabsContent>
         </Tabs>

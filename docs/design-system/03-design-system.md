@@ -171,6 +171,7 @@
 - **C8** Numbers: "5 h", "€4,800.00" (Company currency), "60%", "5 days".
 - **C9** Dates: "Nov 20, 2026"; ranges collapse a shared year/month ("Nov 30 – Dec 4, 2026", "Nov 16 – 22, 2026"); weekdays short ("Fri, Nov 20"); relative words only for today/yesterday.
 - **C10** Column headers are nouns ("Status", "Decided by"), never verbs or questions ("Answer").
+- **C11** **Open** shows a record or file without changing it: the ⋯ menu's "Open" opens a row's RecordSheet (the keyboard route to it, as a row click is mouse-only), and "Open receipt" shows a Travel Expense's receipt. It never labels a button that changes anything.
 
 ---
 

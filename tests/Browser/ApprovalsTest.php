@@ -232,3 +232,32 @@ it('lets a Manager on a phone tick a whole week of Work Entries and approve it f
     expect($week->every(fn (WorkEntry $entry) => $entry->refresh()->state === WorkEntryState::Approved))->toBeTrue()
         ->and($nextWeek->refresh()->state)->toBe(WorkEntryState::Pending);
 });
+
+it('opens Time Off from a link to its sheet on a phone and approves it there, then declines a Travel Request from its sheet', function () {
+    $ben = managerBen();
+    $cara = recorder(['manager_id' => $ben->id, 'name' => 'Cara']);
+    $timeOff = TimeOff::factory()->for($cara)->unpaid()->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+    $travelRequest = TravelRequest::factory()->on(assignmentOf($cara))->create(['destination' => 'Berlin', 'first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+
+    actingAs($ben);
+
+    visit(route('approvals.index', ['tab' => 'time-off', 'record' => $timeOff->id]))
+        ->resize(390, 844)
+        ->assertSeeIn('[role="dialog"]', "Cara's Time Off · Pending")
+        ->click('internal:role=dialog >> internal:role=button[name="Approve Time Off"s]')
+        ->assertSee('Time Off approved.')
+        ->assertQueryStringMissing('record')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('internal:role=tab[name="Travel Requests"i]')
+        ->click('main [data-slot="data-row"] >> nth=0')
+        ->assertQueryStringHas('record', (string) $travelRequest->id)
+        ->click('internal:role=dialog >> internal:role=button[name="Decline…"s]')
+        ->fill('#decline-reason', 'The release is that week.')
+        ->click('internal:role=dialog >> internal:role=button[name="Decline Travel Request"s]')
+        ->assertSee('Travel Request declined.')
+        ->assertSee('None is waiting')
+        ->assertNoJavaScriptErrors();
+
+    expect($timeOff->refresh()->state)->toBe(TimeOffState::Approved)
+        ->and($travelRequest->refresh()->state)->toBe(TravelRequestState::Declined);
+});

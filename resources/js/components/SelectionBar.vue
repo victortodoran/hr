@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
  * match than are ticked, Clear, and the list's bulk actions in the
  * `actions` slot, the last of them the screen's one `primary` button (B2).
  * On a phone it becomes a full-width bar stuck to the bottom (P8), with
- * just the count and the actions, whose labels the page shortens there.
+ * the count and Clear on one line, the actions sharing the next, and
+ * "Select all" below them; the page shortens the actions' labels there.
  */
 defineProps<{
     count: number;
@@ -29,7 +30,7 @@ const emit = defineEmits<{
             data-slot="selection-bar"
             role="region"
             aria-label="Selected rows"
-            class="sticky bottom-4 z-20 mx-auto flex w-fit max-w-full items-center gap-2 rounded-xl border bg-surface-raised py-2 pr-2 pl-4 shadow-overlay max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:rounded-none max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+            class="sticky bottom-4 z-20 mx-auto flex w-fit max-w-full items-center gap-2 rounded-xl border bg-surface-raised py-2 pr-2 pl-4 shadow-overlay max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:flex-wrap max-sm:rounded-none max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))]"
         >
             <span
                 class="text-body whitespace-nowrap tabular-nums max-sm:mr-auto"
@@ -40,19 +41,17 @@ const emit = defineEmits<{
                 v-if="matching && matching > count"
                 variant="link"
                 size="sm"
-                class="px-1 max-sm:hidden"
+                class="px-1 max-sm:order-last max-sm:basis-full max-sm:justify-start"
                 @click="emit('selectAll')"
                 >Select all {{ matching }} matching</Button
             >
             <span class="mx-1 h-5 w-px bg-border max-sm:hidden" />
-            <Button
-                variant="ghost"
-                size="sm"
-                class="max-sm:hidden"
-                @click="emit('clear')"
+            <Button variant="ghost" size="sm" @click="emit('clear')"
                 >Clear</Button
             >
-            <div class="flex items-center gap-2 max-sm:ml-auto">
+            <div
+                class="flex items-center gap-2 max-sm:basis-full max-sm:*:flex-1"
+            >
                 <slot name="actions" />
             </div>
         </div>

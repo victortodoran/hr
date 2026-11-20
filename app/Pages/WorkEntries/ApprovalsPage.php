@@ -43,7 +43,10 @@ final class ApprovalsPage
                 ApprovalsTab::WorkEntries => self::workEntriesTab($actor, $requested),
                 ApprovalsTab::TimeOff => ['toApprove' => self::timeOffToApprove($actor)],
                 ApprovalsTab::TravelRequests => ['travelRequestsToApprove' => self::travelRequestsToApprove($actor)],
-                ApprovalsTab::TravelExpenses => ['travelExpensesToApprove' => self::travelExpensesToApprove($actor)],
+                ApprovalsTab::TravelExpenses => [
+                    'travelExpensesToApprove' => self::travelExpensesToApprove($actor),
+                    'currency' => CompanySettings::payCurrency()->code,
+                ],
             },
         ];
     }
@@ -129,7 +132,7 @@ final class ApprovalsPage
     {
         return array_values((clone $matching)
             ->get(['date', 'minutes'])
-            ->groupBy(fn (WorkEntry $entry): string => $entry->date->startOfWeek()->toDateString())
+            ->groupBy(fn (WorkEntry $entry): string => $entry->date->startOfWeek(CarbonImmutable::MONDAY)->toDateString())
             ->sortKeys()
             ->map(fn (Collection $entries, string $monday): array => [
                 'starts_on' => $monday,
@@ -233,8 +236,9 @@ final class ApprovalsPage
                         'category' => $travelExpense->category->value,
                         'description' => $travelExpense->description,
                         'amount' => $currency->format($travelExpense->amount),
+                        'amount_minor' => $travelExpense->amount,
                         'submitted_on' => $travelExpense->created_at?->toDateString(),
-                        'receipt_is_image' => in_array(strtolower(pathinfo($travelExpense->receipt_path, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'webp'], true),
+                        'receipt_is_image' => $travelExpense->receiptIsImage(),
                     ])
                     ->all(),
             ])
