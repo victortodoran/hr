@@ -9,9 +9,12 @@ use App\Models\CompanySettings;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
+use App\Models\TravelRequest;
+use App\Models\WorkEntry;
 use App\Pages\Employees\EmployeePage;
 use App\Policies\EmployeePolicy;
 use App\Support\ReportingChain;
+use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -168,11 +171,13 @@ it('lists, on a Former Employee\'s page, the Employees who still report to them 
     actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone]))->get(route('employees.show', $ben))
         ->assertInertia(fn (Assert $page) => $page
             ->where('record.manager.id', $dana->id)
-            ->where('reportsNeedingAManager', [['id' => $cara->id, 'name' => 'Cara Lane']]),
+            ->where('reportsNeedingAManager', [['id' => $cara->id, 'name' => 'Cara Lane', 'can_edit' => false]]),
         );
+    actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ManageEmployees->value => Scope::Everyone]))->get(route('employees.show', ['employee' => $ben, 'tab' => 'assignments']))
+        ->assertInertia(fn (Assert $page) => $page->where('reportsNeedingAManager', [['id' => $cara->id, 'name' => 'Cara Lane', 'can_edit' => true]]));
 });
 
-it('gives an Employee\'s employment status on every tab to those who may see their record, and to nobody else', function () {
+it('gives an Employee\'s employment status and record on every tab to those who may see their record, and to nobody else', function () {
     $ana = Employee::factory()->create();
     $ben = Employee::factory()->former()->reportingTo($ana)->create();
     $recordViewer = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ViewAssignments->value => Scope::Everyone, Permission::ViewTimeOff->value => Scope::Everyone]);
@@ -180,12 +185,12 @@ it('gives an Employee\'s employment status on every tab to those who may see the
 
     foreach (['overview', 'assignments', 'time-off'] as $tab) {
         actingAs($recordViewer)->get(route('employees.show', ['employee' => $ben, 'tab' => $tab]))
-            ->assertInertia(fn (Assert $page) => $page->where('tab', $tab)->where('standing', ['status' => 'former']));
+            ->assertInertia(fn (Assert $page) => $page->where('tab', $tab)->where('standing', ['status' => 'former'])->where('record.manager.id', $ana->id));
     }
     actingAs($recordViewer)->get(route('employees.show', $ana))
         ->assertInertia(fn (Assert $page) => $page->where('standing', ['status' => 'current']));
     actingAs($assignmentViewer)->get(route('employees.show', ['employee' => $ben, 'tab' => 'assignments']))
-        ->assertInertia(fn (Assert $page) => $page->where('standing', null));
+        ->assertInertia(fn (Assert $page) => $page->where('standing', null)->where('record', null));
 });
 
 it('links to an Employee\'s page from their Reporting Chain only when the viewer may open it', function (array $grants, string $expected) {
@@ -234,9 +239,12 @@ it('offers each viewer only the tabs they may see, each carrying only its own da
     $ben = Employee::factory()->create(['manager_id' => Employee::factory()->create()->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
     $props = [
-        'overview' => ['record', 'reportsNeedingAManager', 'reportingChain', 'seeAlso'],
+        'overview' => ['reportingChain'],
         'assignments' => ['assignments', 'projects'],
         'time-off' => ['paidDays', 'timeOff'],
+        'work' => ['work'],
+        'travel' => ['travel'],
+        'performance' => ['performanceEvaluations'],
     ];
     actingAs($viewer($ben, $cara));
 
@@ -261,13 +269,13 @@ it('offers each viewer only the tabs they may see, each carrying only its own da
         Permission::ViewPay->value => Scope::Own,
         Permission::ViewTimeOff->value => Scope::Own,
     ])), ['overview', 'assignments', 'time-off']],
-    'their Manager, seeing their Reports\' records, Assignments and Time Off' => [fn (Employee $ben) => tap($ben, fn () => giveRole($ben, [
+    'their Manager, seeing their Reports\' records, Assignments, Time Off and Performance Evaluations' => [fn (Employee $ben) => tap($ben, fn () => giveRole($ben, [
         Permission::ViewEmployeeRecords->value => Scope::Reports,
         Permission::ViewAssignments->value => Scope::Reports,
         Permission::ManageAssignments->value => Scope::Reports,
         Permission::ViewTimeOff->value => Scope::Reports,
         Permission::ViewProjects->value => null,
-    ])), ['overview', 'assignments', 'time-off']],
+    ])), ['overview', 'assignments', 'time-off', 'performance']],
     'HR, with full access' => [fn () => employeeWith([
         Permission::ViewEmployeeRecords->value => Scope::Everyone,
         Permission::ManageEmployees->value => Scope::Everyone,
@@ -291,7 +299,7 @@ it('opens Overview when no tab, or an unknown one, is asked for', function (arra
         ->get(route('employees.show', ['employee' => $cara, ...$query]))->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('tab', 'overview')
-            ->has('record')
+            ->has('reportingChain')
             ->missing('assignments'));
 })->with([
     'no tab' => [[]],
@@ -303,8 +311,7 @@ it('opens Overview when no tab, or an unknown one, is asked for', function (arra
 /*
  * Ada ── Ben ── Cara
  */
-it('links the Overview to the Work, Travel and Performance lists only where the viewer may see the Employee on them', function (Closure $viewer, string $whose, array $expected) {
-    travelTo('2026-11-13 09:00');
+it('offers the Work, Travel and Performance tabs only where the viewer may see the Employee on the lists across Employees', function (Closure $viewer, string $whose, array $expected) {
     $ada = Employee::factory()->create(['name' => 'Ada']);
     $ben = Employee::factory()->reportingTo($ada)->create(['name' => 'Ben']);
     $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
@@ -313,27 +320,68 @@ it('links the Overview to the Work, Travel and Performance lists only where the 
     $employee = ['cara' => $cara, 'ben' => $ben, 'themselves' => $actor][$whose];
 
     actingAs($actor)->get(route('employees.show', $employee))->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->where('seeAlso', $expected));
+        ->assertInertia(fn (Assert $page) => $page->where('tabs', fn (Collection $tabs): bool => $tabs->intersect(['work', 'travel', 'performance'])->values()->all() === $expected));
 })->with([
-    'one who sees everyone\'s Work Entries' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]), 'cara', ['work' => true, 'travel' => false, 'performance' => null]],
-    'one who sees everyone\'s travel' => [fn () => employeeWith([Permission::ViewTravel->value => Scope::Everyone]), 'cara', ['work' => false, 'travel' => true, 'performance' => null]],
-    'one who reads everyone\'s Evaluations' => [fn () => employeeWith([Permission::ViewPerformanceEvaluations->value => Scope::Everyone]), 'cara', ['work' => false, 'travel' => false, 'performance' => 2026]],
-    'her Manager, seeing his Reports\' Work Entries and travel' => [fn (Employee $ben) => tap($ben, fn () => giveRole($ben, [Permission::ViewWorkEntries->value => Scope::Reports, Permission::ViewTravel->value => Scope::Reports])), 'cara', ['work' => true, 'travel' => true, 'performance' => 2026]],
-    'one whose Scope stops at their Reports, on someone else' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Reports, Permission::ViewTravel->value => Scope::Reports, Permission::ViewPerformanceEvaluations->value => Scope::Reports], ['manager_id' => Employee::factory()->create()->id]), 'ben', ['work' => false, 'travel' => false, 'performance' => null]],
-    'one who sees everyone\'s, on their own page, where their own Evaluations are not listed' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone, Permission::ViewTravel->value => Scope::Everyone, Permission::ViewPerformanceEvaluations->value => Scope::Everyone]), 'themselves', ['work' => true, 'travel' => true, 'performance' => null]],
-    'one who sees only their own, on their own page' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Own, Permission::ViewTravel->value => Scope::Own]), 'themselves', ['work' => false, 'travel' => false, 'performance' => null]],
+    'one who sees everyone\'s Work Entries' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]), 'cara', ['work']],
+    'one who sees everyone\'s travel' => [fn () => employeeWith([Permission::ViewTravel->value => Scope::Everyone]), 'cara', ['travel']],
+    'one who reads everyone\'s Evaluations' => [fn () => employeeWith([Permission::ViewPerformanceEvaluations->value => Scope::Everyone]), 'cara', ['performance']],
+    'her Manager, seeing his Reports\' Work Entries and travel' => [fn (Employee $ben) => tap($ben, fn () => giveRole($ben, [Permission::ViewWorkEntries->value => Scope::Reports, Permission::ViewTravel->value => Scope::Reports])), 'cara', ['work', 'travel', 'performance']],
+    'one whose Scope stops at their Reports, on someone else' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Reports, Permission::ViewTravel->value => Scope::Reports, Permission::ViewPerformanceEvaluations->value => Scope::Reports], ['manager_id' => Employee::factory()->create()->id]), 'ben', []],
+    'one who sees everyone\'s, on their own page, where their own Evaluations are not listed' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone, Permission::ViewTravel->value => Scope::Everyone, Permission::ViewPerformanceEvaluations->value => Scope::Everyone]), 'themselves', ['work', 'travel']],
+    'one who sees only their own, on their own page' => [fn () => employeeWith([Permission::ViewWorkEntries->value => Scope::Own, Permission::ViewTravel->value => Scope::Own]), 'themselves', []],
 ]);
 
-it('links a Former Employee\'s Overview to the year of their latest Performance Evaluation, and to the current one when they have none', function () {
+it('lists on the Work tab only the Employee\'s Work Entries in the Period asked for, this month by default and never a later one', function () {
     travelTo('2026-11-13 09:00');
-    $gone = Employee::factory()->former()->create();
-    $none = Employee::factory()->former()->create();
-    PerformanceEvaluation::factory()->of($gone)->completed()->create(['year' => 2024]);
-    PerformanceEvaluation::factory()->of($gone)->completed()->create(['year' => 2025]);
-    $reader = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ViewPerformanceEvaluations->value => Scope::Everyone]);
+    $cara = Employee::factory()->startedLongAgo()->create();
+    $bea = Employee::factory()->startedLongAgo()->create();
+    $november = WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-10', 'minutes' => 120]);
+    $october = WorkEntry::factory()->for(assignmentOf($cara, 'Data Audit'))->create(['date' => '2026-10-05']);
+    WorkEntry::factory()->for(assignmentOf($bea))->create(['date' => '2026-11-10']);
+    actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ViewWorkEntries->value => Scope::Everyone]));
 
-    actingAs($reader)->get(route('employees.show', $gone))
-        ->assertInertia(fn (Assert $page) => $page->where('seeAlso.performance', 2025));
-    actingAs($reader)->get(route('employees.show', $none))
-        ->assertInertia(fn (Assert $page) => $page->where('seeAlso.performance', 2026));
+    get(route('employees.show', ['employee' => $cara, 'tab' => 'work']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('work.period.query', ['month' => '2026-11'])
+            ->where('work.entries.data', fn (Collection $entries): bool => $entries->pluck('id')->all() === [$november->id])
+            ->where('work.total', 2));
+    get(route('employees.show', ['employee' => $cara, 'tab' => 'work', 'month' => '2026-10']))
+        ->assertInertia(fn (Assert $page) => $page->where('work.entries.data', fn (Collection $entries): bool => $entries->pluck('id')->all() === [$october->id]));
+    get(route('employees.show', ['employee' => $cara, 'tab' => 'work', 'month' => '2027-01']))
+        ->assertInertia(fn (Assert $page) => $page->where('work.period.query', ['month' => '2026-11']));
+});
+
+it('lists on the Travel tab only the Employee\'s Travel Requests with a day in the Period asked for, this month by default', function () {
+    travelTo('2026-11-13 09:00');
+    CompanySettings::factory()->create();
+    $cara = Employee::factory()->startedLongAgo()->create();
+    $bea = Employee::factory()->startedLongAgo()->create();
+    $november = TravelRequest::factory()->on(assignmentOf($cara))->create(['first_date' => '2026-11-20', 'last_date' => '2026-11-22']);
+    $january = TravelRequest::factory()->on(assignmentOf($cara, 'Data Audit'))->create(['first_date' => '2027-01-11', 'last_date' => '2027-01-12']);
+    TravelRequest::factory()->on(assignmentOf($bea))->create(['first_date' => '2026-11-20', 'last_date' => '2026-11-22']);
+    actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ViewTravel->value => Scope::Everyone]));
+
+    get(route('employees.show', ['employee' => $cara, 'tab' => 'travel']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('travel.period.query', ['month' => '2026-11'])
+            ->where('travel.travelRequests.data', fn (Collection $requests): bool => $requests->pluck('id')->all() === [$november->id]));
+    get(route('employees.show', ['employee' => $cara, 'tab' => 'travel', 'month' => '2027-01']))
+        ->assertInertia(fn (Assert $page) => $page->where('travel.travelRequests.data', fn (Collection $requests): bool => $requests->pluck('id')->all() === [$january->id]));
+});
+
+it('lists on the Performance tab the Employee\'s Performance Evaluations for every year, newest first, a Former Employee\'s included', function () {
+    $gone = Employee::factory()->former()->create();
+    $older = PerformanceEvaluation::factory()->of($gone)->completed()->create(['year' => 2024]);
+    $latest = PerformanceEvaluation::factory()->of($gone)->create(['year' => 2025]);
+    PerformanceEvaluation::factory()->of(Employee::factory()->create())->create(['year' => 2025]);
+
+    actingAs(employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, Permission::ViewPerformanceEvaluations->value => Scope::Everyone]))
+        ->get(route('employees.show', ['employee' => $gone, 'tab' => 'performance']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('tab', 'performance')
+            ->where('performanceEvaluations.0.id', $latest->id)
+            ->where('performanceEvaluations.0.state', 'open')
+            ->where('performanceEvaluations.1.id', $older->id)
+            ->where('performanceEvaluations.1.state', 'completed')
+            ->count('performanceEvaluations', 2));
 });

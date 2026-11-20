@@ -125,6 +125,8 @@ List each piece of a diff that sits in the wrong layer. These hold from the firs
 - **K16** `PeriodNavigation` (segmented period + ‹ label › + Today) for every period-scoped list; the label is the period in words ("November 2026", "Nov 16 – 22, 2026").
 - **K17** `ExportMenu` (CSV · XLSX) sits at the right end of the FilterBar and exports exactly what the filters show.
 - **K18** Charts are drawn with Tailwind divs or inline SVG (no chart library): grayscale bars, current period `bg-primary`, Pending as a hatched segment, axis labels in `text-caption`, and an sr-only table of the values.
+- **K19** A detail page's tab that shows one Employee's records from a list across Employees (Work Entries, Travel Requests) is read-only; a secondary **Open in …** section action opens the full list filtered to that Employee, where its actions and Export live.
+- **K20** Status filter chips (All plus each state, each with its count) may offer more than V8's three options, since the counts are what the chips add over a `Select`.
 
 ---
 

@@ -34,14 +34,11 @@ export type EmployeePageRecord = {
 };
 
 /**
- * Which lists across Employees the viewer may open, from an Employee's
- * Overview, filtered to that Employee.
+ * An Employee still reporting to a Former Employee, who needs a new
+ * Manager, with whether the viewer may edit them to choose one.
  */
-export type EmployeeSeeAlso = {
-    work: boolean;
-    travel: boolean;
-    /** The year to open the Performance Evaluations list on, null when hidden. */
-    performance: number | null;
+export type ReportNeedingAManager = Choice & {
+    can_edit: boolean;
 };
 
 /**
@@ -54,15 +51,31 @@ export type EmployeeStanding = {
 
 /**
  * The tabs of an Employee's page: Overview (record and Reporting Chain),
- * Assignments & Pay, and Time Off (Paid Days and Time Off).
+ * Assignments & Pay, Time Off (Paid Days and Time Off), and their Work
+ * Entries, Travel Requests and Performance Evaluations.
  */
-export type EmployeePageTab = 'overview' | 'assignments' | 'time-off';
+export type EmployeePageTab =
+    | 'overview'
+    | 'assignments'
+    | 'time-off'
+    | 'work'
+    | 'travel'
+    | 'performance';
 
 /**
  * One row of the Employees list.
  */
 export type EmployeeListEntry = Choice & {
+    job_title: string | null;
     status: EmploymentStatus;
+    /** As YYYY-MM-DD. */
+    start_date: string;
     department: string | null;
     manager: Choice | null;
 };
+
+/**
+ * How many Employees the Employees list's search, Department and Manager
+ * match, in all and in each status.
+ */
+export type EmploymentStatusCounts = Record<'all' | EmploymentStatus, number>;

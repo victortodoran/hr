@@ -8,8 +8,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * The Employees page's filters: part of a name, and an employment status,
- * any status when none is chosen.
+ * The Employees page's filters: part of a name, a Department, a Manager
+ * and an employment status, any of each when none is chosen.
  */
 class EmployeeListRequest extends FormRequest
 {
@@ -21,6 +21,8 @@ class EmployeeListRequest extends FormRequest
         return [
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::enum(EmploymentStatus::class)],
+            'department' => ['nullable', 'integer', 'min:1'],
+            'manager' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -38,5 +40,21 @@ class EmployeeListRequest extends FormRequest
     public function status(): ?EmploymentStatus
     {
         return $this->filled('status') ? $this->enum('status', EmploymentStatus::class) : null;
+    }
+
+    /**
+     * The ID of the Department asked for, null when none is.
+     */
+    public function departmentId(): ?int
+    {
+        return $this->filled('department') ? $this->integer('department') : null;
+    }
+
+    /**
+     * The ID of the effective Manager asked for, null when none is.
+     */
+    public function managerId(): ?int
+    {
+        return $this->filled('manager') ? $this->integer('manager') : null;
     }
 }

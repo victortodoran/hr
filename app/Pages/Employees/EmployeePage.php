@@ -4,6 +4,7 @@ namespace App\Pages\Employees;
 
 use App\Enums\EmployeePageTab;
 use App\Enums\EmploymentStatus;
+use App\Enums\PeriodMode;
 use App\Enums\Permission;
 use App\Models\Assignment;
 use App\Models\CompanySettings;
@@ -14,18 +15,21 @@ use App\Models\Project;
 use App\Models\TimeOff;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
+use App\Pages\Travel\TravelRequestListPage;
+use App\Pages\WorkEntries\WorkEntryListPage;
 use App\Support\Currency;
 use App\Support\PaidDaysLeft;
 use App\Support\PayHistory;
+use App\Support\Period;
 use App\Support\ReportingChain;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * The Employee page as the props it renders, in tabs: Overview,
- * Assignments & Pay and Time Off. Each tab is only built when it is open.
- * The Overview's Reports needing a new Manager are shown on the edit form
- * too.
+ * Assignments & Pay, Time Off, Work, Travel and Performance. Each tab is
+ * only built when it is open. The Reports needing a new Manager are shown
+ * on the edit form too.
  *
  * @phpstan-import-type PaidDaysLeftInYear from PaidDaysLeft
  */
@@ -33,18 +37,21 @@ final class EmployeePage
 {
     /**
      * An Employee's page in tabs, each offered only when the viewer may see
-     * something on it. Overview: their record, the reports needing a new
-     * Manager when they have left, and their Reporting Chain unless they
-     * have left. Assignments & Pay: their Assignments, with Pay for viewers
+     * something on it. Overview: their Reporting Chain unless they have
+     * left. Assignments & Pay: their Assignments, with Pay for viewers
      * allowed to see it. Time Off: their Paid Days to set, and their Time
-     * Off with this year's Paid Days left. Only the open tab's data is
-     * loaded, apart from the Employee's employment status, which the header
-     * shows on every tab to viewers who may see their record; an unknown or
-     * forbidden tab opens Overview.
+     * Off with this year's Paid Days left. Work, Travel and Performance:
+     * their records the viewer may see on the lists across Employees, the
+     * Work Entries and Travel Requests in the Period asked for, this month
+     * by default. Only the open tab's data is loaded, apart from what the
+     * header shows on every tab to viewers who may see the Employee's
+     * record: their employment status, their record, and, once they have
+     * left, the Employees still reporting to them; an unknown or forbidden
+     * tab opens Overview.
      *
      * @return array<string, mixed>
      */
-    public static function props(Employee $actor, Employee $employee, ?EmployeePageTab $asked): array
+    public static function props(Employee $actor, Employee $employee, ?EmployeePageTab $asked, ?Period $period = null): array
     {
         $canViewAssignments = $actor->can('viewAny', [Assignment::class, $employee]);
         $canManage = $actor->can('create', [Assignment::class, $employee]);
@@ -54,13 +61,18 @@ final class EmployeePage
         $canViewTimeOff = $actor->can('viewTimeOffAndPaidDays', $employee);
         $currency = $canViewPay ? CompanySettings::payCurrency() : null;
         $canViewRecord = $actor->can(Permission::ViewEmployeeRecords->value, $employee);
+        $lists = self::listsShowing($actor, $employee);
 
         $tabs = array_values(array_filter([
             EmployeePageTab::Overview,
             $canViewAssignments ? EmployeePageTab::Assignments : null,
             $canSetPaidDays || $canViewTimeOff ? EmployeePageTab::TimeOff : null,
+            $lists['work'] ? EmployeePageTab::Work : null,
+            $lists['travel'] ? EmployeePageTab::Travel : null,
+            $lists['performance'] ? EmployeePageTab::Performance : null,
         ]));
         $tab = in_array($asked, $tabs, true) ? $asked : EmployeePageTab::Overview;
+        $period ??= Period::month(today()->format('Y-m'));
 
         return [
             'employee' => [
@@ -78,29 +90,16 @@ final class EmployeePage
             'standing' => $canViewRecord
                 ? ['status' => $employee->employmentStatus()->value]
                 : null,
+            'record' => $canViewRecord ? self::record($employee) : null,
+            'reportsNeedingAManager' => $canViewRecord ? self::reportsToReassign($actor, $employee) : [],
             ...match ($tab) {
-                EmployeePageTab::Overview => self::overviewTab($actor, $employee, $canViewRecord),
+                EmployeePageTab::Overview => ['reportingChain' => $employee->employmentStatus() === EmploymentStatus::Former ? null : ReportingChain::of($employee, $actor)],
                 EmployeePageTab::Assignments => self::assignmentsTab($employee, $currency, $canManage),
                 EmployeePageTab::TimeOff => self::timeOffTab($employee, $canSetPaidDays, $canViewTimeOff),
+                EmployeePageTab::Work => ['work' => self::work($actor, $employee, $period)],
+                EmployeePageTab::Travel => ['travel' => self::travel($actor, $employee, $period)],
+                EmployeePageTab::Performance => ['performanceEvaluations' => self::performanceEvaluations($employee)],
             },
-        ];
-    }
-
-    /**
-     * The Overview tab: the Employee's record and the reports needing a new
-     * Manager, when the viewer may see the record, their Reporting Chain
-     * unless they have left, and which lists across Employees the viewer
-     * may open filtered to them.
-     *
-     * @return array{record: array<string, mixed>|null, reportsNeedingAManager: array<int, array{id: int, name: string}>, reportingChain: array<string, mixed>|null, seeAlso: array{work: bool, travel: bool, performance: int|null}}
-     */
-    private static function overviewTab(Employee $actor, Employee $employee, bool $canViewRecord): array
-    {
-        return [
-            'record' => $canViewRecord ? self::record($employee) : null,
-            'reportsNeedingAManager' => $canViewRecord ? self::reportsNeedingAManager($employee) : [],
-            'reportingChain' => $employee->employmentStatus() === EmploymentStatus::Former ? null : ReportingChain::of($employee, $actor),
-            'seeAlso' => self::seeAlso($actor, $employee),
         ];
     }
 
@@ -108,40 +107,114 @@ final class EmployeePage
      * Which lists across Employees the viewer may open with the Employee
      * listed on them: the Work Entries and Travel Requests pages when the
      * viewer may open them and see the Employee's Work Entries or travel
-     * there, and the Performance Evaluations page, as the year to open it
-     * on, when the Employee's are among those the viewer may open there,
-     * which never includes the viewer's own: the current year, or for a
-     * Former Employee, who is no longer due one, the year of their latest.
+     * there, and the Performance Evaluations page when the Employee's are
+     * among those the viewer may open there, which never includes the
+     * viewer's own.
      *
-     * @return array{work: bool, travel: bool, performance: int|null}
+     * @return array{work: bool, travel: bool, performance: bool}
      */
-    private static function seeAlso(Employee $actor, Employee $employee): array
+    private static function listsShowing(Employee $actor, Employee $employee): array
     {
-        $canOpenEvaluations = $actor->can('viewList', PerformanceEvaluation::class)
-            && Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->whereKey($employee->id)->exists();
-
         return [
             'work' => $actor->can('viewList', WorkEntry::class) && $actor->can('viewAny', [WorkEntry::class, $employee]),
             'travel' => $actor->can('viewList', TravelRequest::class) && $actor->reachesThrough(Permission::seeingTravel(), $employee),
-            'performance' => $canOpenEvaluations ? self::evaluationsYear($employee) : null,
+            'performance' => $actor->can('viewList', PerformanceEvaluation::class)
+                && Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->whereKey($employee->id)->exists(),
         ];
     }
 
     /**
-     * The year the Performance Evaluations page shows the Employee for: the
-     * current one, or for a Former Employee the year of their latest
-     * Performance Evaluation, as the list only shows them for a year they
-     * have one.
+     * The Work tab: the Employee's Work Entries in the Period, as the Work
+     * Entries page lists them for this Employee, oldest first and 25 to a
+     * page, with their total hours and those Declined. A Period starting
+     * after today shows this month instead, and a custom one ends today, as
+     * on that page.
+     *
+     * @return array{today: string, period: Period, entries: mixed, total: float|int, declinedTotal: float|int}
      */
-    private static function evaluationsYear(Employee $employee): int
+    private static function work(Employee $actor, Employee $employee, Period $period): array
     {
-        if ($employee->employmentStatus() !== EmploymentStatus::Former) {
-            return today()->year;
+        if ($period->from->isAfter(today())) {
+            $period = Period::month(today()->format('Y-m'));
+        } elseif ($period->mode === PeriodMode::Custom && $period->to->isAfter(today())) {
+            $period = Period::custom($period->from, today());
         }
 
-        $latest = $employee->performanceEvaluations()->max('year');
+        $list = WorkEntryListPage::props($actor, ['period' => $period, 'employee' => $employee->id, 'project' => null, 'state' => null]);
+        abort_unless($list['filters']['employee'] === $employee->id, 403); // @pest-mutate-ignore (the tab is only offered to viewers the list shows the Employee to)
 
-        return $latest === null ? today()->year : (int) $latest;
+        return [
+            'today' => $list['today'],
+            'period' => $period,
+            'entries' => $list['entries'],
+            'total' => $list['total'],
+            'declinedTotal' => $list['declinedTotal'],
+        ];
+    }
+
+    /**
+     * The Travel tab: the Employee's Travel Requests with a day in the
+     * Period, as the Travel Requests page lists them for this Employee, by
+     * first date and 25 to a page, with what was spent on them, Declined
+     * Travel Expenses left out.
+     *
+     * @return array{today: string, period: Period, travelRequests: mixed, total: string}
+     */
+    private static function travel(Employee $actor, Employee $employee, Period $period): array
+    {
+        $list = TravelRequestListPage::props($actor, ['period' => $period, 'employee' => $employee->id, 'project' => null, 'state' => null]);
+        abort_unless($list['filters']['employee'] === $employee->id, 403); // @pest-mutate-ignore (the tab is only offered to viewers the list shows the Employee to)
+
+        return [
+            'today' => $list['today'],
+            'period' => $period,
+            'travelRequests' => $list['travelRequests'],
+            'total' => $list['total'],
+        ];
+    }
+
+    /**
+     * The Performance tab: the Employee's Performance Evaluations for every
+     * year, newest first, each with its state, how many Goals it holds, how
+     * many of them are At Risk while Open and, once Completed, the Outcome
+     * of the whole, as the Employee's own Performance page lists them.
+     *
+     * @return list<array{id: int, year: int, state: string, goals_count: int, at_risk_goals_count: int, outcome: string|null}>
+     */
+    private static function performanceEvaluations(Employee $employee): array
+    {
+        return array_values($employee->performanceEvaluations()
+            ->withCount('goals')
+            ->withAtRiskGoalsCount()
+            ->orderByDesc('year')
+            ->get()
+            ->map(fn (PerformanceEvaluation $evaluation): array => [
+                'id' => $evaluation->id,
+                'year' => $evaluation->year,
+                'state' => $evaluation->state->value,
+                'goals_count' => (int) $evaluation->goals_count,
+                'at_risk_goals_count' => $evaluation->openAtRiskGoalsCount(),
+                'outcome' => $evaluation->completedOutcome()?->value,
+            ])
+            ->all());
+    }
+
+    /**
+     * The Reports needing a new Manager, each with whether the viewer may
+     * edit them to choose one.
+     *
+     * @return list<array{id: int, name: string, can_edit: bool}>
+     */
+    private static function reportsToReassign(Employee $actor, Employee $employee): array
+    {
+        $reports = self::reportsNeedingAManager($employee);
+        $editable = Employee::query()
+            ->whereKey(array_column($reports, 'id'))
+            ->get()
+            ->filter(fn (Employee $report): bool => $actor->can('update', $report))
+            ->modelKeys();
+
+        return array_values(array_map(fn (array $report): array => [...$report, 'can_edit' => in_array($report['id'], $editable, true)], $reports));
     }
 
     /**
