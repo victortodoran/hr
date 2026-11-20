@@ -34,16 +34,42 @@ enum Permission: string
     case ManageCompany = 'manage-company';
 
     /**
-     * The Permission's name as people read it, such as "Manage roles".
+     * The Permission's name as people read it, such as "Manage Roles": the
+     * domain terms in Title Case, everything else in sentence case (rules
+     * C1 and C2).
      */
     public function label(): string
     {
-        return ucfirst(str_replace('-', ' ', $this->value));
+        return match ($this) {
+            self::ViewEmployeeRecords => 'View Employee records',
+            self::AddEmployees => 'Add Employees',
+            self::ManageEmployees => 'Manage Employees',
+            self::ViewAssignments => 'View Assignments',
+            self::ManageAssignments => 'Manage Assignments',
+            self::ViewPay => 'View Pay',
+            self::ManagePay => 'Manage Pay',
+            self::ViewWorkEntries => 'View Work Entries',
+            self::ManageWorkEntries => 'Manage Work Entries',
+            self::ReopenWorkEntries => 'Reopen Work Entries',
+            self::ViewTimeOff => 'View Time Off',
+            self::ManagePaidDays => 'Manage Paid Days',
+            self::ViewTravel => 'View travel',
+            self::ReopenTravelExpenses => 'Reopen Travel Expenses',
+            self::ViewPerformanceEvaluations => 'View Performance Evaluations',
+            self::ReopenPerformanceEvaluations => 'Reopen Performance Evaluations',
+            self::ViewDirectory => 'View directory',
+            self::ViewProjects => 'View Projects',
+            self::ManageProjects => 'Manage Projects',
+            self::ManageClients => 'Manage Clients',
+            self::ManageDepartments => 'Manage Departments',
+            self::ManageRoles => 'Manage Roles',
+            self::ManageCompany => 'Manage company',
+        };
     }
 
     /**
      * The area of the HR system the Permission is about, as the Roles page
-     * groups them: Employees, Assignments, Pay, Work entries, Time off,
+     * groups them: Employees, Assignments, Pay, Work Entries, Time Off,
      * Travel, Performance, Organization or Administration, in the
      * Permissions' own order.
      */
@@ -53,8 +79,8 @@ enum Permission: string
             self::ViewEmployeeRecords, self::AddEmployees, self::ManageEmployees => 'Employees',
             self::ViewAssignments, self::ManageAssignments => 'Assignments',
             self::ViewPay, self::ManagePay => 'Pay',
-            self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries => 'Work entries',
-            self::ViewTimeOff, self::ManagePaidDays => 'Time off',
+            self::ViewWorkEntries, self::ManageWorkEntries, self::ReopenWorkEntries => 'Work Entries',
+            self::ViewTimeOff, self::ManagePaidDays => 'Time Off',
             self::ViewTravel, self::ReopenTravelExpenses => 'Travel',
             self::ViewPerformanceEvaluations, self::ReopenPerformanceEvaluations => 'Performance',
             self::ViewDirectory, self::ViewProjects, self::ManageProjects, self::ManageClients, self::ManageDepartments => 'Organization',

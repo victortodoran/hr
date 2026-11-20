@@ -19,10 +19,10 @@ No domain rule changes: who may approve, the states, and what each record holds 
 ───────────────────────────────
 Company
   Directory                                 permission: View directory · tabs: Everyone · Reports (Reports only for Managers)
-  Employees                                 permission: View employee records
-  Projects                                  permission: View projects
-  Clients                                   permission: Manage clients
-  Company settings                          permission: Manage company / roles / departments
+  Employees                                 permission: View Employee records
+  Projects                                  permission: View Projects
+  Clients                                   permission: Manage Clients
+  Company settings                          permission: Manage company / Roles / Departments
 ───────────────────────────────
 [avatar] Ana Popescu  ⌄                     user menu: Your profile · Settings · Log out
 ```
