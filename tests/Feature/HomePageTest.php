@@ -54,6 +54,7 @@ it('shows a regular Employee their hours this month, Paid Days left and next Tim
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
+            ->where('recordsNoWorkEntries', false)
             ->where('hoursThisMonth', ['month' => '2026-11', 'hours' => 7.5, 'pendingHours' => 1.5])
             ->where('paidDaysLeft', [['year' => 2026, 'days' => 17], ['year' => 2027, 'days' => 20]])
             ->where('nextTimeOff.id', $next->id)
@@ -135,13 +136,14 @@ it('starts an Employee\'s months this year at the month of their Start Date when
         );
 });
 
-it('leaves hours this month and this year out for an Employee with no Manager, who records no Work Entries', function () {
+it('leaves hours this month and this year out for an Employee with no Manager, saying they record no Work Entries', function () {
     $ana = recorder(['manager_id' => null]);
     TimeOff::factory()->for($ana)->approved()->create(['first_date' => '2026-11-11', 'last_date' => '2026-11-11']);
 
     actingAs($ana)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
+            ->where('recordsNoWorkEntries', true)
             ->where('hoursThisMonth', null)
             ->where('hoursThisYear', null)
             ->where('paidDaysLeft', [['year' => 2026, 'days' => -1], ['year' => 2027, 'days' => 0]])
@@ -157,10 +159,21 @@ it('leaves hours this month and this year, and Declined Work Entries, out for an
     actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
+            ->where('recordsNoWorkEntries', false)
             ->where('hoursThisMonth', null)
             ->where('hoursThisYear', null)
             ->where('paidDaysLeft', [['year' => 2026, 'days' => 0], ['year' => 2027, 'days' => 0]])
             ->where('needsAttention', null),
+        );
+});
+
+it('says nothing about Work Entries to an Employee with no Manager who can\'t see them', function () {
+    $ana = employeeWith([Permission::ViewDirectory->value => null], ['manager_id' => null]);
+
+    actingAs($ana)->get(route('landing'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('recordsNoWorkEntries', false)
+            ->where('hoursThisMonth', null),
         );
 });
 

@@ -89,6 +89,7 @@ List each piece of a diff that sits in the wrong layer. These hold from the firs
 - **L20** The breadcrumb in the top bar lists ancestors only; the current page's name is the `<h1>`.
 - **L21** Nav items appear per permission (unchanged); the Approvals badge shows the Pending count and is `bg-primary`.
 - **L22** An area's sidebar entry opens the person's own page when they have one, else the list of others they may see; it stays active on every page of the area.
+- **L23** A Home widget's "View all n" is a button under its rows that shows the rest in place, since its rows (counters, Declined records of several kinds) have no one page listing them; the widget's link to its area ("Open Approvals", "Open Work") sits on the right of its title.
 
 ---
 

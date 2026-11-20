@@ -20,7 +20,8 @@ use Illuminate\Database\Eloquent\Relations\Relation;
  * Home as the props it renders: a summary of the Employee's hours this
  * month and this year, their Time Off, what of theirs was declined and
  * what waits for them to decide.
- * Each block is null when it doesn't apply to them.
+ * Each block is null when it doesn't apply to them; `recordsNoWorkEntries`
+ * says when the hours are left out because the Employee has no Manager.
  */
 final class HomePage
 {
@@ -37,9 +38,11 @@ final class HomePage
     public static function props(Employee $employee): array
     {
         $waiting = $employee->waitingForDecision();
+        $recordsNoWorkEntries = $employee->canSeeWorkEntries() && $employee->hasNoManager();
         $hasHours = $employee->canSeeWorkEntries() && ! $employee->hasNoManager();
 
         return [
+            'recordsNoWorkEntries' => $recordsNoWorkEntries,
             'hoursThisMonth' => $hasHours ? self::hoursThisMonth($employee) : null,
             'hoursThisYear' => $hasHours ? self::hoursThisYear($employee) : null,
             'paidDaysLeft' => PaidDaysLeft::of($employee),

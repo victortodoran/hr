@@ -7,7 +7,8 @@ import type { StatusBadgeState } from '@/types';
  * between them (rules L10, K10): each a value in `text-stat` and a label
  * under it, with the state's icon before the label when it counts one
  * state. A muted value is one that doesn't count, such as Declined hours.
- * On a phone the row wraps.
+ * On a phone the row wraps. Inside a Home widget's card it goes `flush`,
+ * without a border of its own (rule F18).
  */
 defineProps<{
     stats: {
@@ -16,13 +17,16 @@ defineProps<{
         state?: StatusBadgeState;
         muted?: boolean;
     }[];
+    /** Without its own border and padding, for a strip inside a Card. */
+    flush?: boolean;
 }>();
 </script>
 
 <template>
     <dl
         data-slot="stat-strip"
-        class="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border px-4 py-3 sm:flex sm:gap-0 sm:divide-x"
+        class="grid grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:gap-0 sm:divide-x"
+        :class="flush ? '' : 'rounded-lg border px-4 py-3'"
     >
         <div
             v-for="stat in stats"
