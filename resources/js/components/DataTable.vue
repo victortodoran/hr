@@ -37,7 +37,7 @@ function fieldOf(row: Row, key: string): unknown {
 
 function cellClass(column: TableColumn): string[] {
     return [
-        'px-4 py-2',
+        'px-3 py-2 sm:px-4',
         column.minor ? 'hidden sm:table-cell' : '',
         column.align === 'end' ? 'text-right' : 'text-left',
     ];
