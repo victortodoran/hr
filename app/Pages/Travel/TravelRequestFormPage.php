@@ -6,19 +6,23 @@ use App\Models\Assignment;
 use App\Models\Employee;
 
 /**
- * The form for making a Travel Request as the props it renders.
+ * The Travel page with the sheet for making a Travel Request open over it
+ * (rule L14), as the props it renders.
  */
 final class TravelRequestFormPage
 {
     /**
-     * Today and the Assignments the Employee can still travel on, those not
-     * ended before today, by Project name with their dates.
+     * The Travel page's props (TravelPage), that the sheet is open, today,
+     * and the Assignments the Employee can still travel on, those not ended
+     * before today, by Project name with their dates.
      *
-     * @return array{today: string, assignments: array<int, array{id: int, project: string, client: string|null, start_date: string, end_date: string|null}>}
+     * @return array<string, mixed>
      */
     public static function create(Employee $actor): array
     {
         return [
+            ...TravelPage::props($actor),
+            'requesting' => true,
             'today' => today()->toDateString(),
             'assignments' => $actor->assignments()
                 ->notEndedBefore(today())

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useForm, useHttp } from '@inertiajs/vue3';
-import { onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import TimeOffController from '@/actions/App/Http/Controllers/TimeOff/TimeOffController';
 import TimeOffPreviewController from '@/actions/App/Http/Controllers/TimeOff/TimeOffPreviewController';
+import Callout from '@/components/Callout.vue';
 import DateRangePicker from '@/components/DateRangePicker.vue';
 import FormSheet from '@/components/FormSheet.vue';
 import InputError from '@/components/InputError.vue';
@@ -109,6 +110,17 @@ onBeforeUnmount(() => {
 /**
  * Paid Days as people read them, such as "1 Paid Day" or "3 Paid Days".
  */
+/**
+ * Whether the Paid Time Off asked for uses more Paid Days than are left in
+ * some year, so the preview becomes an attention Callout (rule K12).
+ */
+const isOverPaidDays = computed(
+    () =>
+        form.is_paid &&
+        preview.value !== null &&
+        preview.value.years.some((year) => year.left_after < 0),
+);
+
 function paidDays(days: number): string {
     return days === 1 ? '1 Paid Day' : `${days} Paid Days`;
 }
@@ -173,7 +185,25 @@ function request(): void {
                 />
             </div>
 
+            <Callout
+                v-if="isOverPaidDays && preview"
+                tone="attention"
+                aria-live="polite"
+                data-test="paid-days-preview"
+            >
+                <p v-for="year in preview.years" :key="year.year">
+                    {{ year.year }}: uses {{ paidDays(year.uses) }},
+                    <template v-if="year.left_after < 0"
+                        >{{ paidDays(-year.left_after) }} more than you have
+                        left. Request the rest as Unpaid Time Off.</template
+                    >
+                    <template v-else
+                        >leaving {{ paidDays(year.left_after) }}.</template
+                    >
+                </p>
+            </Callout>
             <div
+                v-else
                 class="flex flex-col gap-1 rounded-md bg-muted px-3 py-2 text-meta"
                 aria-live="polite"
                 data-test="paid-days-preview"
@@ -187,20 +217,10 @@ function request(): void {
                     <p
                         v-for="year in preview.years"
                         :key="year.year"
-                        :class="
-                            year.left_after < 0
-                                ? 'text-status-attention-foreground'
-                                : 'text-muted-foreground'
-                        "
+                        class="text-muted-foreground"
                     >
-                        {{ year.year }}: uses {{ paidDays(year.uses) }},
-                        <template v-if="year.left_after < 0"
-                            >{{ paidDays(-year.left_after) }} more than you have
-                            left. Request the rest as Unpaid Time Off.</template
-                        >
-                        <template v-else
-                            >leaving {{ paidDays(year.left_after) }}.</template
-                        >
+                        {{ year.year }}: uses {{ paidDays(year.uses) }}, leaving
+                        {{ paidDays(year.left_after) }}.
                     </p>
                 </template>
                 <p v-else-if="http.processing" class="text-muted-foreground">

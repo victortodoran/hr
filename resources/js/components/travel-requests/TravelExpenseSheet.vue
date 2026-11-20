@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { formatDateSpan } from '@/lib/dates';
+import { formatDateRange } from '@/lib/dates';
 import { travelExpenseCategories } from '@/lib/travel-expenses';
 import type {
     TravelCurrency,
@@ -127,6 +127,7 @@ function save(): void {
         return;
     }
 
+    // Undo the Edit sheet's `_method: 'put'`, as the form is reused for adding.
     form.transform((data) => data).submit(
         TravelExpenseController.store(props.travelRequest.id),
         options,
@@ -138,7 +139,7 @@ function save(): void {
     <FormSheet
         v-model:open="open"
         :title="isEdit ? 'Edit Travel Expense' : 'Add Travel Expense'"
-        :description="`${travelRequest.destination} · ${formatDateSpan(travelRequest.first_date, travelRequest.last_date)}`"
+        :description="`${travelRequest.destination} · ${formatDateRange(travelRequest.first_date, travelRequest.last_date)}`"
     >
         <form :id="FORM_ID" class="flex flex-col gap-5" @submit.prevent="save">
             <Callout
@@ -208,7 +209,7 @@ function save(): void {
                         class="w-full"
                         :aria-invalid="Boolean(form.errors.category)"
                     >
-                        <SelectValue placeholder="Choose a Category" />
+                        <SelectValue placeholder="Choose a category" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem

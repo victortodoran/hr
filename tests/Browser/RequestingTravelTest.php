@@ -42,7 +42,7 @@ it('requests travel in a sheet over the Travel page, its only Assignment chosen 
         ->assertSee('Relaunch workshop')
         ->assertSeeLink('Travel')
         ->click('internal:role=button[name="More for this Travel Request"s]')
-        ->click('internal:role=menuitem[name="Cancel Travel Request"s]')
+        ->click('internal:role=menuitem[name="Cancel Travel Request…"s]')
         ->assertSee('It stays on record as Cancelled')
         ->click('internal:role=dialog >> internal:role=button[name="Cancel Travel Request"s]')
         ->assertSee('Travel Request cancelled.')

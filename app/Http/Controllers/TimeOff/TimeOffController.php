@@ -37,10 +37,7 @@ class TimeOffController extends Controller
      */
     public function create(#[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('time-off/Index', [
-            ...TimeOffPage::props($actor),
-            ...TimeOffFormPage::create(),
-        ]);
+        return Inertia::render('time-off/Index', TimeOffFormPage::create($actor));
     }
 
     /**

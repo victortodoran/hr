@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { Plus } from '@lucide/vue';
-import { ref, watch } from 'vue';
 import PageContainer from '@/components/PageContainer.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import ScopeSwitch from '@/components/ScopeSwitch.vue';
 import RequestTravelSheet from '@/components/travel-requests/RequestTravelSheet.vue';
 import TravelRequestList from '@/components/travel-requests/TravelRequestList.vue';
 import { Button } from '@/components/ui/button';
+import { useOverlayRoute } from '@/composables/useOverlayRoute';
 import { create, index } from '@/routes/travel-requests';
 import type { TravelAssignment, TravelHistory } from '@/types';
 
@@ -33,27 +33,10 @@ const props = defineProps<{
     assignments?: TravelAssignment[];
 }>();
 
-const sheetOpen = ref(props.requesting === true);
-
-watch(
-    () => props.requesting,
-    (requesting) => {
-        sheetOpen.value = requesting === true;
-    },
+const { open: sheetOpen, setOpen: setSheetOpen } = useOverlayRoute(
+    () => props.requesting === true,
+    () => index().url,
 );
-
-/** Closing the sheet returns to the page's own URL. */
-function setSheetOpen(open: boolean): void {
-    sheetOpen.value = open;
-
-    if (!open && props.requesting) {
-        router.get(
-            index().url,
-            {},
-            { preserveScroll: true, preserveState: true },
-        );
-    }
-}
 </script>
 
 <template>

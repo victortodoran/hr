@@ -36,11 +36,7 @@ class TravelRequestController extends Controller
      */
     public function create(#[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('travel-requests/Index', [
-            ...TravelPage::props($actor),
-            ...TravelRequestFormPage::create($actor),
-            'requesting' => true,
-        ]);
+        return Inertia::render('travel-requests/Index', TravelRequestFormPage::create($actor));
     }
 
     /**

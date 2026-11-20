@@ -70,7 +70,7 @@ it('cancels Time Off from its row\'s menu after asking, keeping it on record as 
 
     visit(route('time-off.index'))
         ->click('internal:role=button[name="More for your Time Off"i]')
-        ->click('internal:role=menuitem[name="Cancel"s]')
+        ->click('internal:role=menuitem[name="Cancel…"s]')
         ->assertSee('Cancel Time Off')
         ->assertSee('stays on record as Cancelled, and its 3 Paid Days come back to you.')
         ->click('internal:role=dialog >> internal:role=button[name="Cancel Time Off"s]')

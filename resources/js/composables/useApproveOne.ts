@@ -16,7 +16,7 @@ export function useApproveOne(): {
         id: number,
         url: string,
         data: RequestPayload,
-        onSuccess: () => void,
+        onSuccess?: () => void,
     ) => void;
 } {
     const approving = ref<number | null>(null);
@@ -25,7 +25,7 @@ export function useApproveOne(): {
         id: number,
         url: string,
         data: RequestPayload,
-        onSuccess: () => void,
+        onSuccess?: () => void,
     ): void {
         if (approving.value !== null) {
             return;

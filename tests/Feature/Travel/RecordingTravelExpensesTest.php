@@ -168,6 +168,22 @@ it('opens the Edit Travel Expense sheet over the Travel Request\'s page, filled 
             ->where('manager', 'Mona'));
 });
 
+it('names the next Manager up as the one a Declined expense goes back to once Cara\'s own Manager has left, or nobody when everyone above has left', function () {
+    $dana = Employee::factory()->startedLongAgo()->create(['name' => 'Dana']);
+    $mona = Employee::factory()->former()->reportingTo($dana)->create(['name' => 'Mona']);
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($mona)->create(['name' => 'Cara']);
+    $berlin = berlinTrip($cara);
+    $expense = recordedExpense($berlin, 'declined', ['declined_by' => $mona->id]);
+
+    actingAs($cara)->get(route('travel-requests.expenses.edit', [$berlin, $expense]))
+        ->assertInertia(fn (Assert $page) => $page->where('manager', 'Dana'));
+
+    $dana->update(['leaving_date' => today()->subDay()->toDateString()]);
+
+    actingAs($cara)->get(route('travel-requests.expenses.edit', [$berlin, $expense]))
+        ->assertInertia(fn (Assert $page) => $page->where('manager', null));
+});
+
 it('refuses the form for changing an expense once Approved, someone else\'s, or under another Travel Request', function () {
     $cara = expenseRecorder();
     $berlin = berlinTrip($cara);

@@ -42,7 +42,7 @@ it('lets the Manager decline a Pending Travel Request on its page with a reason,
     actingAs($ben);
 
     visit(route('travel-requests.show', $berlin))
-        ->assertSee('Approve')
+        ->assertSee('Approve Travel Request')
         ->click('Decline…')
         ->assertSee('Decline Travel Request')
         ->fill('#decline-reason', 'The release is that week.')

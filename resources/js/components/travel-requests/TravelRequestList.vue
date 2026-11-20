@@ -5,7 +5,7 @@ import { computed } from 'vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
-import { formatDateSpan } from '@/lib/dates';
+import { formatDateRange } from '@/lib/dates';
 import { show } from '@/routes/travel-requests';
 import type { TableColumn, TravelHistory, TravelRequestSummary } from '@/types';
 
@@ -70,7 +70,7 @@ function open(row: Row): void {
         </template>
         <template #cell-dates="{ row }">
             <span class="whitespace-nowrap tabular-nums">{{
-                formatDateSpan(row.first_date, row.last_date)
+                formatDateRange(row.first_date, row.last_date)
             }}</span>
         </template>
         <template #cell-project="{ row }">

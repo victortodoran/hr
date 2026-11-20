@@ -276,6 +276,20 @@ it('shows the Employee their own Time Off, latest first, the Paid Days left this
             ]));
 });
 
+it('names the next Manager up as the one who decides once Cara\'s own Manager has left, or nobody when everyone above has left', function () {
+    $dana = Employee::factory()->startedLongAgo()->create(['name' => 'Dana']);
+    $mona = Employee::factory()->former()->reportingTo($dana)->create(['name' => 'Mona']);
+    $cara = timeOffRequester(['manager_id' => $mona->id]);
+
+    actingAs($cara)->get(route('time-off.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('manager', 'Dana'));
+
+    $dana->update(['leaving_date' => today()->subDay()->toDateString()]);
+
+    actingAs($cara)->get(route('time-off.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('manager', null));
+});
+
 it('refuses Paid Time Off while Paid Days left are negative, but still takes Unpaid', function () {
     $cara = timeOffRequester(['paid_days' => 15]);
     TimeOff::factory()->for($cara)->approved()->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-27']);

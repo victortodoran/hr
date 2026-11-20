@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { CalendarDays, Plus } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import TimeOffCancellationController from '@/actions/App/Http/Controllers/TimeOff/TimeOffCancellationController';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -15,7 +15,8 @@ import StatusBadge from '@/components/StatusBadge.vue';
 import RequestTimeOffSheet from '@/components/time-off/RequestTimeOffSheet.vue';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { formatDateSpan } from '@/lib/dates';
+import { useOverlayRoute } from '@/composables/useOverlayRoute';
+import { formatDateRange } from '@/lib/dates';
 import { formatDays } from '@/lib/time-off';
 import { create, index } from '@/routes/time-off';
 import type { PaidDaysLeftInYear, TableColumn, TimeOffRecord } from '@/types';
@@ -34,7 +35,7 @@ defineOptions({
  * URL, `time-off/create`, renders this page with `requesting` set (L14).
  */
 const props = defineProps<{
-    /** The Employee's Manager, who decides their Time Off, if they have one. */
+    /** The Employee's effective Manager, who decides their Time Off, if they have one. */
     manager: string | null;
     /** This year's Paid Days left and, from October, next year's. */
     paidDaysLeft: PaidDaysLeftInYear[];
@@ -67,27 +68,10 @@ const stats = computed(() =>
     })),
 );
 
-const sheetOpen = ref(props.requesting === true);
-
-watch(
-    () => props.requesting,
-    (requesting) => {
-        sheetOpen.value = requesting === true;
-    },
+const { open: sheetOpen, setOpen: setSheetOpen } = useOverlayRoute(
+    () => props.requesting === true,
+    () => index().url,
 );
-
-/** Closing the sheet returns to the page's own URL. */
-function setSheetOpen(open: boolean): void {
-    sheetOpen.value = open;
-
-    if (!open && props.requesting) {
-        router.get(
-            index().url,
-            {},
-            { preserveScroll: true, preserveState: true },
-        );
-    }
-}
 
 /** The Time Off the Cancel Time Off dialog asks about. */
 const cancelling = ref<TimeOffRecord | null>(null);
@@ -99,7 +83,7 @@ function askToCancel(timeOff: TimeOffRecord): void {
 }
 
 function cancelDescription(timeOff: TimeOffRecord): string {
-    const dates = formatDateSpan(timeOff.first_date, timeOff.last_date);
+    const dates = formatDateRange(timeOff.first_date, timeOff.last_date);
 
     return timeOff.is_paid
         ? `Your Time Off for ${dates} stays on record as Cancelled, and its ${timeOff.days === 1 ? 'Paid Day comes' : `${timeOff.days} Paid Days come`} back to you.`
@@ -127,7 +111,7 @@ function cancelDescription(timeOff: TimeOffRecord): string {
         <DataTable :columns="columns" :rows="timeOff">
             <template #cell-dates="{ row }">
                 <span class="tabular-nums">{{
-                    formatDateSpan(row.first_date, row.last_date)
+                    formatDateRange(row.first_date, row.last_date)
                 }}</span>
                 <span
                     v-if="row.decline_reason"
@@ -155,11 +139,11 @@ function cancelDescription(timeOff: TimeOffRecord): string {
             <template #cell-actions="{ row }">
                 <RowActions
                     v-if="row.can_cancel"
-                    :label="`your Time Off for ${formatDateSpan(row.first_date, row.last_date)}`"
+                    :label="`your Time Off for ${formatDateRange(row.first_date, row.last_date)}`"
                 >
                     <template #menu>
                         <DropdownMenuItem @select="askToCancel(row)"
-                            >Cancel</DropdownMenuItem
+                            >Cancel…</DropdownMenuItem
                         >
                     </template>
                 </RowActions>

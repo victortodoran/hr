@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
+import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import { Ellipsis, Plus } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import TravelRequestApprovalController from '@/actions/App/Http/Controllers/Travel/TravelRequestApprovalController';
@@ -17,6 +17,7 @@ import SubmitButton from '@/components/SubmitButton.vue';
 import TravelExpenseList from '@/components/travel-requests/TravelExpenseList.vue';
 import TravelExpenseSheet from '@/components/travel-requests/TravelExpenseSheet.vue';
 import { Button } from '@/components/ui/button';
+import { useOverlayRoute } from '@/composables/useOverlayRoute';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,7 +29,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { formatDateSpan } from '@/lib/dates';
+import { formatDateRange } from '@/lib/dates';
 import { formatDays } from '@/lib/time-off';
 import { show as showEmployee } from '@/routes/employees';
 import { index as travelRequestList } from '@/routes/travel-request-list';
@@ -72,7 +73,7 @@ const props = defineProps<{
     today?: string;
     /** The Travel Expense being edited, sent with the Edit sheet. */
     travelExpense?: TravelExpenseTyped;
-    /** The Employee's Manager, sent with the Edit sheet. */
+    /** The Employee's effective Manager, or null with none, sent with the Edit sheet. */
     manager?: string | null;
 }>();
 
@@ -155,7 +156,10 @@ const cancelOpen = ref(false);
 /** The ⋯ button, anchoring its menu past the Tooltip around it. */
 const moreTrigger = ref<InstanceType<typeof Button> | null>(null);
 
-const sheetOpen = ref(props.expenseSheet !== undefined);
+const { open: sheetOpen, setOpen: setSheetOpen } = useOverlayRoute(
+    () => props.expenseSheet !== undefined,
+    () => show(props.travelRequest.id).url,
+);
 
 /**
  * What the sheet last opened with, kept while it closes, once the page's
@@ -183,23 +187,8 @@ watch(
         if (expenseSheet !== undefined) {
             sheet.value = sheetProps();
         }
-
-        sheetOpen.value = expenseSheet !== undefined;
     },
 );
-
-/** Closing the sheet returns to the page's own URL. */
-function setSheetOpen(open: boolean): void {
-    sheetOpen.value = open;
-
-    if (!open && props.expenseSheet) {
-        router.get(
-            show(props.travelRequest.id).url,
-            {},
-            { preserveScroll: true, preserveState: true },
-        );
-    }
-}
 </script>
 
 <template>
@@ -212,15 +201,17 @@ function setSheetOpen(open: boolean): void {
             </template>
             <template #description>
                 <span class="tabular-nums">{{
-                    formatDateSpan(
+                    formatDateRange(
                         travelRequest.first_date,
                         travelRequest.last_date,
                     )
                 }}</span>
                 <span aria-hidden="true">·</span>
                 <span>{{ formatDays(travelRequest.days) }}</span>
-                <span aria-hidden="true">·</span>
-                <span>{{ where }}</span>
+                <template v-if="where">
+                    <span aria-hidden="true">·</span>
+                    <span>{{ where }}</span>
+                </template>
             </template>
             <template
                 v-if="
@@ -241,7 +232,7 @@ function setSheetOpen(open: boolean): void {
                         v-slot="{ processing }"
                     >
                         <SubmitButton :processing="processing" class="w-full"
-                            >Approve</SubmitButton
+                            >Approve Travel Request</SubmitButton
                         >
                     </Form>
                     <DecideDialog
@@ -274,21 +265,23 @@ function setSheetOpen(open: boolean): void {
                                     ref="moreTrigger"
                                     variant="secondary"
                                     size="icon"
-                                    class="max-sm:flex-none!"
+                                    class="max-sm:size-11 max-sm:flex-none!"
                                     aria-label="More for this Travel Request"
                                 >
                                     <Ellipsis />
                                 </Button>
                             </TooltipTrigger>
                         </DropdownMenuTrigger>
-                        <TooltipContent>More</TooltipContent>
+                        <TooltipContent
+                            >More for this Travel Request</TooltipContent
+                        >
                     </Tooltip>
                     <DropdownMenuContent
                         align="end"
                         :reference="moreTrigger?.$el as HTMLElement | undefined"
                     >
                         <DropdownMenuItem @select="cancelOpen = true"
-                            >Cancel Travel Request</DropdownMenuItem
+                            >Cancel Travel Request…</DropdownMenuItem
                         >
                     </DropdownMenuContent>
                 </DropdownMenu>

@@ -13,6 +13,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import DecideDialog from '@/components/DecideDialog.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import IconButton from '@/components/IconButton.vue';
 import RowActions from '@/components/RowActions.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -22,11 +23,6 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useApproveOne } from '@/composables/useApproveOne';
 import { useBulkSelection } from '@/composables/useBulkSelection';
 import { formatDate } from '@/lib/dates';
@@ -59,6 +55,13 @@ const { selected, isSelected, toggle, clear } = useBulkSelection(
 );
 
 const { approving, approveOne } = useApproveOne();
+
+/** The ticked Travel Expenses counted, such as "2 Travel Expenses" (rule B4). */
+const selectedNoun = computed(() =>
+    selected.value.length === 1
+        ? '1 Travel Expense'
+        : `${selected.value.length} Travel Expenses`,
+);
 
 const columns = computed<TableColumn[]>(() => [
     ...(canReopen.value ? [{ key: 'select', label: 'Select' }] : []),
@@ -96,12 +99,9 @@ function openEdit(expense: TravelExpenseRecord): void {
 }
 
 function approve(expense: TravelExpenseRecord): void {
-    approveOne(
-        expense.id,
-        TravelExpenseApprovalController.store.url(),
-        { ids: [expense.id] },
-        () => {},
-    );
+    approveOne(expense.id, TravelExpenseApprovalController.store.url(), {
+        ids: [expense.id],
+    });
 }
 
 /** The Travel Expense the Delete Travel Expense dialog asks about. */
@@ -125,13 +125,13 @@ function askToDelete(expense: TravelExpenseRecord): void {
                             travelRequestId,
                         )
                     "
-                    :title="`Reopen ${selected.length === 1 ? '1 Travel Expense' : `${selected.length} Travel Expenses`}?`"
+                    :title="`Reopen ${selectedNoun}?`"
                     :description="
                         selected.length === 1
                             ? 'It goes back to Pending so it can be corrected.'
                             : 'They go back to Pending so they can be corrected.'
                     "
-                    confirm-label="Reopen"
+                    :confirm-label="`Reopen ${selectedNoun}`"
                     @success="clear"
                 >
                     <input
@@ -145,7 +145,11 @@ function askToDelete(expense: TravelExpenseRecord): void {
                         <Button
                             variant="secondary"
                             :disabled="selected.length === 0"
-                            >Reopen</Button
+                            >{{
+                                selected.length === 0
+                                    ? 'Reopen…'
+                                    : `Reopen ${selectedNoun}…`
+                            }}</Button
                         >
                     </template>
                 </ConfirmDialog>
@@ -203,7 +207,7 @@ function askToDelete(expense: TravelExpenseRecord): void {
                     :href="TravelExpenseReceiptController.show.url(row.id)"
                     target="_blank"
                     rel="noopener"
-                    class="inline-flex rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    class="inline-flex items-center justify-center rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none max-sm:min-h-11 max-sm:min-w-11"
                     :aria-label="`Receipt for ${describe(row)}`"
                 >
                     <img
@@ -211,11 +215,11 @@ function askToDelete(expense: TravelExpenseRecord): void {
                         :src="TravelExpenseReceiptController.show.url(row.id)"
                         alt=""
                         loading="lazy"
-                        class="h-8 w-7 rounded-sm border object-cover"
+                        class="h-10 w-8 rounded-sm border object-cover"
                     />
                     <span
                         v-else
-                        class="flex h-8 w-7 items-center justify-center rounded-sm border bg-surface text-[0.5rem] font-semibold text-muted-foreground"
+                        class="flex h-10 w-8 items-center justify-center rounded-sm border bg-surface text-caption font-semibold text-muted-foreground"
                         >PDF</span
                     >
                 </a>
@@ -226,43 +230,29 @@ function askToDelete(expense: TravelExpenseRecord): void {
             <template #cell-actions="{ row }">
                 <RowActions v-if="hasActions(row)" :label="describe(row)">
                     <template v-if="row.can_decide">
-                        <Tooltip>
-                            <TooltipTrigger as-child>
-                                <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    :aria-label="`Approve ${describe(row)}`"
-                                    :disabled="approving !== null"
-                                    @click="approve(row)"
-                                    ><Check
-                                /></Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Approve</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <DecideDialog
-                                :ids="[row.id]"
-                                :action="TravelExpenseDeclineController.store()"
-                                :noun="{
-                                    one: 'Travel Expense',
-                                    many: 'Travel Expenses',
-                                }"
-                                :summary="`${travelExpenseCategories[row.category]} · ${row.description} · ${row.amount}`"
-                                description="The Employee sees the reason under it on this page, and can edit or delete it. A Declined Travel Expense isn't paid back."
-                                placeholder="The receipt doesn't show the amount"
-                            >
-                                <template #trigger>
-                                    <TooltipTrigger as-child
-                                        ><Button
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            :aria-label="`Decline ${describe(row)}`"
-                                            ><X /></Button
-                                    ></TooltipTrigger>
-                                </template>
-                            </DecideDialog>
-                            <TooltipContent>Decline…</TooltipContent>
-                        </Tooltip>
+                        <IconButton
+                            :label="`Approve ${describe(row)}`"
+                            :disabled="approving !== null"
+                            @click="approve(row)"
+                            ><Check
+                        /></IconButton>
+                        <DecideDialog
+                            :ids="[row.id]"
+                            :action="TravelExpenseDeclineController.store()"
+                            :noun="{
+                                one: 'Travel Expense',
+                                many: 'Travel Expenses',
+                            }"
+                            :summary="`${travelExpenseCategories[row.category]} · ${row.description} · ${row.amount}`"
+                            description="The Employee sees the reason under it on this page, and can edit or delete it. A Declined Travel Expense isn't paid back."
+                            placeholder="The receipt doesn't show the amount"
+                        >
+                            <template #trigger>
+                                <IconButton :label="`Decline ${describe(row)}…`"
+                                    ><X
+                                /></IconButton>
+                            </template>
+                        </DecideDialog>
                     </template>
                     <template v-if="row.can_change" #menu>
                         <DropdownMenuItem @select="openEdit(row)"

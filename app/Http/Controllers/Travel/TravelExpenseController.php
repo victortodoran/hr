@@ -11,7 +11,6 @@ use App\Models\Employee;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Pages\Travel\TravelExpenseFormPage;
-use App\Pages\Travel\TravelRequestPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -32,10 +31,7 @@ class TravelExpenseController extends Controller
      */
     public function create(TravelRequest $travelRequest, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('travel-requests/Show', [
-            ...TravelRequestPage::props($travelRequest, $actor),
-            ...TravelExpenseFormPage::create(),
-        ]);
+        return Inertia::render('travel-requests/Show', TravelExpenseFormPage::create($travelRequest, $actor));
     }
 
     /**
@@ -45,10 +41,7 @@ class TravelExpenseController extends Controller
      */
     public function edit(TravelRequest $travelRequest, TravelExpense $travelExpense, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('travel-requests/Show', [
-            ...TravelRequestPage::props($travelRequest, $actor),
-            ...TravelExpenseFormPage::edit($travelExpense, $actor),
-        ]);
+        return Inertia::render('travel-requests/Show', TravelExpenseFormPage::edit($travelRequest, $travelExpense, $actor));
     }
 
     /**

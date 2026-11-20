@@ -8,7 +8,10 @@ import { Button } from '@/components/ui/button';
  * A file field (rule K15), such as a receipt: drop a file on it or browse
  * for one, and on a phone take a photo. A chosen file shows its thumbnail
  * (or a tile with its type), name and size, with Replace and Remove; a file
- * already stored shows the same with an Open link and Replace. Dropping a
+ * already stored shows the same with an Open link and Replace. A stored
+ * file has no Remove: it is kept unless another is chosen, as where a file
+ * is stored it is required (a Travel Expense always has its receipt), and
+ * Remove on a newly chosen one goes back to the stored file. Dropping a
  * new file anywhere on it replaces the one shown. The help text states the
  * accepted types and size; the server checks both. The model is the file
  * chosen, or null; `id` lands on the real file input, so `<Label for>`
@@ -34,7 +37,13 @@ const file = defineModel<File | null>({ default: null });
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const cameraInput = ref<HTMLInputElement | null>(null);
-const isDraggingOver = ref(false);
+/**
+ * How many of the field's elements a drag is over. Moving between child
+ * elements fires `dragleave` on one before `dragenter` on the next, so the
+ * drag is over the field until the count drops back to 0.
+ */
+const dragDepth = ref(0);
+const isDraggingOver = computed(() => dragDepth.value > 0);
 
 /** The accepted types as people read them, such as "PDF, JPG or PNG". */
 const typesLabel = computed(() => {
@@ -132,7 +141,7 @@ function choose(event: Event): void {
 }
 
 function drop(event: DragEvent): void {
-    isDraggingOver.value = false;
+    dragDepth.value = 0;
     const dropped = event.dataTransfer?.files[0];
 
     if (dropped) {
@@ -152,11 +161,12 @@ function browse(): void {
             :aria-invalid="invalid || undefined"
             class="rounded-lg border border-dashed border-border-strong p-3 transition-colors aria-invalid:border-destructive"
             :class="[
-                isDraggingOver && 'border-primary bg-primary-soft',
+                isDraggingOver && 'border-foreground bg-surface',
                 shown && 'border-solid',
             ]"
-            @dragover.prevent="isDraggingOver = true"
-            @dragleave.prevent="isDraggingOver = false"
+            @dragenter.prevent="dragDepth++"
+            @dragover.prevent
+            @dragleave.prevent="dragDepth = Math.max(0, dragDepth - 1)"
             @drop.prevent="drop"
         >
             <input
