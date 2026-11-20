@@ -89,7 +89,7 @@ Declined entries are only visible as a red circle and struck-through text. The r
 5. The StatStrip above the grid updates: Logged, Approved, Pending, Declined (not counted), and hours per Assignment.
 6. **List view** uses the same week groups. Hovering a day reveals **+** and an inline add row; Edit and Delete live in the row's ⋯ menu.
 
-On a phone, Work opens as a week agenda (one row per day, entries listed) under a month strip. Tapping a day opens the same panel as a bottom sheet. The page's + action adds to today.
+On a phone, Work opens as a week agenda (one row per day, entries listed) under a strip of that week's days. Tapping a day opens the same panel as a bottom sheet. The page's + action adds to today.
 
 ### B. Approving (Approvals inbox)
 
