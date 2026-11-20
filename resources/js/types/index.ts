@@ -20,3 +20,4 @@ export * from './status';
 export * from './time-off';
 export * from './home';
 export * from './travel-request';
+export * from './command-menu';

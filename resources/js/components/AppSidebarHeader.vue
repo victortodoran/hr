@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import CommandMenu from '@/components/CommandMenu.vue';
 import { usePageTitle } from '@/composables/usePageTitle';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem } from '@/types';
@@ -41,5 +42,6 @@ const pageTitle = computed(
             class="max-sm:hidden"
             :breadcrumbs="ancestors"
         />
+        <CommandMenu />
     </header>
 </template>

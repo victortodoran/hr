@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Http\Requests\Projects;
+namespace App\Http\Requests\Search;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * The Projects and Clients pages' filter: part of a name.
+ * The Projects and Clients pages' filter, and the command menu's search:
+ * part of a name.
  */
 class NameSearchRequest extends FormRequest
 {

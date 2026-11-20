@@ -413,8 +413,8 @@ it('shows the Approvals item in the navigation to Managers only, not to someone 
         Permission::ReopenWorkEntries->value => Scope::Everyone,
     ]);
 
-    actingAs($ben)->get(route('profile.edit'))
+    actingAs($ben)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeApprovals', true));
-    actingAs($cara)->get(route('profile.edit'))
+    actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeApprovals', false));
 });

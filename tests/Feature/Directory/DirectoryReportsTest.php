@@ -87,9 +87,9 @@ it('tells every page whether the viewer has Direct Reports, so the menu shows Di
     $ben = Employee::factory()->create();
     $cara = Employee::factory()->reportingTo($ben)->create();
 
-    actingAs($ben)->get(route('profile.edit'))
+    actingAs($ben)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeTeam', true)->where('auth.canSeeDirectory', true));
-    actingAs($cara)->get(route('profile.edit'))
+    actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeTeam', false)->where('auth.canSeeDirectory', false));
 });
 

@@ -41,7 +41,7 @@ function waitingTeam(): array
  */
 function assertApprovalsWaiting(Employee $employee, int $count): void
 {
-    actingAs($employee)->get(route('profile.edit'))
+    actingAs($employee)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.approvalsWaiting', $count));
 }
 
@@ -126,7 +126,7 @@ it('reads whom the Employee manages once per page for the sidebar\'s Team, Appro
         $walks += str_contains($query->sql, 'WITH RECURSIVE') ? 1 : 0;
     });
 
-    actingAs($ben)->get(route('profile.edit'))
+    actingAs($ben)->withSession(['auth.password_confirmed_at' => time()])->get(route('security.edit'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('auth.canSeeTeam', true)
             ->where('auth.canSeeApprovals', true)

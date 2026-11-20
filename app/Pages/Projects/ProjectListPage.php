@@ -21,7 +21,7 @@ final class ProjectListPage
         return [
             'projects' => Project::query()
                 ->with('client:id,name')
-                ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
+                ->whereNameContains($search)
                 ->orderByDesc('is_internal')
                 ->orderBy('name')
                 ->orderBy('id')

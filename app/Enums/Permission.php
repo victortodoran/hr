@@ -145,6 +145,19 @@ enum Permission: string
     }
 
     /**
+     * The Permissions that open an Employee's page besides their own: seeing
+     * their record, their Assignments (seeingAssignments()), or their Time
+     * Off and Paid Days (seeingTimeOff()). The one list the policy and the
+     * command menu's search use.
+     *
+     * @return list<Permission>
+     */
+    public static function seeingEmployeePages(): array
+    {
+        return [self::ViewEmployeeRecords, ...self::seeingAssignments(), ...self::seeingTimeOff()];
+    }
+
+    /**
      * The Permissions that let someone see an Employee's Work Entries: you
      * can always see what you can act on. The one list the policy, the
      * lists and the flags use.

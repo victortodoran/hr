@@ -23,6 +23,7 @@ use App\Http\Controllers\Performance\PerformanceEvaluationReopeningController;
 use App\Http\Controllers\Performance\PerformanceEvaluationSummaryController;
 use App\Http\Controllers\Projects\ClientController;
 use App\Http\Controllers\Projects\ProjectController;
+use App\Http\Controllers\Search\CommandMenuController;
 use App\Http\Controllers\TimeOff\PaidDaysController;
 use App\Http\Controllers\TimeOff\TimeOffApprovalController;
 use App\Http\Controllers\TimeOff\TimeOffCancellationController;
@@ -68,6 +69,7 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('home', HomeController::class)->name('landing');
+    Route::get('search', CommandMenuController::class)->name('search');
 
     Route::middleware('can:create,'.Employee::class)->group(function () {
         Route::get('employees/create', [EmployeeController::class, 'create'])->name('employees.create');

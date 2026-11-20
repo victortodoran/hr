@@ -27,7 +27,7 @@ final class EmployeeListPage
     public static function props(Employee $actor, array $filters): array
     {
         $matching = self::visibleTo($actor)
-            ->whereLike('name', '%'.addcslashes($filters['search'], '\\%_').'%')
+            ->whereNameContains($filters['search'])
             ->when($filters['department'], fn (EmployeeBuilder $query, int $departmentId) => $query->where('department_id', $departmentId))
             ->when($filters['manager'], fn (EmployeeBuilder $query, Employee $manager) => $query->effectivelyManagedBy($manager));
 

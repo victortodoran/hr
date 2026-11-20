@@ -22,7 +22,7 @@ final class ClientListPage
             'clients' => Client::query()
                 ->select(['id', 'name'])
                 ->withCount('projects')
-                ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
+                ->whereNameContains($search)
                 ->orderBy('name')
                 ->orderBy('id')
                 ->paginate(25)

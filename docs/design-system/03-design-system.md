@@ -60,7 +60,7 @@
 - **L13 Form template:** PageHeader → form column (`width="form"`) of titled sections → footer with Submit (`primary`) + Cancel, bottom-left, aligned to the fields.
 - **L14 Overlay form:** forms with ≤6 fields open in a right `Sheet` (480px) and forms with ≤2 fields in a `Dialog`, over the page they came from; their route renders that page with the overlay open so the URL is shareable.
 - **L15 Dashboard template:** PageHeader → responsive grid of Cards (`grid-cols-1 md:grid-cols-2 xl:grid-cols-3`), each a widget with a `text-section` title, at most 5 rows and a "View all" link (or button, L23).
-- **L16 Settings template:** PageHeader "Company settings" or "Settings" → left sub-nav (200px, text list with active marker) + content column (max 880px) of sections; each section is a FactList or a form with its own Save and `SavedTick`.
+- **L16 Settings template:** PageHeader "Company settings" or "Settings" → left sub-nav (200px, text list with active marker) + content column (max 880px) of sections; each section is a FactList or a form with its own Save and `SavedTick`. A settings page with a single section leaves the sub-nav out and shows that section right under the PageHeader.
 - **L17 Auth template:** centered card (max 400px) on `bg-surface` with `AppMark`, title, one-line description, form, and one secondary link under the button.
 
 ### Navigation
@@ -73,6 +73,8 @@
 - **L23** L15's View all links to the widget's list page; when the widget's rows have no single list page (counters, Declined records of several kinds), View all is a button under the rows that shows the rest in place. A widget shows at most 5 rows, 3 on a phone. The widget's link to its area ("Open Approvals", "Open Work") sits on the right of its title.
 - **L24** Error pages (403/404/500, S5) sit on the L17 auth card: `AppMark`, the error as the title, then an `EmptyState` (icon, one sentence saying what happened and what to do) with **Go to Home** as its one `primary` button, in place of L17's one secondary link.
 - **L25** A side column (L6) is a hairline-bordered `bg-surface` panel, never a Card.
+- **L26** The top bar ends with search: from 640px a button that looks like a search field ("Search people, Projects…" with the ⌘K or Ctrl K hint), on a phone a search `IconButton`, which doesn't count as P2's one icon action. ⌘K or Ctrl+K opens the same `CommandMenu` (K22) on every page.
+- **L27** The user menu at the foot of the sidebar shows the person's name and email, then **Your profile** (their own Employee page), **Settings** (Security) and, after a separator, **Log out**; nothing else.
 
 ---
 
@@ -97,7 +99,7 @@
 - **K4** Tabs and segmented values live in the URL (`?tab=`, `?view=`, `?scope=`), resolve through an enum, fall back to the default when unknown or not allowed, and only the open tab's data loads.
 - **K5** `FilterBar` (with `FilterSearch`, `FilterSelect`, `FilterChips`) sits above its list and reloads it through `useListFilters`; active filters show as removable chips; the matching count and total sit at the bar's right, Export after them.
 - **K6** "New …", "Add …" and "Request …" buttons sit in the PageHeader actions, never in the FilterBar.
-- **K7** `Popover` for a small anchored task tied to one spot (the Work day panel, a filter); `Sheet` for create/edit forms (L14) and record previews (`RecordSheet`); `Dialog` only for confirmations, decisions (DecideDialog) and ≤2-field forms; `DropdownMenu` for actions.
+- **K7** `Popover` for a small anchored task tied to one spot (the Work day panel, a filter); `Sheet` for create/edit forms (L14) and record previews (`RecordSheet`); `Dialog` only for confirmations, decisions (DecideDialog) and ≤2-field forms, except the `CommandMenu` (K22); `DropdownMenu` for actions.
 - **K8** `RecordSheet` shows a row's full record (description, reasons, receipt, history) from any list where the table can't show it; it is opened by clicking the row and keeps `?record=` in the URL, or `?person=` on the Directory, whose sheet loads the person's Reporting Chain from the server.
 - **K9** `SelectionBar` appears when ≥1 row is selected: floating, bottom-centre, `shadow-overlay`, showing "N selected · total", Clear, secondary actions, one primary; "Select all N matching" appears when a full page is selected.
 - **K10** `StatStrip` for 2–6 numbers about the current view; each item is value (`text-stat`, tabular) + label (`text-caption`), optional status icon before the label.
@@ -112,6 +114,7 @@
 - **K19** A detail page's tab that shows one Employee's records from a list across Employees (Work Entries, Travel Requests) is read-only; a secondary **Open in …** section action opens the full list filtered to that Employee, where its actions and Export live.
 - **K20** Status filter chips (All plus each state, each with its count) may offer more than V8's three options, since the counts are what the chips add over a `Select`.
 - **K21** A row whose history is read and changed in place (an Assignment's Pay history) opens it under itself, as the `DataTable` row's full-width `after-row` on a `bg-surface` panel holding a timeline (a K1 exception), through a chevron `IconButton` in the first column (at the row's right on a phone) with `aria-expanded` and "Show/Hide … on …" as its label; the row's other actions stay in its ⋯ menu (K2).
+- **K22** `CommandMenu` is a reka-ui Combobox in a `Dialog` (a bottom sheet on phone, P7), the one exception to K7, opened by ⌘K or Ctrl+K and by the top bar's search (L26). What it lists and how it behaves is its row in `05-components.md`.
 
 ---
 
@@ -188,7 +191,7 @@
 ## Phone behaviour (< 640px)
 
 - **P1** Every task that works on desktop works on phone; nothing is hidden behind "use a computer".
-- **P2** The sidebar becomes the off-canvas `Sheet`; the top bar shows menu, page title, and at most one icon action (the page's primary, e.g. + Add Work Entry).
+- **P2** The sidebar becomes the off-canvas `Sheet`; the top bar shows menu, page title, and at most one icon action (the page's primary, e.g. + Add Work Entry), not counting L26's search `IconButton`.
 - **P3** The page header stacks: title (`text-title-sm`), description, then actions full-width; the primary action may move to a sticky bottom bar on forms.
 - **P4** `DataTable` renders rows as stacked items: primary cell (bold), one secondary line, status and trailing value on the right; `hideOnPhone` columns move into the RecordSheet.
 - **P5** No horizontal page scroll; the only horizontal scrollers are the tab strip and segmented controls, with a fade at the edge.

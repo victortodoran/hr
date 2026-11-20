@@ -19,7 +19,7 @@ it('tells every page how far beyond themselves the viewer sees each area, for th
         Permission::ViewTravel->value => Scope::Own,
     ]);
 
-    actingAs($viewer)->get(route('profile.edit'))
+    actingAs($viewer)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.othersReach', [
             'work' => 'everyone',
             'timeOff' => 'reports',
@@ -32,6 +32,6 @@ it('counts a Manager as seeing their Reports\' Performance Evaluations without a
     $ben = managerBen();
     Employee::factory()->reportingTo($ben)->create();
 
-    actingAs($ben)->get(route('profile.edit'))
+    actingAs($ben)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.othersReach.performance', 'reports'));
 });
