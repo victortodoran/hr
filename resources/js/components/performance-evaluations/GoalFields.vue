@@ -7,8 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 
 /**
  * A Goal's Title and "What achieving it looks like" fields with the tip
- * on saying what done looks like, as giving a Goal and changing one on
- * its own page both ask for them.
+ * on saying what done looks like, as the Add Goal and Edit Goal sheet
+ * asks for them.
  */
 defineProps<{
     errors: Partial<Record<'title' | 'description', string>>;
@@ -25,7 +25,7 @@ const description = defineModel<string>('description', { required: true });
             <Input
                 id="goal-title"
                 v-model="title"
-                placeholder="Lead the Relaunch API work"
+                placeholder="e.g. Lead the Relaunch API work"
                 maxlength="255"
                 required
             />
@@ -40,8 +40,10 @@ const description = defineModel<string>('description', { required: true });
                 maxlength="5000"
                 required
             />
-            <p class="flex items-start gap-2 text-sm text-muted-foreground">
-                <Lightbulb class="mt-0.5 size-4 shrink-0" />
+            <p
+                class="flex items-start gap-2 text-caption text-muted-foreground"
+            >
+                <Lightbulb class="size-4 shrink-0" aria-hidden="true" />
                 Say what done looks like by the end of the year, so you can both
                 tell whether it was Met.
             </p>

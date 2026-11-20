@@ -31,27 +31,29 @@ it('saves Progress and Outcomes as they are picked and the summary with its butt
         ->click('[aria-label="Progress of Lead the Checkout API"]')
         ->click('internal:role=option[name="Done"s]')
         ->assertSee('Saved')
+        ->assertSee('Outcome (hidden from Cara until Completed)')
+        ->assertSeeIn('[aria-label="Outcome of Lead the Checkout API"]', '—')
         ->click('[aria-label="Outcome of Lead the Checkout API"]')
         ->click('internal:role=option[name="Exceeded"s]')
         ->assertSee('Saved')
-        ->assertSee('Give every Goal an Outcome and write the summary to complete it.')
-        ->assertAttribute('#evaluation-outcome', 'data-disabled', '')
+        ->assertSee('Pick an Outcome for every Goal and save the summary to Complete it.')
         ->fill('#evaluation-summary', "A strong year.\nThe Relaunch shipped on time.")
-        ->click('internal:role=heading[name="The year as a whole"s]')
-        ->assertSee('Give every Goal an Outcome and write the summary to complete it.')
+        ->click('internal:role=heading[name="Year as a whole"s]')
+        ->assertSee('Pick an Outcome for every Goal and save the summary to Complete it.')
         ->click('Save summary')
         ->assertSee('Summary saved.')
-        ->assertDontSee('Give every Goal an Outcome and write the summary to complete it.')
+        ->assertSee('Pick the Outcome of the year as a whole to Complete it.')
         ->click('#evaluation-outcome')
         ->click('internal:role=option[name="Met"s]')
-        ->assertSee('Complete Cara\'s 2026 Performance Evaluation as Met?')
+        ->click('internal:role=button[name="Complete…"s]')
+        ->assertSee('Complete Cara\'s 2026 Performance Evaluation as Met')
         ->assertSee('Cara sees the Outcomes and summary.')
         ->click('Keep it Open')
-        ->assertSeeIn('#evaluation-outcome', 'Not given')
-        ->click('#evaluation-outcome')
-        ->click('internal:role=option[name="Met"s]')
-        ->click('internal:role=dialog >> internal:role=button[name="Complete"s]')
+        ->assertSeeIn('#evaluation-outcome', 'Met')
+        ->click('internal:role=button[name="Complete…"s]')
+        ->click('internal:role=dialog >> internal:role=button[name="Complete Performance Evaluation"s]')
         ->assertSee('Performance Evaluation completed.')
+        ->assertSee('Completed on')
         ->assertSee('A strong year.')
         ->assertSee('The Relaunch shipped on time.')
         ->assertMissing('#evaluation-outcome')
@@ -60,9 +62,9 @@ it('saves Progress and Outcomes as they are picked and the summary with its butt
     actingAs($cara);
 
     visit(route('performance-evaluations.show', $evaluation))
-        ->assertSee('Completed')
-        ->assertSee('The year as a whole')
-        ->assertSee('Exceeded')
+        ->assertSee('Completed on')
+        ->assertSeeIn('[data-slot="stat-strip"]', 'Met')
+        ->assertSee('Outcome: Exceeded')
         ->assertSee('A strong year.')
         ->assertNoJavaScriptErrors();
 
@@ -83,7 +85,7 @@ it('puts a Goal\'s Outcome back with a toast saying why when the Evaluation was 
 
     $page = visit(route('performance-evaluations.show', $evaluation))
         ->click('[aria-label="Outcome of Lead the Checkout API"]')
-        ->click('internal:role=option[name="Not given"s]')
+        ->click('internal:role=option[name="—"s]')
         ->assertSee('Saved');
 
     expect($goal->fresh()?->outcome)->toBeNull();
@@ -109,13 +111,36 @@ it('gives a Goal its Outcome from the Goal\'s own page, staying on it', function
     actingAs($ben);
 
     visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
-        ->assertSeeIn('[aria-label="Outcome"]', 'Not given')
-        ->click('[aria-label="Outcome"]')
+        ->assertSeeIn('#goal-outcome', '—')
+        ->click('#goal-outcome')
         ->click('internal:role=option[name="Met"s]')
         ->assertSee('Saved')
-        ->assertSee('The Goal was given')
-        ->assertSeeIn('[aria-label="Outcome"]', 'Met')
+        ->assertSee('The Goal was added')
+        ->assertSeeIn('#goal-outcome', 'Met')
         ->assertNoJavaScriptErrors();
 
     expect($goal->fresh()?->outcome)->toBe(Outcome::Met);
+});
+
+it('completes an Evaluation from the Year as a whole panel on a phone, after confirming, without scrolling sideways', function () {
+    $ben = managerBen();
+    $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
+    $evaluation = PerformanceEvaluation::factory()->of($cara)->create(['summary' => 'A steady year.']);
+    Goal::factory()->for($evaluation)->create(['title' => 'Lead the Checkout API', 'outcome' => Outcome::Met]);
+
+    actingAs($ben);
+
+    visit(route('performance-evaluations.show', $evaluation))
+        ->resize(390, 844)
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('#evaluation-outcome')
+        ->click('internal:role=option[name="Partly Met"s]')
+        ->click('internal:role=button[name="Complete…"s]')
+        ->assertSee('Complete Cara\'s 2026 Performance Evaluation as Partly Met')
+        ->click('internal:role=dialog >> internal:role=button[name="Complete Performance Evaluation"s]')
+        ->assertSee('Performance Evaluation completed.')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->assertNoJavaScriptErrors();
+
+    expect($evaluation->fresh()?->outcome)->toBe(Outcome::PartlyMet);
 });

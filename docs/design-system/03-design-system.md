@@ -71,6 +71,7 @@
 - **L21** Nav items appear per permission (unchanged); the Approvals badge shows the Pending count and is `bg-primary`.
 - **L22** An area's sidebar entry opens the person's own page when they have one, else the list of others they may see; it stays active on every page of the area.
 - **L23** L15's View all links to the widget's list page; when the widget's rows have no single list page (counters, Declined records of several kinds), View all is a button under the rows that shows the rest in place. A widget shows at most 5 rows, 3 on a phone. The widget's link to its area ("Open Approvals", "Open Work") sits on the right of its title.
+- **L25** A side column (L6) is a hairline-bordered `bg-surface` panel, never a Card.
 
 ---
 

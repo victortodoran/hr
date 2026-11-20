@@ -28,7 +28,7 @@ it('opens a Goal from its Performance Evaluation, changes its Progress, and the 
     visit(route('performance-evaluations.show', $evaluation))
         ->assertSee('Not Started')
         ->click('internal:role=link[name="Lead the Checkout API"s]')
-        ->assertSee('The Goal was given')
+        ->assertSee('The Goal was added')
         ->click('#goal-progress')
         ->click('internal:role=option[name="At Risk"s]')
         ->assertSee('Saved')
@@ -74,7 +74,7 @@ it('puts the Progress back with a toast saying why when the Performance Evaluati
     actingAs($cara);
 
     $page = visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
-        ->assertSee('The Goal was given');
+        ->assertSee('The Goal was added');
 
     $goal->forceFill(['outcome' => Outcome::Met])->save();
     app(AssessPerformanceEvaluation::class)->writeSummary($evaluation, 'Good year.');
@@ -91,7 +91,7 @@ it('puts the Progress back with a toast saying why when the Performance Evaluati
     expect($goal->fresh()?->progress)->toBe(Progress::NotStarted);
 });
 
-it('lets the Manager change the Goal on its page, then remove it from there', function () {
+it('lets the Manager edit the Goal in the sheet on its page, then delete it from the ⋯ menu', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
     $evaluation = PerformanceEvaluation::factory()->of($cara)->create();
@@ -100,16 +100,17 @@ it('lets the Manager change the Goal on its page, then remove it from there', fu
     actingAs($ben);
 
     visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
-        ->click('internal:role=button[name="Change"s]')
+        ->click('internal:role=link[name="Edit"s]')
         ->fill('#goal-title', 'Lead the Payments API')
-        ->click('Save Goal')
-        ->assertSee('Goal changed.')
-        ->assertSee('The Goal was given')
+        ->click('internal:role=dialog >> internal:role=button[name="Save Goal"s]')
+        ->assertSee('Goal saved.')
+        ->assertSee('The Goal was added')
         ->assertSee('Lead the Payments API')
         ->assertMissing('#goal-title')
-        ->click('internal:role=button[name="Remove"s]')
-        ->click('internal:role=dialog >> internal:role=button[name="Remove Goal"s]')
-        ->assertSee('Goal removed.')
+        ->click('internal:role=button[name="More for this Goal"s]')
+        ->click('internal:role=menuitem[name="Delete Goal…"s]')
+        ->click('internal:role=dialog >> internal:role=button[name="Delete Goal"s]')
+        ->assertSee('Goal deleted.')
         ->assertSee('No Goals yet')
         ->assertNoJavaScriptErrors();
 

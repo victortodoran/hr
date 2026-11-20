@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { Plus, Target } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -7,16 +8,20 @@ import FilterBar from '@/components/FilterBar.vue';
 import FilterSearch from '@/components/FilterSearch.vue';
 import FilterSelect from '@/components/FilterSelect.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import PersonCell from '@/components/PersonCell.vue';
 import ScopeSwitch from '@/components/ScopeSwitch.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
+import NewPerformanceEvaluationDialog from '@/components/performance-evaluations/NewPerformanceEvaluationDialog.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { useListFilters } from '@/composables/useListFilters';
+import { useOverlayRoute } from '@/composables/useOverlayRoute';
 import { outcomes } from '@/lib/outcomes';
 import { create, index, show } from '@/routes/performance-evaluations';
 import type {
     Choice,
+    CreatableYear,
     FilterChoice,
     Paginated,
     PerformanceEvaluationRow,
@@ -33,9 +38,11 @@ defineOptions({
 /**
  * For one year, the Employees the viewer effectively manages or may read
  * the Performance Evaluations of who have one for it, each with that
- * Performance Evaluation; New Evaluation starts one for those still
- * without. An Employee's page links here narrowed to them, which the bar
- * shows as an Employee to clear.
+ * Performance Evaluation. New Performance Evaluation, the one primary
+ * (B2), starts one for those still without in a dialog over the list,
+ * whose own URL, `performance-evaluations/create`, renders this page with
+ * `creating` set (L14). An Employee's page links here narrowed to them,
+ * which the bar shows as an Employee to clear.
  */
 const props = defineProps<{
     year: number;
@@ -46,11 +53,28 @@ const props = defineProps<{
     employee: Choice | null;
     canCreate: boolean;
     employees: Paginated<PerformanceEvaluationRow>;
+    /** Whether the New Performance Evaluation dialog is open. */
+    creating?: boolean;
+    /** The years it may be for, with who may get one, sent with the dialog. */
+    creatableYears?: CreatableYear[];
 }>();
+
+/** The list's year and filters, which opening and closing the dialog keep. */
+const listQuery = computed(() => ({
+    year: String(props.year),
+    ...(props.search ? { search: props.search } : {}),
+    ...(props.state ? { state: props.state } : {}),
+    ...(props.employee ? { employee: String(props.employee.id) } : {}),
+}));
+
+const { open: dialogOpen, setOpen: setDialogOpen } = useOverlayRoute(
+    () => props.creating === true,
+    () => index.url({ query: listQuery.value }),
+);
 
 const columns: TableColumn[] = [
     { key: 'name', label: 'Employee' },
-    { key: 'goals', label: 'Goals', minor: true },
+    { key: 'goals', label: 'Goals', align: 'end', minor: true },
     { key: 'state', label: 'Status', align: 'end' },
 ];
 
@@ -82,13 +106,17 @@ const filters = useListFilters(index.url, {
     <PageContainer width="full">
         <PageHeader
             title="Performance Evaluations"
-            description="The Evaluations you write for the Employees you are the Manager of, and those you may read"
+            description="The Performance Evaluations you write for the Employees you're the Manager of, and those you may read"
         >
             <template #actions>
                 <Button v-if="canCreate" as-child>
-                    <Link :href="create()">
-                        <Plus class="size-4" aria-hidden="true" />
-                        New Evaluation
+                    <Link
+                        :href="create({ query: listQuery })"
+                        preserve-scroll
+                        preserve-state
+                    >
+                        <Plus aria-hidden="true" />
+                        New Performance Evaluation…
                     </Link>
                 </Button>
             </template>
@@ -121,14 +149,12 @@ const filters = useListFilters(index.url, {
 
         <DataTable :columns="columns" :rows="employees.data">
             <template #cell-name="{ row }">
-                <Link
-                    :href="show(row.evaluation.id)"
-                    class="font-medium underline-offset-4 hover:underline"
-                    >{{ row.name }}</Link
-                >
+                <PersonCell :name="row.name" :href="show(row.evaluation.id)" />
             </template>
             <template #cell-goals="{ row }">
-                {{ row.evaluation.goals_count }}
+                <span class="tabular-nums">{{
+                    row.evaluation.goals_count
+                }}</span>
             </template>
             <template #cell-state="{ row }">
                 <div
@@ -155,7 +181,12 @@ const filters = useListFilters(index.url, {
                 >
                     <template v-if="canCreate" #action>
                         <Button variant="secondary" as-child>
-                            <Link :href="create()">New Evaluation</Link>
+                            <Link
+                                :href="create({ query: listQuery })"
+                                preserve-scroll
+                                preserve-state
+                                >New Performance Evaluation…</Link
+                            >
                         </Button>
                     </template>
                 </EmptyState>
@@ -163,5 +194,12 @@ const filters = useListFilters(index.url, {
         </DataTable>
 
         <Pagination :page="employees" preserve-state />
+
+        <NewPerformanceEvaluationDialog
+            v-if="canCreate"
+            :open="dialogOpen"
+            :creatable-years="creatableYears ?? []"
+            @update:open="setDialogOpen"
+        />
     </PageContainer>
 </template>

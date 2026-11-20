@@ -15,7 +15,7 @@ covers(PerformanceEvaluationController::class, GoalController::class, GoalCommen
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
-it('lets the Manager and the Employee talk on a Goal, and warns how many Comments go when it is removed', function () {
+it('lets the Manager and the Employee talk on a Goal, and adds the second with ⌘↵ on a phone, and warns how many Comments go when the Goal is deleted', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
     $evaluation = PerformanceEvaluation::factory()->of($cara)->create();
@@ -26,7 +26,7 @@ it('lets the Manager and the Employee talk on a Goal, and warns how many Comment
     visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
         ->assertSee('What Cara and their Manager write about this Goal appears here.')
         ->fill('#goal-comment', 'Auth is late, let\'s talk Friday.')
-        ->click('internal:role=button[name="Comment"s]')
+        ->click('internal:role=button[name="Add Comment"s]')
         ->assertSee('Comment added.')
         ->assertSee('Auth is late, let\'s talk Friday.')
         ->assertNoJavaScriptErrors();
@@ -35,20 +35,23 @@ it('lets the Manager and the Employee talk on a Goal, and warns how many Comment
 
     visit(route('performance-evaluations.goals.show', [$evaluation, $goal]))
         ->assertSee('Auth is late, let\'s talk Friday.')
+        ->resize(390, 844)
         ->fill('#goal-comment', "Friday works.\nI'll bring a plan B.")
-        ->click('internal:role=button[name="Comment"s]')
+        ->keys('#goal-comment', 'Meta+Enter')
         ->assertSee('Friday works.')
         ->assertSee('I\'ll bring a plan B.')
+        ->assertValue('#goal-comment', '')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertNoJavaScriptErrors();
 
     actingAs($ben);
 
     visit(route('performance-evaluations.show', $evaluation))
         ->click('internal:role=button[name="More for Lead the Checkout API"s]')
-        ->click('internal:role=menuitem[name="Remove Lead the Checkout API"s]')
-        ->assertSee('Its 2 Comments are removed with it.')
-        ->click('internal:role=dialog >> internal:role=button[name="Remove Goal"s]')
-        ->assertSee('Goal removed.')
+        ->click('internal:role=menuitem[name="Delete Goal…"s]')
+        ->assertSee('Its 2 Comments are deleted with it.')
+        ->click('internal:role=dialog >> internal:role=button[name="Delete Goal"s]')
+        ->assertSee('Goal deleted.')
         ->assertNoJavaScriptErrors();
 
     expect(Comment::query()->count())->toBe(0);
