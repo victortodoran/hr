@@ -224,6 +224,15 @@
     }
 }
 
+/* Diagonal stripes in the current text colour: a Pending segment in a chart (K18). */
+@utility bg-hatched {
+    background-image: repeating-linear-gradient(
+        135deg,
+        currentColor 0 2px,
+        transparent 2px 4px
+    );
+}
+
 @utility tabular {
     font-variant-numeric: tabular-nums;
 }
