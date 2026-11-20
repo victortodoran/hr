@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, setLayoutProps } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import GoalForm from '@/components/performance-evaluations/GoalForm.vue';
 import { index, show } from '@/routes/performance-evaluations';
@@ -33,8 +33,8 @@ setLayoutProps({
 <template>
     <Head :title="title" />
 
-    <PageContainer width="narrow">
-        <Heading
+    <PageContainer width="form">
+        <PageHeader
             :title="title"
             :description="`For the ${evaluation.year} Performance Evaluation. ${firstName} sees it as soon as you give it.`"
         />

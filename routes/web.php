@@ -11,7 +11,6 @@ use App\Http\Controllers\Company\DepartmentController;
 use App\Http\Controllers\Employees\DirectoryController;
 use App\Http\Controllers\Employees\EmployeeController;
 use App\Http\Controllers\Employees\EmployeeInvitationController;
-use App\Http\Controllers\Employees\TeamController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Performance\GoalCommentController;
 use App\Http\Controllers\Performance\GoalController;
@@ -94,7 +93,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('assignments/{assignment}/pay/{payEntry}', [PayEntryController::class, 'destroy'])->scopeBindings()->name('assignments.pay.destroy');
     });
 
-    Route::get('team', TeamController::class)->middleware('can:viewTeam,'.Employee::class)->name('team.index');
+    Route::redirect('team', '/directory?tab=reports')->name('team.index');
+    Route::get('directory', [DirectoryController::class, 'index'])->middleware('can:viewDirectory,'.Employee::class)->name('directory.index');
 
     Route::get('work-entries', [WorkEntryController::class, 'index'])->name('work-entries.index');
     Route::post('employees/{employee}/work-entries', [WorkEntryController::class, 'store'])->middleware('can:create,'.WorkEntry::class.',employee')->name('employees.work-entries.store');
@@ -162,7 +162,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('can:'.Permission::ViewDirectory->value)->group(function () {
-        Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');
         Route::get('directory/{employee}', [DirectoryController::class, 'show'])->name('directory.show');
     });
 

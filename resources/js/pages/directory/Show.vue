@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import ReportingChain from '@/components/employees/ReportingChain.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import { Button } from '@/components/ui/button';
 import { index, show } from '@/routes/directory';
@@ -26,8 +26,8 @@ setLayoutProps({
 <template>
     <Head :title="`${reportingChain.employee.name}'s Reporting Chain`" />
 
-    <PageContainer width="narrow">
-        <Heading
+    <PageContainer width="form">
+        <PageHeader
             :title="`${reportingChain.employee.name}'s Reporting Chain`"
             description="Who they report to, up to the top of the company, and whom they are the Manager of"
         >
@@ -41,7 +41,7 @@ setLayoutProps({
                     >
                 </Button>
             </template>
-        </Heading>
+        </PageHeader>
 
         <ReportingChain :chain="reportingChain" />
     </PageContainer>

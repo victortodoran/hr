@@ -7,7 +7,7 @@ import PerformanceEvaluationReopeningController from '@/actions/App/Http/Control
 import PerformanceEvaluationSummaryController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationSummaryController';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import InputError from '@/components/InputError.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import PerformanceEvaluationBody from '@/components/performance-evaluations/PerformanceEvaluationBody.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -156,8 +156,8 @@ setLayoutProps({
 <template>
     <Head :title="`Performance Evaluation · ${title}`" />
 
-    <PageContainer width="wide">
-        <Heading :title="heading">
+    <PageContainer width="full">
+        <PageHeader :title="heading">
             <template #description>
                 <StatusBadge :state="evaluation.state" />
                 <span v-if="evaluation.completed_at"
@@ -187,7 +187,7 @@ setLayoutProps({
                     </template>
                 </ConfirmDialog>
             </template>
-        </Heading>
+        </PageHeader>
 
         <PerformanceEvaluationBody
             :evaluation="evaluation"

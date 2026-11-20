@@ -94,7 +94,7 @@ it('leads the Manager from a Travel Request\'s breadcrumbs back to the Travel Re
     actingAs($ben);
 
     visit(route('travel-requests.show', $berlin))
-        ->assertSee('Cara · Berlin')
+        ->assertSeeIn('[data-slot="page-header"] h1', 'Cara · Berlin')
         ->click('internal:role=link[name="Travel Requests"s]')
         ->assertPathIs('/travel-requests/all')
         ->assertNoJavaScriptErrors();

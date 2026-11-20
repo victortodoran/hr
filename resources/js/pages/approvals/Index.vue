@@ -4,7 +4,7 @@ import TimeOffTab from '@/components/approvals/TimeOffTab.vue';
 import TravelExpensesTab from '@/components/approvals/TravelExpensesTab.vue';
 import TravelRequestsTab from '@/components/approvals/TravelRequestsTab.vue';
 import WorkEntriesTab from '@/components/approvals/WorkEntriesTab.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -60,8 +60,8 @@ function openTab(tab: string | number): void {
 <template>
     <Head title="Approvals" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Approvals"
             description="Pending Work Entries, Time Off, Travel Requests and Travel Expenses waiting for your decision"
         />

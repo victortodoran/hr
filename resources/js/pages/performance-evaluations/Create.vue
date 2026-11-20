@@ -2,7 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import PerformanceEvaluationController from '@/actions/App/Http/Controllers/Performance/PerformanceEvaluationController';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -65,8 +65,8 @@ function createEvaluation(): void {
 <template>
     <Head title="New Performance Evaluation" />
 
-    <PageContainer width="narrow">
-        <Heading
+    <PageContainer width="form">
+        <PageHeader
             title="New Performance Evaluation"
             description="It's Open as soon as you create it, so you can start giving Goals right away."
         />

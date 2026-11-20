@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
-import { LogOut, Settings } from '@lucide/vue';
+import { LogOut, Settings, UserRound } from '@lucide/vue';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import EmployeeInfo from '@/components/EmployeeInfo.vue';
 import { logout } from '@/routes';
+import { show as employeePage } from '@/routes/employees';
 import { edit } from '@/routes/profile';
 import type { Employee } from '@/types';
 
@@ -31,6 +32,15 @@ defineProps<Props>();
     </DropdownMenuLabel>
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
+        <DropdownMenuItem :as-child="true">
+            <Link
+                class="block w-full cursor-pointer"
+                :href="employeePage(employee.id)"
+            >
+                <UserRound class="mr-2 h-4 w-4" />
+                Your profile
+            </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem :as-child="true">
             <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
                 <Settings class="mr-2 h-4 w-4" />

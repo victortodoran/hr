@@ -3,26 +3,20 @@ import { Link, usePage } from '@inertiajs/vue3';
 import {
     Briefcase,
     CalendarDays,
-    CheckCheck,
-    ClipboardCheck,
     Clock,
-    Building2,
+    Contact,
     FolderKanban,
     House,
+    Inbox,
     Plane,
-    Luggage,
-    Landmark,
-    Network,
-    ShieldCheck,
+    SlidersHorizontal,
     Target,
-    UserRound,
     UsersRound,
-    Users,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import AppMark from '@/components/AppMark.vue';
-import NavMain from '@/components/NavMain.vue';
 import NavEmployee from '@/components/NavEmployee.vue';
+import NavMain from '@/components/NavMain.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -31,19 +25,18 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarSeparator,
+    useSidebar,
 } from '@/components/ui/sidebar';
+import { useCompanySettingsLinks } from '@/composables/useCompanySettingsLinks';
 import { landing } from '@/routes';
 import { index as approvals } from '@/routes/approvals';
 import { index as clients } from '@/routes/clients';
-import { edit as company } from '@/routes/company';
-import { index as departments } from '@/routes/departments';
 import { index as directory } from '@/routes/directory';
-import { index as employees, show as employeePage } from '@/routes/employees';
+import { index as employees } from '@/routes/employees';
 import { index as myPerformanceEvaluations } from '@/routes/my-performance-evaluations';
 import { index as performanceEvaluations } from '@/routes/performance-evaluations';
 import { index as projects } from '@/routes/projects';
-import { index as roles } from '@/routes/roles';
-import { index as team } from '@/routes/team';
 import { index as timeOff } from '@/routes/time-off';
 import { index as timeOffList } from '@/routes/time-off-list';
 import { index as travelRequestList } from '@/routes/travel-request-list';
@@ -56,65 +49,78 @@ const page = usePage();
 
 const auth = computed(() => page.props.auth);
 
-const meItems = computed<NavItem[]>(() => [
-    { title: 'Home', href: landing(), icon: House },
-    {
-        title: 'Profile',
-        href: employeePage(auth.value.employee.id),
-        icon: UserRound,
-    },
-    ...(auth.value.canSeeWorkEntries
-        ? [{ title: 'Work', href: workEntries(), icon: Clock }]
-        : []),
-    { title: 'Time Off', href: timeOff(), icon: CalendarDays },
-    { title: 'Travel', href: travelRequests(), icon: Plane },
-    {
-        title: 'Performance',
-        href: myPerformanceEvaluations(),
-        icon: Target,
-    },
-]);
+const settingsLinks = useCompanySettingsLinks();
 
-const manageItems = computed<NavItem[]>(() => [
-    ...(auth.value.canSeeTeam
-        ? [{ title: 'Team', href: team(), icon: Network }]
-        : []),
+const { setOpenMobile } = useSidebar();
+
+/** On a phone, the menu sheet closes once a link in it opens a page (rule P2). */
+watch(
+    () => page.url,
+    () => setOpenMobile(false),
+);
+
+const startItems = computed<NavItem[]>(() => [
+    { title: 'Home', href: landing(), icon: House },
     ...(auth.value.canSeeApprovals
         ? [
               {
                   title: 'Approvals',
                   href: approvals(),
-                  icon: CheckCheck,
+                  icon: Inbox,
                   badge: auth.value.approvalsWaiting,
-              },
-          ]
-        : []),
-    ...(auth.value.canSeeWorkEntryList
-        ? [{ title: 'Work', href: workEntryList(), icon: Clock }]
-        : []),
-    ...(auth.value.canSeeTimeOffList
-        ? [{ title: 'Time Off', href: timeOffList(), icon: CalendarDays }]
-        : []),
-    ...(auth.value.canSeeTravelRequestList
-        ? [{ title: 'Travel', href: travelRequestList(), icon: Luggage }]
-        : []),
-    ...(auth.value.canSeePerformanceEvaluations
-        ? [
-              {
-                  title: 'Performance',
-                  href: performanceEvaluations(),
-                  icon: ClipboardCheck,
               },
           ]
         : []),
 ]);
 
+/**
+ * One entry per area (rule L18). Each opens the Employee's own page when
+ * they have one, else the list across Employees; the ScopeSwitch on the
+ * page moves between the two (rule L19).
+ */
+const areaItems = computed<NavItem[]>(() => {
+    const work: NavItem[] = auth.value.canSeeWorkEntries
+        ? [
+              {
+                  title: 'Work',
+                  href: workEntries(),
+                  icon: Clock,
+                  activeOn: [workEntryList()],
+              },
+          ]
+        : auth.value.canSeeWorkEntryList
+          ? [{ title: 'Work', href: workEntryList(), icon: Clock }]
+          : [];
+
+    return [
+        ...work,
+        {
+            title: 'Time Off',
+            href: timeOff(),
+            icon: CalendarDays,
+            activeOn: [timeOffList()],
+        },
+        {
+            title: 'Travel',
+            href: travelRequests(),
+            icon: Plane,
+            activeOn: [travelRequestList()],
+        },
+        {
+            title: 'Performance',
+            href: myPerformanceEvaluations(),
+            icon: Target,
+            activeOn: [performanceEvaluations()],
+        },
+    ];
+});
+
 const companyItems = computed<NavItem[]>(() => [
+    ...(auth.value.canSeeDirectory
+        ? [{ title: 'Directory', href: directory(), icon: Contact }]
+        : []),
     ...(auth.value.canListEmployees
         ? [{ title: 'Employees', href: employees(), icon: UsersRound }]
-        : []),
-    ...(auth.value.can.includes('view-directory')
-        ? [{ title: 'Directory', href: directory(), icon: Users }]
         : []),
     ...(auth.value.can.includes('view-projects') ||
     auth.value.can.includes('manage-projects')
@@ -123,30 +129,22 @@ const companyItems = computed<NavItem[]>(() => [
     ...(auth.value.can.includes('manage-clients')
         ? [{ title: 'Clients', href: clients(), icon: Briefcase }]
         : []),
-    ...(auth.value.can.includes('manage-departments')
-        ? [{ title: 'Departments', href: departments(), icon: Building2 }]
-        : []),
-    ...(auth.value.can.includes('manage-roles')
-        ? [{ title: 'Roles', href: roles(), icon: ShieldCheck }]
-        : []),
-    ...(auth.value.can.includes('manage-company')
-        ? [{ title: 'Company', href: company(), icon: Landmark }]
+    ...(settingsLinks.value.length > 0
+        ? [
+              {
+                  title: 'Company settings',
+                  href: settingsLinks.value[0].href,
+                  icon: SlidersHorizontal,
+                  activeOn: settingsLinks.value.map((link) => link.href),
+              },
+          ]
         : []),
 ]);
-
-/** The labelled groups, leaving out any with no link the Employee may open. */
-const navGroups = computed(() =>
-    [
-        { label: 'Me', items: meItems.value },
-        { label: 'Manage', items: manageItems.value },
-        { label: 'Company', items: companyItems.value },
-    ].filter((group) => group.items.length > 0),
-);
 </script>
 
 <template>
-    <Sidebar collapsible="icon" variant="inset">
-        <SidebarHeader>
+    <Sidebar collapsible="icon">
+        <SidebarHeader class="px-3 pt-4">
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
@@ -158,16 +156,17 @@ const navGroups = computed(() =>
             </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent>
-            <NavMain
-                v-for="group in navGroups"
-                :key="group.label"
-                :label="group.label"
-                :items="group.items"
-            />
+        <SidebarContent class="gap-0">
+            <NavMain :items="startItems" />
+            <SidebarSeparator class="mx-5 my-2.5" />
+            <NavMain :items="areaItems" />
+            <template v-if="companyItems.length > 0">
+                <SidebarSeparator class="mx-5 my-2.5" />
+                <NavMain label="Company" :items="companyItems" />
+            </template>
         </SidebarContent>
 
-        <SidebarFooter>
+        <SidebarFooter class="px-3 pb-3">
             <NavEmployee />
         </SidebarFooter>
     </Sidebar>

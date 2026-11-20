@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, setLayoutProps } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import TravelExpenseForm from '@/components/travel-requests/TravelExpenseForm.vue';
 import { formatDateRange } from '@/lib/dates';
@@ -40,8 +40,8 @@ setLayoutProps({
 <template>
     <Head title="Change expense" />
 
-    <PageContainer width="narrow">
-        <Heading
+    <PageContainer width="form">
+        <PageHeader
             title="Change expense"
             :description="`${travelRequest.destination} · ${formatDateRange(travelRequest.first_date, travelRequest.last_date)}`"
         />

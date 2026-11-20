@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
-import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -30,11 +29,13 @@ defineOptions({
     <h2 class="sr-only">Security settings</h2>
 
     <div class="space-y-6">
-        <Heading
-            variant="small"
-            title="Update password"
-            description="Ensure your account is using a long, random password to stay secure"
-        />
+        <header>
+            <h2 class="text-section">Update password</h2>
+            <p class="text-body text-muted-foreground">
+                Ensure your account is using a long, random password to stay
+                secure
+            </p>
+        </header>
 
         <Form
             v-bind="SecurityController.update.form()"

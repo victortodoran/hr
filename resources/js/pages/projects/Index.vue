@@ -8,7 +8,7 @@ import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FilterBar from '@/components/FilterBar.vue';
 import FilterSearch from '@/components/FilterSearch.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Badge } from '@/components/ui/badge';
@@ -49,8 +49,8 @@ const columns = computed<TableColumn[]>(() => [
 <template>
     <Head title="Projects" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Projects"
             description="The work Employees can be assigned to"
         >
@@ -59,7 +59,7 @@ const columns = computed<TableColumn[]>(() => [
                     <Link :href="create()">New Project</Link>
                 </Button>
             </template>
-        </Heading>
+        </PageHeader>
 
         <FilterBar>
             <FilterSearch v-model="filters.search" />

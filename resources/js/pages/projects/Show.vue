@@ -4,7 +4,7 @@ import { ref } from 'vue';
 import ProjectController from '@/actions/App/Http/Controllers/Projects/ProjectController';
 import TeamTable from '@/components/assignments/TeamTable.vue';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import ProjectFields from '@/components/projects/ProjectFields.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -84,8 +84,8 @@ setLayoutProps({
 <template>
     <Head :title="project.name" />
 
-    <PageContainer width="wide">
-        <Heading :title="project.name" :description="summary()">
+    <PageContainer width="full">
+        <PageHeader :title="project.name" :description="summary()">
             <template v-if="canManage && !editing" #actions>
                 <Button variant="secondary" @click="startEditing"
                     >Change</Button
@@ -102,7 +102,7 @@ setLayoutProps({
                     </template>
                 </ConfirmDeleteDialog>
             </template>
-        </Heading>
+        </PageHeader>
 
         <Card v-if="editing" class="max-w-2xl px-6 py-5">
             <form class="space-y-6" @submit.prevent="saveProject">

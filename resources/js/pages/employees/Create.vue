@@ -2,7 +2,7 @@
 import { Form, Head } from '@inertiajs/vue3';
 import EmployeeController from '@/actions/App/Http/Controllers/Employees/EmployeeController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -27,8 +27,8 @@ defineProps<{
 <template>
     <Head title="Add Employee" />
 
-    <PageContainer width="narrow">
-        <Heading
+    <PageContainer width="form">
+        <PageHeader
             title="Add Employee"
             description="They'll get an email inviting them to set a password"
         />

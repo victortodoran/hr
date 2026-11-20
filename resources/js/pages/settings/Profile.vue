@@ -2,7 +2,6 @@
 import { Head, usePage } from '@inertiajs/vue3';
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import Heading from '@/components/Heading.vue';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 
@@ -27,11 +26,12 @@ const employee = computed(() => page.props.auth.employee);
     <h2 class="sr-only">Profile settings</h2>
 
     <div class="flex flex-col space-y-6">
-        <Heading
-            variant="small"
-            title="Profile"
-            description="Your name and email address"
-        />
+        <header>
+            <h2 class="text-section">Profile</h2>
+            <p class="text-body text-muted-foreground">
+                Your name and email address
+            </p>
+        </header>
 
         <dl class="grid gap-4 text-sm">
             <div class="grid gap-1">

@@ -31,3 +31,6 @@ export type ReportingChainView = {
     employee: ChainMember;
     below: ChainMember[];
 };
+
+/** The tabs of the Directory page. */
+export type DirectoryTab = 'everyone' | 'reports';

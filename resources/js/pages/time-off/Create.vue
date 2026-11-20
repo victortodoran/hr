@@ -3,7 +3,7 @@ import { Head, Link, useForm, useHttp } from '@inertiajs/vue3';
 import { onBeforeUnmount, ref, watch } from 'vue';
 import TimeOffController from '@/actions/App/Http/Controllers/TimeOff/TimeOffController';
 import TimeOffPreviewController from '@/actions/App/Http/Controllers/TimeOff/TimeOffPreviewController';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -111,8 +111,8 @@ function request(): void {
 <template>
     <Head title="Request Time Off" />
 
-    <PageContainer width="narrow">
-        <Heading
+    <PageContainer width="form">
+        <PageHeader
             title="Request Time Off"
             description="Only weekdays count. Paid Time Off uses your Paid Days for the year each day falls in."
         />

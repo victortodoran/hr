@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import ProjectController from '@/actions/App/Http/Controllers/Projects/ProjectController';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import ProjectFields from '@/components/projects/ProjectFields.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -37,8 +37,8 @@ function createProject(): void {
 <template>
     <Head title="New Project" />
 
-    <PageContainer width="narrow">
-        <Heading
+    <PageContainer width="form">
+        <PageHeader
             title="New Project"
             description="Employees can be assigned to it while it runs."
         />

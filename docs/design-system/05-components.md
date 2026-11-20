@@ -59,6 +59,7 @@
 | `AppMark`                        | Neutral placeholder mark (rounded square, simple glyph) + "HR"                           | G14      |
 | `PageHeader`                     | Replaces Heading                                                                         | L3       |
 | `ScopeSwitch`                    | Mine · Reports · Everyone, URL-bound, permission-filtered                                | L19      |
+| `SettingsFrame`                  | Settings sub-nav (left on desktop, top on phone) beside the settings content             | L16      |
 | `SegmentedControl`               | View and small-choice switches (List/Calendar, Paid/Unpaid, Fixed/Hourly)                | K3, V8   |
 | `StatStrip`                      | Row of value + label stats                                                               | L10, K10 |
 | `FactList`                       | Definition list for one record                                                           | L8, K11  |

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\Permission;
+use App\Enums\Scope;
 use App\Models\Employee;
 use App\Models\TimeOff;
 use App\Models\TravelRequest;
@@ -62,11 +63,20 @@ class HandleInertiaRequests extends Middleware
                 'canSeeWorkEntryList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', WorkEntry::class),
                 'canSeeTimeOffList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', TimeOff::class),
                 'canSeeTravelRequestList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', TravelRequest::class),
+                'canSeeDirectory' => fn (): bool => $asManagerOnce()['hasDirectReports']
+                    || ($employee instanceof Employee && $employee->holds(Permission::ViewDirectory)),
                 'canSeeTeam' => fn (): bool => $asManagerOnce()['hasDirectReports'],
                 'canSeeApprovals' => fn (): bool => $asManagerOnce()['managesAnyone'],
                 'approvalsWaiting' => fn (): int => $asManagerOnce()['waiting'],
                 'canSeePerformanceEvaluations' => fn (): bool => $asManagerOnce()['managesAnyone']
                     || ($employee instanceof Employee && $employee->seesOthersPerformanceEvaluations()),
+                'othersReach' => fn (): array => $employee instanceof Employee ? [
+                    'work' => $employee->othersReachThrough(Permission::seeingWorkEntries()),
+                    'timeOff' => $employee->othersReachThrough(Permission::seeingTimeOff()),
+                    'travel' => $employee->othersReachThrough(Permission::seeingTravel()),
+                    'performance' => $employee->othersReachThrough(Permission::seeingPerformanceEvaluations())
+                        ?? ($asManagerOnce()['managesAnyone'] ? Scope::Reports : null),
+                ] : [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

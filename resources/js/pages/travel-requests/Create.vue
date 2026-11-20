@@ -2,7 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import TravelRequestController from '@/actions/App/Http/Controllers/Travel/TravelRequestController';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
@@ -82,8 +82,8 @@ function request(): void {
 <template>
     <Head title="Request travel" />
 
-    <PageContainer width="narrow">
-        <Heading
+    <PageContainer width="form">
+        <PageHeader
             title="Request travel"
             description="Every day counts, weekends included, and all of them must fall within the Assignment's dates. Travel for the company itself goes on your Internal Assignment."
         />

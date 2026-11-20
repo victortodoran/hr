@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\DirectoryTab;
 use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
 use App\Models\Assignment;
@@ -66,6 +67,15 @@ class EmployeePolicy
     public function viewTeam(Employee $actor): bool
     {
         return $actor->hasDirectReports();
+    }
+
+    /**
+     * The Directory page opens for whoever may open one of its tabs: view
+     * directory for Everyone, Direct Reports for Reports.
+     */
+    public function viewDirectory(Employee $actor): bool
+    {
+        return DirectoryTab::openableBy($actor) !== [];
     }
 
     /**

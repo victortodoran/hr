@@ -6,7 +6,8 @@ import EmptyState from '@/components/EmptyState.vue';
 import FilterBar from '@/components/FilterBar.vue';
 import FilterSearch from '@/components/FilterSearch.vue';
 import FilterSelect from '@/components/FilterSelect.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import ScopeSwitch from '@/components/ScopeSwitch.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -78,8 +79,8 @@ const filters = useListFilters(index.url, {
 <template>
     <Head title="Performance Evaluations" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Performance Evaluations"
             description="The Evaluations you write for the Employees you are the Manager of, and those you may read"
         >
@@ -91,7 +92,8 @@ const filters = useListFilters(index.url, {
                     </Link>
                 </Button>
             </template>
-        </Heading>
+        </PageHeader>
+        <ScopeSwitch area="performance" />
 
         <FilterBar>
             <FilterSelect

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import ScopeSwitch from '@/components/ScopeSwitch.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import TravelRequestList from '@/components/travel-requests/TravelRequestList.vue';
 import { Button } from '@/components/ui/button';
@@ -21,8 +22,8 @@ defineProps<{
 <template>
     <Head title="Travel" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Travel"
             description="Your travel for work and what you paid for it"
         >
@@ -31,7 +32,8 @@ defineProps<{
                     <Link :href="create()">Request travel</Link>
                 </Button>
             </template>
-        </Heading>
+        </PageHeader>
+        <ScopeSwitch area="travel" />
 
         <TravelRequestList
             :travel-requests="travelRequests"

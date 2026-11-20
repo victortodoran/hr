@@ -13,7 +13,7 @@ covers(TimeOffListController::class);
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
-it('opens Time Off from Manage, narrows it to a state, and goes to an Employee\'s Time Off tab', function () {
+it('opens Reports from Time Off, narrows it to a state, and goes to an Employee\'s Time Off tab', function () {
     $ben = managerBen();
     giveRole($ben, [Permission::ViewTimeOff->value => Scope::Reports]);
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
@@ -24,7 +24,8 @@ it('opens Time Off from Manage, narrows it to a state, and goes to an Employee\'
     actingAs($ben);
 
     visit(route('home'))
-        ->click('internal:role=link[name="Time Off"s] >> nth=1')
+        ->click('internal:role=link[name="Time Off"s]')
+        ->click('internal:role=link[name="Reports"s]')
         ->assertPathIs(route('time-off-list.index', absolute: false))
         ->assertSee('Unpaid')
         ->click('[aria-label="State"]')

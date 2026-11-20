@@ -3,7 +3,8 @@ import { Head, Link } from '@inertiajs/vue3';
 import { CalendarDays } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import ScopeSwitch from '@/components/ScopeSwitch.vue';
 import ListFilterBar from '@/components/ListFilterBar.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import Pagination from '@/components/Pagination.vue';
@@ -64,11 +65,12 @@ function showFiltered(query: Record<string, string>): void {
 <template>
     <Head title="Time Off" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Time Off"
             description="Who is away from work, and when"
         />
+        <ScopeSwitch area="timeOff" />
 
         <ListFilterBar
             :filters="props.filters"

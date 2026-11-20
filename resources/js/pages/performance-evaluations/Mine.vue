@@ -4,7 +4,8 @@ import { computed } from 'vue';
 import { Target } from '@lucide/vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import ScopeSwitch from '@/components/ScopeSwitch.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import NoGoalsYet from '@/components/performance-evaluations/NoGoalsYet.vue';
 import PerformanceEvaluationBody from '@/components/performance-evaluations/PerformanceEvaluationBody.vue';
@@ -58,11 +59,12 @@ const otherYearsTitle = computed(() =>
 <template>
     <Head title="Performance" />
 
-    <PageContainer width="wide">
-        <Heading
+    <PageContainer width="full">
+        <PageHeader
             title="Performance"
             description="The Goals your Manager gives you for each year"
         />
+        <ScopeSwitch area="performance" />
 
         <section class="flex flex-col gap-4" aria-labelledby="current-year">
             <div
