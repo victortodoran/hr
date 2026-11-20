@@ -1,7 +1,7 @@
 <?php
 
-use App\Actions\ApproveTimeOff;
-use App\Actions\DeclineTimeOff;
+use App\Actions\TimeOff\ApproveTimeOff;
+use App\Actions\TimeOff\DeclineTimeOff;
 use App\Enums\TimeOffState;
 use App\Http\Controllers\TimeOff\TimeOffApprovalController;
 use App\Http\Controllers\TimeOff\TimeOffController;

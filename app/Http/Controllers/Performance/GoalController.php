@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Performance;
 
-use App\Actions\ChangeGoal;
-use App\Actions\GiveGoal;
-use App\Actions\RemoveGoal;
+use App\Actions\Performance\ChangeGoal;
+use App\Actions\Performance\GiveGoal;
+use App\Actions\Performance\RemoveGoal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\GoalRequest;
 use App\Models\Employee;

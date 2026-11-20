@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\WorkEntries;
 
-use App\Actions\ApproveWorkEntries;
+use App\Actions\WorkEntries\ApproveWorkEntries;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\ApprovalFiltersRequest;
 use App\Http\Requests\WorkEntries\SelectedWorkEntriesRequest;

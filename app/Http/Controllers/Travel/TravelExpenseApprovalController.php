@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Travel;
 
-use App\Actions\ApproveTravelExpenses;
+use App\Actions\Travel\ApproveTravelExpenses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Travel\SelectedTravelExpensesRequest;
 use App\Models\Employee;

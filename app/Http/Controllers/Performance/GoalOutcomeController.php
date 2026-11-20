@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Performance;
 
-use App\Actions\AssessPerformanceEvaluation;
+use App\Actions\Performance\AssessPerformanceEvaluation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\GoalOutcomeRequest;
 use App\Models\Goal;

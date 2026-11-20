@@ -1,11 +1,11 @@
 <?php
 
-use App\Actions\AssessPerformanceEvaluation;
-use App\Actions\ChangeGoal;
-use App\Actions\ChangeGoalProgress;
-use App\Actions\CommentOnGoal;
-use App\Actions\GiveGoal;
-use App\Actions\RemoveGoal;
+use App\Actions\Performance\AssessPerformanceEvaluation;
+use App\Actions\Performance\ChangeGoal;
+use App\Actions\Performance\ChangeGoalProgress;
+use App\Actions\Performance\CommentOnGoal;
+use App\Actions\Performance\GiveGoal;
+use App\Actions\Performance\RemoveGoal;
 use App\Enums\Outcome;
 use App\Enums\PerformanceEvaluationState;
 use App\Enums\Progress;

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\WorkEntries;
 
-use App\Actions\CorrectWorkEntry;
+use App\Actions\WorkEntries\CorrectWorkEntry;
 use App\Enums\Permission;
 use App\Enums\WorkEntriesTab;
 use App\Http\Controllers\Controller;

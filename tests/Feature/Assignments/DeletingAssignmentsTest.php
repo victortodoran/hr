@@ -1,8 +1,8 @@
 <?php
 
-use App\Actions\ChangeAssignment;
-use App\Actions\DeleteAssignment;
-use App\Actions\UpdateTrimmingAssignments;
+use App\Actions\Assignments\ChangeAssignment;
+use App\Actions\Assignments\DeleteAssignment;
+use App\Actions\Assignments\UpdateTrimmingAssignments;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Http\Controllers\Assignments\AssignmentController;

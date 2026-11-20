@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Access;
 
-use App\Actions\ChangeAccess;
+use App\Actions\Access\ChangeAccess;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Access\GiveRoleRequest;
 use App\Models\Employee;

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\WorkEntries;
 
-use App\Actions\ReopenWorkEntries;
+use App\Actions\WorkEntries\ReopenWorkEntries;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\SelectedWorkEntriesRequest;
 use App\Models\Employee;

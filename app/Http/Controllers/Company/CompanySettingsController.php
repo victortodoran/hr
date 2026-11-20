@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Company;
 
-use App\Actions\ChangeCompanySettings;
+use App\Actions\Company\ChangeCompanySettings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\CompanySettingsRequest;
 use App\Pages\Company\CompanySettingsPage;

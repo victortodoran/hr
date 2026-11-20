@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Actions\AddEmployee;
-use App\Actions\AssessPerformanceEvaluation;
-use App\Actions\ChangeAccess;
-use App\Actions\ChangeGoalProgress;
-use App\Actions\InstallCompany;
-use App\Actions\UpdateTrimmingAssignments;
+use App\Actions\Access\ChangeAccess;
+use App\Actions\Assignments\UpdateTrimmingAssignments;
+use App\Actions\Company\InstallCompany;
+use App\Actions\Employees\AddEmployee;
+use App\Actions\Performance\AssessPerformanceEvaluation;
+use App\Actions\Performance\ChangeGoalProgress;
 use App\Enums\Outcome;
 use App\Enums\PayKind;
 use App\Enums\Permission;

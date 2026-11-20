@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\TimeOff;
 
-use App\Actions\DeclineTimeOff;
+use App\Actions\TimeOff\DeclineTimeOff;
 use App\Enums\ApprovalsTab;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TimeOff\TimeOffDeclineRequest;

@@ -1,7 +1,7 @@
 <?php
 
-use App\Actions\ApproveTravelRequest;
-use App\Actions\DeclineTravelRequest;
+use App\Actions\Travel\ApproveTravelRequest;
+use App\Actions\Travel\DeclineTravelRequest;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Enums\TravelRequestState;

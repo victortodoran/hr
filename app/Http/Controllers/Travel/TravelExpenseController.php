@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Travel;
 
-use App\Actions\ChangeTravelExpense;
-use App\Actions\DeleteTravelExpense;
-use App\Actions\RecordTravelExpense;
+use App\Actions\Travel\ChangeTravelExpense;
+use App\Actions\Travel\DeleteTravelExpense;
+use App\Actions\Travel\RecordTravelExpense;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Travel\TravelExpenseRequest;
 use App\Models\Employee;

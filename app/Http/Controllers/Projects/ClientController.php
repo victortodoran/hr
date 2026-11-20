@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Projects;
 
-use App\Actions\DeleteClient;
+use App\Actions\Projects\DeleteClient;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\ClientRequest;
 use App\Http\Requests\Search\NameSearchRequest;

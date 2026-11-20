@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Actions\InstallCompany;
+use App\Actions\Company\InstallCompany;
 use App\Rules\CurrencyInUse;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Travel;
 
-use App\Actions\CancelTravelRequest;
+use App\Actions\Travel\CancelTravelRequest;
 use App\Http\Controllers\Controller;
 use App\Models\TravelRequest;
 use Illuminate\Http\RedirectResponse;

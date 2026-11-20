@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Assignments;
 
-use App\Actions\ChangeAssignment;
-use App\Actions\DeleteAssignment;
+use App\Actions\Assignments\ChangeAssignment;
+use App\Actions\Assignments\DeleteAssignment;
 use App\Enums\EmployeePageTab;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Assignments\AssignmentRequest;

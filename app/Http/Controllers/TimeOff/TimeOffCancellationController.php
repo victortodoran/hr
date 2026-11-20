@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\TimeOff;
 
-use App\Actions\CancelTimeOff;
+use App\Actions\TimeOff\CancelTimeOff;
 use App\Http\Controllers\Controller;
 use App\Models\TimeOff;
 use Illuminate\Http\RedirectResponse;
