@@ -15,7 +15,7 @@ use Inertia\Response;
 
 /**
  * The Time Off page: the signed-in Employee's own Time Off and Paid Days
- * left, and requesting Time Off on a page of its own. Managers answer
+ * left, and requesting Time Off in a sheet over it. Managers answer
  * their Direct Reports' Time Off on the Approvals page.
  */
 class TimeOffController extends Controller
@@ -31,12 +31,16 @@ class TimeOffController extends Controller
     }
 
     /**
-     * Show the form for requesting Time Off, with today, the earliest first
-     * date.
+     * Show the Time Off page with the sheet for requesting Time Off open
+     * over it (rule L14), so the form has a URL of its own, with today, the
+     * earliest first date.
      */
-    public function create(): Response
+    public function create(#[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('time-off/Create', TimeOffFormPage::create());
+        return Inertia::render('time-off/Index', [
+            ...TimeOffPage::props($actor),
+            ...TimeOffFormPage::create(),
+        ]);
     }
 
     /**

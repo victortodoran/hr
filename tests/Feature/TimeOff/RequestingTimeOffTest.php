@@ -254,8 +254,8 @@ it('counts Paid Time Off on the last and first day of a year in that year only',
         ->assertSessionHasErrors(['is_paid' => 'You have 0 Paid Days left in 2027, but this Paid Time Off takes 1. Request the rest as Unpaid Time Off.']);
 });
 
-it('shows the Employee their own Time Off, latest first, and the Paid Days left this year and, in December, next year', function () {
-    $cara = timeOffRequester();
+it('shows the Employee their own Time Off, latest first, the Paid Days left this year and, in December, next year, and their Manager', function () {
+    $cara = timeOffRequester(['manager_id' => Employee::factory()->startedLongAgo()->create(['name' => 'Dana'])->id]);
     $february = TimeOff::factory()->for($cara)->approved(Employee::factory()->create(['name' => 'Ben']))->create(['first_date' => '2026-02-02', 'last_date' => '2026-02-06']);
     $unpaid = TimeOff::factory()->for($cara)->unpaid()->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-14']);
     $newYear = TimeOff::factory()->for($cara)->create(['first_date' => '2026-12-28', 'last_date' => '2027-01-08']);
@@ -265,6 +265,8 @@ it('shows the Employee their own Time Off, latest first, and the Paid Days left 
     actingAs($cara)->get(route('time-off.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('time-off/Index')
+            ->where('manager', 'Dana')
+            ->missing('requesting')
             ->where('paidDaysLeft', [['year' => 2026, 'days' => 11], ['year' => 2027, 'days' => 14]])
             ->where('timeOff', [
                 ['id' => $newYear->id, 'first_date' => '2026-12-28', 'last_date' => '2027-01-08', 'days' => 10, 'is_paid' => true, 'state' => 'pending', 'decided_by' => null, 'decline_reason' => null, 'can_cancel' => true],
@@ -286,12 +288,20 @@ it('refuses Paid Time Off while Paid Days left are negative, but still takes Unp
     expect(storedTimeOff($cara))->toHaveCount(2);
 });
 
-it('opens the form for requesting Time Off on its own page, with today as the earliest first date', function () {
-    actingAs(timeOffRequester())->get(route('time-off.create'))
+it('opens the sheet for requesting Time Off over the Time Off page, with today as the earliest first date', function () {
+    $cara = timeOffRequester();
+    $timeOff = TimeOff::factory()->for($cara)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+
+    actingAs($cara)->get(route('time-off.create'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('time-off/Create')
-            ->where('today', '2026-12-01'));
+            ->component('time-off/Index')
+            ->where('requesting', true)
+            ->where('today', '2026-12-01')
+            ->where('paidDaysLeft', [['year' => 2026, 'days' => 17], ['year' => 2027, 'days' => 20]])
+            ->where('timeOff.0.id', $timeOff->id)
+            ->where('timeOff.0.can_cancel', true)
+            ->has('timeOff', 1));
 });
 
 it('needs signing in to see or request Time Off', function () {

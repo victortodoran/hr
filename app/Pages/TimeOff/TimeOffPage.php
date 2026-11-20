@@ -17,14 +17,15 @@ final class TimeOffPage
     /**
      * The Employee's Time Off, latest first, with the weekdays each counts,
      * who decided it and why it was declined, and whether they may still
-     * cancel it, and their Paid Days left this year and, from October,
-     * next year.
+     * cancel it, their Paid Days left this year and, from October, next
+     * year, and the name of their Manager, who decides it, if they have one.
      *
-     * @return array{paidDaysLeft: list<PaidDaysLeftInYear>, timeOff: array<int, array<string, mixed>>}
+     * @return array{manager: string|null, paidDaysLeft: list<PaidDaysLeftInYear>, timeOff: array<int, array<string, mixed>>}
      */
     public static function props(Employee $actor): array
     {
         return [
+            'manager' => $actor->manager?->name,
             'paidDaysLeft' => PaidDaysLeft::of($actor),
             'timeOff' => $actor->timeOff()
                 ->with('decider:id,name') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
