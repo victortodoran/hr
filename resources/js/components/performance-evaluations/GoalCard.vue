@@ -27,7 +27,7 @@ import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { goalRemovalWarning } from '@/lib/goals';
 import { outcomes } from '@/lib/outcomes';
 import { progresses } from '@/lib/progress';
-import { statusColours, statusPillTrigger } from '@/lib/status';
+import { statusColours, statusPillTrigger } from '@/lib/statusMeta';
 import { show } from '@/routes/performance-evaluations/goals';
 import type { AssessedGoal, Progress } from '@/types';
 

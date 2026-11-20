@@ -26,7 +26,7 @@ withDefaults(
 <template>
     <DropdownMenu>
         <DropdownMenuTrigger as-child>
-            <Button variant="outline" :disabled="disabled">
+            <Button variant="secondary" :disabled="disabled">
                 <Download />
                 {{ label }}
             </Button>

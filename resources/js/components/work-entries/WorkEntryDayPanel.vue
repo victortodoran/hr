@@ -151,7 +151,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
             <Button
                 v-if="nextEmptyDay"
                 type="button"
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 class="h-7"
                 @click="emit('open', nextEmptyDay)"

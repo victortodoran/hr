@@ -131,7 +131,7 @@ setLayoutProps({
                     dismiss-label="Keep it"
                 >
                     <template #trigger>
-                        <Button variant="outline">Cancel travel</Button>
+                        <Button variant="secondary">Cancel travel</Button>
                     </template>
                 </ConfirmDialog>
             </template>

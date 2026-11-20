@@ -112,7 +112,7 @@ const columns: TableColumn[] = [
                     "
                 >
                     <template #action>
-                        <Button variant="outline" as-child>
+                        <Button variant="secondary" as-child>
                             <label for="new-client">Add Client</label>
                         </Button>
                     </template>

@@ -47,7 +47,7 @@ it('fits the list on a phone without scrolling the page sideways', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('shows an Open Evaluation in the neutral grey, not the Pending amber', function () {
+it('shows an Open Evaluation in the neutral grey with its hollow-circle icon, not the Pending amber', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
     PerformanceEvaluation::factory()->of($cara)->create();
@@ -56,7 +56,8 @@ it('shows an Open Evaluation in the neutral grey, not the Pending amber', functi
 
     visit(route('performance-evaluations.index'))
         ->assertSeeIn('[data-slot="status-badge"]', 'Open')
-        ->assertScript("document.querySelector('[data-slot=\"status-badge\"]').classList.contains('bg-status-closed')", true)
+        ->assertScript("document.querySelector('[data-slot=\"status-badge\"]').classList.contains('bg-status-neutral')", true)
+        ->assertPresent('[data-slot="status-badge"][data-tone="neutral"] svg')
         ->assertNoJavaScriptErrors();
 });
 

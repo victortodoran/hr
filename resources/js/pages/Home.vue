@@ -89,7 +89,7 @@ const thisMonthsWorkEntries = computed(() =>
                 <CardContent class="flex flex-wrap gap-3">
                     <Button
                         v-if="waitingForYou.workEntries > 0"
-                        variant="outline"
+                        variant="secondary"
                         as-child
                     >
                         <Link
@@ -106,7 +106,7 @@ const thisMonthsWorkEntries = computed(() =>
                     </Button>
                     <Button
                         v-if="waitingForYou.timeOff > 0"
-                        variant="outline"
+                        variant="secondary"
                         as-child
                     >
                         <Link :href="approvals({ query: { tab: 'time-off' } })"
@@ -115,7 +115,7 @@ const thisMonthsWorkEntries = computed(() =>
                     </Button>
                     <Button
                         v-if="waitingForYou.travelRequests > 0"
-                        variant="outline"
+                        variant="secondary"
                         as-child
                     >
                         <Link
@@ -132,7 +132,7 @@ const thisMonthsWorkEntries = computed(() =>
                     </Button>
                     <Button
                         v-if="waitingForYou.travelExpenses > 0"
-                        variant="outline"
+                        variant="secondary"
                         as-child
                     >
                         <Link
@@ -161,7 +161,7 @@ const thisMonthsWorkEntries = computed(() =>
                         message="No hours this month yet. Declined ones don't count."
                     >
                         <template #action>
-                            <Button variant="outline" as-child>
+                            <Button variant="secondary" as-child>
                                 <Link :href="thisMonthsWorkEntries"
                                     >Open Work</Link
                                 >
@@ -211,7 +211,7 @@ const thisMonthsWorkEntries = computed(() =>
                     </div>
                     <Button
                         v-if="nextTimeOff === null"
-                        variant="outline"
+                        variant="secondary"
                         as-child
                     >
                         <Link :href="requestTimeOff()">Request Time Off</Link>

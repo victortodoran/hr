@@ -128,7 +128,7 @@ const giveError = computed(
                 </p>
             </div>
             <div class="flex items-center gap-2">
-                <Button variant="outline" class="min-h-11" as-child>
+                <Button variant="secondary" class="min-h-11" as-child>
                     <Link :href="edit(role.id)" preserve-state preserve-scroll
                         >Edit</Link
                     >

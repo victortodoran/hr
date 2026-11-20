@@ -75,7 +75,7 @@ function decline(): void {
     <Dialog v-model:open="open" @update:open="opened">
         <DialogTrigger as-child>
             <Button
-                variant="outline"
+                variant="secondary"
                 :size="size"
                 :aria-label="accessibleName"
                 :disabled="ids !== undefined && ids.length === 0"

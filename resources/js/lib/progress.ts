@@ -1,4 +1,4 @@
-import { statusLabels } from '@/lib/status';
+import { statusLabels } from '@/lib/statusMeta';
 import type { Progress } from '@/types';
 
 /**

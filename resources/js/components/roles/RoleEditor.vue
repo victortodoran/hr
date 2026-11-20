@@ -451,7 +451,7 @@ const discardDescription = computed(() =>
                             <span>{{ permission.label }}</span>
                             <span
                                 v-if="isChanged(permission)"
-                                class="size-2 shrink-0 rounded-full bg-blue-600"
+                                class="size-2 shrink-0 rounded-full bg-primary"
                                 role="img"
                                 aria-label="Changed"
                             />

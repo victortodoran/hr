@@ -35,7 +35,7 @@ setLayoutProps({
                 v-if="reportingChain.employee.link === 'employee'"
                 #actions
             >
-                <Button variant="outline" as-child>
+                <Button variant="secondary" as-child>
                     <Link :href="employeePage(reportingChain.employee.id)"
                         >Employee page</Link
                     >

@@ -20,7 +20,7 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
-import AppLogo from '@/components/AppLogo.vue';
+import AppMark from '@/components/AppMark.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavEmployee from '@/components/NavEmployee.vue';
 import {
@@ -151,7 +151,7 @@ const navGroups = computed(() =>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
                         <Link :href="landing()">
-                            <AppLogo />
+                            <AppMark />
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>

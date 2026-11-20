@@ -613,7 +613,7 @@ async function entryAdded(assignmentId: number): Promise<void> {
                                 <Button
                                     v-if="nextDay"
                                     type="button"
-                                    variant="outline"
+                                    variant="secondary"
                                     size="sm"
                                     class="h-7"
                                     @click="openAdd(nextDay)"

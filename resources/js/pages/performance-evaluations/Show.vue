@@ -183,7 +183,7 @@ setLayoutProps({
                     dismiss-label="Keep it Completed"
                 >
                     <template #trigger>
-                        <Button variant="outline">Reopen</Button>
+                        <Button variant="secondary">Reopen</Button>
                     </template>
                 </ConfirmDialog>
             </template>
@@ -218,7 +218,7 @@ setLayoutProps({
                 <InputError :message="summaryForm.errors.summary" />
                 <div>
                     <SubmitButton
-                        variant="outline"
+                        variant="secondary"
                         :processing="summaryForm.processing"
                         :disabled="!summaryForm.isDirty"
                         >Save summary</SubmitButton

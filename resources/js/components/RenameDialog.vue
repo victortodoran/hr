@@ -36,7 +36,7 @@ const open = ref(false);
 <template>
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
-            <Button variant="outline" size="sm">Rename</Button>
+            <Button variant="secondary" size="sm">Rename</Button>
         </DialogTrigger>
         <DialogContent>
             <Form
