@@ -3,13 +3,8 @@ import { usePage } from '@inertiajs/vue3';
 
 /**
  * The app's neutral mark (G14): a simple glyph in a 28px rounded square,
- * followed by the app's name unless `iconOnly` is set.
+ * followed by the app's name.
  */
-defineProps<{
-    /** Shows the square alone, for collapsed sidebars and auth pages. */
-    iconOnly?: boolean;
-}>();
-
 const name = usePage().props.name;
 </script>
 
@@ -32,7 +27,6 @@ const name = usePage().props.name;
                 <path d="M8 13h8" />
             </svg>
         </span>
-        <span v-if="!iconOnly" class="truncate text-section">{{ name }}</span>
-        <span v-else class="sr-only">{{ name }}</span>
+        <span class="truncate text-section">{{ name }}</span>
     </span>
 </template>

@@ -22,4 +22,4 @@ Mockups are self-contained HTML (inline CSS/JS; Google Fonts with a system fallb
 3. **Scope switch labels** are _Mine · Reports · Everyone_.
 4. **Verbs:** "Give a Goal" becomes **Add Goal**, and every "Change" becomes **Edit** (rule C3).
 5. **Approve** acts immediately with a toast; there's no confirmation and no undo. Mistakes are fixed with Reopen (rule X5).
-6. **Fonts:** if Instrument Sans is already bundled, only `@fontsource/instrument-serif` is new. _(Still to confirm.)_
+6. **Fonts:** Instrument Sans and Instrument Serif are self-hosted by laravel-vite-plugin's font helper (`vite.config.ts`); no font package is added.

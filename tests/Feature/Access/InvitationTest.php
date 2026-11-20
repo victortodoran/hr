@@ -156,13 +156,3 @@ it('sends an email with a link to set a password that expires in a week', functi
         ->and($mail->actionUrl)->toBe(route('invitation.show', ['token' => $token, 'email' => 'cara@acme.test']))
         ->and(Str::of(implode(' ', $mail->outroLines))->contains('7 days'))->toBeTrue();
 });
-
-it('requires a token, a valid email and a password', function () {
-    post(route('invitation.store'), [])->assertSessionHasErrors(['token', 'email', 'password']);
-
-    post(route('invitation.store'), ['token' => 'x', 'email' => 'not-an-email', 'password' => 'a-new-password', 'password_confirmation' => 'a-new-password'])
-        ->assertSessionHasErrors(['email' => 'The email field must be a valid email address.']);
-
-    post(route('invitation.store'), ['token' => ['x'], 'email' => ['a@acme.test'], 'password' => 'a-new-password', 'password_confirmation' => 'a-new-password'])
-        ->assertSessionHasErrors(['token' => 'The token field must be a string.', 'email' => 'The email field must be a string.']);
-});

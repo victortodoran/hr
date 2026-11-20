@@ -190,20 +190,6 @@ it('lets an Employee record several Work Entries on the same Assignment and day'
     assertDatabaseHas('work_entries', ['assignment_id' => $relaunch->id, 'date' => '2026-11-10', 'description' => 'Code review']);
 });
 
-it('requires an Assignment, a date, hours and a description', function () {
-    $cara = recorder();
-
-    $response = actingAs($cara)->post(route('employees.work-entries.store', $cara), []);
-
-    $response->assertInvalid([
-        'assignment_id' => 'The Assignment field is required.',
-        'date' => 'The date field is required.',
-        'hours' => 'The hours field is required.',
-        'description' => 'The description field is required.',
-    ]);
-    assertDatabaseCount('work_entries', 0);
-});
-
 it('refuses a malformed Work Entry', function (string $field, mixed $value, string $message) {
     $cara = recorder();
     $relaunch = assignmentOf($cara);

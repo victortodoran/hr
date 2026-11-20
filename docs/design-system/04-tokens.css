@@ -3,11 +3,8 @@
    Replaces the existing :root and @theme inline blocks (keep @import "tailwindcss"
    and your @source / @plugin lines above this).
    Light only. Every colour is a named role, so dark mode = a .dark { } override later.
-   Fonts: self-hosted via @fontsource (see 05-components.md › Libraries).
+   Fonts: self-hosted by laravel-vite-plugin's font helper (vite.config.ts).
    ========================================================================== */
-
-@import '@fontsource-variable/instrument-sans';
-@import '@fontsource/instrument-serif/400.css';
 
 :root {
     /* ---- Surfaces & text ---------------------------------------------- */

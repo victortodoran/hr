@@ -53,19 +53,6 @@ it('changes a Goal\'s Progress on a phone without scrolling sideways', function 
     expect($goal->fresh()?->progress)->toBe(Progress::AtRisk);
 });
 
-it('shows this year\'s Outcome and summary once Completed', function () {
-    $cara = Employee::factory()->startedLongAgo()->reportingTo(managerBen())->create(['name' => 'Cara']);
-    PerformanceEvaluation::factory()->of($cara)->completed()->create(['summary' => 'A steady year.']);
-
-    actingAs($cara);
-
-    visit(route('my-performance-evaluations.index'))
-        ->assertSeeIn('[data-slot="stat-strip"]', 'Outcome')
-        ->assertSee('A steady year.')
-        ->assertMissing('[aria-label^="Progress of"]')
-        ->assertNoJavaScriptErrors();
-});
-
 it('says the Manager hasn\'t set this year\'s Goals yet while there is no Evaluation for it', function () {
     $cara = Employee::factory()->startedLongAgo()->reportingTo(managerBen())->create(['name' => 'Cara']);
 

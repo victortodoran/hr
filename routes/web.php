@@ -95,7 +95,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('assignments/{assignment}/pay/{payEntry}', [PayEntryController::class, 'destroy'])->scopeBindings()->name('assignments.pay.destroy');
     });
 
-    Route::redirect('team', '/directory?tab=reports')->name('team.index');
     Route::get('directory', [DirectoryController::class, 'index'])->middleware('can:viewDirectory,'.Employee::class)->name('directory.index');
 
     Route::get('work-entries', [WorkEntryController::class, 'index'])->name('work-entries.index');

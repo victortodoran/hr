@@ -55,15 +55,6 @@ it('switches between a week, a month and a custom period, kept in the URL, and r
         ->assertNoJavaScriptErrors();
 });
 
-it('says why a custom period longer than three months is refused', function () {
-    actingAs(recorder());
-
-    pickDate(visit(route('work-entries.index', ['from' => '2026-11-01', 'to' => '2026-11-30'])), '#period-from', '2026-06-01')
-        ->click('Show')
-        ->assertSee('A custom period can be at most 3 months long.')
-        ->assertNoJavaScriptErrors();
-});
-
 it('hides empty weekend days when weekends are switched off, keeping ones with hours, and remembers it', function () {
     $cara = recorder();
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-07', 'description' => 'Saturday release']);

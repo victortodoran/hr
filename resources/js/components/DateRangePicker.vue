@@ -36,7 +36,6 @@ const props = defineProps<{
     max?: string;
     /** Counts only Mondays to Fridays, as "5 weekdays". */
     weekdaysOnly?: boolean;
-    disabled?: boolean;
     required?: boolean;
     /** Marks the field as refused, such as when its error shows. */
     invalid?: boolean;
@@ -83,7 +82,6 @@ const dayCount = computed(() => {
             v-model="range"
             :min-value="minValue"
             :max-value="maxValue"
-            :disabled="disabled"
             :required="required"
             close-on-select
         >

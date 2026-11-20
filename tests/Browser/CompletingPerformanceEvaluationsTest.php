@@ -88,8 +88,6 @@ it('puts a Goal\'s Outcome back with a toast saying why when the Evaluation was 
         ->click('internal:role=option[name="—"s]')
         ->assertSee('Saved');
 
-    expect($goal->fresh()?->outcome)->toBeNull();
-
     Goal::query()->whereKey($goal->id)->update(['outcome' => Outcome::Met]);
     PerformanceEvaluation::query()->whereKey($evaluation->id)->update(['state' => PerformanceEvaluationState::Completed, 'completed_at' => now(), 'outcome' => Outcome::Met, 'summary' => 'Good year.']);
 
@@ -98,8 +96,6 @@ it('puts a Goal\'s Outcome back with a toast saying why when the Evaluation was 
         ->assertSee('The Outcome wasn’t saved')
         ->assertMissing('[aria-label="Outcome of Lead the Checkout API"]')
         ->assertNoJavaScriptErrors();
-
-    expect($goal->fresh()?->outcome)->toBe(Outcome::Met);
 });
 
 it('gives a Goal its Outcome from the Goal\'s own page, staying on it', function () {

@@ -7,10 +7,6 @@ export const scopes: { value: Scope; label: string; help: string }[] = [
     { value: 'everyone', label: 'Everyone', help: 'whole company' },
 ];
 
-export function scopeLabel(scope: Scope): string {
-    return scopes.find((choice) => choice.value === scope)?.label ?? scope;
-}
-
 /**
  * The Permissions in their groups, both in the order the server sends them.
  */
