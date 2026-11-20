@@ -45,7 +45,7 @@ it('lets a Manager work through one Employee\'s Work Entries on one Project at a
         ->click('internal:role=tab[name="Time Off"i]')
         ->assertQueryStringHas('tab', 'time-off')
         ->assertSee('Cara')
-        ->click('Approve')
+        ->click('main [data-slot="data-row"] >> nth=0 >> [aria-label^="Approve "]')
         ->assertSee('Time Off approved.')
         ->assertQueryStringHas('tab', 'time-off')
         ->click('internal:role=tab[name="Work Entries"i]')
@@ -65,15 +65,16 @@ it('keeps Work Entries ticked on one page when moving to the next, approving the
     actingAs($ben);
 
     visit(route('approvals.index', ['tab' => 'work-entries']))
-        ->click('main table tbody tr:first-child [role="checkbox"]')
+        ->click('main [data-slot="data-row"] >> nth=0 >> [role="checkbox"]')
         ->assertSee('1 selected')
         ->click('Next')
         ->assertSee('26–26 of 26')
-        ->click('main table tbody tr:first-child [role="checkbox"]')
+        ->click('main [data-slot="data-row"] >> nth=0 >> [role="checkbox"]')
         ->assertSee('2 selected')
-        ->click('internal:role=button[name="Approve"s]')
-        ->assertSee('0 selected')
-        ->assertSee('Total of all 24 matching')
+        ->click('internal:role=button[name="Approve 2 Work Entries"s]')
+        ->assertSee('2 Work Entries approved.')
+        ->assertNotPresent('[data-slot="selection-bar"]')
+        ->assertSee('24 of 24 shown')
         ->assertDontSee('None are waiting')
         ->assertNoJavaScriptErrors();
 
@@ -92,8 +93,10 @@ it('lets a Manager decline a Travel Request from its tab with a reason', functio
         ->assertQueryStringHas('tab', 'travel-requests')
         ->assertSee('Berlin')
         ->assertSee('Relaunch go-live')
-        ->fill('decline_reason', 'The release is that week.')
-        ->click('Decline')
+        ->click('main [data-slot="data-row"] >> nth=0 >> [aria-label^="Decline "]')
+        ->assertSee('Decline Travel Request')
+        ->fill('#decline-reason', 'The release is that week.')
+        ->click('internal:role=dialog >> internal:role=button[name="Decline Travel Request"s]')
         ->assertSee('Travel Request declined.')
         ->assertQueryStringHas('tab', 'travel-requests')
         ->assertSee('None is waiting')
@@ -117,18 +120,18 @@ it('lets a Manager approve two Travel Expenses together and decline another with
         ->click('internal:role=tab[name="Travel Expenses"i]')
         ->assertQueryStringHas('tab', 'travel-expenses')
         ->assertSee('Berlin')
-        ->assertSee('Receipt')
-        ->click('main table tbody tr:nth-child(1) [role="checkbox"]')
-        ->click('main table tbody tr:nth-child(2) [role="checkbox"]')
+        ->assertSee('Flight')
+        ->click('main [data-slot="data-row"] >> nth=0 >> [role="checkbox"]')
+        ->click('main [data-slot="data-row"] >> nth=1 >> [role="checkbox"]')
         ->assertSee('2 selected')
-        ->click('internal:role=button[name="Approve"s]')
+        ->click('internal:role=button[name="Approve 2 Travel Expenses"s]')
         ->assertSee('2 Travel Expenses approved.')
         ->assertSee('Taxi')
         ->assertDontSee('Hotel')
-        ->click('main table tbody tr:first-child [role="checkbox"]')
-        ->click('internal:role=button[name="Decline…"s]')
+        ->click('main [data-slot="data-row"] >> nth=0 >> [role="checkbox"]')
+        ->click('[data-slot="selection-bar"] >> internal:role=button[name="Decline…"s]')
         ->fill('#decline-reason', 'The taxi isn\'t on the receipt.')
-        ->click('internal:role=dialog >> internal:role=button[name="Decline"s]')
+        ->click('internal:role=dialog >> internal:role=button[name="Decline Travel Expense"s]')
         ->assertSee('1 Travel Expense declined.')
         ->assertSee('None is waiting')
         ->assertNoJavaScriptErrors();
@@ -157,16 +160,16 @@ it('lets a Manager approve one Work Entry and decline another from their rows, k
         ->assertDontSee('Reviewing the API')
         ->assertSee('1 selected')
         ->click("internal:role=button[name=\"Decline Cara's Work Entry on Nov 11, 2026\"s]")
-        ->assertSee('Decline 1 Work Entry?')
+        ->assertSee('Decline Work Entry')
         ->fill('#decline-reason', 'Interviews go on Internal, not Acme')
-        ->click('internal:role=dialog >> internal:role=button[name="Decline"s]')
+        ->click('internal:role=dialog >> internal:role=button[name="Decline Work Entry"s]')
         ->assertSee('1 Work Entry declined.')
         ->assertDontSee('Interviews')
         ->assertSee('Checkout API')
         ->assertSee('1 selected')
-        ->assertSee('Total of all 1 matching')
-        ->resize(360, 800)
-        ->assertScript('[...document.querySelectorAll("main table")].every((table) => table.parentElement.scrollWidth <= table.parentElement.clientWidth)', true)
+        ->assertSee('1 of 1 shown')
+        ->resize(390, 844)
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertNoJavaScriptErrors();
 
     expect($review->refresh()->state)->toBe(WorkEntryState::Approved)
@@ -175,7 +178,7 @@ it('lets a Manager approve one Work Entry and decline another from their rows, k
         ->and($checkout->refresh()->state)->toBe(WorkEntryState::Pending);
 });
 
-it('lets a Manager approve one Travel Expense and decline another from their rows, which fit a phone', function () {
+it('lets a Manager approve one Travel Expense from its row, and on a phone decline another from its sheet', function () {
     CompanySettings::factory()->create(['currency' => 'RON']);
     $ben = managerBen();
     $cara = recorder(['manager_id' => $ben->id, 'name' => 'Cara']);
@@ -186,15 +189,17 @@ it('lets a Manager approve one Travel Expense and decline another from their row
     actingAs($ben);
 
     visit(route('approvals.index', ['tab' => 'travel-expenses']))
-        ->click('main table tbody tr:nth-child(1) [aria-label^="Approve "]')
+        ->click('main [data-slot="data-row"] >> nth=0 >> [aria-label^="Approve "]')
         ->assertSee('1 Travel Expense approved.')
         ->assertDontSee('Flight')
-        ->resize(360, 800)
-        ->assertScript('[...document.querySelectorAll("main table")].every((table) => table.parentElement.scrollWidth <= table.parentElement.clientWidth)', true)
-        ->click('main table tbody tr:nth-child(1) [aria-label^="Decline "]')
-        ->assertSee('Decline 1 Travel Expense?')
+        ->resize(390, 844)
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('main [data-slot="data-row"] >> nth=0')
+        ->assertQueryStringHas('record', (string) $taxi->id)
+        ->click('internal:role=dialog >> internal:role=button[name="Decline…"s]')
+        ->assertSee('Decline Travel Expense')
         ->fill('#decline-reason', 'The taxi isn\'t on the receipt.')
-        ->click('internal:role=dialog >> internal:role=button[name="Decline"s]')
+        ->click('internal:role=dialog >> internal:role=button[name="Decline Travel Expense"s]')
         ->assertSee('1 Travel Expense declined.')
         ->assertSee('None is waiting')
         ->assertNoJavaScriptErrors();
@@ -202,4 +207,57 @@ it('lets a Manager approve one Travel Expense and decline another from their row
     expect($flight->refresh()->state)->toBe(TravelExpenseState::Approved)
         ->and($taxi->refresh()->state)->toBe(TravelExpenseState::Declined)
         ->and($taxi->decline_reason)->toBe('The taxi isn\'t on the receipt.');
+});
+
+it('lets a Manager on a phone tick a whole week of Work Entries and approve it from the bar at the bottom', function () {
+    $ben = managerBen();
+    $cara = recorder(['manager_id' => $ben->id]);
+    $relaunch = assignmentOf($cara);
+    $week = collect(['2026-11-09', '2026-11-10', '2026-11-11'])->map(fn (string $date) => WorkEntry::factory()->for($relaunch)->create(['date' => $date]));
+    $nextWeek = WorkEntry::factory()->for($relaunch)->create(['date' => '2026-11-16']);
+
+    actingAs($ben);
+
+    visit(route('approvals.index'))
+        ->resize(390, 844)
+        ->click('main [data-slot="group-row"] >> nth=0 >> [role="checkbox"]')
+        ->assertSee('3 selected')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('[data-slot="selection-bar"] >> internal:role=button[name="Approve 3"s]')
+        ->assertSee('3 Work Entries approved.')
+        ->assertNotPresent('[data-slot="selection-bar"]')
+        ->assertSee('1 of 1 shown')
+        ->assertNoJavaScriptErrors();
+
+    expect($week->every(fn (WorkEntry $entry) => $entry->refresh()->state === WorkEntryState::Approved))->toBeTrue()
+        ->and($nextWeek->refresh()->state)->toBe(WorkEntryState::Pending);
+});
+
+it('opens Time Off from a link to its sheet on a phone and approves it there, then declines a Travel Request from its sheet', function () {
+    $ben = managerBen();
+    $cara = recorder(['manager_id' => $ben->id, 'name' => 'Cara']);
+    $timeOff = TimeOff::factory()->for($cara)->unpaid()->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+    $travelRequest = TravelRequest::factory()->on(assignmentOf($cara))->create(['destination' => 'Berlin', 'first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+
+    actingAs($ben);
+
+    visit(route('approvals.index', ['tab' => 'time-off', 'record' => $timeOff->id]))
+        ->resize(390, 844)
+        ->assertSeeIn('[role="dialog"]', "Cara's Time Off · Pending")
+        ->click('internal:role=dialog >> internal:role=button[name="Approve Time Off"s]')
+        ->assertSee('Time Off approved.')
+        ->assertQueryStringMissing('record')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('internal:role=tab[name="Travel Requests"i]')
+        ->click('main [data-slot="data-row"] >> nth=0')
+        ->assertQueryStringHas('record', (string) $travelRequest->id)
+        ->click('internal:role=dialog >> internal:role=button[name="Decline…"s]')
+        ->fill('#decline-reason', 'The release is that week.')
+        ->click('internal:role=dialog >> internal:role=button[name="Decline Travel Request"s]')
+        ->assertSee('Travel Request declined.')
+        ->assertSee('None is waiting')
+        ->assertNoJavaScriptErrors();
+
+    expect($timeOff->refresh()->state)->toBe(TimeOffState::Approved)
+        ->and($travelRequest->refresh()->state)->toBe(TravelRequestState::Declined);
 });

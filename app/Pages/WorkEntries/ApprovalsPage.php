@@ -14,7 +14,9 @@ use App\Models\TravelRequest;
 use App\Models\WorkEntry;
 use App\Support\PageWithin;
 use App\Support\PaidDaysLeft;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 
 /**
@@ -41,7 +43,10 @@ final class ApprovalsPage
                 ApprovalsTab::WorkEntries => self::workEntriesTab($actor, $requested),
                 ApprovalsTab::TimeOff => ['toApprove' => self::timeOffToApprove($actor)],
                 ApprovalsTab::TravelRequests => ['travelRequestsToApprove' => self::travelRequestsToApprove($actor)],
-                ApprovalsTab::TravelExpenses => ['travelExpensesToApprove' => self::travelExpensesToApprove($actor)],
+                ApprovalsTab::TravelExpenses => [
+                    'travelExpensesToApprove' => self::travelExpensesToApprove($actor),
+                    'currency' => CompanySettings::payCurrency()->code,
+                ],
             },
         ];
     }
@@ -106,12 +111,36 @@ final class ApprovalsPage
                     'project' => $entry->assignment->project->name,
                     'hours' => $entry->hours,
                     'description' => $entry->description,
+                    'submitted_on' => $entry->created_at?->toDateString(),
                 ]),
             'total' => (int) (clone $matching)->sum('minutes') / 60, // @pest-mutate-ignore (the database sums whole minutes; the cast only gives the sum a type)
+            'weeks' => self::weeksOf($matching),
             'matchingIds' => Inertia::optional(fn (): array => (clone $matching)->orderBy('id')->pluck('id')->all()),
             'employees' => $employees,
             'projects' => $projects,
         ];
+    }
+
+    /**
+     * Every week the matching Work Entries fall in, earliest first, by its
+     * Monday, with the hours of all of them in it, not only those on the
+     * page shown, so a week split across pages keeps its full subtotal.
+     *
+     * @return list<array{starts_on: string, ends_on: string, number: int, hours: int|float}>
+     */
+    private static function weeksOf(WorkEntryBuilder $matching): array
+    {
+        return array_values((clone $matching)
+            ->get(['date', 'minutes'])
+            ->groupBy(fn (WorkEntry $entry): string => $entry->date->startOfWeek(CarbonImmutable::MONDAY)->toDateString())
+            ->sortKeys()
+            ->map(fn (Collection $entries, string $monday): array => [
+                'starts_on' => $monday,
+                'ends_on' => CarbonImmutable::parse($monday)->addDays(6)->toDateString(),
+                'number' => CarbonImmutable::parse($monday)->isoWeek,
+                'hours' => (int) $entries->sum('minutes') / 60,
+            ])
+            ->all());
     }
 
     /**
@@ -138,6 +167,7 @@ final class ApprovalsPage
                 'last_date' => $timeOff->last_date->toDateString(),
                 'days' => $timeOff->weekdays(),
                 'is_paid' => $timeOff->is_paid,
+                'submitted_on' => $timeOff->created_at?->toDateString(),
                 'paid_days_left' => PaidDaysLeft::in($timeOff->employee, range($timeOff->first_date->year, $timeOff->last_date->year)),
             ])
             ->all();
@@ -169,6 +199,7 @@ final class ApprovalsPage
                 'last_date' => $travelRequest->last_date->toDateString(),
                 'days' => $travelRequest->days(),
                 'purpose' => $travelRequest->purpose,
+                'submitted_on' => $travelRequest->created_at?->toDateString(),
             ])
             ->all();
     }
@@ -205,6 +236,9 @@ final class ApprovalsPage
                         'category' => $travelExpense->category->value,
                         'description' => $travelExpense->description,
                         'amount' => $currency->format($travelExpense->amount),
+                        'amount_minor' => $travelExpense->amount,
+                        'submitted_on' => $travelExpense->created_at?->toDateString(),
+                        'receipt_is_image' => $travelExpense->receiptIsImage(),
                     ])
                     ->all(),
             ])

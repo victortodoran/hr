@@ -21,6 +21,28 @@ beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
 
+it('adds up every week the matching Work Entries fall in, including those on later pages', function () {
+    $ben = managerBen();
+    $cara = Employee::factory()->reportingTo($ben)->create(['name' => 'Cara']);
+    $carasRelaunch = assignmentOf($cara);
+    foreach (range(1, 26) as $day) {
+        WorkEntry::factory()->for($carasRelaunch)->create(['date' => sprintf('2026-10-%02d', $day), 'minutes' => 60]);
+    }
+    WorkEntry::factory()->for($carasRelaunch)->create(['date' => '2026-11-09', 'minutes' => 90]);
+
+    actingAs($ben)->get(route('approvals.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('entries.data', 25)
+            ->where('weeks', [
+                ['starts_on' => '2026-09-28', 'ends_on' => '2026-10-04', 'number' => 40, 'hours' => 4],
+                ['starts_on' => '2026-10-05', 'ends_on' => '2026-10-11', 'number' => 41, 'hours' => 7],
+                ['starts_on' => '2026-10-12', 'ends_on' => '2026-10-18', 'number' => 42, 'hours' => 7],
+                ['starts_on' => '2026-10-19', 'ends_on' => '2026-10-25', 'number' => 43, 'hours' => 7],
+                ['starts_on' => '2026-10-26', 'ends_on' => '2026-11-01', 'number' => 44, 'hours' => 1],
+                ['starts_on' => '2026-11-09', 'ends_on' => '2026-11-15', 'number' => 46, 'hours' => 1.5],
+            ]));
+});
+
 /**
  * An approver who is already some Employee's Manager, so the Approvals page
  * is open to them.
@@ -54,8 +76,8 @@ it('lists the Pending Work Entries of the approver\'s Direct Reports, oldest fir
         ->where('waiting', ['workEntries' => 2, 'timeOff' => 0, 'travelRequests' => 0, 'travelExpenses' => 0])
         ->where('filters', ['employee' => $cara->id, 'project' => $carasRelaunch->project_id])
         ->where('entries.data', [
-            ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Specs'],
-            ['id' => $later->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API'],
+            ['id' => $earlier->id, 'date' => '2026-11-03', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1, 'description' => 'Specs', 'submitted_on' => now()->toDateString()],
+            ['id' => $later->id, 'date' => '2026-11-10', 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'hours' => 1.5, 'description' => 'API', 'submitted_on' => now()->toDateString()],
         ])
         ->where('total', 2.5)
         ->where('employees', [['id' => $cara->id, 'name' => 'Cara', 'pending' => 2]])

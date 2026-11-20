@@ -269,18 +269,32 @@ it('lists the Pending Travel Expenses of the Employees Ben effectively manages, 
         ->assertInertia(fn (Assert $page) => $page
             ->where('tab', 'travel-expenses')
             ->where('waiting', ['workEntries' => 0, 'timeOff' => 0, 'travelRequests' => 0, 'travelExpenses' => 3])
+            ->where('currency', 'RON')
             ->where('travelExpensesToApprove', [
                 ['id' => $lisbon->id, 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'destination' => 'Lisbon', 'first_date' => '2026-11-16', 'last_date' => '2026-11-17', 'expenses' => [
-                    ['id' => $meal->id, 'paid_on' => '2026-11-16', 'category' => 'meals', 'description' => 'Dinner', 'amount' => "RON\u{a0}80.00"],
+                    ['id' => $meal->id, 'paid_on' => '2026-11-16', 'category' => 'meals', 'description' => 'Dinner', 'amount' => "RON\u{a0}80.00", 'amount_minor' => 8000, 'submitted_on' => now()->toDateString(), 'receipt_is_image' => false],
                 ]],
                 ['id' => $berlin->id, 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'expenses' => [
-                    ['id' => $flight->id, 'paid_on' => '2026-12-01', 'category' => 'transport', 'description' => 'Flight', 'amount' => "RON\u{a0}450.50"],
-                    ['id' => $hotel->id, 'paid_on' => '2026-12-05', 'category' => 'accommodation', 'description' => 'Hotel, two nights', 'amount' => "RON\u{a0}1,990.00"],
+                    ['id' => $flight->id, 'paid_on' => '2026-12-01', 'category' => 'transport', 'description' => 'Flight', 'amount' => "RON\u{a0}450.50", 'amount_minor' => 45050, 'submitted_on' => now()->toDateString(), 'receipt_is_image' => false],
+                    ['id' => $hotel->id, 'paid_on' => '2026-12-05', 'category' => 'accommodation', 'description' => 'Hotel, two nights', 'amount' => "RON\u{a0}1,990.00", 'amount_minor' => 199000, 'submitted_on' => now()->toDateString(), 'receipt_is_image' => false],
                 ]],
             ])
             ->missing('travelRequestsToApprove')
             ->missing('entries'));
 });
+
+it('tells the Approvals tab which receipts are pictures it can preview', function (string $file, bool $isImage) {
+    $ben = managerBen();
+    $berlin = carasBerlinTrip($ben);
+    expenseOn($berlin, attributes: ['receipt_path' => TravelExpense::RECEIPT_FOLDER.'/'.$file]);
+
+    actingAs($ben)->get(route('approvals.index', ['tab' => 'travel-expenses']))
+        ->assertInertia(fn (Assert $page) => $page->where('travelExpensesToApprove.0.expenses.0.receipt_is_image', $isImage));
+})->with([
+    'a photo' => ['receipt.JPG', true],
+    'a screenshot' => ['receipt.png', true],
+    'a PDF' => ['receipt.pdf', false],
+]);
 
 it('shows an empty Travel Expenses tab when nothing is waiting', function () {
     $ben = managerBen();

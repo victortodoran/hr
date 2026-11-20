@@ -102,3 +102,17 @@ export function isWeekend(date: string): boolean {
 
     return weekday === 0 || weekday === 6;
 }
+
+/**
+ * The Monday of a date's week, as a YYYY-MM-DD date.
+ */
+export function mondayOf(date: string): string {
+    const day = new Date(`${date}T00:00:00`);
+    day.setDate(day.getDate() - ((day.getDay() + 6) % 7));
+
+    return [
+        day.getFullYear(),
+        String(day.getMonth() + 1).padStart(2, '0'),
+        String(day.getDate()).padStart(2, '0'),
+    ].join('-');
+}

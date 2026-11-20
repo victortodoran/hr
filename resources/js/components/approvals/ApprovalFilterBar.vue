@@ -20,6 +20,11 @@ const emit = defineEmits<{
     change: [query: Record<string, string>];
 }>();
 
+defineSlots<{
+    /** The matching count and total, at the bar's right (rule K5). */
+    summary?: () => unknown;
+}>();
+
 function withPending(choices: ChoiceToApprove[]): FilterChoice[] {
     return choices.map((choice) => ({
         value: String(choice.id),
@@ -55,5 +60,8 @@ function chooseProject(project: string): void {
             :choices="withPending(projects)"
             @update:model-value="chooseProject"
         />
+        <template v-if="$slots.summary" #summary>
+            <slot name="summary" />
+        </template>
     </FilterBar>
 </template>

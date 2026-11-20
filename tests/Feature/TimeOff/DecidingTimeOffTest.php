@@ -247,8 +247,8 @@ it('lists the Pending Time Off of the Manager\'s Direct Reports on the Approvals
             ->where('tab', 'time-off')
             ->where('waiting', ['workEntries' => 0, 'timeOff' => 2, 'travelRequests' => 0, 'travelExpenses' => 0])
             ->where('toApprove', [
-                ['id' => $devs->id, 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'first_date' => '2026-11-16', 'last_date' => '2026-11-17', 'days' => 2, 'is_paid' => false, 'paid_days_left' => [['year' => 2026, 'days' => 0]]],
-                ['id' => $newYear->id, 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'first_date' => '2026-12-28', 'last_date' => '2027-01-08', 'days' => 10, 'is_paid' => true, 'paid_days_left' => [['year' => 2026, 'days' => 11], ['year' => 2027, 'days' => 14]]],
+                ['id' => $devs->id, 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'first_date' => '2026-11-16', 'last_date' => '2026-11-17', 'days' => 2, 'is_paid' => false, 'submitted_on' => now()->toDateString(), 'paid_days_left' => [['year' => 2026, 'days' => 0]]],
+                ['id' => $newYear->id, 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'first_date' => '2026-12-28', 'last_date' => '2027-01-08', 'days' => 10, 'is_paid' => true, 'submitted_on' => now()->toDateString(), 'paid_days_left' => [['year' => 2026, 'days' => 11], ['year' => 2027, 'days' => 14]]],
             ])
             ->missing('entries')
             ->missing('filters'));

@@ -91,6 +91,15 @@ class TravelExpense extends Model
     }
 
     /**
+     * Whether the receipt is a picture a browser can show inline, rather
+     * than a PDF to open.
+     */
+    public function receiptIsImage(): bool
+    {
+        return in_array(strtolower(pathinfo($this->receipt_path, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'webp'], true);
+    }
+
+    /**
      * Who approved the Travel Expense and on which day, or null while it
      * isn't Approved. Nobody approved that of an Employee with no
      * Manager, which was Approved at once, so its approver is null. Needs

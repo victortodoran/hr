@@ -8,4 +8,10 @@ export type TableColumn = {
     label: string;
     minor?: boolean;
     align?: 'start' | 'end';
+    /**
+     * Where the column shows when the table stacks its rows on a phone
+     * (rule P4): the bold first line, the muted second line, or the value
+     * on the right. Columns without one show only in the RecordSheet.
+     */
+    phone?: 'primary' | 'secondary' | 'end';
 };

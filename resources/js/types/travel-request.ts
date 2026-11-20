@@ -169,6 +169,8 @@ export type TravelRequestToApprove = {
     /** Every day from the first to the last date, weekends included. */
     days: number;
     purpose: string;
+    /** When the Employee asked. */
+    submitted_on: string | null;
 };
 
 /**
@@ -190,6 +192,12 @@ export type TravelExpensesToApprove = {
         description: string;
         /** Already shown in the company currency, such as "RON 1,990.00". */
         amount: string;
+        /** The amount in minor units, such as cents, for adding up a selection. */
+        amount_minor: number;
+        /** When the Employee recorded it. */
+        submitted_on: string | null;
+        /** Whether the receipt is a picture, previewed in the RecordSheet; a PDF is linked. */
+        receipt_is_image: boolean;
     }[];
 };
 

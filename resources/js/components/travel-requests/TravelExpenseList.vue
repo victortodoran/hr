@@ -7,7 +7,7 @@ import TravelExpenseController from '@/actions/App/Http/Controllers/Travel/Trave
 import TravelExpenseDeclineController from '@/actions/App/Http/Controllers/Travel/TravelExpenseDeclineController';
 import TravelExpenseReceiptController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReceiptController';
 import TravelExpenseReopeningController from '@/actions/App/Http/Controllers/Travel/TravelExpenseReopeningController';
-import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
+import DecideDialog from '@/components/DecideDialog.vue';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -161,7 +161,7 @@ const columns = computed<TableColumn[]>(() => [
                                 >Approve</SubmitButton
                             >
                         </Form>
-                        <DeclineSelectedDialog
+                        <DecideDialog
                             :ids="[row.id]"
                             :action="TravelExpenseDeclineController.store()"
                             :noun="{
