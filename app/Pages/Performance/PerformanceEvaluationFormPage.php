@@ -2,7 +2,7 @@
 
 namespace App\Pages\Performance;
 
-use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
+use App\Enums\PerformanceEvaluationState;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
 
@@ -19,9 +19,10 @@ final class PerformanceEvaluationFormPage
      * each with the Employees the viewer effectively manages who still
      * lack one for it, by name.
      *
+     * @param  array{year: int, search: string, state: PerformanceEvaluationState|null, employee: int|null}  $filters
      * @return array<string, mixed>
      */
-    public static function create(Employee $actor, PerformanceEvaluationListRequest $filters): array
+    public static function create(Employee $actor, array $filters): array
     {
         return [
             ...PerformanceEvaluationListPage::props($actor, $filters),
