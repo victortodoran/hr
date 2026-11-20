@@ -19,7 +19,7 @@ it('switches between a week, a month and a custom period, kept in the URL, and r
 
     actingAs($cara);
 
-    visit(route('work-entries.index'))
+    $page = visit(route('work-entries.index'))
         ->assertSee('Nov 9, 2026')
         ->click('Month')
         ->assertQueryStringHas('month', '2026-11')
@@ -36,9 +36,15 @@ it('switches between a week, a month and a custom period, kept in the URL, and r
         ->assertSee('Specs in October')
         ->click('Custom')
         ->assertQueryStringHas('from', '2026-10-01')
-        ->assertQueryStringHas('to', '2026-10-31')
-        ->fill('#period-from', '2026-10-15')
-        ->fill('#period-to', '2026-10-21')
+        ->assertQueryStringHas('to', '2026-10-31');
+
+    pickDate($page, '#period-from', '2026-10-15')
+        ->assertValue('#period-from', '2026-10-15')
+        ->click('[role="group"]:has(> #period-to) [aria-label="Open calendar"]')
+        ->assertNoJavaScriptErrors()
+        ->click('[data-reka-calendar-cell-trigger][data-value="2026-10-21"]')
+        ->assertValue('#period-to', '2026-10-21')
+        ->assertSee('Oct 21, 2026')
         ->click('Show')
         ->assertQueryStringHas('from', '2026-10-15')
         ->assertSee('Specs in October')
@@ -52,8 +58,7 @@ it('switches between a week, a month and a custom period, kept in the URL, and r
 it('says why a custom period longer than three months is refused', function () {
     actingAs(recorder());
 
-    visit(route('work-entries.index', ['from' => '2026-11-01', 'to' => '2026-11-30']))
-        ->fill('#period-from', '2026-06-01')
+    pickDate(visit(route('work-entries.index', ['from' => '2026-11-01', 'to' => '2026-11-30'])), '#period-from', '2026-06-01')
         ->click('Show')
         ->assertSee('A custom period can be at most 3 months long.')
         ->assertNoJavaScriptErrors();

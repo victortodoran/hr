@@ -54,30 +54,31 @@
 
 ## 5.3 New components
 
-| Component                        | Purpose                                                                                  | Rule     |
-| -------------------------------- | ---------------------------------------------------------------------------------------- | -------- |
-| `AppMark`                        | Neutral placeholder mark (rounded square, simple glyph) + "HR"                           | G14      |
-| `PageHeader`                     | Replaces Heading                                                                         | L3       |
-| `ScopeSwitch`                    | Mine · Reports · Everyone, URL-bound, permission-filtered                                | L19      |
-| `SettingsFrame`                  | Settings sub-nav (left on desktop, top on phone) beside the settings content             | L16      |
-| `SegmentedControl`               | View and small-choice switches (List/Calendar, Paid/Unpaid, Fixed/Hourly)                | K3, V8   |
-| `StatStrip`                      | Row of value + label stats                                                               | L10, K10 |
-| `FactList`                       | Definition list for one record                                                           | L8, K11  |
-| `Callout`                        | info · attention · declined sentence with optional action                                | K12      |
-| `RowActions`                     | Hover icon buttons + ⋯ menu                                                              | K2       |
-| `IconButton`                     | Ghost icon-only button with its Tooltip, same words as its `aria-label`                  | F20      |
-| `RecordSheet`                    | Full record in a side sheet (`?record=`)                                                 | K8       |
-| `DecideDialog`                   | Decline with required reason, for 1…N records of one type                                | X5       |
-| `PersonCell`                     | Avatar + name (+ Job Title)                                                              | K13      |
-| `StatusIcon`                     | Icon-only status with sr-only word                                                       | S10      |
-| `DatePicker` / `DateRangePicker` | Wrappers over reka-ui `DatePicker` / `DateRangePicker`, weekday counting for Time Off    | K14      |
-| `FileDrop`                       | Receipt upload: drag/drop, browse, camera on phone, preview, Replace/Remove              | K15      |
-| `MiniBarChart`                   | 12-month hours bars for Home (div-based, sr-only table)                                  | K18      |
-| `WorkDayPanel`                   | See above                                                                                | —        |
-| `WorkWeekAgenda`                 | Phone Calendar: a week's day strip with state icons, then a row per day; ‹ › step weeks  | P10      |
-| `PayHistoryRow`                  | See above                                                                                | —        |
-| `CommandMenu` (phase 6)          | ⌘K search over people, Projects, Clients, pages; built on reka-ui `Combobox` in a Dialog | G12      |
-| Error pages (403/404/500)        | EmptyState-based Inertia pages                                                           | S5       |
+| Component                        | Purpose                                                                                                            | Rule     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------- |
+| `AppMark`                        | Neutral placeholder mark (rounded square, simple glyph) + "HR"                                                     | G14      |
+| `PageHeader`                     | Replaces Heading                                                                                                   | L3       |
+| `ScopeSwitch`                    | Mine · Reports · Everyone, URL-bound, permission-filtered                                                          | L19      |
+| `SettingsFrame`                  | Settings sub-nav (left on desktop, top on phone) beside the settings content                                       | L16      |
+| `SegmentedControl`               | View and small-choice switches (List/Calendar, Paid/Unpaid, Fixed/Hourly)                                          | K3, V8   |
+| `StatStrip`                      | Row of value + label stats                                                                                         | L10, K10 |
+| `FactList`                       | Definition list for one record                                                                                     | L8, K11  |
+| `Callout`                        | info · attention · declined sentence with optional action                                                          | K12      |
+| `RowActions`                     | Hover icon buttons + ⋯ menu                                                                                        | K2       |
+| `IconButton`                     | Ghost icon-only button with its Tooltip, same words as its `aria-label`                                            | F20      |
+| `RecordSheet`                    | Full record in a side sheet (`?record=`)                                                                           | K8       |
+| `FormSheet`                      | Overlay form (≤6 fields): right 480px sheet, full-height bottom sheet on phone, sticky footer                      | L14, P7  |
+| `DecideDialog`                   | Decline with required reason, for 1…N records of one type                                                          | X5       |
+| `PersonCell`                     | Avatar + name (+ Job Title)                                                                                        | K13      |
+| `StatusIcon`                     | Icon-only status with sr-only word                                                                                 | S10      |
+| `DatePicker` / `DateRangePicker` | Built. Typed segments + calendar popover over reka-ui; reads as C9 once left; range counts "3 days" / "5 weekdays" | K14      |
+| `FileDrop`                       | Built. Receipt upload: drag/drop, browse, camera on phone, preview, Replace/Remove                                 | K15      |
+| `MiniBarChart`                   | 12-month hours bars for Home (div-based, sr-only table)                                                            | K18      |
+| `WorkDayPanel`                   | See above                                                                                                          | —        |
+| `WorkWeekAgenda`                 | Phone Calendar: a week's day strip with state icons, then a row per day; ‹ › step weeks                            | P10      |
+| `PayHistoryRow`                  | See above                                                                                                          | —        |
+| `CommandMenu` (phase 6)          | ⌘K search over people, Projects, Clients, pages; built on reka-ui `Combobox` in a Dialog                           | G12      |
+| Error pages (403/404/500)        | EmptyState-based Inertia pages                                                                                     | S5       |
 
 ## 5.4 Libraries (each needs approval)
 

@@ -108,7 +108,7 @@ it('switches to a week, steps back one, and shows a custom period, keeping any E
 
     actingAs($finn);
 
-    visit(route('work-entry-list.index', ['employee' => 'all']))
+    $page = visit(route('work-entry-list.index', ['employee' => 'all']))
         ->assertSee('Writing specs')
         ->assertSee('Reviewing the API')
         ->click('internal:role=button[name="Week"s]')
@@ -120,9 +120,9 @@ it('switches to a week, steps back one, and shows a custom period, keeping any E
         ->click('[aria-label="Previous week"]')
         ->assertSee('Reviewing the API')
         ->assertDontSee('Writing specs')
-        ->click('internal:role=button[name="Custom"s]')
-        ->fill('#period-from', '2026-10-15')
-        ->fill('#period-to', '2026-11-05')
+        ->click('internal:role=button[name="Custom"s]');
+
+    pickDate(pickDate($page, '#period-from', '2026-10-15'), '#period-to', '2026-11-05')
         ->click('Show')
         ->assertQueryStringHas('from', '2026-10-15')
         ->assertSee('Planning the intranet')

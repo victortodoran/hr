@@ -3,6 +3,7 @@ import { useForm } from '@inertiajs/vue3';
 import { X } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import WorkEntryController from '@/actions/App/Http/Controllers/WorkEntries/WorkEntryController';
+import DatePicker from '@/components/DatePicker.vue';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
@@ -184,7 +185,7 @@ defineExpose({ focusDescription, focusHours });
             compact
                 ? 'grid-cols-[minmax(0,1fr)_5.5rem] gap-x-2 gap-y-3'
                 : entry
-                  ? 'sm:grid-cols-[9rem_minmax(0,1fr)_12rem_5rem_auto] sm:items-start'
+                  ? 'sm:grid-cols-[10rem_minmax(0,1fr)_12rem_5rem_auto] sm:items-start'
                   : 'sm:grid-cols-[minmax(0,1fr)_12rem_5rem_auto] sm:items-start'
         "
         @submit.prevent="save"
@@ -192,11 +193,11 @@ defineExpose({ focusDescription, focusHours });
     >
         <div v-if="entry && !compact" class="grid min-w-0 gap-1">
             <label :for="fieldId('date')" class="sr-only">Date</label>
-            <Input
+            <DatePicker
                 :id="fieldId('date')"
                 v-model="form.date"
-                type="date"
                 :max="today"
+                :invalid="!!form.errors.date"
                 required
             />
             <InputError :message="form.errors.date" />

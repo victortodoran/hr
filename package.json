@@ -13,6 +13,7 @@
     "dependencies": {
         "@inertiajs/vite": "^3.0.0",
         "@inertiajs/vue3": "^3.0.0",
+        "@internationalized/date": "^3.12.4",
         "@lucide/vue": "^1.72.0",
         "@vueuse/core": "^15.0.0",
         "class-variance-authority": "^0.7.1",
