@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.vue';
 import PersonCell from '@/components/PersonCell.vue';
-import { show as directoryPage } from '@/routes/directory';
+import { index as directory } from '@/routes/directory';
 import { show as employeePage } from '@/routes/employees';
 import type { ChainMember } from '@/types';
 
@@ -19,9 +19,9 @@ const props = defineProps<{
 }>();
 
 /**
- * Where the member's name leads: their Employee page or their Directory
- * page. Null on the viewed Employee's own line, and when the viewer may open
- * neither page (`link` is null).
+ * Where the member's name leads: their Employee page, or their sheet
+ * over the Directory. Null on the viewed Employee's own line, and when the
+ * viewer may open neither (`link` is null).
  */
 const href = computed(() => {
     if (props.isViewed) {
@@ -33,7 +33,7 @@ const href = computed(() => {
     }
 
     return props.member.link === 'directory'
-        ? directoryPage(props.member.id)
+        ? directory({ query: { person: props.member.id } })
         : null;
 });
 </script>

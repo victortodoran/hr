@@ -177,6 +177,15 @@ function workEntryForm(Assignment $assignment, array $changes = []): array
 }
 
 /**
+ * The script a browser test asserts true to check that a page fits its
+ * screen without sideways scrolling, as on a 390px phone (rule P5).
+ */
+function fitsScreenWidth(): string
+{
+    return 'document.documentElement.scrollWidth <= window.innerWidth';
+}
+
+/**
  * Types a date into a DatePicker's month, day and year, as someone using
  * the keyboard would. The field is the selector of the picker's `id`, such
  * as "#period-from"; the date is YYYY-MM-DD.

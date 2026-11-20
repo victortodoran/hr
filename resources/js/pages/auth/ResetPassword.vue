@@ -1,27 +1,23 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import InputError from '@/components/InputError.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
+import NewPasswordFields from '@/components/auth/NewPasswordFields.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import TextLink from '@/components/TextLink.vue';
+import { login } from '@/routes';
 import { update } from '@/routes/password';
 
 defineOptions({
     layout: {
         title: 'Reset password',
-        description: 'Please enter your new password below',
+        description: 'Choose a new password for your account.',
     },
 });
 
-const props = defineProps<{
+defineProps<{
     token: string;
     email: string;
     passwordRules: string;
 }>();
-
-const inputEmail = ref(props.email);
 </script>
 
 <template>
@@ -32,55 +28,24 @@ const inputEmail = ref(props.email);
         :transform="(data) => ({ ...data, token, email })"
         :reset-on-success="['password', 'password_confirmation']"
         v-slot="{ errors, processing }"
+        class="flex flex-col gap-5"
     >
-        <div class="grid gap-6">
-            <div class="grid gap-2">
-                <Label for="email">Email</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    name="email"
-                    autocomplete="email"
-                    v-model="inputEmail"
-                    class="mt-1 block w-full"
-                    readonly
-                />
-                <InputError :message="errors.email" class="mt-2" />
-            </div>
+        <NewPasswordFields
+            :email="email"
+            :password-rules="passwordRules"
+            :errors="errors"
+            password-label="New password"
+        />
 
-            <div class="grid gap-2">
-                <Label for="password">Password</Label>
-                <PasswordInput
-                    id="password"
-                    name="password"
-                    autocomplete="new-password"
-                    class="mt-1 block w-full"
-                    autofocus
-                    placeholder="Password"
-                    :passwordrules="passwordRules"
-                />
-                <InputError :message="errors.password" />
-            </div>
+        <SubmitButton
+            :processing="processing"
+            class="w-full"
+            data-test="reset-password-button"
+            >Reset password</SubmitButton
+        >
 
-            <div class="grid gap-2">
-                <Label for="password_confirmation"> Confirm password </Label>
-                <PasswordInput
-                    id="password_confirmation"
-                    name="password_confirmation"
-                    autocomplete="new-password"
-                    class="mt-1 block w-full"
-                    placeholder="Confirm password"
-                    :passwordrules="passwordRules"
-                />
-                <InputError :message="errors.password_confirmation" />
-            </div>
-
-            <SubmitButton
-                :processing="processing"
-                class="mt-4 w-full"
-                data-test="reset-password-button"
-                >Reset password</SubmitButton
-            >
-        </div>
+        <p class="text-center text-meta">
+            <TextLink :href="login()">Back to log in</TextLink>
+        </p>
     </Form>
 </template>

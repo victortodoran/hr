@@ -71,6 +71,7 @@
 - **L21** Nav items appear per permission (unchanged); the Approvals badge shows the Pending count and is `bg-primary`.
 - **L22** An area's sidebar entry opens the person's own page when they have one, else the list of others they may see; it stays active on every page of the area.
 - **L23** L15's View all links to the widget's list page; when the widget's rows have no single list page (counters, Declined records of several kinds), View all is a button under the rows that shows the rest in place. A widget shows at most 5 rows, 3 on a phone. The widget's link to its area ("Open Approvals", "Open Work") sits on the right of its title.
+- **L24** Error pages (403/404/500, S5) sit on the L17 auth card: `AppMark`, the error as the title, then an `EmptyState` (icon, one sentence saying what happened and what to do) with **Go to Home** as its one `primary` button, in place of L17's one secondary link.
 - **L25** A side column (L6) is a hairline-bordered `bg-surface` panel, never a Card.
 
 ---
@@ -97,7 +98,7 @@
 - **K5** `FilterBar` (with `FilterSearch`, `FilterSelect`, `FilterChips`) sits above its list and reloads it through `useListFilters`; active filters show as removable chips; the matching count and total sit at the bar's right, Export after them.
 - **K6** "New …", "Add …" and "Request …" buttons sit in the PageHeader actions, never in the FilterBar.
 - **K7** `Popover` for a small anchored task tied to one spot (the Work day panel, a filter); `Sheet` for create/edit forms (L14) and record previews (`RecordSheet`); `Dialog` only for confirmations, decisions (DecideDialog) and ≤2-field forms; `DropdownMenu` for actions.
-- **K8** `RecordSheet` shows a row's full record (description, reasons, receipt, history) from any list where the table can't show it; it is opened by clicking the row and keeps `?record=` in the URL.
+- **K8** `RecordSheet` shows a row's full record (description, reasons, receipt, history) from any list where the table can't show it; it is opened by clicking the row and keeps `?record=` in the URL, or `?person=` on the Directory, whose sheet loads the person's Reporting Chain from the server.
 - **K9** `SelectionBar` appears when ≥1 row is selected: floating, bottom-centre, `shadow-overlay`, showing "N selected · total", Clear, secondary actions, one primary; "Select all N matching" appears when a full page is selected.
 - **K10** `StatStrip` for 2–6 numbers about the current view; each item is value (`text-stat`, tabular) + label (`text-caption`), optional status icon before the label.
 - **K11** `FactList` for one record's fields (L8); empty values show "Not set" in `text-subtle-foreground`.
@@ -180,6 +181,7 @@
 - **C11** **Open** shows a record or file without changing it: the ⋯ menu's "Open" opens a row's RecordSheet (the keyboard route to it, as a row click is mouse-only), and "Open receipt" shows a Travel Expense's receipt. It never labels a button that changes anything.
 - **C12** **Copy** duplicates records onto another place without changing the originals: the Work day panel's "Copy Thursday's Work Entries" (or "Copy Work Entries from Thu 12" when the day is a week or more back) adds that day's Work Entries to the day open, as Pending.
 - **C13** A form that adds a record submits with the same label as the button that opened it ("Add Employee", "Request Time Off", "New Project", "New Role"); **Save** stays for changes to an existing record (C3).
+- **C14** Auth pages name the account action, not a record: **Log in**, **Log out**, **Set password**, **Reset password**, **Confirm password**, **Email reset link**, **Email a new link**; their secondary link back is **Back to log in**.
 
 ---
 

@@ -11,7 +11,7 @@ export type DirectoryEntry = {
 
 /**
  * One Employee in a Reporting Chain, with where the viewer may follow their
- * name: their Employee page, their Directory page, or nowhere.
+ * name: their Employee page, their sheet over the Directory, or nowhere.
  */
 export type ChainMember = {
     id: number;
