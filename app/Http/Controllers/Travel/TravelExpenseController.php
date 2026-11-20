@@ -17,38 +17,19 @@ use Inertia\Inertia;
 use Inertia\Response;
 use LogicException;
 
-/**
- * Lets an Employee record, change and delete the Travel Expenses of their
- * own Travel Requests, each with its receipt, in a sheet over the Travel
- * Request's page.
- */
 class TravelExpenseController extends Controller
 {
-    /**
-     * Show the Travel Request's page with the sheet for adding a Travel
-     * Expense open over it (rule L14), so the form has a URL of its own
-     * (TravelExpenseFormPage).
-     */
+    /** The form opens as a sheet over this page (rule L14), so it has a URL of its own. */
     public function create(TravelRequest $travelRequest, #[CurrentUser] Employee $actor): Response
     {
         return Inertia::render('travel-requests/Show', TravelExpenseFormPage::create($travelRequest, $actor));
     }
 
-    /**
-     * Show the Travel Request's page with the sheet for editing the Travel
-     * Expense open over it, filled in as it would be typed
-     * (TravelExpenseFormPage).
-     */
     public function edit(TravelRequest $travelRequest, TravelExpense $travelExpense, #[CurrentUser] Employee $actor): Response
     {
         return Inertia::render('travel-requests/Show', TravelExpenseFormPage::edit($travelRequest, $travelExpense, $actor));
     }
 
-    /**
-     * Record a Travel Expense on the Travel Request, with its receipt. It is
-     * Pending until the Employee's Manager decides, except for an Employee
-     * with no Manager, whose Travel Expense is Approved at once.
-     */
     public function store(TravelExpenseRequest $request, TravelRequest $travelRequest, #[CurrentUser] Employee $actor, RecordTravelExpense $recordTravelExpense): RedirectResponse
     {
         $receipt = $request->receipt() ?? throw new LogicException('Recording a Travel Expense always needs a receipt.'); // @pest-mutate-ignore (validation requires the receipt)
@@ -60,10 +41,6 @@ class TravelExpenseController extends Controller
         return to_route('travel-requests.show', $travelRequest);
     }
 
-    /**
-     * Correct a Travel Expense, replacing its receipt when a new one is
-     * sent. One approved since the policy check is refused, never changed.
-     */
     public function update(TravelExpenseRequest $request, TravelExpense $travelExpense, #[CurrentUser] Employee $actor, ChangeTravelExpense $changeTravelExpense): RedirectResponse
     {
         $changed = $changeTravelExpense->change($travelExpense, $actor, $request->travelExpense(), $request->receipt());
@@ -74,10 +51,6 @@ class TravelExpenseController extends Controller
         return to_route('travel-requests.show', $travelExpense->travel_request_id);
     }
 
-    /**
-     * Delete a Travel Expense recorded by mistake, with its receipt. One
-     * approved since the policy check is refused, never deleted.
-     */
     public function destroy(TravelExpense $travelExpense, DeleteTravelExpense $deleteTravelExpense): RedirectResponse
     {
         $deleted = $deleteTravelExpense->delete($travelExpense);

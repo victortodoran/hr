@@ -5,17 +5,9 @@ namespace App\Actions\TimeOff;
 use App\Enums\TimeOffState;
 use App\Models\TimeOff;
 
-/**
- * Cancels an Employee's own Time Off before it starts.
- */
 class CancelTimeOff
 {
-    /**
-     * Cancel the Time Off and return whether it changed. It is kept on
-     * record and uses no Paid Days from now on. The write only changes Time
-     * Off still cancellable, so a decline made since the policy check is
-     * never overwritten; then nothing changes and false is returned.
-     */
+    /** Only a still-cancellable row changes, so a decline made since the policy check wins. */
     public function cancel(TimeOff $timeOff): bool
     {
         $changed = TimeOff::query()

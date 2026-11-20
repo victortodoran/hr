@@ -25,10 +25,6 @@ beforeEach(function () {
     travelTo('2026-12-01 09:00');
 });
 
-/**
- * Unpaid Time Off from Mon 14 to Wed 16 Dec 2026 for Cara, who reports to
- * the given Manager, Pending unless given another factory state.
- */
 function pendingTimeOffOf(Employee $manager, ?string $state = null): TimeOff
 {
     $factory = TimeOff::factory()->unpaid()->for(Employee::factory()->startedLongAgo()->reportingTo($manager)->create(['name' => 'Cara']));
@@ -170,11 +166,7 @@ it('lets the Manager answer Pending Time Off whose first date has passed', funct
     expect($timeOff->refresh()->state)->not->toBe(TimeOffState::Pending);
 })->with('answers');
 
-/**
- * Cara's Paid Time Off from Mon 28 Dec 2026 to Fri 8 Jan 2027: 4 weekdays in
- * 2026 and 6 in 2027, Pending with Ben as her Manager. She has 20 Paid Days
- * a year unless given others.
- */
+/** 4 weekdays in 2026 and 6 in 2027. */
 function pendingPaidTimeOffOverNewYear(Employee $ben, int $paidDays = 20): TimeOff
 {
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara', 'paid_days' => $paidDays]);

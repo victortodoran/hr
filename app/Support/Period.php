@@ -9,19 +9,9 @@ use Carbon\Exceptions\InvalidFormatException;
 use DateTimeInterface;
 use Illuminate\Contracts\Support\Arrayable;
 
-/**
- * The days the Work Entries week page shows, from one date to another: a
- * week from Monday to Sunday, a calendar month, or a custom period. It is
- * kept in the page's URL as week=YYYY-MM-DD (any day of the week),
- * month=YYYY-MM, or from=YYYY-MM-DD&to=YYYY-MM-DD.
- *
- * @implements Arrayable<string, mixed>
- */
+/** @implements Arrayable<string, mixed> */
 final readonly class Period implements Arrayable
 {
-    /**
-     * A custom period is at most this many months long.
-     */
     public const int LONGEST_CUSTOM_MONTHS = 3;
 
     private function __construct(
@@ -30,9 +20,6 @@ final readonly class Period implements Arrayable
         public CarbonImmutable $to,
     ) {}
 
-    /**
-     * The week, Monday to Sunday, holding a day.
-     */
     public static function week(DateTimeInterface $day): self
     {
         $monday = CarbonImmutable::instance($day)->startOfWeek(CarbonInterface::MONDAY);
@@ -40,9 +27,6 @@ final readonly class Period implements Arrayable
         return new self(PeriodMode::Week, $monday, $monday->endOfWeek(CarbonInterface::SUNDAY)->startOfDay());
     }
 
-    /**
-     * A calendar month, given as YYYY-MM.
-     */
     public static function month(string $month): self
     {
         $first = CarbonImmutable::createFromFormat('!Y-m', $month) ?: throw new InvalidFormatException("Not a month: {$month}");
@@ -50,18 +34,13 @@ final readonly class Period implements Arrayable
         return new self(PeriodMode::Month, $first, $first->endOfMonth()->startOfDay());
     }
 
-    /**
-     * The days from one date to another, both included.
-     */
     public static function custom(DateTimeInterface $from, DateTimeInterface $to): self
     {
         return new self(PeriodMode::Custom, CarbonImmutable::instance($from)->startOfDay(), CarbonImmutable::instance($to)->startOfDay());
     }
 
     /**
-     * The period a URL's query asks for: a custom period over a month over a
-     * week. Null when it asks for none, or for one that is malformed, or a
-     * custom period that ends before it starts or is too long.
+     * A custom period wins over a month, and a month over a week.
      *
      * @param  array<array-key, mixed>  $query
      */
@@ -79,12 +58,7 @@ final readonly class Period implements Arrayable
         }
     }
 
-    /**
-     * The period a URL's query asks for while it holds a day, or else the
-     * week holding the day.
-     *
-     * @param  array<array-key, mixed>  $query
-     */
+    /** @param  array<array-key, mixed>  $query */
     public static function holding(array $query, DateTimeInterface $day): self
     {
         $period = self::fromQuery($query);
@@ -92,9 +66,6 @@ final readonly class Period implements Arrayable
         return $period !== null && $period->contains($day) ? $period : self::week($day);
     }
 
-    /**
-     * Whether a custom period from one date to another is short enough.
-     */
     public static function fitsCustom(DateTimeInterface $from, DateTimeInterface $to): bool
     {
         return CarbonImmutable::instance($to)->lessThan(CarbonImmutable::instance($from)->addMonthsNoOverflow(self::LONGEST_CUSTOM_MONTHS));
@@ -105,11 +76,7 @@ final readonly class Period implements Arrayable
         return ! $to->isBefore($from) && self::fitsCustom($from, $to) ? self::custom($from, $to) : null;
     }
 
-    /**
-     * The period held back to today, for records never in the future: one
-     * starting after today gives way to the current week, for a week, or
-     * else the current month, and a custom one ends today at the latest.
-     */
+    /** For records that are never in the future. */
     public function notAfterToday(): self
     {
         if ($this->from->isAfter(today())) {
@@ -123,9 +90,6 @@ final readonly class Period implements Arrayable
         return $this;
     }
 
-    /**
-     * Whether a day falls within the period.
-     */
     public function contains(DateTimeInterface $day): bool
     {
         $date = CarbonImmutable::instance($day)->startOfDay();
@@ -133,11 +97,7 @@ final readonly class Period implements Arrayable
         return ! $date->isBefore($this->from) && ! $date->isAfter($this->to);
     }
 
-    /**
-     * Every day of the period, first to last.
-     *
-     * @return list<CarbonImmutable>
-     */
+    /** @return list<CarbonImmutable> */
     public function days(): array
     {
         $days = [];
@@ -149,11 +109,7 @@ final readonly class Period implements Arrayable
         return $days;
     }
 
-    /**
-     * The URL query asking for this period.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function query(): array
     {
         return match ($this->mode) {
@@ -163,11 +119,7 @@ final readonly class Period implements Arrayable
         };
     }
 
-    /**
-     * The period as the page gets it, with the URL query asking for it.
-     *
-     * @return array{mode: string, from: string, to: string, query: array<string, string>}
-     */
+    /** @return array{mode: string, from: string, to: string, query: array<string, string>} */
     public function toArray(): array
     {
         return ['mode' => $this->mode->value, 'from' => $this->from->toDateString(), 'to' => $this->to->toDateString(), 'query' => $this->query()];

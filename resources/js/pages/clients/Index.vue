@@ -29,12 +29,6 @@ defineOptions({
     },
 });
 
-/**
- * The Clients the company does Projects for (rule L11). Add Client, the one
- * primary, opens a one-field dialog (L14, K7); each row's ⋯ menu renames
- * it in the same dialog or deletes it, confirming first and explaining
- * when its Projects keep it (K2, X3, X6).
- */
 const props = defineProps<{
     clients: Paginated<ClientRecord>;
     search: string;
@@ -55,7 +49,6 @@ const columns: TableColumn[] = [
 
 const addOpen = ref(false);
 
-/** The Client the Rename or Delete dialog is about. */
 const chosen = ref<ClientRecord | null>(null);
 const renameOpen = ref(false);
 const deleteOpen = ref(false);

@@ -18,33 +18,16 @@ import { outcomes } from '@/lib/outcomes';
 import { show } from '@/routes/performance-evaluations/goals';
 import type { AssessedGoal } from '@/types';
 
-/**
- * One Goal on its Performance Evaluation's page (rules L9, K1): its
- * number, its title linking to its own page, its description, its
- * Progress as a StatusBadge and how many Comments it has. The Employee and
- * their Manager change its Progress here while it is Open, and whoever may
- * edit gives, changes or clears its Outcome, a plain Select (S11); both
- * save as soon as they are picked. Whoever may edit also, from its ⋯ menu
- * (K2), edits it on its own page with the Edit Goal sheet open, or deletes
- * it after confirming (X3); anyone else who may see Outcomes reads the one
- * given as plain text.
- */
 const props = defineProps<{
     goal: AssessedGoal;
-    /** Its place in the list, counting from 1. */
     number: number;
     performanceEvaluationId: number;
-    /** Whose Performance Evaluation it is, as its Outcome field names them. */
     employeeName: string;
-    /** Whether the viewer may edit or delete it and give its Outcome. */
     canEdit: boolean;
-    /** Whether the viewer may change its Progress. */
     canChangeProgress: boolean;
-    /** Whether the viewer sees its Outcome. */
     canSeeOutcomes: boolean;
 }>();
 
-/** Whether the confirmation before deleting it is showing. */
 const confirmingDeletion = ref(false);
 
 const goalRoute = computed(() => ({
@@ -52,7 +35,6 @@ const goalRoute = computed(() => ({
     goal: props.goal.id,
 }));
 
-/** "No Comments", "1 Comment" or "3 Comments". */
 const commentCountLabel = computed(() => {
     const count = props.goal.comments_count;
 

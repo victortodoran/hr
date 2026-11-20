@@ -16,9 +16,6 @@ use function Pest\Laravel\travel;
 
 covers(InvitationController::class, AcceptInvitation::class, AcceptInvitationPage::class, AcceptInvitationRequest::class, Invitation::class, Employee::class);
 
-/**
- * Invite a new Employee and return the token from their invitation email.
- */
 function inviteAndCaptureToken(Employee $employee): string
 {
     Notification::fake();

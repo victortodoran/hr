@@ -5,23 +5,9 @@ namespace App\Http\Requests\TimeOff;
 use App\Models\TimeOff;
 use Illuminate\Validation\Validator;
 
-/**
- * Time Off the signed-in Employee requests for themselves: whole days from
- * a first to a last date, Paid or Unpaid. It starts today or later, falls
- * within their period of work, holds at least one weekday, overlaps none of
- * their Pending or Approved Time Off or Travel Requests, takes no day they
- * have Pending or Approved hours on and, when Paid, fits the Paid Days left
- * in every year it touches.
- */
 class TimeOffRequest extends TimeOffPreviewRequest
 {
-    /**
-     * Once the dates are valid on their own and cover at most a year, check
-     * them against the Employee's period of work, other Time Off, Travel
-     * Requests and Work Entries, then the Paid Days left.
-     *
-     * @return array<int, callable(Validator): void>
-     */
+    /** @return array<int, callable(Validator): void> */
     public function after(): array
     {
         return [...parent::after(), function (Validator $validator): void {
@@ -41,11 +27,6 @@ class TimeOffRequest extends TimeOffPreviewRequest
         }];
     }
 
-    /**
-     * Refuse dates before the Employee's Start Date or after their Leaving
-     * Date. Only Employees past their Start Date can sign in, so a first date
-     * today or later already falls after it; the check keeps the rule whole.
-     */
     private function checkWorkingPeriod(Validator $validator): void
     {
         $employee = $this->employee();
@@ -59,9 +40,6 @@ class TimeOffRequest extends TimeOffPreviewRequest
         }
     }
 
-    /**
-     * Refuse Time Off that holds only weekend days.
-     */
     private function checkWeekdays(Validator $validator): void
     {
         if (TimeOff::weekdaysBetween($this->firstDate(), $this->lastDate()) === 0) {
@@ -69,10 +47,6 @@ class TimeOffRequest extends TimeOffPreviewRequest
         }
     }
 
-    /**
-     * Refuse Time Off overlapping the Employee's own Pending or Approved
-     * Time Off. Declined and Cancelled Time Off never blocks.
-     */
     private function checkOverlap(Validator $validator): void
     {
         $overlapped = $this->employee()->timeOff()
@@ -89,10 +63,6 @@ class TimeOffRequest extends TimeOffPreviewRequest
         }
     }
 
-    /**
-     * Refuse Time Off sharing a day with the Employee's own Pending or
-     * Approved Travel Requests. Declined and Cancelled ones never block.
-     */
     private function checkTravelOverlap(Validator $validator): void
     {
         $overlapped = $this->employee()->travelRequests()
@@ -109,12 +79,7 @@ class TimeOffRequest extends TimeOffPreviewRequest
         }
     }
 
-    /**
-     * Refuse Time Off taking a day the Employee already has Pending or
-     * Approved hours on, naming the earliest: a day is either worked or off.
-     * Declined Work Entries never block, and neither do weekend ones, as
-     * weekends are never days of Time Off.
-     */
+    /** Weekend Work Entries never block, as weekends are never days of Time Off. */
     private function checkWorkedDays(Validator $validator): void
     {
         $worked = $this->employee()->workEntries()
@@ -130,12 +95,6 @@ class TimeOffRequest extends TimeOffPreviewRequest
         }
     }
 
-    /**
-     * Refuse Paid Time Off whose weekdays in any year it touches would take
-     * more than that year's Paid Days left, counting each day in its own
-     * year, and say how many are left so the rest can be requested Unpaid.
-     * Days left below 0, after HR lowered Paid Days, are told as none left.
-     */
     private function checkPaidDays(Validator $validator): void
     {
         foreach ($this->employee()->paidDaysUsedBy($this->unsavedTimeOff()) as ['year' => $year, 'uses' => $needed, 'left' => $left]) {

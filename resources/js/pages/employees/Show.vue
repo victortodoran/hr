@@ -73,23 +73,14 @@ import type {
     TableColumn,
 } from '@/types';
 
-/**
- * An Employee's page (rule L12): the header with their facts on every tab,
- * an attention Callout while Employees still report to them after they
- * left, then a tab per section. Only the open tab's props are sent:
- * `reportingChain` on Overview, `assignments` and `projects` on
- * Assignments & Pay, `paidDays` and `timeOff` on Time Off, `work` on Work,
- * `travel` on Travel and `performanceEvaluations` on Performance.
- */
+/** Only the open tab's props are sent. */
 const props = withDefaults(
     defineProps<{
         employee: Choice & { job_title: string | null };
         tab: EmployeePageTab;
-        /** The tabs the viewer may open, Overview always first. */
         tabs: EmployeePageTab[];
         /** Null when the viewer may not see the Employee's record. */
         record: EmployeePageRecord | null;
-        /** Those still reporting to the Employee after they left. */
         reportsNeedingAManager: ReportNeedingAManager[];
         /** Null for a Former Employee, who is no longer in the reporting line. */
         reportingChain?: ReportingChainView | null;
@@ -141,9 +132,6 @@ function openTab(tab: string | number): void {
     router.get(show.url(props.employee.id, { query: { tab: String(tab) } }));
 }
 
-/**
- * When they started, or start, or when they left.
- */
 const since = computed(() => {
     if (!props.record || !props.standing) {
         return null;
@@ -160,7 +148,6 @@ const since = computed(() => {
     return `Since ${formatDate(props.record.start_date)}`;
 });
 
-/** The one Report a Callout action can name, when there is just one to edit. */
 const onlyReport = computed(() =>
     props.reportsNeedingAManager.length === 1 &&
     props.reportsNeedingAManager[0].can_edit
@@ -190,14 +177,6 @@ const recordFacts = computed(() =>
 
 const isPhone = useMediaQuery('(max-width: 639px)');
 
-/**
- * The Assignments' columns (rules K1, P4): the chevron opening the Pay
- * history, Project, Job Title, Dates, Capacity, then Pay in effect and the
- * next change for viewers who may see Pay, and the ⋯ menu for those who
- * manage Assignments. On a phone each row stacks: the Project over its
- * Client, Job Title and Capacity, with the Pay in effect and the buttons
- * at the right, where the chevron moves too.
- */
 const assignmentColumns = computed<TableColumn[]>(() => [
     ...(props.canViewPay ? [{ key: 'expand', label: '' }] : []),
     { key: 'project', label: 'Project', phone: 'primary' as const },
@@ -232,7 +211,6 @@ const assignmentColumns = computed<TableColumn[]>(() => [
         : []),
 ]);
 
-/** The Assignments whose Pay history is open. */
 const openPayHistories = ref<Set<number>>(new Set());
 
 function togglePayHistory(assignment: AssignmentRecord): void {
@@ -249,21 +227,15 @@ function isPayHistoryOpen(assignment: AssignmentRecord): boolean {
     return props.canViewPay && openPayHistories.value.has(assignment.id);
 }
 
-/** Names the chevron's action, such as "Show Pay history on Relaunch". */
 function payHistoryLabel(assignment: AssignmentRecord): string {
     return `${isPayHistoryOpen(assignment) ? 'Hide' : 'Show'} Pay history on ${assignment.project.name}`;
 }
 
-/** The chevron opening an Assignment's Pay history, wherever its row puts it. */
 const [DefinePayHistoryToggle, PayHistoryToggle] = createReusableTemplate<{
     row: AssignmentRecord;
 }>();
 
-/**
- * Each Assignment's Pay as its row shows it: the change in effect today,
- * or null when none has taken effect yet, and the soonest Upcoming one, the
- * last of those listed newest first.
- */
+/** Pay is listed newest first, so the soonest Upcoming change is the last one. */
 const rowPay = computed(
     () =>
         new Map(
@@ -290,24 +262,17 @@ function payOf(assignment: AssignmentRecord): {
     return rowPay.value.get(assignment.id) ?? { inEffect: null, next: null };
 }
 
-/** What a row says under its Project: Internal Assignment, or its Client. */
 function assignmentContext(assignment: AssignmentRecord): string {
     return assignment.project.is_internal
         ? 'Internal Assignment'
         : (assignment.project.client ?? 'No Client');
 }
 
-/** An Assignment that has ended reads muted, its Ended badge aside. */
 function assignmentRowClass(assignment: AssignmentRecord): string {
     return assignment.has_ended ? 'text-muted-foreground' : '';
 }
 
-/**
- * The numbers over the Assignments (rule K10): the Capacity assigned, how
- * many are active and have ended, then the Pay in effect on each active
- * one, for viewers who may see Pay. The server sends as many Pay as fit in
- * six numbers and counts the rest, shown as one last number.
- */
+/** The server sends as many Pay as fit in six numbers and counts the rest, shown as one last number. */
 const assignmentStatItems = computed(() => {
     const stats = props.assignmentStats;
 
@@ -338,7 +303,6 @@ const assignmentStatItems = computed(() => {
     ];
 });
 
-/** The Assignment the sheet edits; none while adding one. */
 const editingAssignment = ref<AssignmentRecord | null>(null);
 const assignmentFormOpen = ref(false);
 
@@ -352,7 +316,6 @@ function editAssignment(assignment: AssignmentRecord): void {
     assignmentFormOpen.value = true;
 }
 
-/** The Assignment the Delete dialog asks about. */
 const deletingAssignment = ref<AssignmentRecord | null>(null);
 const deleteAssignmentOpen = ref(false);
 
@@ -361,7 +324,6 @@ function askToDeleteAssignment(assignment: AssignmentRecord): void {
     deleteAssignmentOpen.value = true;
 }
 
-/** The Paid Days per year, from whichever the viewer gets. */
 const paidDaysPerYear = computed(() =>
     typeof props.paidDays === 'number'
         ? props.paidDays
@@ -389,7 +351,6 @@ const performanceColumns: TableColumn[] = [
     { key: 'state', label: 'Status', align: 'end' },
 ];
 
-/** The FactList slot that puts Edit beside the Paid Days per year. */
 const paidDaysSlot = 'fact-Paid Days per year';
 
 setLayoutProps({

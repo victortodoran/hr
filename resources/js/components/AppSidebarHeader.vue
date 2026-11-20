@@ -20,7 +20,6 @@ const ancestors = computed(() => props.breadcrumbs.slice(0, -1));
 
 const heading = usePageTitle();
 
-/** The page's `<h1>`, shown beside the menu on a phone (rule P2). */
 const pageTitle = computed(
     () => heading.value ?? props.breadcrumbs.at(-1)?.title,
 );

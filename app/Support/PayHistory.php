@@ -7,18 +7,10 @@ use App\Models\Assignment;
 use App\Models\PayEntry;
 use Carbon\CarbonInterface;
 
-/**
- * Which entry in an Assignment's Pay history is in effect on a day: the
- * latest one taking effect on or before it. Entries can take effect in the
- * future, so a planned raise is ignored until its day comes. Each entry
- * applies until the day before the next one, the last until the
- * Assignment's end.
- */
+/** Entries can take effect in the future, so a planned raise is ignored until its day comes. */
 final class PayHistory
 {
     /**
-     * The entry in effect on the day, or null when none has taken effect yet.
-     *
      * @template TEntry
      *
      * @param  array<string, TEntry>  $entriesByEffectiveDate  Each entry keyed by the date it takes effect, as YYYY-MM-DD
@@ -38,13 +30,7 @@ final class PayHistory
         return $inEffectFrom === null ? null : $entriesByEffectiveDate[$inEffectFrom];
     }
 
-    /**
-     * The Assignment's Pay changes, newest first, each with the last day it
-     * applies, the day before the next one or the Assignment's end date
-     * (null while it has none), and where it stands on the day.
-     *
-     * @return list<array{entry: PayEntry, until: CarbonInterface|null, state: PayChangeState}>
-     */
+    /** @return list<array{entry: PayEntry, until: CarbonInterface|null, state: PayChangeState}> */
     public static function changes(Assignment $assignment, CarbonInterface $day): array
     {
         $entries = array_values($assignment->payEntries->sortByDesc(fn (PayEntry $entry): string => $entry->effective_from->toDateString())->all());

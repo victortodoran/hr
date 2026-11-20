@@ -30,13 +30,6 @@ import { show as employeePage } from '@/routes/employees';
 import { show as projectPage } from '@/routes/projects';
 import type { CommandMenuResults } from '@/types';
 
-/**
- * Search from any page (rules L26, K22): ⌘K or Ctrl+K, or the top bar's
- * search button, opens a Dialog holding a Combobox over people, Projects,
- * Clients and the pages the sidebar offers. Records come from the server,
- * only those the viewer could already open; pages are the sidebar's own
- * entries. Choosing a result opens it.
- */
 type Choice = {
     key: string;
     href: NonNullable<InertiaLinkProps['href']>;
@@ -52,7 +45,6 @@ const http = useHttp<{ search: string }, CommandMenuResults>({ search: '' });
 
 const { startItems, areaItems, companyItems } = useNavItems();
 
-/** The shortcut as this computer writes it. */
 const shortcut =
     typeof navigator !== 'undefined' &&
     /Mac|iPhone|iPad/.test(navigator.userAgent)
@@ -95,7 +87,6 @@ watch(open, (isOpen) => {
     }
 });
 
-/** The sidebar's pages whose name holds the search; all of them before one is typed. */
 const pages = computed(() => {
     const wanted = term.value.trim().toLowerCase();
 
@@ -106,10 +97,7 @@ const pages = computed(() => {
     ].filter((item) => item.title.toLowerCase().includes(wanted));
 });
 
-/*
- * Each group's choices, built once: the template renders these, so an
- * item's value always matches the choice it opens.
- */
+/* Built once and rendered from, so an item's value always matches the choice it opens. */
 const personChoices = computed(() =>
     results.value.people.map((person) => ({
         key: `person-${person.id}`,

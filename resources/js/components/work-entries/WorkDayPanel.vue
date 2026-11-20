@@ -25,50 +25,30 @@ import type {
     WorkEntryRecord,
 } from '@/types';
 
-/**
- * One Calendar day opened up (WorkDayPanel): its date with ‹ › to step to
- * the day before or after and ✕ to close, every Work Entry on it with its
- * state and hours and a ⋯ menu to Edit or Delete it, a Declined one's
- * reason in a Callout with Edit, and on a day hours can be added to, a
- * labelled add form (rule V11 preselects the Assignment) that ↵ submits
- * and keeps open, with copying the previous day's entries. In a bottom
- * sheet on a phone (P7) its buttons stick to the bottom.
- */
 const props = defineProps<{
     day: WorkEntryDay;
     employee: Choice;
     period: Period;
     today: string;
     assignments: WorkEntryAssignment[];
-    /** Whether the viewer can add hours to this day. */
     takesEntries: boolean;
-    /** The day ‹ opens, if there is one in the month shown. */
     previousDay: string | null;
-    /** The day › opens, if there is one in the month shown. */
     nextDay: string | null;
-    /** The Assignment of the Work Entry last added on this page. */
     lastAssignmentId: number | null;
-    /** Whether the panel sits in a sheet, which brings its own close button. */
     inSheet?: boolean;
 }>();
 
 const emit = defineEmits<{
-    /** A Work Entry was added, on this Assignment. */
     added: [assignmentId: number];
-    /** Open another day instead. */
     open: [date: string];
-    /** Whether a form on this day holds typing that isn't saved yet. */
     dirty: [date: string, isDirty: boolean];
-    /** Close the panel. */
     close: [];
 }>();
 
 const addRow = ref<InstanceType<typeof WorkEntryRow> | null>(null);
 
-/** The Work Entry being changed in place, if any. */
 const editing = ref<number | null>(null);
 
-/** The Work Entry whose Delete is being confirmed, if any. */
 const deleting = ref<WorkEntryRecord | null>(null);
 
 onMounted(() => addRow.value?.focusHours());
@@ -79,7 +59,6 @@ async function entryAdded(assignmentId: number): Promise<void> {
     addRow.value?.focusHours();
 }
 
-/** "1 Work Entry · 5 h", or "Nothing logged". */
 function summary(): string {
     const count = props.day.entries.length;
 

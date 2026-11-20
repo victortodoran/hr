@@ -18,9 +18,6 @@ covers(CompanySettingsController::class, CompanySettingsRequest::class, CompanyS
 
 beforeEach(fn () => CompanySettings::factory()->create(['name' => 'Acme', 'currency' => 'EUR']));
 
-/**
- * An Employee who may change the company settings, like the starter Admin.
- */
 function companyManager(): Employee
 {
     return employeeWith([Permission::ManageCompany->value => null]);

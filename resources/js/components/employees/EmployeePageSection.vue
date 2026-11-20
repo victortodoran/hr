@@ -1,9 +1,4 @@
 <script setup lang="ts">
-/**
- * One section of an Employee's page, the same on every tab: a heading, an
- * optional line saying what the section holds, an optional action beside
- * the heading in the `action` slot, and the section's content below.
- */
 defineProps<{
     title: string;
     description?: string;

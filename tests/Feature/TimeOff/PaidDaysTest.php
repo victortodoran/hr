@@ -20,28 +20,17 @@ beforeEach(function () {
     travelTo('2026-03-01 09:00');
 });
 
-/**
- * An Employee who may manage everyone's Paid Days, such as someone in HR.
- */
 function paidDaysManager(): Employee
 {
     return employeeWith([Permission::ManagePaidDays->value => Scope::Everyone]);
 }
 
-/**
- * An Employee named Cara.
- *
- * @param  array<string, mixed>  $attributes
- */
+/** @param  array<string, mixed>  $attributes */
 function cara(array $attributes = []): Employee
 {
     return Employee::factory()->startedLongAgo()->create(['name' => 'Cara', ...$attributes]);
 }
 
-/**
- * The Paid Days the Employee's page shows on its Time Off tab to someone who
- * manages them.
- */
 function shownPaidDays(Employee $employee): mixed
 {
     return actingAs(paidDaysManager())

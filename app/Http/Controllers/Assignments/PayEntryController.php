@@ -10,15 +10,8 @@ use App\Models\PayEntry;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Lets those who manage Pay add entries to an Assignment's Pay history,
- * including raises ahead of time, and remove one entered by mistake.
- */
 class PayEntryController extends Controller
 {
-    /**
-     * Add an entry to the Assignment's Pay history.
-     */
     public function store(PayEntryRequest $request, Assignment $assignment): RedirectResponse
     {
         $assignment->payEntries()->create($request->payEntry());
@@ -28,9 +21,6 @@ class PayEntryController extends Controller
         return to_route('employees.show', ['employee' => $assignment->employee_id, 'tab' => EmployeePageTab::Assignments]);
     }
 
-    /**
-     * Remove an entry from the Assignment's Pay history.
-     */
     public function destroy(Assignment $assignment, PayEntry $payEntry): RedirectResponse
     {
         $payEntry->delete();

@@ -5,15 +5,10 @@ namespace App\Actions\Projects;
 use App\Models\Project;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Deletes a Project, refusing once anyone has been assigned to it, since
- * that work is part of their record.
- */
+/** Refused once anyone has been assigned, since that work is part of their record. */
 class DeleteProject
 {
-    /**
-     * @throws ValidationException
-     */
+    /** @throws ValidationException */
     public function delete(Project $project): void
     {
         if ($project->assignments()->exists()) {

@@ -5,10 +5,6 @@ namespace App\Http\Requests\WorkEntries;
 use App\Support\SelectedIds;
 use Illuminate\Contracts\Validation\ValidationRule;
 
-/**
- * The Work Entries selected on the Approvals page, by ID, to decline all at
- * once, with the one reason the Employee will see on each.
- */
 class DeclineWorkEntriesRequest extends SelectedWorkEntriesRequest
 {
     /**
@@ -33,9 +29,6 @@ class DeclineWorkEntriesRequest extends SelectedWorkEntriesRequest
         ];
     }
 
-    /**
-     * The reason given for declining.
-     */
     public function reason(): string
     {
         return $this->string('decline_reason')->value();

@@ -14,11 +14,6 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use LogicException;
 
-/**
- * A Work Entry's Assignment, date, hours and description, when recording
- * hours for an Employee or correcting a Work Entry. The Assignment must be
- * one of the Employee's own.
- */
 class WorkEntryRequest extends FormRequest
 {
     /**
@@ -34,13 +29,7 @@ class WorkEntryRequest extends FormRequest
         ];
     }
 
-    /**
-     * Once the Assignment and date are valid on their own, check that the
-     * date falls within the Assignment and isn't a day of the Employee's
-     * Time Off, then the hours left on the day.
-     *
-     * @return array<int, Closure(Validator): void>
-     */
+    /** @return array<int, Closure(Validator): void> */
     public function after(): array
     {
         return [function (Validator $validator): void {
@@ -72,11 +61,6 @@ class WorkEntryRequest extends FormRequest
         }];
     }
 
-    /**
-     * Refuse hours that would take the Employee past 24 on the day, counting
-     * their other Work Entries that day on every Assignment, all but the
-     * Declined ones, whose hours count nowhere.
-     */
     private function checkDailyTotal(Validator $validator, Carbon $date): void
     {
         $workEntry = $this->route('workEntry');
@@ -96,9 +80,6 @@ class WorkEntryRequest extends FormRequest
         }
     }
 
-    /**
-     * Why a date outside the Assignment is refused.
-     */
     private function outsideAssignment(Assignment $assignment): string
     {
         $replace = [
@@ -113,11 +94,7 @@ class WorkEntryRequest extends FormRequest
             : __(':name\'s Assignment to :project runs from :start to :end, so the date must fall within it.', $replace);
     }
 
-    /**
-     * The Work Entry as it is stored: its time in whole minutes.
-     *
-     * @return array{assignment_id: int, date: string, minutes: int, description: string}
-     */
+    /** @return array{assignment_id: int, date: string, minutes: int, description: string} */
     public function workEntry(): array
     {
         return [
@@ -128,9 +105,6 @@ class WorkEntryRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Employee whose hours these are.
-     */
     public function employee(): Employee
     {
         $workEntry = $this->route('workEntry');

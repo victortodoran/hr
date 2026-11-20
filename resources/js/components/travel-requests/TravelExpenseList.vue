@@ -30,15 +30,6 @@ import { travelExpenseCategories } from '@/lib/travel-expenses';
 import { edit } from '@/routes/travel-requests/expenses';
 import type { TableColumn, TravelExpenseRecord, TravelExpenses } from '@/types';
 
-/**
- * The Travel Expenses of one Travel Request on its page (rules K1, K2):
- * each with its receipt as a thumbnail, a PDF as a tile, opening it in a
- * new tab. A Declined one is struck through, with its reason in a Callout
- * under it and Edit there for the Employee (G4, S12). The Employee edits
- * and deletes from the ⋯ menu while the flags allow; their effective
- * Manager approves or declines each Pending one from its row. Someone who
- * may reopen its Approved ones ticks them and reopens them together.
- */
 const props = defineProps<{
     travelRequestId: number;
     expenses: TravelExpenses;
@@ -56,7 +47,6 @@ const { selected, isSelected, toggle, clear } = useBulkSelection(
 
 const { approving, approveOne } = useApproveOne();
 
-/** The ticked Travel Expenses counted, such as "2 Travel Expenses" (rule B4). */
 const selectedNoun = computed(() =>
     selected.value.length === 1
         ? '1 Travel Expense'
@@ -74,7 +64,6 @@ const columns = computed<TableColumn[]>(() => [
     { key: 'actions', label: '', align: 'end', phone: 'end' },
 ]);
 
-/** Names a Travel Expense for its buttons, such as "the Transport expense paid on Dec 3, 2026". */
 function describe(expense: TravelExpenseRecord): string {
     return `the ${travelExpenseCategories[expense.category]} expense paid on ${formatDate(expense.paid_on)}`;
 }
@@ -104,7 +93,6 @@ function approve(expense: TravelExpenseRecord): void {
     });
 }
 
-/** The Travel Expense the Delete Travel Expense dialog asks about. */
 const deleting = ref<TravelExpenseRecord | null>(null);
 const deleteOpen = ref(false);
 

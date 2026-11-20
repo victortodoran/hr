@@ -5,17 +5,11 @@ namespace App\Actions\WorkEntries;
 use App\Enums\WorkEntryState;
 use App\Models\WorkEntry;
 
-/**
- * Corrects a Work Entry: its Assignment, date, hours or description.
- */
 class CorrectWorkEntry
 {
     /**
-     * Correct the Work Entry and return whether it changed. A Declined one
-     * goes back to Pending, without who declined it or why. The write only
-     * changes one still Pending or Declined, so an approval made since the
-     * policy check is never undone; then nothing changes and false is
-     * returned.
+     * Only a Pending or Declined row changes, so an approval made since the
+     * policy check wins.
      *
      * @param  array{assignment_id: int, date: string, minutes: int, description: string}  $changes
      */

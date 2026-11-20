@@ -27,8 +27,7 @@ covers(GoalCommentController::class, GoalController::class, GoalCommentRequest::
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
 /**
- * Ana, who manages Ben, who manages Cara, and Cara's Open 2026
- * Performance Evaluation with one Goal.
+ * Ana, Ben, Cara (each the Manager of the next) and the Goal on Cara's Open 2026 Performance Evaluation.
  *
  * @return array{Employee, Employee, Employee, Goal}
  */
@@ -42,17 +41,11 @@ function goalCommentLine(): array
     return [$ana, $ben, $cara, $goal];
 }
 
-/**
- * The route that writes a Comment on the Goal.
- */
 function commentRoute(Goal $goal): string
 {
     return route('performance-evaluations.goals.comments.store', [$goal->performanceEvaluation, $goal]);
 }
 
-/**
- * The route of the Goal's page.
- */
 function commentedGoalRoute(Goal $goal): string
 {
     return route('performance-evaluations.goals.show', [$goal->performanceEvaluation, $goal]);

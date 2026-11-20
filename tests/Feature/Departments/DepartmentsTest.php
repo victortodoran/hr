@@ -12,9 +12,6 @@ use function Pest\Laravel\actingAs;
 
 covers(DepartmentController::class, DepartmentRequest::class, Department::class, Employee::class);
 
-/**
- * An Employee who manages Departments, in a Department of their own.
- */
 function admin(?Department $department = null): Employee
 {
     $department ??= Department::factory()->create(['name' => 'Operations']);

@@ -9,15 +9,8 @@ import { Button } from '@/components/ui/button';
 import { projectFields, projectPayload } from '@/lib/projects';
 import type { Choice, ProjectRecord } from '@/types';
 
-/**
- * A new Project, or one being edited, in a sheet (rule L14): its name, its
- * Client if it has one, and when it runs. A new Project opens its page once
- * saved; an edited one stays on its page and the sheet closes.
- */
 const props = defineProps<{
-    /** The Project being edited; a new one when left out. */
     project?: ProjectRecord;
-    /** The Clients it can be for. */
     clients: Choice[];
 }>();
 
@@ -29,7 +22,6 @@ const isEdit = computed(() => props.project !== undefined);
 
 const form = useForm(projectFields(props.project));
 
-/** Starts each opening from the Project as it stands now, or blank. */
 watch(open, (isOpen) => {
     if (isOpen) {
         form.defaults(projectFields(props.project));
@@ -38,10 +30,6 @@ watch(open, (isOpen) => {
     }
 });
 
-/**
- * Saves the Project. A new one's page replaces this one; an edited one's
- * page comes back with it saved, and the sheet closes.
- */
 function save(): void {
     if (!props.project) {
         form.transform(projectPayload).submit(ProjectController.store());

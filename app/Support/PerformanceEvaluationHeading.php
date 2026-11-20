@@ -4,10 +4,6 @@ namespace App\Support;
 
 use App\Models\PerformanceEvaluation;
 
-/**
- * The heading a Goal's pages show of its Performance Evaluation, the Goal
- * forms and the Goal's own page alike: whose it is and for which year.
- */
 final class PerformanceEvaluationHeading
 {
     /**

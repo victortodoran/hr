@@ -34,10 +34,6 @@ beforeEach(function () {
     Storage::fake(TravelExpense::RECEIPT_DISK);
 });
 
-/**
- * The Employee's Approved trip to Berlin on Relaunch, with a 1,990 RON
- * Accommodation expense whose receipt is stored on the disk.
- */
 function berlinTripWithHotel(Employee $employee): TravelExpense
 {
     $trip = TravelRequest::factory()->on(assignmentOf($employee))->approved()
@@ -48,11 +44,7 @@ function berlinTripWithHotel(Employee $employee): TravelExpense
     return TravelExpense::factory()->for($trip)->create(['paid_on' => '2026-12-04', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => 199000, 'receipt_path' => $path]);
 }
 
-/**
- * Ana, with view travel for the given Scope only, and Cara, her Report.
- *
- * @return array{Employee, Employee}
- */
+/** @return array{Employee, Employee} */
 function anaWithViewTravelAndCara(Scope $scope): array
 {
     $ana = employeeWith([Permission::ViewTravel->value => $scope], ['name' => 'Ana']);

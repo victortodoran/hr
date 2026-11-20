@@ -22,11 +22,6 @@ import { formatDate, formatDateRange } from '@/lib/dates';
 import { formatDays } from '@/lib/time-off';
 import type { TableColumn, TimeOffToApprove } from '@/types';
 
-/**
- * The Time Off tab of the Approvals page: the Pending Time Off of the
- * Employees the viewer manages, each with the Paid Days it leaves, approved
- * or declined one at a time from its row or its RecordSheet.
- */
 const props = defineProps<{
     toApprove: TimeOffToApprove[];
 }>();
@@ -45,7 +40,6 @@ const { record, recordOpen, openRecord, closeRecord } = useRecordInUrl(
 
 const { approving, approveOne } = useApproveOne();
 
-/** The Employee's other Pending Time Off, for the RecordSheet. */
 const otherPending = computed(() =>
     record.value === null
         ? []
@@ -56,12 +50,10 @@ const otherPending = computed(() =>
           ),
 );
 
-/** Whose Time Off a row is and when, naming its buttons. */
 function describe(timeOff: TimeOffToApprove): string {
     return `${timeOff.employee.name}'s Time Off from ${formatDate(timeOff.first_date)}`;
 }
 
-/** "12 left in 2026, this request included" for each year it touches. */
 function paidDaysLeft(timeOff: TimeOffToApprove): string {
     return timeOff.paid_days_left
         .map((left) => `${left.days} left in ${left.year}`)
@@ -81,7 +73,6 @@ function approve(timeOff: TimeOffToApprove): void {
     );
 }
 
-/** Whether a paid request takes a year below zero Paid Days. */
 function overdraws(timeOff: TimeOffToApprove): boolean {
     return (
         timeOff.is_paid && timeOff.paid_days_left.some((left) => left.days < 0)

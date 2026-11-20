@@ -12,12 +12,7 @@ use function Pest\Laravel\actingAs;
 
 covers(DirectoryController::class, Employee::class, Assignment::class);
 
-/**
- * An Employee who may browse the directory, like everyone with the starter
- * Employee Role.
- *
- * @param  array<string, mixed>  $attributes
- */
+/** @param  array<string, mixed>  $attributes */
 function colleague(array $attributes = []): Employee
 {
     return employeeWith([Permission::ViewDirectory->value => null], ['name' => 'Zoe Viewer', ...$attributes]);

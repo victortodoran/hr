@@ -6,71 +6,41 @@ use App\Enums\Permission;
 use App\Models\Assignment;
 use App\Models\Employee;
 
-/**
- * Who may see and change Assignments. Each check is made against the
- * Employee the Assignments belong to, so the acting Employee's Scope decides:
- * through the Gate of the Permission behind it, or, for seeing them, the
- * Permissions that show them, read the same way the Gates read them.
- */
 class AssignmentPolicy
 {
-    /**
-     * Seeing an Employee's Assignments needs one of the Permissions for
-     * seeing them (Permission::seeingAssignments()) to reach them.
-     */
     public function viewAny(Employee $actor, Employee $employee): bool
     {
         return $actor->reachesThrough(Permission::seeingAssignments(), $employee);
     }
 
-    /**
-     * Putting an Employee on a Project needs manage assignments for them.
-     */
     public function create(Employee $actor, Employee $employee): bool
     {
         return $actor->can(Permission::ManageAssignments->value, $employee);
     }
 
-    /**
-     * Changing an Assignment needs manage assignments for its Employee.
-     */
     public function update(Employee $actor, Assignment $assignment): bool
     {
         return $this->create($actor, $assignment->employee);
     }
 
-    /**
-     * Deleting an Assignment needs manage assignments for its Employee, as
-     * changing it does. Whether it can be deleted at all is the Assignment's
-     * own rule (Assignment::canBeDeleted()), refused with a reason.
-     */
+    /** Whether it can be deleted at all is Assignment::canBeDeleted(), refused with a reason. */
     public function delete(Employee $actor, Assignment $assignment): bool
     {
         return $this->update($actor, $assignment);
     }
 
-    /**
-     * Seeing the Pay on an Employee's Assignments needs view pay for them,
-     * or manage pay, since managing Pay means seeing it.
-     */
+    /** Managing Pay means seeing it. */
     public function viewPay(Employee $actor, Employee $employee): bool
     {
         return $actor->can(Permission::ViewPay->value, $employee)
             || $this->managePay($actor, $employee);
     }
 
-    /**
-     * Adding and removing Pay on an Employee's Assignments needs manage pay
-     * for them.
-     */
     public function managePay(Employee $actor, Employee $employee): bool
     {
         return $actor->can(Permission::ManagePay->value, $employee);
     }
 
-    /**
-     * Changing one Assignment's Pay needs manage pay for its Employee.
-     */
     public function managePayOn(Employee $actor, Assignment $assignment): bool
     {
         return $this->managePay($actor, $assignment->employee);

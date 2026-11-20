@@ -10,14 +10,9 @@ import SubmitButton from '@/components/SubmitButton.vue';
 import { Input } from '@/components/ui/input';
 import type { RoleCandidate, RoleRecord } from '@/types';
 
-/**
- * The people holding a Role, below its editor: searchable, each linked to
- * their page, with Remove, and "Add people" above them. Adding and
- * removing save at once, keeping any unsaved changes to the Role above.
- */
+/** Adding and removing save at once, keeping any unsaved changes to the Role above. */
 const props = defineProps<{
     role: RoleRecord;
-    /** Every Employee who can be given a Role, holding this one or not. */
     employees: RoleCandidate[];
 }>();
 

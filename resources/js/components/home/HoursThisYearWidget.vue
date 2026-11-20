@@ -9,12 +9,6 @@ import { formatHours } from '@/lib/work-entries';
 import { index as workEntries } from '@/routes/work-entries';
 import type { HoursThisYear } from '@/types';
 
-/**
- * The signed-in Employee's hours this year: the year's total by the title
- * and a HoursBarChart of a bar per month, this month (the last) in
- * `primary`, each opening My Work Entries on its month. With no hours yet
- * this year, it says so instead.
- */
 const props = defineProps<{
     hoursThisYear: HoursThisYear;
 }>();

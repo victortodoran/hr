@@ -13,11 +13,7 @@ use Illuminate\Support\Carbon;
  */
 class PayEntryFactory extends Factory
 {
-    /**
-     * Fixed Pay taking effect when the Assignment starts.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -28,9 +24,6 @@ class PayEntryFactory extends Factory
         ];
     }
 
-    /**
-     * Hourly Pay instead of Fixed Pay.
-     */
     public function hourly(): static
     {
         return $this->state(fn (array $attributes) => [

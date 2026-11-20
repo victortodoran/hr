@@ -30,19 +30,10 @@ defineOptions({
     },
 });
 
-/**
- * The company's Projects (rule L11), the Internal Project pinned first with
- * an "Internal Project" badge. New Project, the one primary, opens its sheet over
- * the page; the sheet's own URL, `projects/create`, renders this page with
- * `creating` set (L14). Delete is in each row's ⋯ menu and confirms (K2,
- * X3, X6); the Internal Project has none.
- */
 const props = defineProps<{
     projects: Paginated<ProjectRecord>;
     search: string;
-    /** Whether the New Project sheet is open. */
     creating?: boolean;
-    /** The Clients a Project can be for, sent with the sheet. */
     clients?: Choice[];
 }>();
 
@@ -69,7 +60,6 @@ const columns = computed<TableColumn[]>(() => [
         : []),
 ]);
 
-/** The list's search, kept on the way to the New Project sheet and back. */
 const searchQuery = computed(() =>
     props.search === '' ? {} : { search: props.search },
 );
@@ -79,7 +69,6 @@ const { open: sheetOpen, setOpen: setSheetOpen } = useOverlayRoute(
     () => index({ query: searchQuery.value }).url,
 );
 
-/** The Project the Delete dialog asks about. */
 const deleting = ref<ProjectRecord | null>(null);
 const deleteOpen = ref(false);
 

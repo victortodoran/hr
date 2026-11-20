@@ -13,26 +13,16 @@ import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { outcomes } from '@/lib/outcomes';
 import type { Outcome } from '@/types';
 
-/**
- * A Goal's Outcome as a plain Select (rule S11: a rating, not a state, so
- * no badge colour) under a visible label, showing "—" until one is given.
- * Picking one gives, changes or clears it ("—") straight away, with a tick
- * once saved.
- */
+/** A plain Select, not a badge: an Outcome is an assessment, not a state (S11). */
 const props = defineProps<{
-    /** The Outcome given so far, if any. */
     outcome: Outcome | null;
     performanceEvaluationId: number;
     goalId: number;
-    /** The field's id, unique on the page. */
     id: string;
-    /** The visible label, such as "Outcome (hidden from Cara until Completed)". */
     label: string;
-    /** Names the field apart from others like it on the page, such as "Outcome of Lead the API". */
     accessibleName?: string;
 }>();
 
-/** The dropdown's choice for none, which clears it. */
 const notGiven = 'not-given';
 
 const { chosen, saving, justSaved, save } = useSaveOnPick<Outcome | null>({

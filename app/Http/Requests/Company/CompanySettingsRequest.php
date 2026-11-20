@@ -8,15 +8,8 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
-/**
- * The company's name and currency. Every Pay and Travel Expense is
- * recorded in the currency (ADR 0003), so it can't change once any exists.
- */
 class CompanySettingsRequest extends FormRequest
 {
-    /**
-     * Take the currency code in capitals, however it was typed.
-     */
     protected function prepareForValidation(): void
     {
         if (is_string($this->input('currency'))) {
@@ -36,8 +29,7 @@ class CompanySettingsRequest extends FormRequest
     }
 
     /**
-     * Once the currency is valid on its own, refuse to change it if any Pay
-     * has been recorded in the current one.
+     * Every Pay and Travel Expense is recorded in the currency (ADR 0003), so it can't change once any exists.
      *
      * @return array<int, callable(Validator): void>
      */

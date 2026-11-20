@@ -8,17 +8,9 @@ use App\Support\Period;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 
-/**
- * Every reusable query on Travel Requests.
- *
- * @extends ModelBuilder<TravelRequest>
- */
+/** @extends ModelBuilder<TravelRequest> */
 class TravelRequestBuilder extends ModelBuilder
 {
-    /**
-     * Limit the query to Pending Travel Requests, which wait for the
-     * Employee's Manager to approve or decline them.
-     */
     public function pending(): static
     {
         return $this->scoped(function (): void {
@@ -26,10 +18,6 @@ class TravelRequestBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Declined Travel Requests, which the Employee's
-     * Manager refused with a reason.
-     */
     public function declined(): static
     {
         return $this->scoped(function (): void {
@@ -37,10 +25,6 @@ class TravelRequestBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Travel Requests that still stand: Pending or
-     * Approved.
-     */
     public function standing(): static
     {
         return $this->scoped(function (): void {
@@ -48,11 +32,7 @@ class TravelRequestBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Travel Requests their Employee may still cancel:
-     * standing, and starting after today. The query form of
-     * TravelRequest::isCancellable(), so the two change together.
-     */
+    /** The query form of TravelRequest::isCancellable(), so the two change together. */
     public function cancellable(): static
     {
         return $this->scoped(function (): void {
@@ -60,10 +40,6 @@ class TravelRequestBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Travel Requests with at least one date from the
-     * first to the last date given.
-     */
     public function overlapping(CarbonInterface $first, CarbonInterface $last): static
     {
         return $this->scoped(function () use ($first, $last): void {
@@ -71,13 +47,7 @@ class TravelRequestBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the filters given, each optional: an Employee and
-     * a Project, by ID, a Period they have at least one day in, and a
-     * state.
-     *
-     * @param  array{employee?: int|null, project?: int|null, period?: Period|null, state?: string|null}  $filters
-     */
+    /** @param  array{employee?: int|null, project?: int|null, period?: Period|null, state?: string|null}  $filters */
     public function filteredBy(array $filters): static
     {
         return $this->scoped(function () use ($filters): void {
@@ -90,9 +60,6 @@ class TravelRequestBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Travel Requests of the given Employees.
-     */
     public function ofEmployees(EmployeeBuilder $employees): static
     {
         return $this->scoped(function () use ($employees): void {

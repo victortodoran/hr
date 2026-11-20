@@ -39,24 +39,10 @@ use Illuminate\Support\Str;
 
 /**
  * A small demo company with at least one of everything, so every flow can be
- * tried by hand. It installs the company the way hr:install does, then adds
- * Employees, Roles, Clients, Projects, Assignments and Pay through the same
- * actions the app uses, then fills the year so far, from 1 January to
- * today: Work Entries on every working day for everyone with a Manager,
- * Paid Days (none for Ivan), Time Off through the year, Travel Requests
- * for most Employees, all in every state, a year of Ben's travel among
- * them, Travel Expenses with small generated PDF
- * receipts, replacing any an earlier demo left behind, and this year's
- * Open Performance Evaluations with Goals for Ben, Cara, Lia and Ivan,
- * their Progress changed over the last two months, a few of them At Risk,
- * and short threads of Comments from both sides on a few,
- * Completed ones for last year for Ben, Cara and Ivan,
- * leaving Hana's and Finn's for Ana to start. Dates are relative
- * to today, so the Future and Former Employees stay that way, and the last two weeks of Work Entries and some of the Time Off
- * still to come are always Pending, waiting for each Employee's Manager (Ana, Ben
- * or Hana) to decide them. Everyone except the Future Employee can sign in
- * with the password "password"; the Future Employee still has an invitation
- * waiting. Invitations are not emailed, so the seeder prints a fresh link to it.
+ * tried by hand. Dates are relative to today, so the Future and Former
+ * Employees stay that way and the last two weeks always wait for a Manager.
+ * Everyone except Dan signs in with the password "password"; invitations are
+ * not emailed, so the seeder prints a fresh link to Dan's.
  *
  *   Ana (no Manager, Admin)
  *   ├── Ben (Manager)
@@ -82,21 +68,12 @@ class DemoSeeder extends Seeder
 {
     private const string PASSWORD = 'password';
 
-    /**
-     * Days nobody records work on, as month and day.
-     *
-     * @var list<string>
-     */
+    /** @var list<string> month-day */
     private const array PUBLIC_HOLIDAYS = ['01-01', '01-02', '05-01', '08-15', '11-30', '12-01', '12-25', '12-26'];
 
-    /**
-     * How many minutes a day's work strays from the usual, taken in turn.
-     *
-     * @var list<int>
-     */
+    /** @var list<int> minutes off the usual day, taken in turn */
     private const array DAILY_VARIATION = [0, 30, -30, 0, 60, 15, -60, 30, 0, -15, 45, -30];
 
-    /** Why a Manager declines a client dinner on a Travel Expense. */
     private const string CLIENT_DINNER_DECLINED = 'Client dinners go through the company card. Could you add only your own meal?';
 
     public function __construct(
@@ -108,9 +85,6 @@ class DemoSeeder extends Seeder
         private AssessPerformanceEvaluation $assessPerformanceEvaluation,
     ) {}
 
-    /**
-     * Seed the demo company, unless a company is already installed.
-     */
     public function run(): void
     {
         if ($this->installCompany->isInstalled()) {
@@ -271,10 +245,7 @@ class DemoSeeder extends Seeder
         $this->command?->info('Dan\'s invitation: '.$this->invitationLink($dan));
     }
 
-    /**
-     * A fresh link to the Employee's invitation, since the token created
-     * when they were added is stored hashed. It replaces that one.
-     */
+    /** A fresh link, since the token created when they were added is stored hashed; it replaces that one. */
     private function invitationLink(Employee $employee): string
     {
         return route('invitation.show', [
@@ -283,10 +254,6 @@ class DemoSeeder extends Seeder
         ]);
     }
 
-    /**
-     * Add an Employee the way the app does, then, unless they are still to
-     * accept their invitation, let them sign in with the demo password.
-     */
     private function add(Employee $actor, string $name, string $jobTitle, Department $department, Employee $manager, CarbonInterface $startDate, ?CarbonInterface $leavingDate = null, bool $canSignIn = true): Employee
     {
         $employee = $this->addEmployee->add($actor, [
@@ -306,10 +273,6 @@ class DemoSeeder extends Seeder
         return $employee;
     }
 
-    /**
-     * Act as if the Employee accepted their invitation and chose the demo
-     * password.
-     */
     private function letSignIn(Employee $employee): void
     {
         $employee->forceFill(['password' => self::PASSWORD, 'email_verified_at' => now()])->save();
@@ -325,12 +288,7 @@ class DemoSeeder extends Seeder
         ]);
     }
 
-    /**
-     * Set the Employee's internal Capacity, and give their Internal
-     * Assignment its Pay history.
-     *
-     * @param  list<array{0: string, 1: int, 2: CarbonInterface|null}>  $pay  Kind, amount in cents, and the day it takes effect (null for the first day)
-     */
+    /** @param  list<array{0: string, 1: int, 2: CarbonInterface|null}>  $pay  Kind, amount in cents, and the day it takes effect (null for the first day) */
     private function internal(Employee $employee, int $capacity, array $pay): void
     {
         $internal = $employee->internalAssignment()->sole();
@@ -339,11 +297,7 @@ class DemoSeeder extends Seeder
         $this->pay($internal, $pay);
     }
 
-    /**
-     * Put the Employee on a Project, with a Pay history.
-     *
-     * @param  list<array{0: string, 1: int, 2: CarbonInterface|null}>  $pay  Kind, amount in cents, and the day it takes effect (null for the first day)
-     */
+    /** @param  list<array{0: string, 1: int, 2: CarbonInterface|null}>  $pay  Kind, amount in cents, and the day it takes effect (null for the first day) */
     private function assign(Employee $employee, Project $project, string $jobTitle, int $capacity, CarbonInterface $startDate, ?CarbonInterface $endDate, array $pay): Assignment
     {
         $assignment = $employee->assignments()->create([
@@ -359,13 +313,7 @@ class DemoSeeder extends Seeder
         return $assignment;
     }
 
-    /**
-     * The year's Work Entries for everyone who records them, which is
-     * everyone with a Manager who has started: hours on each of their
-     * Assignments by its Capacity, what they did changing as the year
-     * goes on. Ana has no Manager, so she records none, and Ben records
-     * only his Relaunch hours.
-     */
+    /** Only Employees with a Manager record work, so Ana records none. */
     private function yearOfWork(Employee $ana, Employee $ben, Employee $hana, Employee $finn, Employee $eve, Employee $lia, Employee $ivan, Assignment $caraOnRelaunch, Assignment $caraOnAudit, Assignment $benOnRelaunch, Assignment $eveOnAudit, Assignment $liaOnRelaunch, Assignment $ivanOnWebsite): void
     {
         $auditEnded = $caraOnAudit->end_date?->toImmutable() ?? today();
@@ -433,16 +381,7 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Record Work Entries on the Assignment for every working day from the
-     * start of the year, or four weeks back if that is earlier, or from the
-     * given day, to today, or the given day,
-     * within the Assignment's and the Employee's dates. Working days are
-     * weekdays that aren't public holidays or the Employee's Pending or
-     * Approved Time Off. Each day takes around the given minutes, give or
-     * take an hour, and one of the descriptions of its phase: the
-     * phases split the days evenly, in order. This week and last are
-     * Pending; earlier weeks were Approved the following Monday, by the
-     * approver, or by whoever the closure names for that time.
+     * This week and last stay Pending so each Manager always has some to decide.
      *
      * @param  list<list<string>>  $phases
      * @param  Employee|Closure(CarbonInterface): Employee  $approver
@@ -486,13 +425,7 @@ class DemoSeeder extends Seeder
         }
     }
 
-    /**
-     * Time Off through the year so far, past the last few weeks: a week
-     * or two in summer for most, a long weekend here and there, some
-     * Unpaid days, one Declined and one Cancelled. Anything that would
-     * start before this year is left out. With the Time Off still to come,
-     * nobody uses more Paid Days than they have.
-     */
+    /** With the Time Off still to come, nobody uses more Paid Days than they have. */
     private function yearOfTimeOff(CarbonInterface $thisMonday, Employee $ana, Employee $ben, Employee $hana, Employee $finn, Employee $cara, Employee $eve, Employee $lia, Employee $ivan): void
     {
         $approved = TimeOffState::Approved;
@@ -538,15 +471,7 @@ class DemoSeeder extends Seeder
         }
     }
 
-    /**
-     * Travel through the year so far for everyone besides Ben, whose
-     * year of travel has its own method: Client visits on Relaunch, the
-     * Data Audit and the Website Revamp, and conferences, courses and a
-     * board meeting on Internal Assignments, with their Travel Expenses,
-     * almost all of them Approved by now. Anything that would start
-     * before this year is left out. None shares a day with the
-     * traveller's Time Off.
-     */
+    /** None shares a day with the traveller's Time Off. */
     private function yearOfTravel(CarbonInterface $thisMonday, Employee $ana, Employee $ben, Employee $hana, Employee $finn, Employee $eve, Employee $lia, Employee $ivan, Assignment $caraOnRelaunch, Assignment $caraOnAudit, Assignment $eveOnAudit, Assignment $liaOnRelaunch, Assignment $ivanOnWebsite): void
     {
         $approvedTrip = TravelRequestState::Approved;
@@ -633,31 +558,18 @@ class DemoSeeder extends Seeder
         }
     }
 
-    /**
-     * When Time Off or a Travel Request starting on the day was asked for:
-     * two weeks before, on a weekday, or two days ago if that is earlier.
-     */
     private function requestedAt(CarbonInterface $first): CarbonInterface
     {
         return $this->notAfter($first->subDays(14)->setTime(9, 0), daysAgo: 2);
     }
 
-    /**
-     * When Time Off or a Travel Request starting on the day was decided:
-     * the working day after it was asked for, or as it was asked for when
-     * nobody decided it, since an Employee with no Manager has theirs
-     * Approved straight away.
-     */
+    /** With no decider it is as asked for, since an Employee with no Manager has theirs Approved straight away. */
     private function decidedAt(CarbonInterface $first, ?Employee $decider): CarbonInterface
     {
         return $decider === null ? $this->requestedAt($first) : $this->notAfter($first->subDays(13)->setTime(11, 0));
     }
 
-    /**
-     * The moment, moved off a weekend to the Monday after, or the given
-     * number of days ago if that is earlier, so a demo decision lands on
-     * a working day and never in the future.
-     */
+    /** So a demo decision lands on a working day and never in the future. */
     private function notAfter(CarbonInterface $moment, int $daysAgo = 1): CarbonInterface
     {
         $onAWeekday = $moment->isWeekend() ? $moment->next(CarbonInterface::MONDAY)->setTimeFrom($moment) : $moment;
@@ -665,10 +577,6 @@ class DemoSeeder extends Seeder
         return $onAWeekday->min(now()->subDays($daysAgo));
     }
 
-    /**
-     * Decline the first Pending Work Entry on the Assignment on or after
-     * the date, as the decliner, with the reason.
-     */
     private function decline(Assignment $assignment, CarbonInterface $date, Employee $decliner, string $reason): void
     {
         $workEntry = $assignment->workEntries()->pending()->whereDate('date', '>=', $date)->orderBy('date')->firstOrFail();
@@ -681,22 +589,12 @@ class DemoSeeder extends Seeder
         ])->save();
     }
 
-    /**
-     * Give the Employee Paid Days, which every year gets, past ones included.
-     */
     private function paidDays(Employee $employee, int $days): void
     {
         $employee->paid_days = $days;
         $employee->save();
     }
 
-    /**
-     * Add Time Off from a first date to the given number of days after it,
-     * Pending unless given another state. Approved and Declined Time Off is
-     * decided by the decider, or by nobody for an Employee with no Manager.
-     * It was requested two weeks before its first day and decided the day
-     * after, or cancelled three days before it, never later than recently.
-     */
     private function timeOff(Employee $employee, CarbonInterface $first, int $daysAfter, bool $isPaid, TimeOffState $state = TimeOffState::Pending, ?Employee $decider = null, ?string $declineReason = null): void
     {
         $timeOff = $employee->timeOff()->make([
@@ -715,15 +613,7 @@ class DemoSeeder extends Seeder
         ])->save();
     }
 
-    /**
-     * A year of Ben's travel, decided by Ana, his Manager, so his Travel
-     * page looks the way it would after months of use: a dozen trips
-     * behind him and a handful ahead, on Relaunch and his Internal
-     * Assignment, in every state, with Travel Expenses in every state on
-     * those that take them. The older ones are Approved; the latest still
-     * wait for her. None shares a day with his Time Off, four weeks from
-     * this Monday.
-     */
+    /** A year of it, so his Travel page looks the way it would after months of use; none shares a day with his Time Off, four weeks from this Monday. */
     private function bensTravel(Assignment $relaunch, Assignment $internal, Employee $ana, CarbonInterface $thisMonday, CarbonInterface $today): void
     {
         $approvedTrip = TravelRequestState::Approved;
@@ -812,12 +702,7 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Create the Employee's Performance Evaluation for this year, Open, with
-     * the Goals given as title, description, the changes to their
-     * Progress, each as the Progress and who changed it, and optionally
-     * their Comments, each as who wrote it and what. The Goals were given
-     * up to two months ago, never before this year, and their changes and
-     * Comments are spread evenly from then to today.
+     * Each Goal: title, description, its Progress changes as [Progress, who changed it], and optionally its Comments as [author, text].
      *
      * @param  array<int, array{0: string, 1: string, 2: array<int, array{Progress, Employee}>, 3?: array<int, array{Employee, string}>}>  $goals
      */
@@ -848,9 +733,7 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Add the Employee's Performance Evaluation for last year, Completed,
-     * with the Goals given as title, description and Outcome, and the
-     * Outcome and summary of the whole.
+     * Each Goal: title, description, Outcome.
      *
      * @param  array<int, array{string, string, Outcome}>  $goals
      */
@@ -866,15 +749,7 @@ class DemoSeeder extends Seeder
         $this->assessPerformanceEvaluation->complete($evaluation, $outcome);
     }
 
-    /**
-     * Add a Travel Request on the Assignment from a first date to the given
-     * number of days after it, Pending unless given another state. Approved
-     * and Declined ones are decided by the decider, or by nobody for an
-     * Employee with no Manager; a Cancelled one given a decider was Approved
-     * by them first. It was made two weeks before its first day and
-     * decided the day after, or cancelled three days before it, never
-     * later than recently.
-     */
+    /** A Cancelled one given a decider was Approved by them first. */
     private function travelRequest(Assignment $assignment, string $destination, CarbonInterface $first, int $daysAfter, string $purpose, TravelRequestState $state = TravelRequestState::Pending, ?Employee $decider = null, ?string $declineReason = null): TravelRequest
     {
         $travelRequest = $assignment->employee->travelRequests()->make([
@@ -897,14 +772,7 @@ class DemoSeeder extends Seeder
         return $travelRequest;
     }
 
-    /**
-     * Add a Travel Expense of the given amount in cents on the Travel
-     * Request, with a one-page PDF receipt naming it, Pending unless given
-     * another state. Approved ones are approved by the decider, or by
-     * nobody for an Employee with no Manager; Declined ones are declined by
-     * the decider with the reason, a few days after the trip, or after
-     * it was paid if later, but never later than recently.
-     */
+    /** The amount is in cents. */
     private function travelExpense(TravelRequest $travelRequest, CarbonInterface $paidOn, TravelExpenseCategory $category, int $amount, string $description, TravelExpenseState $state = TravelExpenseState::Pending, ?Employee $decider = null, ?string $declineReason = null): void
     {
         $receiptPath = TravelExpense::RECEIPT_FOLDER.'/'.Str::uuid()->toString().'.pdf';
@@ -930,9 +798,6 @@ class DemoSeeder extends Seeder
         ])->save();
     }
 
-    /**
-     * A minimal one-page PDF showing one line of text.
-     */
     private function receiptPdf(string $line): string
     {
         $text = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $line);

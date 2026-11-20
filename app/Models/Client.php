@@ -12,8 +12,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * An outside organisation the company does work for, through its Projects.
- *
  * @property int $id
  * @property string $name
  * @property Carbon|null $created_at

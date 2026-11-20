@@ -18,20 +18,9 @@ use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/**
- * The week of Work Entries for one Employee, and recording, correcting and
- * deleting them.
- */
 class WorkEntryController extends Controller
 {
-    /**
-     * One Employee's Work Entries for one Period, a week from Monday to
-     * Sunday, a month or a custom period, day by day, with totals for each
-     * day, each Assignment and the Period. Opens on the viewer's own current
-     * week; another Employee's is reached only by a link, such as from the
-     * Work Entries page. An Employee who doesn't exist is refused just like
-     * one outside the viewer's Scope, so the page never reveals who exists.
-     */
+    /** An Employee who doesn't exist is refused like one outside the viewer's Scope, so the page never reveals who exists. */
     public function index(#[CurrentUser] Employee $actor, WorkEntryPeriodRequest $request): Response
     {
         $employee = $request->employee($actor);
@@ -48,9 +37,6 @@ class WorkEntryController extends Controller
         ));
     }
 
-    /**
-     * Record hours for the Employee.
-     */
     public function store(WorkEntryRequest $request, Employee $employee): RedirectResponse
     {
         $workEntry = WorkEntry::query()->create($request->workEntry());
@@ -60,11 +46,6 @@ class WorkEntryController extends Controller
         return $this->backTo($request, $employee, $workEntry);
     }
 
-    /**
-     * Correct a Work Entry: its Assignment, date, hours or description. A
-     * Declined one goes back to Pending, without who declined it or why.
-     * One approved since the policy check is refused, never changed.
-     */
     public function update(WorkEntryRequest $request, WorkEntry $workEntry, CorrectWorkEntry $correctWorkEntry): RedirectResponse
     {
         $changed = $correctWorkEntry->correct($workEntry, $request->workEntry());
@@ -75,9 +56,6 @@ class WorkEntryController extends Controller
         return $this->backTo($request, $request->employee(), $workEntry);
     }
 
-    /**
-     * Delete a Work Entry recorded by mistake.
-     */
     public function destroy(Request $request, WorkEntry $workEntry): RedirectResponse
     {
         $workEntry->delete();
@@ -87,10 +65,6 @@ class WorkEntryController extends Controller
         return $this->backTo($request, $workEntry->employee, $workEntry);
     }
 
-    /**
-     * Back to the tab and Period the page sent in its query, holding the
-     * Work Entry's day (see WorkEntriesTab::backTo).
-     */
     private function backTo(Request $request, Employee $employee, WorkEntry $workEntry): RedirectResponse
     {
         return to_route('work-entries.index', ['employee' => $employee->id, ...WorkEntriesTab::backTo($request->query(), $workEntry->date)]);

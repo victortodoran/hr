@@ -3,12 +3,6 @@ import { Link } from '@inertiajs/vue3';
 import AppMark from '@/components/AppMark.vue';
 import { home } from '@/routes';
 
-/**
- * The auth card (rule L17): a centred card, at most 400px wide, on the
- * `bg-surface` page, with the AppMark, the title, a one-line description,
- * then the page's form and the one secondary link under its button. On a
- * phone the card fills the width with a 16px gutter.
- */
 defineProps<{
     title?: string;
     description?: string;

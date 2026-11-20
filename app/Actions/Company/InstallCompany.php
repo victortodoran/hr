@@ -12,27 +12,15 @@ use App\Models\Project;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-/**
- * Sets up a brand-new installation: the company, its Internal Project, its
- * first Department, the Admin Role and the other starter Roles, and the
- * first Employee, with no Manager and with Admin.
- */
 class InstallCompany
 {
     public function __construct(private ChangeAccess $changeAccess) {}
 
-    /**
-     * Whether the app has already been installed.
-     */
     public function isInstalled(): bool
     {
         return CompanySettings::query()->exists() || Employee::query()->exists();
     }
 
-    /**
-     * Install the company and return its first Employee, who has been sent
-     * an invitation to set their password.
-     */
     public function install(string $company, string $currency, string $department, string $name, string $email): Employee
     {
         $employee = DB::transaction(function () use ($company, $currency, $department, $name, $email): Employee {
@@ -63,14 +51,6 @@ class InstallCompany
         return $employee;
     }
 
-    /**
-     * Create Manager and Employee as ordinary, editable Roles, logged as
-     * created by the first Employee, the one installing the app. Manager
-     * sees everything about their Reports, manages their Assignments and
-     * reopens their Work Entries and Travel Expenses, but changes neither
-     * their Pay nor their Paid Days; Employee sees everything about
-     * themselves and records their own Work Entries.
-     */
     private function createStarterRoles(Employee $installer): void
     {
         $starters = [

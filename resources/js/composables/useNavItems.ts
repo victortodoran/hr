@@ -31,12 +31,7 @@ import { index as workEntries } from '@/routes/work-entries';
 import { index as workEntryList } from '@/routes/work-entry-list';
 import type { NavItem } from '@/types';
 
-/**
- * The sidebar's destinations for the signed-in Employee, in its three
- * groups, each shown only when they may open it (rule L21). The sidebar
- * lists them and the command menu offers them as its pages, so both always
- * agree on what the Employee may open.
- */
+/** The sidebar and the command menu both read these, so they always agree on what the Employee may open. */
 export function useNavItems(): {
     startItems: ComputedRef<NavItem[]>;
     areaItems: ComputedRef<NavItem[]>;
@@ -62,11 +57,6 @@ export function useNavItems(): {
             : []),
     ]);
 
-    /**
-     * One entry per area (rule L18). Each opens the Employee's own page when
-     * they have one, else the list across Employees; the ScopeSwitch on the
-     * page moves between the two (rule L19).
-     */
     const areaItems = computed<NavItem[]>(() => {
         const work: NavItem[] = auth.value.canSeeWorkEntries
             ? [

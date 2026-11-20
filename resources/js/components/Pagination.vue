@@ -3,10 +3,6 @@ import { Link } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import type { Paginated } from '@/types';
 
-/**
- * Previous and Next links for a paginated list. Lists whose page holds state
- * across pages, such as ticked rows, keep it with `preserveState`.
- */
 defineProps<{
     page: Paginated<unknown>;
     preserveState?: boolean;

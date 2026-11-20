@@ -16,25 +16,10 @@ use App\Support\Period;
 use App\Support\TravelExpenseSpreadsheet;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/**
- * The Travel Requests page as the props it renders: the Travel Requests of
- * the Employees the viewer may see travel of, one Period at a time, for
- * every Employee or one, each with a summary of its Travel Expenses.
- */
 final class TravelRequestListPage
 {
     /**
-     * The Travel Requests matching the filters, those with a day in the
-     * Period, in every state unless one is chosen, by first date, with the
-     * total of their Travel Expenses that aren't Declined in the company
-     * currency. The Employees to choose from are those the viewer may see
-     * with Travel Requests in the Period in the chosen state, by name with
-     * how many, and the one asked for when the viewer may see them, even
-     * with none, as an Employee's page links here for them; one not among
-     * them falls back to every Employee. The
-     * Projects to choose from are those the chosen Employee, or anyone, has
-     * Travel Requests on in the Period; one not among them falls back to
-     * any Project.
+     * The Employee asked for is offered even with no Travel Requests, as an Employee's page links here for them.
      *
      * @param  array{period: Period, employee: int|'all', project: int|null, state: string|null}  $requested
      * @return array<string, mixed>
@@ -103,10 +88,7 @@ final class TravelRequestListPage
     }
 
     /**
-     * The Approved Travel Expenses paid in the Period, of the Employees the
-     * viewer may see travel of, narrowed to the Employee and Project when
-     * one is given, as a CSV or Excel file named after the Period, by date
-     * paid. An Employee the viewer may not see leaves the file empty.
+     * An Employee the viewer may not see leaves the file empty.
      *
      * @param  array{period: Period, employee: int|'all', project: int|null}  $filters
      */

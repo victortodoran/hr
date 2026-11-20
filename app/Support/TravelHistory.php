@@ -10,21 +10,10 @@ use App\Models\Employee;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 
-/**
- * An Employee's Travel Requests as the Travel page lists them, split into
- * Upcoming and Past, and one Travel Request in full, with its Travel
- * Expenses, as its own page shows it.
- */
 final class TravelHistory
 {
     /**
-     * The Employee's Travel Requests as summary rows. Upcoming holds those
-     * Pending or Approved whose last date is today or later, soonest first;
-     * Past holds every other, newest first, Declined and Cancelled ones with
-     * dates still ahead included. Each row says whether it takes Travel
-     * Expenses and, when it does, the total of those entered that aren't
-     * Declined and the total of those Approved. It also carries how
-     * many are Declined.
+     * Past also holds Declined and Cancelled Travel Requests whose dates are still ahead.
      *
      * @return array{upcoming: array<int, array{id: int, destination: string, first_date: string, last_date: string, project: string, client: string|null, state: string, takes_expenses: bool, entered_total: string|null, approved_total: string|null, declined_expenses: int}>, past: array<int, array{id: int, destination: string, first_date: string, last_date: string, project: string, client: string|null, state: string, takes_expenses: bool, entered_total: string|null, approved_total: string|null, declined_expenses: int}>}
      */
@@ -61,16 +50,7 @@ final class TravelHistory
         ];
     }
 
-    /**
-     * One Travel Request in full: the Assignment it is for, the days it
-     * counts, who decided it and why it was declined, and whether the actor
-     * may cancel it or decide it; and, when it takes Travel Expenses, those
-     * in the order they were paid, with the total of those not Declined, and
-     * whether the actor may record more and change, delete, decide or reopen
-     * each.
-     *
-     * @return array{id: int, project: string, client: string|null, destination: string, first_date: string, last_date: string, days: int, purpose: string, state: string, decided_by: string|null, decline_reason: string|null, can_cancel: bool, can_decide: bool, expenses: array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, declined_by: string|null, receipt_is_image: bool, can_change: bool, can_decide: bool, can_reopen: bool}>, total: string, approved_total: string, pending_total: string, declined_total: string, can_create: bool}|null}
-     */
+    /** @return array{id: int, project: string, client: string|null, destination: string, first_date: string, last_date: string, days: int, purpose: string, state: string, decided_by: string|null, decline_reason: string|null, can_cancel: bool, can_decide: bool, expenses: array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, declined_by: string|null, receipt_is_image: bool, can_change: bool, can_decide: bool, can_reopen: bool}>, total: string, approved_total: string, pending_total: string, declined_total: string, can_create: bool}|null} */
     public static function detail(TravelRequest $travelRequest, Currency $currency, Employee $actor): array
     {
         $travelRequest->loadMissing(['assignment.project.client:id,name', 'decider:id,name']); // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
@@ -94,15 +74,7 @@ final class TravelHistory
     }
 
     /**
-     * The Travel Expenses of a Travel Request that takes them, in the order
-     * they were paid, each with who declined it and whether its receipt is
-     * a picture; the totals, in the company currency, of those entered and
-     * not Declined, and of those Approved, Pending and Declined; and whether
-     * the actor may change each, decide it, reopen it and record more.
-     * Deciding is for a Pending one of an Employee the actor effectively
-     * manages, as TravelExpensePolicy::decide has it. Reopening is for an
-     * Approved one of an Employee the actor's reopen Scope covers, never
-     * their own.
+     * Deciding and reopening are worked out once per Travel Request, as TravelExpensePolicy::decide has it, instead of per row.
      *
      * @return array{items: array<int, array{id: int, paid_on: string, category: string, description: string, amount: string, state: string, decline_reason: string|null, declined_by: string|null, receipt_is_image: bool, can_change: bool, can_decide: bool, can_reopen: bool}>, total: string, approved_total: string, pending_total: string, declined_total: string, can_create: bool}
      */

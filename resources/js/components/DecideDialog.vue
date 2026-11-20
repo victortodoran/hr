@@ -18,35 +18,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { RouteDefinition } from '@/wayfinder';
 
-/**
- * Declines one or more records of one kind, asking for the one reason the
- * Employee will read on each (rule X5): the selected Work Entries or
- * Travel Expenses on the Approvals page, one of them from its row or
- * RecordSheet, or one Time Off or Travel Request by its URL. It says
- * exactly what is declined, and its confirm button repeats the verb in
- * `primary`, not red, as declining isn't deleting (C7, F5). On a phone it
- * opens as a bottom sheet.
- */
+/** The confirm button is `primary`, not red, as declining isn't deleting (C7, F5). */
 const props = defineProps<{
-    /** The selected rows; left out when the action declines one thing by its URL. */
     ids?: number[];
-    /** Where the decline is sent. */
     action: RouteDefinition<'post'>;
-    /** What is declined, such as "Work Entry" and "Work Entries". */
     noun: { one: string; many: string };
-    /** Exactly what is declined, such as "Cara Lane · Tue, Nov 10 · 5 h on Relaunch". */
     summary?: string;
-    /** What declining means for the Employee, shown under the reason. */
     description: string;
     placeholder: string;
-    /** The trigger button's size, smaller in a table row. */
     size?: 'default' | 'sm';
-    /** The trigger button's accessible name, telling one row's from another's. */
     accessibleName?: string;
 }>();
 
 defineSlots<{
-    /** Replaces the "Decline…" button, such as with a row's icon button. */
     trigger?: () => unknown;
 }>();
 
@@ -62,7 +46,6 @@ form.transform((data) =>
     props.ids === undefined ? { decline_reason: data.decline_reason } : data,
 );
 
-/** "2 Work Entries", or the noun alone for one record. */
 function counted(): string {
     const count = props.ids?.length ?? 1;
 

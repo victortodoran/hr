@@ -13,22 +13,14 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import type { PaidDaysLeftInYear, TimeOffPreview } from '@/types';
 
-/**
- * Requesting Time Off in a sheet over the Time Off page (rule L14): its
- * dates, weekdays only, and its kind, Paid or Unpaid, with the Paid Days
- * left in each year the dates fall in once it's requested, counted live.
- * Once requested, the page shows it as Pending and the sheet closes.
- */
 const props = defineProps<{
-    /** The earliest first date, as YYYY-MM-DD. */
+    /** YYYY-MM-DD. */
     today: string;
-    /** This year's Paid Days left and, from October, next year's. */
     paidDaysLeft: PaidDaysLeftInYear[];
 }>();
 
 const open = defineModel<boolean>('open', { required: true });
 
-/** How long the dates and kind must stay unchanged before previewing them. */
 const PREVIEW_DELAY_MS = 300;
 
 const FORM_ID = 'request-time-off';
@@ -46,7 +38,7 @@ const form = useForm({
     is_paid: true,
 });
 
-/** The preview's query; Laravel reads Paid or Unpaid as 1 or 0. */
+/** Laravel reads Paid or Unpaid as 1 or 0. */
 const http = useHttp<
     { first_date: string; last_date: string; is_paid: number },
     TimeOffPreview
@@ -58,7 +50,6 @@ const http = useHttp<
 
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
 
-/** Starts each request blank. */
 watch(open, (isOpen) => {
     if (isOpen) {
         form.reset();
@@ -66,10 +57,7 @@ watch(open, (isOpen) => {
     }
 });
 
-/**
- * Preview the days the Time Off would take once both dates are chosen,
- * keeping only the answer to the latest dates and kind.
- */
+/** Keeps only the answer to the latest dates and kind. */
 async function loadPreview(): Promise<void> {
     http.cancel();
     http.first_date = form.first_date;
@@ -107,13 +95,6 @@ onBeforeUnmount(() => {
     http.cancel();
 });
 
-/**
- * Paid Days as people read them, such as "1 Paid Day" or "3 Paid Days".
- */
-/**
- * Whether the Paid Time Off asked for uses more Paid Days than are left in
- * some year, so the preview becomes an attention Callout (rule K12).
- */
 const isOverPaidDays = computed(
     () =>
         form.is_paid &&

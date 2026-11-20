@@ -12,17 +12,11 @@ use Illuminate\Support\Facades\Storage;
 use LogicException;
 use Throwable;
 
-/**
- * What recording, changing and deleting a Travel Expense share: the state
- * a recorded or changed one takes, keeping its receipt on the private
- * disk, and deleting one no Travel Expense points to any more.
- */
 trait WritesTravelExpenses
 {
     /**
-     * The state a recorded or changed Travel Expense takes: Pending for its
-     * Manager to decide, or Approved at once with nobody approving for an
-     * Employee with no Manager.
+     * An Employee with no Manager has nobody to approve, so theirs is Approved
+     * at once.
      *
      * @return array{state: TravelExpenseState, approved_at: CarbonInterface|null}
      */
@@ -33,10 +27,6 @@ trait WritesTravelExpenses
             : ['state' => TravelExpenseState::Pending, 'approved_at' => null];
     }
 
-    /**
-     * Keep a receipt on the private disk under a generated name, returning
-     * its path there.
-     */
     private function keep(UploadedFile $receipt): string
     {
         $path = $receipt->store(TravelExpense::RECEIPT_FOLDER, TravelExpense::RECEIPT_DISK);
@@ -45,9 +35,8 @@ trait WritesTravelExpenses
     }
 
     /**
-     * Run a database write for a receipt just kept, deleting that receipt
-     * again when the write throws, so no file is left that no Travel Expense
-     * points to.
+     * The receipt is deleted again when the write throws, so no file is left
+     * that no Travel Expense points to.
      *
      * @template TResult
      *
@@ -65,9 +54,6 @@ trait WritesTravelExpenses
         }
     }
 
-    /**
-     * Delete a receipt file no Travel Expense points to any more.
-     */
     private function discard(?string $path): void
     {
         if ($path !== null) {

@@ -2,13 +2,6 @@
 import { onUnmounted, watchEffect } from 'vue';
 import { usePageTitle } from '@/composables/usePageTitle';
 
-/**
- * A page's header (rule L3): an optional avatar or icon before the title in
- * the `lead` slot, the serif `<h1>`, an optional status badge after it, one sentence of description (or a meta line through the
- * description slot) and the page's actions on the right, at most one of
- * them `primary` (L4). On a phone it stacks, with the actions full-width
- * under the description (P3).
- */
 const props = defineProps<{
     title: string;
     description?: string;

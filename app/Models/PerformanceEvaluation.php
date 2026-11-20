@@ -16,10 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * The yearly look at how one Employee did over one calendar year, holding
- * the Goals their Manager gave them for it. An Employee has at most one per
- * year. It belongs to the Employee, not to a Manager, so a new Manager takes
- * over the same one (ADR 0008).
+ * It belongs to the Employee, not to a Manager, so a new Manager takes over the same one (ADR 0008).
  *
  * @property int $id
  * @property int $employee_id
@@ -42,31 +39,18 @@ class PerformanceEvaluation extends Model
     /** @use HasFactory<PerformanceEvaluationFactory> */
     use HasFactory;
 
-    /**
-     * Every Performance Evaluation starts Open.
-     *
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     protected $attributes = [
         'state' => 'open', // @pest-mutate-ignore (the column defaults to open too, so stored Performance Evaluations look the same)
     ];
 
-    /**
-     * The years a Manager may create a Performance Evaluation for: the
-     * current one and the next.
-     *
-     * @return array{int, int}
-     */
+    /** @return array{int, int} */
     public static function creatableYears(): array
     {
         return [today()->year, today()->year + 1];
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -85,35 +69,24 @@ class PerformanceEvaluation extends Model
         return $this->belongsTo(Employee::class);
     }
 
-    /**
-     * Whether its Manager has Completed it.
-     */
     public function isCompleted(): bool
     {
         return $this->state === PerformanceEvaluationState::Completed;
     }
 
-    /**
-     * The Outcome of the whole as the lists show it: only once Completed.
-     */
     public function completedOutcome(): ?Outcome
     {
         return $this->isCompleted() ? $this->outcome : null;
     }
 
-    /**
-     * How many of its Goals are At Risk as the lists show it: only while
-     * Open, from at_risk_goals_count.
-     */
+    /** Needs at_risk_goals_count loaded. */
     public function openAtRiskGoalsCount(): int
     {
         return $this->isCompleted() ? 0 : (int) $this->at_risk_goals_count;
     }
 
     /**
-     * It as a row on the lists of Performance Evaluations: its year, its
-     * state, how many Goals it holds (from goals_count), how many of them
-     * are At Risk while Open and, once Completed, the Outcome of the whole.
+     * Needs goals_count and at_risk_goals_count loaded.
      *
      * @return array{id: int, year: int, state: string, goals_count: int, at_risk_goals_count: int, outcome: string|null}
      */
@@ -129,11 +102,7 @@ class PerformanceEvaluation extends Model
         ];
     }
 
-    /**
-     * The Goals the Employee's Manager gave for it, in the order given.
-     *
-     * @return HasMany<Goal, $this>
-     */
+    /** @return HasMany<Goal, $this> */
     public function goals(): HasMany
     {
         return $this->hasMany(Goal::class)->orderBy('id');

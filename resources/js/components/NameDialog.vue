@@ -16,26 +16,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { RouteFormDefinition } from '@/wayfinder';
 
-/**
- * Asks for a name, the one such dialog across the app: renaming something
- * by its name alone, opened by a "Rename…" button and closed once the new
- * name is saved, or adding a record by its name, given a `title` and a
- * `submitLabel`. Opened from elsewhere, such as a ⋯ menu item, it takes
- * `v-model:open` and `without-trigger` instead.
- */
 withDefaults(
     defineProps<{
-        /** Where the new name is sent, from a Wayfinder `.form()`. */
         form: RouteFormDefinition<'post'>;
-        /** The name as it stands, which the field starts from. */
         name: string;
-        /** The name field's id, unique on the page. */
         fieldId: string;
-        /** The dialog's title; "Rename <name>" unless given. */
         title?: string;
-        /** The button that saves; "Save" unless given. */
         submitLabel?: string;
-        /** Leaves out the trigger, for a dialog opened through `v-model:open`. */
         withoutTrigger?: boolean;
     }>(),
     {

@@ -7,25 +7,11 @@ use App\Models\Client;
 use App\Models\Employee;
 use App\Models\Project;
 
-/**
- * The command menu's search results as the props it renders: the people,
- * Projects and Clients whose name holds the search, only those the viewer
- * could already open from the app, at most five of each.
- */
 final class CommandMenuResults
 {
-    /** How many results each group shows at most. */
     public const int LIMIT = 5;
 
-    /**
-     * Each group's matches by name. People leave out Former Employees and
-     * keep those whose Employee page the viewer may open, plus, for viewers
-     * with view directory, everyone the Directory lists; each says whether it
-     * opens on their Employee page or in the Directory. Projects need seeing
-     * the Projects, Clients managing them. An empty search finds nothing.
-     *
-     * @return array{people: list<array{id: int, name: string, job_title: string|null, canViewEmployee: bool}>, projects: list<array{id: int, name: string, client: string|null}>, clients: list<array{id: int, name: string}>}
-     */
+    /** @return array{people: list<array{id: int, name: string, job_title: string|null, canViewEmployee: bool}>, projects: list<array{id: int, name: string, client: string|null}>, clients: list<array{id: int, name: string}>} */
     public static function props(Employee $viewer, string $search): array
     {
         if (trim($search) === '') {
@@ -42,9 +28,7 @@ final class CommandMenuResults
     }
 
     /**
-     * Whether each person opens on their Employee page comes from the same
-     * withPageVisibleTo() that findableBy() lets them through by, so the
-     * link and the search can't disagree.
+     * Whether each person opens on their Employee page comes from the same withPageVisibleTo() that findableBy() lets them through by, so the link and the search can't disagree.
      *
      * @return list<array{id: int, name: string, job_title: string|null, canViewEmployee: bool}>
      */

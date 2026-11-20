@@ -4,32 +4,10 @@ import { computed } from 'vue';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { TableColumn } from '@/types';
 
-/**
- * The table every list uses (rule K1). Each cell shows the row's field named
- * by the column's key, unless the page fills the `cell-<key>` slot; each
- * header shows the column's label, unless the page fills the `head-<key>`
- * slot. When there are no rows, the `empty` slot (usually an EmptyState)
- * fills the table body.
- *
- * Optional extensions:
- * - `groupBy` starts a group row, filled by the `group` slot, wherever the
- *   key changes between rows (rows come in group order); with `groups`,
- *   every group listed gets its group row in that order, one with no rows
- *   included, such as a Project no one is assigned to;
- * - `selection` adds a tick-box to every row, to every group row and to the
- *   header, each ticking the rows it covers;
- * - `onRowClick` opens a row's record when the row is clicked, ignoring
- *   clicks on its own buttons, links and tick-boxes;
- * - `hasAfterRow` gives the rows it picks a full-width line under them,
- *   filled by the `after-row` slot, such as a Declined record's reason in
- *   a Callout (rule G4);
- * - `rowClass` adds classes to the rows it picks, such as muting those
- *   that have ended;
- * - columns with a `phone` place stack each row on a phone (rule P4).
- */
 const props = defineProps<{
     columns: TableColumn[];
     rows: Row[];
+    /** Rows must come in group order: a group row starts wherever the key changes. */
     groupBy?: (row: Row) => string;
     /** Every group in order, so a group with no rows still shows its group row. */
     groups?: string[];
@@ -37,14 +15,10 @@ const props = defineProps<{
         isSelected: (id: number) => boolean;
         toggle: (id: number, checked: boolean) => void;
     };
-    /** Names a row for its tick-box, such as "Cara Lane's Work Entry on Nov 10". */
     rowLabel?: (row: Row) => string;
-    /** Names a group for its tick-box, such as "Week 46". */
     groupLabel?: (group: string) => string;
     onRowClick?: (row: Row) => void;
-    /** Whether a row has a full-width line under it, from the `after-row` slot. */
     hasAfterRow?: (row: Row) => boolean;
-    /** Classes for a row, such as muted text for one that has ended. */
     rowClass?: (row: Row) => string;
 }>();
 
@@ -77,7 +51,6 @@ const phoneColumns = computed(() => ({
     end: props.columns.filter((column) => column.phone === 'end'),
 }));
 
-/** The rows in order, with a group row before each run of one group. */
 const lines = computed<Line[]>(() => {
     const groupBy = props.groupBy;
 
@@ -136,7 +109,6 @@ function isRowSelected(row: Row): boolean {
     return props.selection?.isSelected(idOf(row)) ?? false;
 }
 
-/** Ticked, unticked, or partly ticked, for a tick-box covering several rows. */
 function stateOf(rows: Row[]): boolean | 'indeterminate' {
     const ticked = rows.filter(isRowSelected).length;
 
@@ -151,7 +123,6 @@ function tickAll(rows: Row[], checked: boolean): void {
     rows.forEach((row) => props.selection?.toggle(idOf(row), checked));
 }
 
-/** Opens the row's record, unless the click was on one of its own controls. */
 function clicked(row: Row, event: MouseEvent): void {
     const target = event.target as HTMLElement;
 

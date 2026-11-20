@@ -12,9 +12,6 @@ use function Pest\Laravel\actingAs;
 
 covers(ClientController::class, ClientRequest::class, Client::class);
 
-/**
- * An Employee who may create, rename and delete Clients.
- */
 function clientManager(): Employee
 {
     return employeeWith([Permission::ManageClients->value => null]);

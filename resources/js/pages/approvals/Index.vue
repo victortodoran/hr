@@ -29,36 +29,24 @@ defineOptions({
     },
 });
 
-/**
- * Only the open tab's props are sent: the Work Entries ones on the Work
- * Entries tab, `toApprove` on the Time Off tab, `travelRequestsToApprove`
- * on the Travel Requests tab and `travelExpensesToApprove` on the Travel
- * Expenses tab.
- */
+/** Only the open tab's props are sent. */
 const props = defineProps<{
     tab: ApprovalsTab;
     waiting: ApprovalsWaiting;
     filters?: ApprovalFilters;
     entries?: Paginated<ApprovalEntry>;
-    /** Total hours of every Work Entry matching the filters. */
     total?: number;
-    /** Every week the matching Work Entries fall in, with all their hours. */
     weeks?: ApprovalWeek[];
-    /** Every matching Work Entry's ID; only sent when asked for. */
+    /** Only sent when asked for. */
     matchingIds?: number[];
     employees?: ChoiceToApprove[];
     projects?: ChoiceToApprove[];
-    /** Direct Reports' Pending Time Off. */
     toApprove?: TimeOffToApprove[];
-    /** Pending Travel Requests of the Employees the viewer manages. */
     travelRequestsToApprove?: TravelRequestToApprove[];
-    /** Pending Travel Expenses of the Employees the viewer manages, by Travel Request. */
     travelExpensesToApprove?: TravelExpensesToApprove[];
-    /** The company currency's code, on the Travel Expenses tab. */
     currency?: string;
 }>();
 
-/** "24 items are waiting for your decision." */
 const description = computed(() => {
     const count =
         props.waiting.workEntries +

@@ -8,18 +8,12 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Creates an Employee's Performance Evaluation for a year, Open and with
- * no Goals yet.
- */
 class CreatePerformanceEvaluation
 {
     /**
-     * Create it, or refuse with a validation error on the Employee when one
-     * for the year was created since the form request checked: the unique
-     * Employee and year index turns the second of two at once away. The
-     * insert runs in its own transaction, a savepoint inside another, so
-     * the refused insert doesn't spoil the rest of an outer one.
+     * The unique Employee and year index turns away a second one created at
+     * once; the insert runs in a savepoint so that refusal doesn't spoil an
+     * outer transaction.
      *
      * @throws ValidationException
      */

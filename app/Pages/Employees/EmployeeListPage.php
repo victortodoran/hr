@@ -7,20 +7,9 @@ use App\Models\Builders\EmployeeBuilder;
 use App\Models\Department;
 use App\Models\Employee;
 
-/**
- * The Employees page as the props it renders: the Employees whose record
- * the viewer may see, a page at a time.
- */
 final class EmployeeListPage
 {
     /**
-     * The Employees whose record the viewer may see, by name, with each
-     * one's Job Title, status, Start Date, Department and effective
-     * Manager, optionally narrowed to part of a name, a Department, a
-     * Manager and a status; how many match each status; the Departments and
-     * Managers to filter by, only those of Employees the viewer may see;
-     * and whether the viewer may add an Employee.
-     *
      * @param  array{search: string, status: EmploymentStatus|null, department: int|null, manager: Employee|null}  $filters
      * @return array<string, mixed>
      */
@@ -71,10 +60,7 @@ final class EmployeeListPage
         ];
     }
 
-    /**
-     * The Employees whose record the viewer may see, each with their
-     * effective_manager_id as a column the query can filter on.
-     */
+    /** Selects effective_manager_id as a column, so the query can filter on it. */
     private static function visibleTo(Employee $actor): EmployeeBuilder
     {
         $visible = Employee::query()

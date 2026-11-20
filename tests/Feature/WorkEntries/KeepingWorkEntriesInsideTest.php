@@ -20,10 +20,6 @@ beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
 
-/**
- * Cara, who has a Manager, with Work Entries on Relaunch on
- * 3 Nov and 10 Nov 2026.
- */
 function caraWithWorkEntries(): Assignment
 {
     $cara = recorder(['manager_id' => Employee::factory()->create()->id]);
@@ -34,8 +30,6 @@ function caraWithWorkEntries(): Assignment
 }
 
 /**
- * An Assignment as the edit form sends it, with some changes.
- *
  * @param  array<string, mixed>  $changes
  * @return array<string, mixed>
  */

@@ -2,10 +2,7 @@
 import PageContainer from '@/components/PageContainer.vue';
 import PageHeader from '@/components/PageHeader.vue';
 
-/**
- * Settings (rule L16): Security is its only section, so it shows right under
- * the header with no sub-nav.
- */
+/** Security is the only section, so it shows right under the header with no sub-nav. */
 </script>
 
 <template>

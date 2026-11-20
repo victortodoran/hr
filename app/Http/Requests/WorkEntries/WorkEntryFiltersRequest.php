@@ -8,11 +8,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
-/**
- * Filters for a Period of Work Entries: the Period, a week, a month or a
- * custom period of at most three months, and an Employee and a Project,
- * each optional.
- */
 class WorkEntryFiltersRequest extends FormRequest
 {
     /**
@@ -36,10 +31,7 @@ class WorkEntryFiltersRequest extends FormRequest
     }
 
     /**
-     * The filters, null where none is set. The Period is the current month
-     * when none is asked for. As Work Entries are never in the future, one
-     * starting after today gives way to the current week, for a week, or
-     * else the current month, and a custom one ends today at the latest.
+     * Work Entries are never in the future, so the Period never runs past today.
      *
      * @return array{period: Period, employee: int|null, project: int|null}
      */

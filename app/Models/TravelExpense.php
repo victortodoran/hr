@@ -14,11 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Money an Employee paid themselves for the travel of one of their Travel
- * Requests, which the company pays back (ADR 0007): an amount in the
- * company currency, the date it was paid, a Travel Expense Category, a
- * description and its receipt, kept on the private disk. Like a Work Entry
- * it starts Pending and can be Approved, or Declined with a reason.
+ * Belongs to an Approved Travel Request (ADR 0007).
  *
  * @property int $id
  * @property int $travel_request_id
@@ -46,31 +42,17 @@ class TravelExpense extends Model
     /** @use HasFactory<TravelExpenseFactory> */
     use HasFactory;
 
-    /**
-     * The disk receipts are kept on, which is never publicly reachable:
-     * they are only served through the receipt route.
-     */
+    /** Never publicly reachable: receipts are only served through the receipt route. */
     public const string RECEIPT_DISK = 'local'; // @pest-mutate-ignore (constants are evaluated before coverage starts; the receipt tests pin the disk)
 
-    /**
-     * The folder receipts are kept in on that disk.
-     */
     public const string RECEIPT_FOLDER = 'travel-expense-receipts'; // @pest-mutate-ignore (constants are evaluated before coverage starts)
 
-    /**
-     * Every Travel Expense starts Pending.
-     *
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     protected $attributes = [
         'state' => 'pending', // @pest-mutate-ignore (the column defaults to pending too, so stored Travel Expenses look the same)
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -82,29 +64,19 @@ class TravelExpense extends Model
         ];
     }
 
-    /**
-     * Whether the Travel Expense can still be changed or deleted: while
-     * Pending, or once Declined, when changing it sends it back to Pending.
-     */
+    /** Declined counts, as changing it sends it back to Pending. */
     public function isOpen(): bool
     {
         return in_array($this->state, TravelExpenseState::open(), true);
     }
 
-    /**
-     * Whether the receipt is a picture a browser can show inline, rather
-     * than a PDF to open.
-     */
     public function receiptIsImage(): bool
     {
         return in_array(strtolower(pathinfo($this->receipt_path, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'webp'], true);
     }
 
     /**
-     * Who approved the Travel Expense and on which day, or null while it
-     * isn't Approved. Nobody approved that of an Employee with no
-     * Manager, which was Approved at once, so its approver is null. Needs
-     * the approver loaded.
+     * The approver is null for an Employee with no Manager, whose Travel Expense was Approved at once. Needs the approver loaded.
      *
      * @return array{by: string|null, on: string}|null
      */
@@ -117,31 +89,19 @@ class TravelExpense extends Model
         return ['by' => $this->approver?->name, 'on' => $this->approved_at->toDateString()];
     }
 
-    /**
-     * The Travel Request whose travel it was paid for.
-     *
-     * @return BelongsTo<TravelRequest, $this>
-     */
+    /** @return BelongsTo<TravelRequest, $this> */
     public function travelRequest(): BelongsTo
     {
         return $this->belongsTo(TravelRequest::class);
     }
 
-    /**
-     * The Employee who approved the Travel Expense, while it is Approved.
-     *
-     * @return BelongsTo<Employee, $this>
-     */
+    /** @return BelongsTo<Employee, $this> */
     public function approver(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'approved_by');
     }
 
-    /**
-     * The Manager who declined the Travel Expense, while it is Declined.
-     *
-     * @return BelongsTo<Employee, $this>
-     */
+    /** @return BelongsTo<Employee, $this> */
     public function decliner(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'declined_by');

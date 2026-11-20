@@ -9,10 +9,6 @@ import WidgetRows from '@/components/home/WidgetRows.vue';
 import { index as approvals } from '@/routes/approvals';
 import type { ApprovalsTab, ApprovalsWaiting } from '@/types';
 
-/**
- * What waits for the signed-in Employee to decide: a row per kind with any
- * Pending, its count and a chevron, each opening its Approvals tab.
- */
 const props = defineProps<{
     waitingForYou: ApprovalsWaiting;
 }>();

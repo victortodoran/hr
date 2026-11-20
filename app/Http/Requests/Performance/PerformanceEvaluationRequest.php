@@ -9,11 +9,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
-/**
- * A new Performance Evaluation: the year, the current or the next, and an
- * Employee the signed-in Employee may create one for that year
- * (PerformanceEvaluationPolicy::create()).
- */
 class PerformanceEvaluationRequest extends FormRequest
 {
     /** The Employee asked for, once looked up. */
@@ -31,10 +26,7 @@ class PerformanceEvaluationRequest extends FormRequest
     }
 
     /**
-     * Once both fields are valid on their own, refuse an Employee the
-     * signed-in Employee may not create one for that year, saying so when
-     * it is because one they manage already has it. Whether someone they
-     * don't manage has one stays hidden.
+     * Whether someone the actor doesn't manage already has one stays hidden.
      *
      * @return array<int, callable(Validator): void>
      */
@@ -64,25 +56,16 @@ class PerformanceEvaluationRequest extends FormRequest
         }];
     }
 
-    /**
-     * The year the Performance Evaluation is for.
-     */
     public function year(): int
     {
         return $this->integer('year');
     }
 
-    /**
-     * The Employee the Performance Evaluation is for.
-     */
     public function employee(): Employee
     {
         return $this->employee ??= Employee::query()->findOrFail($this->integer('employee_id'));
     }
 
-    /**
-     * The Employee creating it: always the one signed in.
-     */
     private function actor(): Employee
     {
         /** @var Employee */

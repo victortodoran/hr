@@ -4,10 +4,6 @@ namespace App\Http\Requests\Travel;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 
-/**
- * The Travel Expenses selected on the Approvals page, by ID, to decline all
- * at once, with the one reason the Employee will see on each.
- */
 class DeclineTravelExpensesRequest extends SelectedTravelExpensesRequest
 {
     /**
@@ -32,9 +28,6 @@ class DeclineTravelExpensesRequest extends SelectedTravelExpensesRequest
         ];
     }
 
-    /**
-     * The reason given for declining.
-     */
     public function reason(): string
     {
         return $this->string('decline_reason')->value();

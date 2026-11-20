@@ -13,8 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 
 /**
- * What an Employee may do: the Roles they hold and the Permissions those
- * grant, with the Scope each reaches (ADR 0004). Used by Employee only.
+ * See ADR 0004 for Roles, Permissions and Scopes.
  *
  * @mixin Employee
  *
@@ -30,72 +29,38 @@ trait HasAccess
         return $this->belongsToMany(Role::class)->withTimestamps();
     }
 
-    /**
-     * Whether any of the Employee's Roles grants the Permission.
-     */
     public function holds(Permission $permission): bool
     {
         return $this->grantsOf($permission)->isNotEmpty();
     }
 
-    /**
-     * Whether the Employee may open the Work page: they may see their own,
-     * as the policy decides.
-     */
+    /** The Work page opens on their own Work Entries, so reaching themselves is what counts. */
     public function canSeeWorkEntries(): bool
     {
         return $this->reachesThrough(Permission::seeingWorkEntries(), $this);
     }
 
-    /**
-     * Whether the Employee sees Work Entries of anyone besides themselves
-     * across Employees: one of the Permissions for seeing them reaches
-     * beyond themselves.
-     */
     public function seesOthersWorkEntries(): bool
     {
         return $this->reachesOthersThrough(Permission::seeingWorkEntries());
     }
 
-    /**
-     * Whether the Employee sees the Travel Requests of anyone besides
-     * themselves across Employees: one of the Permissions for seeing travel
-     * reaches beyond themselves.
-     */
     public function seesOthersTravel(): bool
     {
         return $this->reachesOthersThrough(Permission::seeingTravel());
     }
 
-    /**
-     * Whether the Employee sees the Time Off of anyone besides themselves
-     * across Employees: one of the Permissions for seeing Time Off reaches
-     * beyond themselves.
-     */
     public function seesOthersTimeOff(): bool
     {
         return $this->reachesOthersThrough(Permission::seeingTimeOff());
     }
 
-    /**
-     * Whether the Employee may read Performance Evaluations of anyone
-     * besides themselves: one of the Permissions for reading them
-     * (Permission::seeingPerformanceEvaluations()) reaches beyond
-     * themselves.
-     */
     public function seesOthersPerformanceEvaluations(): bool
     {
         return $this->reachesOthersThrough(Permission::seeingPerformanceEvaluations());
     }
 
-    /**
-     * How far a Permission reaches for the Employee: every Scope their Roles
-     * give for one about Employees, combined (own and reports together cover
-     * themselves and their Reports), everyone for a company-wide one they
-     * hold, or none when no Role grants it.
-     *
-     * @return list<Scope>
-     */
+    /** @return list<Scope> */
     public function reachOf(Permission $permission): array
     {
         if ($permission->isScoped()) {
@@ -109,34 +74,19 @@ trait HasAccess
         return $this->holds($permission) ? [Scope::Everyone] : [];
     }
 
-    /**
-     * Whether any of the Permissions reaches the target Employee through any
-     * Scope it has for the Employee.
-     *
-     * @param  list<Permission>  $permissions
-     */
+    /** @param  list<Permission>  $permissions */
     public function reachesThrough(array $permissions, Employee $target): bool
     {
         return $this->scopesGivenFor($permissions)->contains(fn (Scope $scope): bool => $scope->covers($this, $target));
     }
 
-    /**
-     * Whether any of the Permissions reaches anyone besides the Employee.
-     *
-     * @param  list<Permission>  $permissions
-     */
+    /** @param  list<Permission>  $permissions */
     public function reachesOthersThrough(array $permissions): bool
     {
         return $this->othersReachThrough($permissions) !== null;
     }
 
-    /**
-     * How far beyond themselves any of the Permissions reaches for the
-     * Employee: everyone when one gives Everyone, reports when one only
-     * covers their Reports, null when none reaches anyone else.
-     *
-     * @param  list<Permission>  $permissions
-     */
+    /** @param  list<Permission>  $permissions */
     public function othersReachThrough(array $permissions): ?Scope
     {
         $scopes = $this->scopesGivenFor($permissions);
@@ -149,9 +99,7 @@ trait HasAccess
     }
 
     /**
-     * Limit a query of Employees to those any of the Permissions reaches for
-     * the Employee: the query counterpart of reachesThrough(). Nobody, when
-     * none of them is granted.
+     * The query counterpart of reachesThrough(), so the two must agree.
      *
      * @param  list<Permission>  $permissions
      */
@@ -166,9 +114,7 @@ trait HasAccess
     }
 
     /**
-     * The company-wide Permissions (those without a Scope) the Employee's
-     * Roles grant, all of them for an Admin holder, so pages can offer only
-     * what the Employee may use.
+     * Lets pages offer only what the Employee may use.
      *
      * @return array<int, string>
      */
@@ -193,21 +139,12 @@ trait HasAccess
             ->all();
     }
 
-    /**
-     * Whether the Employee holds the Admin Role, which always holds every
-     * Permission with the everyone Scope.
-     */
     public function holdsAdmin(): bool
     {
         return $this->rolesWithGrants()->contains(fn (Role $role): bool => $role->is_admin);
     }
 
-    /**
-     * Forget the Roles, grants and Reports read so far, so the next check
-     * reads them afresh: for when Roles, who holds them or the reporting
-     * line change while this Employee is in hand. Refreshing the Employee
-     * reloads the Roles but not the Reports.
-     */
+    /** Refreshing the Employee reloads the Roles but not the Reports, so a change to either while the Employee is in hand needs this. */
     public function forgetAccess(): void
     {
         $this->unsetRelation('roles');
@@ -215,8 +152,6 @@ trait HasAccess
     }
 
     /**
-     * Every Scope the Employee's Roles give for any of the Permissions.
-     *
      * @param  list<Permission>  $permissions
      * @return Collection<int, Scope>
      */
@@ -228,8 +163,7 @@ trait HasAccess
     }
 
     /**
-     * The Employee's Roles with their grants, loaded once with the Employee
-     * and kept, as every Permission check needs them.
+     * Loaded once and kept, as every Permission check needs them.
      *
      * @return EloquentCollection<int, Role>
      */
@@ -238,20 +172,14 @@ trait HasAccess
         return $this->loadMissing('roles.permissions')->roles;
     }
 
-    /**
-     * Every grant across the Employee's Roles.
-     *
-     * @return Collection<int, RolePermission>
-     */
+    /** @return Collection<int, RolePermission> */
     private function grantsHeld(): Collection
     {
         return $this->rolesWithGrants()->flatMap(fn (Role $role) => $role->permissions);
     }
 
     /**
-     * Every grant of the Permission across the Employee's Roles. The Admin
-     * Role stores no grants, so for its holders this is the one grant it
-     * always has: everyone for a Permission about Employees.
+     * The Admin Role stores no grants, so its holders get the one grant it always has.
      *
      * @return Collection<int, RolePermission>
      */

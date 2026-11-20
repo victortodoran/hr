@@ -15,11 +15,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * An Employee asking to travel for work on one of their Assignments, with a
- * destination, a first and a last date and a purpose. Every day from the
- * first to the last date counts, weekends included. It is Pending until
- * approved or declined, and can be Cancelled before its first day.
- *
  * @property int $id
  * @property int $employee_id
  * @property int $assignment_id
@@ -46,20 +41,12 @@ class TravelRequest extends Model
     /** @use HasFactory<TravelRequestFactory> */
     use HasFactory;
 
-    /**
-     * Every Travel Request starts Pending.
-     *
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     protected $attributes = [
         'state' => 'pending', // @pest-mutate-ignore (the column defaults to pending too, so stored Travel Requests look the same)
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -71,33 +58,19 @@ class TravelRequest extends Model
         ];
     }
 
-    /**
-     * How many days it counts: every day from the first to the last date,
-     * both included, weekends too.
-     */
+    /** Weekends count too, unlike Time Off. */
     public function days(): int
     {
         return (int) $this->first_date->diffInDays($this->last_date) + 1;
     }
 
-    /**
-     * Whether the Employee can still cancel it: it is Pending or Approved,
-     * and its first date is still to come.
-     */
     public function isCancellable(): bool
     {
         return in_array($this->state, TravelRequestState::standing(), true)
             && today()->isBefore($this->first_date);
     }
 
-    /**
-     * Whether its Employee may record Travel Expenses on it (ADR 0007): it
-     * is Approved, or was Approved before it was Cancelled, so money already
-     * spent, such as a non-refundable flight, is still paid back. Approving
-     * records when, and cancelling keeps that, so a Cancelled one with a
-     * decision date was Approved first: one Cancelled while Pending has
-     * none, and a Declined one is never cancelled.
-     */
+    /** A Cancelled one with a decision date was Approved first, and money already spent on it is still paid back (ADR 0007). */
     public function takesExpenses(): bool
     {
         return $this->state === TravelRequestState::Approved
@@ -112,21 +85,14 @@ class TravelRequest extends Model
         return $this->belongsTo(Employee::class);
     }
 
-    /**
-     * The Assignment the travel is for, which leads to its Project and
-     * Client.
-     *
-     * @return BelongsTo<Assignment, $this>
-     */
+    /** @return BelongsTo<Assignment, $this> */
     public function assignment(): BelongsTo
     {
         return $this->belongsTo(Assignment::class);
     }
 
     /**
-     * The Manager who approved or declined it, once decided. The Travel
-     * Request of an Employee with no Manager is Approved with no one
-     * deciding.
+     * Null for an Employee with no Manager, whose Travel Request is Approved with no one deciding.
      *
      * @return BelongsTo<Employee, $this>
      */
@@ -135,11 +101,7 @@ class TravelRequest extends Model
         return $this->belongsTo(Employee::class, 'decided_by');
     }
 
-    /**
-     * The Travel Expenses its Employee recorded on it, in every state.
-     *
-     * @return HasMany<TravelExpense, $this>
-     */
+    /** @return HasMany<TravelExpense, $this> */
     public function travelExpenses(): HasMany
     {
         return $this->hasMany(TravelExpense::class);

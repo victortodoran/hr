@@ -15,25 +15,17 @@ import {
 } from '@/components/date-picker';
 import { formatDate } from '@/lib/dates';
 
-/**
- * A date field (rule K14): type the month, day and year into the field, or
- * pick a day from the calendar the icon opens. Once chosen and left, it
- * reads like every date (C9), "Nov 20, 2026". The model is the date as
- * YYYY-MM-DD, or '' when empty. `id` lands on a hidden date input that
- * moves focus to the field, so `<Label for>` works. Other attributes, such
- * as `class`, go to the field.
- */
+/** `id` lands on a hidden date input that moves focus to the field, so `<Label for>` works. */
 defineOptions({ inheritAttrs: false });
 
 const props = defineProps<{
     id: string;
-    /** The earliest date that can be chosen, as YYYY-MM-DD. */
+    /** YYYY-MM-DD. */
     min?: string;
-    /** The latest date that can be chosen, as YYYY-MM-DD. */
+    /** YYYY-MM-DD. */
     max?: string;
     disabled?: boolean;
     required?: boolean;
-    /** Marks the field as refused, such as when its error shows. */
     invalid?: boolean;
 }>();
 

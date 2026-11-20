@@ -26,8 +26,7 @@ covers(ChangeGoalProgress::class, GoalController::class, GoalProgressController:
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
 /**
- * Ana, who manages Ben, who manages Cara, and Cara's Open 2026
- * Performance Evaluation with one Goal, given on 1 March.
+ * Ana, Ben, Cara (each the Manager of the next) and the Goal on Cara's Open 2026 Performance Evaluation, given on 1 March.
  *
  * @return array{Employee, Employee, Employee, Goal}
  */
@@ -46,17 +45,11 @@ function goalProgressLine(): array
     return [$ana, $ben, $cara, $goal];
 }
 
-/**
- * The route that changes the Goal's Progress.
- */
 function progressRoute(Goal $goal): string
 {
     return route('performance-evaluations.goals.progress.update', [$goal->performanceEvaluation, $goal]);
 }
 
-/**
- * The route of the Goal's page.
- */
 function goalRoute(Goal $goal): string
 {
     return route('performance-evaluations.goals.show', [$goal->performanceEvaluation, $goal]);

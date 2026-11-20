@@ -24,19 +24,12 @@ covers(AssignmentController::class, DeleteAssignment::class, ChangeAssignment::c
 
 beforeEach(fn () => travelTo('2026-03-01 09:00'));
 
-/**
- * An Employee who may manage everyone's Assignments.
- */
 function managerOfAssignments(): Employee
 {
     return employeeWith([Permission::ManageAssignments->value => Scope::Everyone]);
 }
 
-/**
- * The dates the Assignment's Pay takes effect, earliest first.
- *
- * @return array<int, string>
- */
+/** @return array<int, string> */
 function payDatesOf(Assignment $assignment): array
 {
     return $assignment->payEntries()->orderBy('effective_from')->pluck('effective_from')
@@ -166,9 +159,7 @@ it('moves the Internal Assignment\'s Pay to a later Start Date with it', functio
 });
 
 /**
- * An Employee with a Manager, their Internal Assignment, an Assignment to a
- * Project and someone else's Assignment, each with Pay from 1 January and
- * 1 June 2026.
+ * The Employee, their Internal Assignment, their Project Assignment and someone else's, each paid from 1 January and 1 June 2026.
  *
  * @return array{Employee, Assignment, Assignment, Assignment}
  */

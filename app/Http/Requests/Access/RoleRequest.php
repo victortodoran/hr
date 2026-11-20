@@ -13,13 +13,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/**
- * A Role's name, Permissions and whether new Employees get it, when creating
- * or editing one, and, when sent, everyone who should hold it. Permissions
- * arrive as a map from each chosen Permission to its Scope, or to null for
- * company-wide Permissions. A holder must not have left, unless they already
- * hold the Role.
- */
 class RoleRequest extends FormRequest
 {
     /**
@@ -43,11 +36,7 @@ class RoleRequest extends FormRequest
         ];
     }
 
-    /**
-     * The chosen Permissions, each with its Scope or null.
-     *
-     * @return array<string, string|null>
-     */
+    /** @return array<string, string|null> */
     public function grants(): array
     {
         /** @var array<string, string|null> $permissions */
@@ -57,8 +46,7 @@ class RoleRequest extends FormRequest
     }
 
     /**
-     * The IDs of everyone who should hold the Role, or null when none were
-     * sent, to leave its holders as they are.
+     * Null when none were sent, so the Role's holders stay as they are.
      *
      * @return array<int, int>|null
      */
@@ -75,19 +63,12 @@ class RoleRequest extends FormRequest
         return ['holders.*' => __('Employee')];
     }
 
-    /**
-     * Whether every new Employee should be given the Role.
-     */
     public function givenToNewEmployees(): bool
     {
         return $this->boolean('given_to_new_employees');
     }
 
-    /**
-     * Refuses a holder who doesn't exist, or who has left, unless they
-     * already hold the Role and are only kept on. The holders sent and the
-     * Role's current ones are each loaded once, however many are sent.
-     */
+    /** The sent holders and the Role's current ones are loaded once, not once per holder sent. */
     private function stillHereUnlessHolding(?Role $role): Closure
     {
         /** @var EloquentCollection<int, Employee>|null $sent */
@@ -108,11 +89,6 @@ class RoleRequest extends FormRequest
         };
     }
 
-    /**
-     * Accepts only Permissions the HR system defines, where each one about
-     * Employees has one of the Scopes it can carry and every other one has
-     * none.
-     */
     private function eachPermissionWithItsScope(): Closure
     {
         return function (string $attribute, mixed $permissions, Closure $fail): void {

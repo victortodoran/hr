@@ -59,9 +59,6 @@ class InstallCommand extends Command
         return self::SUCCESS;
     }
 
-    /**
-     * The option's value, or the answer to a prompt when it wasn't given.
-     */
     private function valueOf(string $option, string $question): string
     {
         $value = $this->option($option);

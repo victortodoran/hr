@@ -9,10 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * One change to a Goal's Progress, kept for good with who made it, when,
- * and the Progress before. Never changed afterwards; it goes only with
- * its Goal.
- *
  * @property int $id
  * @property int $goal_id
  * @property int $changed_by_id
@@ -27,11 +23,7 @@ class ProgressChange extends Model
 {
     public const UPDATED_AT = null;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -48,11 +40,7 @@ class ProgressChange extends Model
         return $this->belongsTo(Goal::class);
     }
 
-    /**
-     * The Employee or Manager who made the change.
-     *
-     * @return BelongsTo<Employee, $this>
-     */
+    /** @return BelongsTo<Employee, $this> */
     public function changedBy(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'changed_by_id');

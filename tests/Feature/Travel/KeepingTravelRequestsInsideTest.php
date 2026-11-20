@@ -19,10 +19,6 @@ beforeEach(function () {
     travelTo('2026-12-01 09:00');
 });
 
-/**
- * Cara's Assignment to Relaunch, from 2 Nov 2026, with a Travel Request to
- * Berlin from 3 to 5 Dec 2026, Pending unless given another factory state.
- */
 function relaunchWithTravel(?string $state = null): Assignment
 {
     $relaunch = assignmentOf(Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'manager_id' => Employee::factory()->startedLongAgo()->create()->id]));
@@ -32,21 +28,13 @@ function relaunchWithTravel(?string $state = null): Assignment
     return $relaunch;
 }
 
-/**
- * The edit form's fields for ending the Assignment on the date.
- *
- * @return array<string, mixed>
- */
+/** @return array<string, mixed> */
 function endingAssignment(Assignment $assignment, string $endDate): array
 {
     return ['job_title' => $assignment->job_title, 'start_date' => $assignment->start_date->toDateString(), 'end_date' => $endDate, 'capacity' => $assignment->capacity];
 }
 
-/**
- * The edit form's fields for starting the Assignment on the date.
- *
- * @return array<string, mixed>
- */
+/** @return array<string, mixed> */
 function startingAssignment(Assignment $assignment, string $startDate): array
 {
     return ['job_title' => $assignment->job_title, 'start_date' => $startDate, 'end_date' => null, 'capacity' => $assignment->capacity];
@@ -76,11 +64,7 @@ it('lets an Assignment start on the first day of travel, or after Declined or Ca
     'after Cancelled travel' => ['cancelled', '2026-12-06'],
 ]);
 
-/**
- * The edit form's fields for ending the Project on the date.
- *
- * @return array<string, mixed>
- */
+/** @return array<string, mixed> */
 function endingProject(Assignment $assignment, string $endDate): array
 {
     return ['name' => $assignment->project->name, 'client_id' => $assignment->project->client_id, 'start_date' => '2026-01-05', 'end_date' => $endDate];
@@ -126,11 +110,6 @@ it('refuses a Leaving Date before the last day of the Employee\'s Pending or App
     expect($cara->refresh()->leaving_date?->toDateString())->toBe('2026-12-05');
 })->with(['pending' => null, 'approved' => 'approved']);
 
-/**
- * Cara's Internal Assignment, from her Start Date on 6 Jan 2025, with a
- * Travel Request from 3 to 5 Dec 2026, Pending unless given another
- * factory state.
- */
 function internalWithTravel(?string $state = null): Assignment
 {
     $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'manager_id' => Employee::factory()->startedLongAgo()->create()->id]);

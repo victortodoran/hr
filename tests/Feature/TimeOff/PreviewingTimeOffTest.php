@@ -15,20 +15,12 @@ beforeEach(function () {
     travelTo('2026-12-01 09:00');
 });
 
-/**
- * Dev, who started on 6 Jan 2025 and has 20 Paid Days a year.
- */
 function timeOffPreviewer(): Employee
 {
     return Employee::factory()->startedLongAgo()->create(['name' => 'Dev', 'paid_days' => 20]);
 }
 
-/**
- * The preview's address for Time Off as the request dialog sends it, with
- * some changes.
- *
- * @param  array<string, mixed>  $changes
- */
+/** @param  array<string, mixed>  $changes */
 function timeOffPreview(array $changes = []): string
 {
     return route('time-off.preview', ['first_date' => '2026-12-14', 'last_date' => '2026-12-16', 'is_paid' => 1, ...$changes]);

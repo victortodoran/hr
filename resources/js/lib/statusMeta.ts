@@ -9,12 +9,6 @@ import {
 } from '@lucide/vue';
 import type { Progress, StatusBadgeState } from '@/types';
 
-/**
- * What a status colour means (rule S7). Each tone has one colour and one
- * icon across the app: pending waits on someone, approved is settled or
- * active, declined is refused, neutral is open with nothing waiting, over,
- * closed or cancelled, upcoming hasn't started yet, attention needs it.
- */
 export type StatusTone =
     | 'pending'
     | 'approved'
@@ -23,9 +17,6 @@ export type StatusTone =
     | 'upcoming'
     | 'attention';
 
-/**
- * Each state's name as people read it.
- */
 export const statusLabels: Record<StatusBadgeState, string> = {
     pending: 'Pending',
     approved: 'Approved',
@@ -43,12 +34,6 @@ export const statusLabels: Record<StatusBadgeState, string> = {
     ended: 'Ended',
 };
 
-/**
- * Each state's tone, the complete mapping of rule S9: Pending amber;
- * Approved, Completed, On Track, Done and In effect green; Declined red;
- * Cancelled, an Open Performance Evaluation, Past and Ended grey; Upcoming
- * and Not Started blue; At Risk orange. A new state takes the tone of its meaning (S8).
- */
 export const statusTones: Record<StatusBadgeState, StatusTone> = {
     pending: 'pending',
     approved: 'approved',
@@ -66,11 +51,7 @@ export const statusTones: Record<StatusBadgeState, StatusTone> = {
     ended: 'neutral',
 };
 
-/**
- * Each tone's icon, which follows the colour so status never relies on
- * colour alone (S7): clock, check, cross, hollow circle, dashed circle,
- * triangle.
- */
+/** The icon follows the colour, so status never relies on colour alone (S7). */
 export const toneIcons: Record<StatusTone, Component> = {
     pending: Clock,
     approved: CircleCheck,
@@ -80,9 +61,6 @@ export const toneIcons: Record<StatusTone, Component> = {
     attention: TriangleAlert,
 };
 
-/**
- * Each tone's badge colours: tinted background and strong text.
- */
 export const toneColours: Record<StatusTone, string> = {
     pending: 'bg-status-pending text-status-pending-foreground',
     approved: 'bg-status-approved text-status-approved-foreground',
@@ -92,10 +70,6 @@ export const toneColours: Record<StatusTone, string> = {
     attention: 'bg-status-attention text-status-attention-foreground',
 };
 
-/**
- * Each tone's icon colour, for a status icon standing on the page's own
- * background (StatusIcon, a Goal's History dot).
- */
 export const toneIconColours: Record<StatusTone, string> = {
     pending: 'text-status-pending-icon',
     approved: 'text-status-approved-icon',
@@ -105,9 +79,6 @@ export const toneIconColours: Record<StatusTone, string> = {
     attention: 'text-status-attention-icon',
 };
 
-/**
- * Each tone's dot colour: the icon colour as a fill.
- */
 const toneDotColours: Record<StatusTone, string> = {
     pending: 'bg-status-pending-icon',
     approved: 'bg-status-approved-icon',
@@ -117,9 +88,6 @@ const toneDotColours: Record<StatusTone, string> = {
     attention: 'bg-status-attention-icon',
 };
 
-/**
- * Each Progress's dot on a Goal's History timeline, through its tone.
- */
 export const progressDotColours = Object.fromEntries(
     (['not-started', 'on-track', 'at-risk', 'done'] as const).map(
         (progress) => [progress, toneDotColours[statusTones[progress]]],

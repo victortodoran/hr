@@ -19,45 +19,25 @@ import {
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
 import type { Choice, WorkEntryAssignment, WorkEntryRecord } from '@/types';
 
-/**
- * A Work Entry typed straight into the Period: an empty row under a day that
- * adds one, or an existing Work Entry turned into fields to change it.
- */
 const props = defineProps<{
-    /** The Employee whose hours these are. */
     employee: Choice;
-    /** The URL query asking for the Period shown, so saving returns to it. */
     periodQuery: Record<string, string>;
-    /** The Employee's Assignments that run during the Period. */
     assignments: WorkEntryAssignment[];
-    /** The day the row sits under. */
     date: string;
     today: string;
-    /** The Work Entry to change; the row adds a new one without it. */
     entry?: WorkEntryRecord;
-    /** The Assignment last added on this page, picked when it runs on the day. */
     lastAssignmentId?: number | null;
-    /**
-     * Lays the row out for the day panel: labelled fields, Assignment and
-     * Hours above Description, and its buttons in a footer, after the
-     * `footer` slot's.
-     */
     compact?: boolean;
 }>();
 
 defineSlots<{
-    /** Buttons before the panel's own, such as copying the previous day. */
     footer?: () => unknown;
 }>();
 
 const emit = defineEmits<{
-    /** The Work Entry was saved, on this Assignment. */
     saved: [assignmentId: number];
-    /** Changing or adding the Work Entry was given up. */
     cancel: [];
-    /** Esc was pressed, asking to give it up. */
     dismiss: [];
-    /** Whether the row holds typing that isn't saved yet. */
     dirty: [isDirty: boolean];
 }>();
 
@@ -71,7 +51,6 @@ const form = useForm({
 const descriptionInput = ref<InstanceType<typeof Input> | null>(null);
 const hoursInput = ref<InstanceType<typeof Input> | null>(null);
 
-/** Whether the Assignment was picked by hand, so it's no longer pre-picked. */
 const assignmentPickedByHand = ref(false);
 
 const fieldId = (field: string): string =>
@@ -79,10 +58,6 @@ const fieldId = (field: string): string =>
         ? `work-entry-${field}-${props.entry.id}`
         : `work-entry-${field}-${props.date}`;
 
-/**
- * The Assignments running on the chosen day, so only those that would be
- * accepted are offered.
- */
 const runningAssignments = computed(() =>
     props.assignments.filter(
         (assignment) =>
@@ -91,10 +66,6 @@ const runningAssignments = computed(() =>
     ),
 );
 
-/**
- * The Assignment a new row starts with: the only one running on the day,
- * else the one last added if it runs then, else none.
- */
 const preferredAssignmentId = computed((): string => {
     const running = runningAssignments.value;
 
@@ -158,18 +129,11 @@ function save(): void {
     });
 }
 
-/**
- * Puts the cursor in Description, ready for the next Work Entry.
- */
 function focusDescription(): void {
     const element = descriptionInput.value?.$el as HTMLInputElement | undefined;
     element?.focus();
 }
 
-/**
- * Puts the cursor in Hours, the day panel's first field to type in once
- * its Assignment is picked.
- */
 function focusHours(): void {
     const element = hoursInput.value?.$el as HTMLInputElement | undefined;
     element?.focus();

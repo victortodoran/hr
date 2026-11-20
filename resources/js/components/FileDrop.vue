@@ -4,30 +4,14 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import IconButton from '@/components/IconButton.vue';
 import { Button } from '@/components/ui/button';
 
-/**
- * A file field (rule K15), such as a receipt: drop a file on it or browse
- * for one, and on a phone take a photo. A chosen file shows its thumbnail
- * (or a tile with its type), name and size, with Replace and Remove; a file
- * already stored shows the same with an Open link and Replace. A stored
- * file has no Remove: it is kept unless another is chosen, as where a file
- * is stored it is required (a Travel Expense always has its receipt), and
- * Remove on a newly chosen one goes back to the stored file. Dropping a
- * new file anywhere on it replaces the one shown. The help text states the
- * accepted types and size; the server checks both. The model is the file
- * chosen, or null; `id` lands on the real file input, so `<Label for>`
- * and browser tests attaching a file work.
- */
+/** A stored file has no Remove: where a file is stored it is required (a Travel Expense always has its receipt). */
 const props = defineProps<{
     id: string;
-    /** The file types accepted, as the file input's `accept`. */
     accept: string;
-    /** The largest file accepted, in MB, for the help text. */
+    /** In MB. */
     maxMb: number;
-    /** The file already stored, shown until another is chosen. */
     current?: { name: string; url: string; size?: number | null } | null;
-    /** What the file is, such as "receipt", for "Remove receipt". */
     noun?: string;
-    /** Marks the field as refused, such as when its error shows. */
     invalid?: boolean;
 }>();
 
@@ -35,15 +19,10 @@ const file = defineModel<File | null>({ default: null });
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const cameraInput = ref<HTMLInputElement | null>(null);
-/**
- * How many of the field's elements a drag is over. Moving between child
- * elements fires `dragleave` on one before `dragenter` on the next, so the
- * drag is over the field until the count drops back to 0.
- */
+/** Moving between child elements fires `dragleave` before the next `dragenter`, so the drag is over the field until the count drops back to 0. */
 const dragDepth = ref(0);
 const isDraggingOver = computed(() => dragDepth.value > 0);
 
-/** The accepted types as people read them, such as "PDF, JPG or PNG". */
 const typesLabel = computed(() => {
     const types = [
         ...new Set(
@@ -66,7 +45,6 @@ const helpText = computed(() => {
     return shown.value ? `${text} Drop a new file here to replace it.` : text;
 });
 
-/** The file to show: the one chosen, or else the one stored. */
 const shown = computed(() => {
     if (file.value) {
         return { name: file.value.name, size: file.value.size, url: null };
@@ -87,7 +65,6 @@ const isImage = computed(() =>
         : /\.(jpe?g|png|gif|webp|heic)$/i.test(props.current?.name ?? ''),
 );
 
-/** The file's extension for the tile shown when it isn't an image. */
 const extension = computed(
     () => shown.value?.name.split('.').pop()?.toUpperCase().slice(0, 4) ?? '',
 );

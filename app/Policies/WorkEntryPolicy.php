@@ -6,59 +6,33 @@ use App\Enums\Permission;
 use App\Models\Employee;
 use App\Models\WorkEntry;
 
-/**
- * Who may see and change Work Entries. Each check is made against the
- * Employee the Work Entries belong to, so the acting Employee's Scope decides:
- * through the Gate of the Permission behind it, or, for seeing them, the
- * Permissions that show them, read the same way the Gates read them.
- */
 class WorkEntryPolicy
 {
-    /**
-     * Seeing an Employee's Work Entries needs one of the Permissions for
-     * seeing them (Permission::seeingWorkEntries()) to reach them.
-     */
     public function viewAny(Employee $actor, Employee $employee): bool
     {
         return $actor->reachesThrough(Permission::seeingWorkEntries(), $employee);
     }
 
-    /**
-     * The Work Entries page, across Employees, is for someone who sees the
-     * Work Entries of anyone besides themselves.
-     */
     public function viewList(Employee $actor): bool
     {
         return $actor->seesOthersWorkEntries();
     }
 
-    /**
-     * Recording hours for an Employee needs manage work entries for them.
-     * Nobody records hours for an Employee with no Manager: nobody could
-     * approve them.
-     */
+    /** Nobody records hours for an Employee with no Manager: nobody could approve them. */
     public function create(Employee $actor, Employee $employee): bool
     {
         return $actor->can(Permission::ManageWorkEntries->value, $employee)
             && ! $employee->hasNoManager();
     }
 
-    /**
-     * Changing a Work Entry needs what recording it does, and only a Pending
-     * or Declined one can be changed: an Approved one must be reopened
-     * first.
-     */
     public function update(Employee $actor, WorkEntry $workEntry): bool
     {
         return $workEntry->isOpen() && $this->create($actor, $workEntry->employee);
     }
 
     /**
-     * Deleting a Work Entry needs manage work entries for the Employee whose
-     * Assignment it is on, and only a Pending or Declined one can be
-     * deleted. Unlike changing, it is allowed for an Employee with no
-     * Manager, so Pending Work Entries nobody can approve can be cleared
-     * away.
+     * Unlike changing, allowed for an Employee with no Manager, so Pending Work
+     * Entries nobody can approve can be cleared away.
      */
     public function delete(Employee $actor, WorkEntry $workEntry): bool
     {
@@ -66,20 +40,11 @@ class WorkEntryPolicy
             && $actor->can(Permission::ManageWorkEntries->value, $workEntry->employee);
     }
 
-    /**
-     * The Approvals page is an inbox for those who approve: anyone who is
-     * someone's effective Manager. Reopening happens on the Work Entries
-     * page instead.
-     */
     public function viewApprovals(Employee $actor): bool
     {
         return $actor->managesAnyone();
     }
 
-    /**
-     * Reopening Work Entries needs reopen work entries from a Role; whose
-     * Work Entries it covers depends on its Scope.
-     */
     public function reopen(Employee $actor): bool
     {
         return $actor->holds(Permission::ReopenWorkEntries);

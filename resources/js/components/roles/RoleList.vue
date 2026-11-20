@@ -17,20 +17,11 @@ import { countOf } from '@/lib/roles';
 import { create, show } from '@/routes/roles';
 import type { RoleRecord, RolesPageMode } from '@/types';
 
-/**
- * The Role list column of the settings template: every Role, searchable by
- * name, each with how many Permissions and people it has, a lock on Admin
- * and "Default" on the Role new Employees get, and New Role above them. A
- * new Role being made sits at the top with the name typed so far. Below
- * 1024px the list becomes a Role select beside New Role.
- */
 const props = defineProps<{
     roles: RoleRecord[];
     selected: number | null;
     mode: RolesPageMode;
-    /** How many Permissions a Role holds, Admin holding all of them. */
     permissionCount: (role: RoleRecord) => number;
-    /** The name typed for a new Role, shown live at the top. */
     newName: string;
 }>();
 
@@ -50,7 +41,6 @@ function summary(role: RoleRecord): string {
     return `${countOf(props.permissionCount(role), 'Permission', 'Permissions')} · ${countOf(role.holders.length, 'person', 'people')}`;
 }
 
-/** The Role picked in the phone's select, which opens it. */
 const picked = computed({
     get: () => (props.selected === null ? 'new' : String(props.selected)),
     set: (id: string) => {

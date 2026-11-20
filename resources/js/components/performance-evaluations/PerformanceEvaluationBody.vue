@@ -10,30 +10,16 @@ import { outcomes } from '@/lib/outcomes';
 import { create } from '@/routes/performance-evaluations/goals';
 import type { PerformanceEvaluationRecord } from '@/types';
 
-/**
- * A Performance Evaluation's Goals as cards (rule L9), under the Outcome
- * of the year as a whole in a StatStrip (L10; plain text, S11) and its
- * summary once the viewer may see them, as both its own page and the
- * Employee's Performance page show it. Whoever may edit adds the first
- * Goal from here; the page header adds the rest.
- */
 const props = defineProps<{
     evaluation: PerformanceEvaluationRecord;
-    /** Whether the Performance Evaluation is the viewer's own. */
     isOwn: boolean;
-    /** Whether the viewer may add, edit or delete its Goals and give their Outcomes, and Complete it. */
     canEdit: boolean;
-    /** Whether the viewer may change its Goals' Progress. */
     canChangeProgress: boolean;
-    /** Whether the viewer sees its Outcomes and summary. */
     canSeeOutcomes: boolean;
-    /** Whether the Manager is giving Outcomes in the Year as a whole panel beside the Goals, which then shows the Outcome and summary instead (never on the Employee's Performance page, which has no panel). */
     isAssessing: boolean;
-    /** What the Goals' empty state calls the Employee ("Cara"). */
     employeeFirstName: string;
 }>();
 
-/** The Outcome of the year as a whole and how many Goals it weighed. */
 const stats = computed(() =>
     props.evaluation.outcome
         ? [

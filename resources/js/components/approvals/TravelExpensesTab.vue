@@ -29,15 +29,8 @@ import {
 } from '@/lib/travel-expenses';
 import type { TableColumn, TravelExpensesToApprove } from '@/types';
 
-/**
- * The Travel Expenses tab of the Approvals page: the Pending Travel
- * Expenses of the Employees the viewer manages, grouped by Travel Request
- * (rule K1), each approved or declined from its row or its RecordSheet,
- * which previews the receipt, or the ticked ones together.
- */
 const props = defineProps<{
     toApprove: TravelExpensesToApprove[];
-    /** The company currency's code, for adding up the selection. */
     currency: string;
 }>();
 
@@ -53,7 +46,6 @@ const columns: TableColumn[] = [
     { key: 'actions', label: '', align: 'end', minor: true },
 ];
 
-/** Every expense in Travel Request order, each knowing its Travel Request. */
 const expenses = computed<Expense[]>(() =>
     props.toApprove.flatMap((travelRequest) =>
         travelRequest.expenses.map((expense) => ({
@@ -72,7 +64,6 @@ const { record, recordOpen, openRecord, closeRecord } = useRecordInUrl(
 
 const { approving, approveOne: approve } = useApproveOne();
 
-/** The other Pending expenses of the open one's Travel Request. */
 const otherPending = computed(() =>
     record.value === null
         ? []
@@ -84,14 +75,12 @@ const otherPending = computed(() =>
 const travelRequestOf = (id: string): TravelExpensesToApprove | undefined =>
     props.toApprove.find((travelRequest) => String(travelRequest.id) === id);
 
-/** Whose Travel Request a group is, naming its tick-box. */
 function groupName(id: string): string {
     const travelRequest = travelRequestOf(id);
 
     return `${travelRequest?.employee.name}'s Travel Expenses for ${travelRequest?.destination}`;
 }
 
-/** Whose Travel Expense a row is and what for, naming its tick-box and buttons. */
 function describe(expense: Expense): string {
     return `${expense.travelRequest.employee.name}'s ${travelExpenseCategories[expense.category]} expense paid on ${formatDate(expense.paid_on)}`;
 }
@@ -113,7 +102,6 @@ const selectedExpenses = computed(() =>
     expenses.value.filter((expense) => selection.isSelected(expense.id)),
 );
 
-/** What the ticked expenses add up to, in the company currency. */
 const selectedTotal = computed(() =>
     formatMinorUnits(
         selectedExpenses.value.reduce(

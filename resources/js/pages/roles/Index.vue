@@ -17,18 +17,11 @@ import type {
     RolesPageMode,
 } from '@/types';
 
-/**
- * The Roles part of Company settings (rule L16): the Role list column, and
- * beside it the selected Role edited in place with the people holding it
- * below, or a new Role being made. Which Role is open lives in the URL.
- */
 const props = defineProps<{
     mode: RolesPageMode;
-    /** The selected Role's ID; null when making a new one or there are none. */
     selected: number | null;
     roles: RoleRecord[];
     permissions: PermissionChoice[];
-    /** Every Employee who can be given a Role: current and Future ones. */
     employees: RoleCandidate[];
 }>();
 
@@ -38,7 +31,6 @@ const selectedRole = computed(
 
 const draftName = ref('');
 
-/** The Role last shown, which Cancel on a new Role goes back to. */
 const lastSelected = ref<number | null>(props.selected);
 
 watch(

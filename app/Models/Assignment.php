@@ -15,12 +15,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * An Employee working on a Project for a period of time, with a Job Title
- * and a Capacity. It always falls within the Employee's working
- * period and the Project's dates. Every Employee has exactly one Internal
- * Assignment, to the Internal Project, whose dates mirror their Start Date
- * and Leaving Date and whose Job Title is the one the directory shows.
- *
  * @property int $id
  * @property int $employee_id
  * @property int $project_id
@@ -46,11 +40,7 @@ class Assignment extends Model
     /** @use HasFactory<AssignmentFactory> */
     use HasFactory;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -75,69 +65,42 @@ class Assignment extends Model
         return $this->belongsTo(Project::class);
     }
 
-    /**
-     * The Assignment's Pay history.
-     *
-     * @return HasMany<PayEntry, $this>
-     */
+    /** @return HasMany<PayEntry, $this> */
     public function payEntries(): HasMany
     {
         return $this->hasMany(PayEntry::class);
     }
 
-    /**
-     * The hours worked on the Assignment.
-     *
-     * @return HasMany<WorkEntry, $this>
-     */
+    /** @return HasMany<WorkEntry, $this> */
     public function workEntries(): HasMany
     {
         return $this->hasMany(WorkEntry::class);
     }
 
-    /**
-     * The Travel Requests made on the Assignment, in every state.
-     *
-     * @return HasMany<TravelRequest, $this>
-     */
+    /** @return HasMany<TravelRequest, $this> */
     public function travelRequests(): HasMany
     {
         return $this->hasMany(TravelRequest::class);
     }
 
-    /**
-     * Whether this is the Employee's Internal Assignment.
-     */
     public function isInternal(): bool
     {
         return $this->project->is_internal;
     }
 
-    /**
-     * Whether the Assignment ended before the day. The end date counts as a
-     * day of the Assignment, as in AssignmentBuilder::notEndedBefore().
-     */
+    /** The end date counts as a day of the Assignment, as in AssignmentBuilder::notEndedBefore(). */
     public function hasEndedBefore(CarbonInterface $day): bool
     {
         return $this->end_date !== null && $this->end_date->isBefore($day->copy()->startOfDay());
     }
 
-    /**
-     * Whether the Assignment runs on the day: started by then and not yet
-     * ended, as in AssignmentBuilder::runningOn().
-     */
+    /** Must match AssignmentBuilder::runningOn(). */
     public function isRunningOn(CarbonInterface $day): bool
     {
         return ! $this->start_date->isAfter($day->copy()->startOfDay()) && ! $this->hasEndedBefore($day);
     }
 
-    /**
-     * Whether the Assignment can be deleted, its Pay with it: never the
-     * Internal Assignment, and only while it has no Work Entries or Travel
-     * Requests. Once it has any, it can only be ended. Reads
-     * `withExists(['workEntries', 'travelRequests'])` when the query loaded
-     * it, so a list asks once rather than per Assignment.
-     */
+    /** Reads `withExists(['workEntries', 'travelRequests'])` when the query loaded it, so a list asks once rather than per Assignment. */
     public function canBeDeleted(): bool
     {
         $hasWorkEntries = $this->hasAttribute('work_entries_exists') ? $this->work_entries_exists : $this->workEntries()->exists();
@@ -146,10 +109,6 @@ class Assignment extends Model
         return ! $this->isInternal() && ! $hasWorkEntries && ! $hasTravelRequests;
     }
 
-    /**
-     * Remove the Pay changes dated after the Assignment's end, so its Pay
-     * stays inside it once its end moves earlier.
-     */
     public function dropPayAfterEnd(): void
     {
         if ($this->end_date === null) {
@@ -159,11 +118,6 @@ class Assignment extends Model
         $this->payEntries()->whereDate('effective_from', '>', $this->end_date)->delete();
     }
 
-    /**
-     * Move the Pay change in force on the Assignment's start to the start
-     * and remove the older ones, so its Pay still begins on its first day
-     * once its start moves later.
-     */
     public function movePayToStart(): void
     {
         $inForce = $this->payEntries()

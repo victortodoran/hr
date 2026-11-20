@@ -20,19 +20,12 @@ covers(MyPerformanceEvaluationController::class, PerformanceEvaluationController
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
-/**
- * Cara, who started long ago and reports to the given Manager.
- */
 function caraReportingTo(Employee $manager): Employee
 {
     return Employee::factory()->startedLongAgo()->reportingTo($manager)->create(['name' => 'Cara']);
 }
 
-/**
- * The Goals of the Performance Evaluation as stored, oldest first.
- *
- * @return array<int, array{title: string, description: string}>
- */
+/** @return array<int, array{title: string, description: string}> */
 function storedGoals(PerformanceEvaluation $evaluation): array
 {
     return $evaluation->goals()->get()->map(fn (Goal $goal): array => $goal->only('title', 'description'))->all();

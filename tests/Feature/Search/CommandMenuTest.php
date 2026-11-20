@@ -13,11 +13,7 @@ use function Pest\Laravel\get;
 
 covers(CommandMenuController::class, CommandMenuResults::class);
 
-/**
- * The names in one group of the command menu's results for the search.
- *
- * @return list<string>
- */
+/** @return list<string> */
 function commandMenuNames(Employee $viewer, string $search, string $group): array
 {
     return array_column(actingAs($viewer)->getJson(route('search', ['search' => $search]))->assertOk()->json($group), 'name');

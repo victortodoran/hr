@@ -22,27 +22,18 @@ beforeEach(function () {
     travelTo('2026-12-01 09:00');
 });
 
-/**
- * Hana, who may view the Time Off of everyone (or the given grants instead).
- *
- * @param  array<string, Scope|null>|null  $grants
- */
+/** @param  array<string, Scope|null>|null  $grants */
 function timeOffViewer(?array $grants = null): Employee
 {
     return employeeWith($grants ?? [Permission::ViewTimeOff->value => Scope::Everyone], ['name' => 'Hana']);
 }
 
-/**
- * Pending Paid Time Off of the Employee's, from the first to the last date.
- */
 function timeOffOf(Employee $employee, string $first, string $last): TimeOff
 {
     return TimeOff::factory()->for($employee)->create(['first_date' => $first, 'last_date' => $last]);
 }
 
 /**
- * Matches a page of listed Time Off that is these, in this order.
- *
  * @param  list<int>  $ids
  * @return Closure(Collection<int, array{id: int}>): bool
  */

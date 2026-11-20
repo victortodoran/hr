@@ -19,18 +19,10 @@ import {
 import { formatPeriod } from '@/lib/dates';
 import type { AssignmentRecord, Choice, OpenProject } from '@/types';
 
-/**
- * Adding an Assignment of an Employee to a Project, or editing one of their Assignments,
- * in a sheet over their page (rule L14): the Project, for a new one, its
- * Job Title, dates and Capacity. The Internal Assignment's dates follow
- * the Employee's, so its form leaves them out. Each opening starts from
- * what is saved for an Assignment being edited; a new one keeps what was
- * typed, so closing by accident loses nothing.
- */
+/** The Internal Assignment's dates follow the Employee's, so its form leaves them out. */
 const props = defineProps<{
     employee: Choice;
     projects: OpenProject[];
-    /** The Assignment being edited; none to add a new one. */
     assignment?: AssignmentRecord | null;
 }>();
 
@@ -65,7 +57,6 @@ const description = computed(() => {
         : 'Set an end date to end the Assignment early. Pay set to take effect after the end date is removed.';
 });
 
-/** The Project chosen for a new Assignment, whose dates bound its own. */
 const chosenProject = computed(() =>
     props.assignment
         ? null
@@ -74,9 +65,6 @@ const chosenProject = computed(() =>
           ) ?? null),
 );
 
-/**
- * The form's fields as the Assignment stands now, or blank for a new one.
- */
 function saved() {
     return {
         project_id: '',
@@ -89,11 +77,7 @@ function saved() {
 
 const form = useForm(saved());
 
-/**
- * Each opening for an Assignment starts from what is saved, dropping any
- * cancelled edits and old errors. Opening for a new one after an edit
- * starts blank; otherwise it keeps what was typed. Nothing resets mid-save.
- */
+/** A new Assignment keeps what was typed, so closing by accident loses nothing; nothing resets mid-save. */
 let lastOpenedFor: number | null = null;
 
 watch(open, (isOpen) => {

@@ -3,30 +3,18 @@ import { computed } from 'vue';
 import { describePeriod, formatHours } from '@/lib/work-entries';
 import type { WorkEntryAssignmentTotal, Period } from '@/types';
 
-/**
- * The Period's total hours in large type, saying what it covers, with the
- * hours on each Project beside it, most hours first, and the hours of any
- * Declined Work Entries, which count nowhere.
- */
 const props = withDefaults(
     defineProps<{
         total: number;
         declinedHours: number;
-        /** The Period the total covers, worded by `covers`. */
         period?: Period;
-        /** What the total covers, in place of the Period's wording, such as "in 3 matching Work Entries". */
         caption?: string;
         assignmentTotals?: WorkEntryAssignmentTotal[];
-        /** The ISO week number, for a Period in Week mode. */
         weekNumber?: number;
     }>(),
     { period: undefined, caption: undefined, assignmentTotals: () => [] },
 );
 
-/**
- * What the total covers, such as "in November 2026", "in Week 46" or
- * "from 1 Oct to 14 Nov".
- */
 const covers = computed((): string => {
     if (props.caption !== undefined || props.period === undefined) {
         return props.caption ?? '';

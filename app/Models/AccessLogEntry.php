@@ -8,9 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * One row of the Access Log: a change to a Role, or to who holds it, with
- * who made it and when. Rows are only ever added, and the app never shows
- * them.
+ * Rows are only ever added, and the app never shows them.
  *
  * @property int $id
  * @property AccessChange $change

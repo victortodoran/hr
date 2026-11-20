@@ -15,26 +15,13 @@ import {
 } from '@/components/ui/dialog';
 import type { RouteFormDefinition } from '@/wayfinder';
 
-/**
- * Asks before a step that changes something's state without deleting it,
- * such as reopening or cancelling, in plain colours; deletes ask through
- * `ConfirmDeleteDialog` instead. The `trigger` slot is the button that opens
- * it, and the default slot holds any fields sent along, such as the IDs of
- * the selected rows. With `withoutTrigger` it has no trigger and opens
- * through `v-model:open`, such as from a row's ⋯ menu. The dialog closes and emits `success` once the request
- * succeeds, and shows the refusal when it doesn't.
- */
 withDefaults(
     defineProps<{
-        /** Where the request asked about is sent, from a Wayfinder `.form()`. */
         form: RouteFormDefinition<'post'>;
         title: string;
         description: string;
-        /** The button that goes ahead. */
         confirmLabel: string;
-        /** The button that closes the dialog without going ahead. */
         dismissLabel?: string;
-        /** Leaves out the trigger, for a dialog opened through `v-model:open`. */
         withoutTrigger?: boolean;
     }>(),
     { dismissLabel: 'Cancel', withoutTrigger: false },

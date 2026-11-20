@@ -18,9 +18,7 @@ covers(PerformanceEvaluationController::class, PerformanceEvaluationPolicy::clas
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
 /**
- * Ana, who manages Ben, who manages Cara, each with an Open 2026
- * Performance Evaluation holding one Goal, and Zed, who reports to nobody
- * among them.
+ * Ana, Ben, Cara (each the Manager of the next, each with an Open 2026 Evaluation holding one Goal) and Zed, who reports to none of them.
  *
  * @return array{Employee, Employee, Employee, Employee}
  */

@@ -14,11 +14,6 @@ import {
 import { countOf } from '@/lib/roles';
 import type { RoleCandidate } from '@/types';
 
-/**
- * Picks Employees to add to a Role: a searchable checklist of those who
- * don't hold it, each with their status when they haven't started yet.
- * Emits the chosen ones on "Add N people".
- */
 const props = withDefaults(
     defineProps<{
         roleName: string;

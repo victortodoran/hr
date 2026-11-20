@@ -25,9 +25,6 @@ beforeEach(function () {
     Storage::fake(TravelExpense::RECEIPT_DISK);
 });
 
-/**
- * A PDF receipt in a temporary file, for attaching to the receipt field.
- */
 function travelReceiptFile(string $contents = '%PDF-1.4 hotel'): string
 {
     $receipt = tempnam(sys_get_temp_dir(), 'receipt').'.pdf';

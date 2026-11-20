@@ -23,20 +23,13 @@ beforeEach(function () {
     CompanySettings::factory()->create();
 });
 
-/**
- * Cara, who started on 6 Jan 2025 and reports to Mona.
- *
- * @param  array<string, mixed>  $attributes
- */
+/** @param  array<string, mixed>  $attributes */
 function traveller(array $attributes = []): Employee
 {
     return Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'manager_id' => fn () => Employee::factory()->startedLongAgo()->create(['name' => 'Mona'])->id, ...$attributes]);
 }
 
 /**
- * A Travel Request as the request form sends it: Cara to Berlin from Thu 3
- * to Sat 5 Dec 2026, with some changes.
- *
  * @param  array<string, mixed>  $changes
  * @return array<string, mixed>
  */
@@ -45,11 +38,7 @@ function travelForm(Assignment $assignment, array $changes = []): array
     return ['assignment_id' => $assignment->id, 'destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'purpose' => 'Relaunch workshop', ...$changes];
 }
 
-/**
- * The Employee's Travel Requests as stored, oldest first.
- *
- * @return array<int, array<string, mixed>>
- */
+/** @return array<int, array<string, mixed>> */
 function storedTravelRequests(Employee $employee): array
 {
     return TravelRequest::query()->where('employee_id', $employee->id)->orderBy('id')->get()

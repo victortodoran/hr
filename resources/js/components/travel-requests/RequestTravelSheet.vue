@@ -19,17 +19,9 @@ import {
 import { formatPeriod } from '@/lib/dates';
 import type { TravelAssignment } from '@/types';
 
-/**
- * Requesting travel in a sheet over the Travel page (rule L14): the
- * Assignment, chosen already when there is only one (V11), the
- * destination, the dates, every day counted, weekends included, within
- * the Assignment's dates, and the purpose. Once requested, the page shows
- * it under Upcoming and the sheet closes.
- */
 const props = defineProps<{
-    /** The earliest first date, as YYYY-MM-DD. */
+    /** YYYY-MM-DD. */
     today: string;
-    /** The Assignments not ended before today. */
     assignments: TravelAssignment[];
 }>();
 
@@ -45,14 +37,12 @@ const form = useForm({
     purpose: '',
 });
 
-/** The only Assignment's ID, or '' when there is a choice to make. */
 function onlyAssignment(): string {
     return props.assignments.length === 1
         ? String(props.assignments[0].id)
         : '';
 }
 
-/** Starts each request blank, with the only Assignment chosen. */
 watch(
     open,
     (isOpen) => {
@@ -71,7 +61,6 @@ const chosenAssignment = computed(() =>
     ),
 );
 
-/** The earliest first date: today, or the Assignment's start if later. */
 const earliestDate = computed(() => {
     const start = chosenAssignment.value?.start_date;
 

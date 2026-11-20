@@ -4,15 +4,8 @@ import PersonCell from '@/components/PersonCell.vue';
 import { show as employeePage } from '@/routes/employees';
 import type { RoleHolder } from '@/types';
 
-/**
- * The people holding a Role, or about to: each as a PersonCell (rule K13),
- * linked to their page when `linked`, with their status when they haven't
- * started or have left, and the row's actions, such as Remove, in the
- * `actions` slot. Says `empty` when there is nobody.
- */
 defineProps<{
     holders: RoleHolder[];
-    /** What shows when nobody is listed. */
     empty: string;
     linked?: boolean;
 }>();

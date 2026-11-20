@@ -11,17 +11,9 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 
-/**
- * Every reusable query on Work Entries.
- *
- * @extends ModelBuilder<WorkEntry>
- */
+/** @extends ModelBuilder<WorkEntry> */
 class WorkEntryBuilder extends ModelBuilder
 {
-    /**
-     * Limit the query to Pending Work Entries, which wait for the Employee's
-     * effective Manager to approve or decline them.
-     */
     public function pending(): static
     {
         return $this->scoped(function (): void {
@@ -29,9 +21,6 @@ class WorkEntryBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Approved Work Entries, which can be reopened.
-     */
     public function approved(): static
     {
         return $this->scoped(function (): void {
@@ -39,9 +28,6 @@ class WorkEntryBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Declined Work Entries, whose hours count nowhere.
-     */
     public function declined(): static
     {
         return $this->scoped(function (): void {
@@ -49,11 +35,6 @@ class WorkEntryBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Work Entries the actor may approve or decline:
-     * Pending ones of the Employees whose effective Manager they are, so
-     * never their own.
-     */
     public function decidableBy(Employee $actor): static
     {
         return $this->scoped(function () use ($actor): void {
@@ -61,10 +42,6 @@ class WorkEntryBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Work Entries whose hours count: all but the
-     * Declined ones.
-     */
     public function counted(): static
     {
         return $this->scoped(function (): void {
@@ -72,10 +49,6 @@ class WorkEntryBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Work Entries on a weekday from the first to the
-     * last date given.
-     */
     public function onWeekdaysBetween(CarbonInterface $first, CarbonInterface $last): static
     {
         return $this->scoped(function () use ($first, $last): void {
@@ -85,10 +58,6 @@ class WorkEntryBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Work Entries that copying onto the day could
-     * take from: those whose hours count, in the look-back window before it.
-     */
     public function toCopyOnto(CarbonImmutable $day): static
     {
         return $this->scoped(function () use ($day): void {
@@ -98,12 +67,7 @@ class WorkEntryBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Work Entries matching the filters, each applied
-     * only when set: an Employee, a Project, a Period and a state.
-     *
-     * @param  array{employee?: int|null, project?: int|null, period?: Period|null, state?: string|null}  $filters
-     */
+    /** @param  array{employee?: int|null, project?: int|null, period?: Period|null, state?: string|null}  $filters */
     public function filteredBy(array $filters): static
     {
         return $this->scoped(function () use ($filters): void {
@@ -117,10 +81,6 @@ class WorkEntryBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Work Entries of the given Employees, on any of
-     * their Assignments.
-     */
     public function ofEmployees(EmployeeBuilder $employees): static
     {
         return $this->scoped(function () use ($employees): void {
@@ -131,9 +91,7 @@ class WorkEntryBuilder extends ModelBuilder
     }
 
     /**
-     * Limit the query to the Work Entries the Work Entries page lists for the
-     * viewer: those of the Employees whose Work Entries they may see, matching
-     * the page's filters, where "all" stands for any Employee.
+     * "all" stands for any Employee.
      *
      * @param  array{period: Period, employee: int|'all'|null, project: int|null, state: string|null}  $filters
      */

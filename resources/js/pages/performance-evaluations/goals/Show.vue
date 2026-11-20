@@ -40,36 +40,16 @@ import type {
     ProgressChange,
 } from '@/types';
 
-/**
- * One Goal on its own page (rule L12): its title and description with the
- * thread of Comments on it, oldest first, and beside them, from 1280px
- * (L6), its Progress, its Outcome and every change to the Progress,
- * newest first, back to Not Started when it was added (a timeline, K1),
- * each starting with its StatusBadge word. The Employee and their
- * effective Manager change the Progress and add Comments (⌘↵ sends one)
- * while the Performance Evaluation is Open; anyone else who can see it
- * reads them. Their effective Manager also gives, changes or clears its
- * Outcome, edits the Goal in the Edit Goal sheet, whose own URL is
- * `?editing=1` (L14), or deletes it from the ⋯ menu (X3); anyone else who
- * may see Outcomes reads the one given. Picking a Progress or an Outcome
- * saves it straight away.
- */
 const props = defineProps<{
     evaluation: PerformanceEvaluationSummary;
     goal: GoalRecord;
     history: ProgressChange[];
     comments: GoalComment[];
-    /** Whether the Performance Evaluation is the viewer's own. */
     isOwn: boolean;
-    /** Whether the viewer may change the Goal's Progress. */
     canChangeProgress: boolean;
-    /** Whether the viewer may add Comments to the Goal. */
     canComment: boolean;
-    /** Whether the viewer may edit or delete the Goal itself and give its Outcome, which means they also see it. */
     canEdit: boolean;
-    /** Whether the viewer sees its Outcome. */
     canSeeOutcomes: boolean;
-    /** Whether the Edit Goal sheet is open (`?editing=1`). */
     startsEditing: boolean;
 }>();
 
@@ -83,10 +63,8 @@ const { open: editOpen, setOpen: setEditOpen } = useOverlayRoute(
     () => showGoal(goalRoute).url,
 );
 
-/** Whether the confirmation before deleting the Goal is showing. */
 const confirmingDeletion = ref(false);
 
-/** ⌘↵ or Ctrl↵ in the Comment box adds the Comment. */
 function sendOnModifierEnter(event: KeyboardEvent): void {
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
@@ -94,7 +72,6 @@ function sendOnModifierEnter(event: KeyboardEvent): void {
     }
 }
 
-/** One line of the history: a change, or the Goal starting Not Started. */
 type HistoryRow = {
     key: string;
     progress: Progress;
@@ -117,10 +94,8 @@ const historyRows = computed<HistoryRow[]>(() => [
     },
 ]);
 
-/** How many History lines show until the viewer asks for all of them. */
 const historyPreviewLength = 5;
 
-/** Whether every History line shows, not just the latest few. */
 const showingAllHistory = ref(false);
 
 const shownHistoryRows = computed(() =>
@@ -129,14 +104,12 @@ const shownHistoryRows = computed(() =>
         : historyRows.value.slice(0, historyPreviewLength),
 );
 
-/** Whose Performance Evaluation the Goal belongs to, under its title and in its sheet. */
 const evaluationDescription = `${props.evaluation.employee.name} · ${props.evaluation.year} Performance Evaluation`;
 
 const evaluationTitle = props.isOwn
     ? String(props.evaluation.year)
     : `${props.evaluation.employee.name} · ${props.evaluation.year}`;
 
-/** Performance › year for the Employee; Performance Evaluations › name · year for anyone else. */
 const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
     ? [{ title: 'Performance', href: mine() }]
     : [

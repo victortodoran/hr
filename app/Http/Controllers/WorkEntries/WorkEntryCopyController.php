@@ -10,17 +10,8 @@ use App\Models\Employee;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Repeats a typical day: copies an Employee's Work Entries from the latest
- * earlier day with any onto another day.
- */
 class WorkEntryCopyController extends Controller
 {
-    /**
-     * Copy the source day's Work Entries onto the day as new Pending ones,
-     * all or none, then go back to the tab and Period the page sent,
-     * holding the day.
-     */
     public function store(CopyWorkEntriesRequest $request, Employee $employee, CopyWorkEntries $copyWorkEntries): RedirectResponse
     {
         $date = $request->day();

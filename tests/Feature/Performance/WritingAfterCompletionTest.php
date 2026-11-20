@@ -22,8 +22,7 @@ covers(AssessPerformanceEvaluation::class, GiveGoal::class, ChangeGoal::class, R
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
 /**
- * Cara's Open 2026 Performance Evaluation with one Goal, Met, and Ben,
- * her Manager, holding it as loaded while it was still Open.
+ * Ben holds the Evaluation as loaded while it was still Open.
  *
  * @return array{Employee, Employee, PerformanceEvaluation, Goal}
  */
@@ -37,11 +36,7 @@ function evaluationLoadedWhileOpen(): array
     return [$ben, $cara, $evaluation, $goal];
 }
 
-/**
- * Complete the Performance Evaluation in the database, leaving the
- * models already loaded thinking it is still Open, as a Complete made
- * between the policy check and the write would.
- */
+/** Leaves the loaded models thinking it is still Open, as a Complete made between the policy check and the write would. */
 function completeSinceLoaded(PerformanceEvaluation $evaluation): void
 {
     PerformanceEvaluation::query()->whereKey($evaluation->id)->update(['state' => PerformanceEvaluationState::Completed, 'completed_at' => now()->subMinute()]);

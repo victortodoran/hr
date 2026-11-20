@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { Check } from '@lucide/vue';
 
-/**
- * The brief "Saved" tick beside a dropdown that saves on pick, read out
- * to screen readers as it shows.
- */
 defineProps<{
-    /** Whether the tick shows. */
     shown: boolean;
 }>();
 </script>

@@ -14,19 +14,11 @@ import {
 import { noManager } from '@/lib/employees';
 import type { Choice, EmploymentStatus, ManagerChoice } from '@/types';
 
-/**
- * An Employee's record in the form template's sections (rule L13):
- * Person (name and email), Organisation (Department and Manager, with
- * what "No Manager" means as a Callout once it's chosen, K12) and
- * Employment (Start and Leaving Date side by side, V6, and the Job Title
- * when adding one). A Former Employee's Leaving Date has passed, so it
- * can't be changed.
- */
+/** A Former Employee's Leaving Date has passed, so it can't be changed. */
 const props = defineProps<{
     departments: Choice[];
     managers: ManagerChoice[];
     errors: Partial<Record<string, string>>;
-    /** The Employee's status when editing them; left out when adding. */
     status?: EmploymentStatus;
 }>();
 
@@ -36,7 +28,6 @@ const departmentId = defineModel<string>('departmentId', { required: true });
 const managerId = defineModel<string>('managerId', { required: true });
 const startDate = defineModel<string>('startDate', { required: true });
 const leavingDate = defineModel<string>('leavingDate', { required: true });
-/** Asked for only when adding an Employee. */
 const jobTitle = defineModel<string>('jobTitle');
 
 const hasLeft = props.status === 'former';

@@ -8,18 +8,9 @@ import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
 import type { Goal } from '@/types';
 
-/**
- * Adding a Goal to a Performance Evaluation, or editing one, in a sheet
- * over the page it was opened from (rule L14): its title and what
- * achieving it looks like. Adding submits as "Add Goal", the button that
- * opened it (C13); editing saves the Goal as "Save Goal". Each opening
- * starts from the Goal as saved, or blank.
- */
 const props = defineProps<{
     performanceEvaluationId: number;
-    /** The Goal being edited; none while adding one. */
     goal?: Goal | null;
-    /** One line under the title: whose Performance Evaluation and which year. */
     description: string;
 }>();
 

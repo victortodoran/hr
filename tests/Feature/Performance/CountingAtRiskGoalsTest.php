@@ -22,8 +22,7 @@ covers(MyPerformanceEvaluationController::class, PerformanceEvaluationController
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
 /**
- * Ben, who manages Cara and Lia. Cara's Open 2026 Performance Evaluation
- * has two Goals At Risk and one On Track; Lia's has none At Risk.
+ * Ben, Cara (two Goals At Risk, one On Track), Lia (none At Risk) and Cara's Evaluation.
  *
  * @return array{Employee, Employee, Employee, PerformanceEvaluation}
  */
@@ -41,8 +40,7 @@ function atRiskLine(): array
 }
 
 /**
- * Assert the At Risk count of the named rows on the Performance
- * Evaluations page for 2026, null for a row with no Evaluation.
+ * Null for a row with no Evaluation.
  *
  * @param  array<string, int|null>  $expected
  */

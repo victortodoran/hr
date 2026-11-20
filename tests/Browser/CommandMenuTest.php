@@ -11,7 +11,6 @@ use function Pest\Laravel\actingAs;
 
 covers(CommandMenuController::class);
 
-/** The command menu's results, group label by group label, as one line. */
 const COMMAND_MENU_GROUPS = <<<'JS'
     [...document.querySelectorAll('[data-test="command-menu"] [role="group"]')]
         .map((group) => group.firstElementChild.textContent.trim()).join(' · ')

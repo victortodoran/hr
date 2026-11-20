@@ -22,12 +22,6 @@ defineOptions({
     },
 });
 
-/**
- * Adding an Employee (rule L13): their record and internal Job Title, in
- * the form template's sections. Adding them invites them to set a
- * password; Cancel returns to the Employees. Leaving with anything
- * entered asks first (V9).
- */
 defineProps<{
     departments: Choice[];
     managers: ManagerChoice[];

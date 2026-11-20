@@ -7,18 +7,11 @@ import SubmitButton from '@/components/SubmitButton.vue';
 import { formatWeekdayAndDay } from '@/lib/dates';
 import type { Choice } from '@/types';
 
-/**
- * Copies the Work Entries of the latest earlier day with any onto a day,
- * such as "Copy Thursday's Work Entries", saying why when it's refused. It is a
- * plain button, so it can sit inside the day panel's add form.
- */
+/** A plain button, so it can sit inside the day panel's add form. */
 const props = defineProps<{
     employee: Choice;
-    /** The URL query asking for the Period shown, so copying returns to it. */
     periodQuery: Record<string, string>;
-    /** The day to copy onto. */
     date: string;
-    /** The day to copy from. */
     copyFrom: string;
 }>();
 
@@ -34,11 +27,6 @@ function copy(): void {
     );
 }
 
-/**
- * What the button says: "Copy Thursday's Work Entries" when the day copied from
- * is in the week before, else "Copy Work Entries from Thu 12", naming the month
- * when it falls in another one than the day copied onto: "Fri 30 Oct".
- */
 function label(): string {
     const from = new Date(`${props.copyFrom}T00:00:00`);
     const daysBefore =

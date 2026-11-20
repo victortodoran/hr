@@ -19,12 +19,6 @@ beforeEach(function () {
     travelTo('2026-03-04 09:00');
 });
 
-/**
- * Cara, who reports to Ben, with 20 Paid Days a year and Time Off in
- * every state: 5 days of Approved Paid Time Off already taken, Declined
- * Paid Time Off, 2 days of Pending Paid Time Off and Cancelled Unpaid
- * Time Off, all decided by Ben.
- */
 function caraWithTimeOff(Employee $ben): Employee
 {
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara', 'paid_days' => 20]);

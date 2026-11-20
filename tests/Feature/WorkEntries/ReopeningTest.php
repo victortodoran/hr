@@ -20,12 +20,7 @@ beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
 
-/**
- * Rae, who may reopen the Work Entries of her Reports (or the given grants
- * instead), below Ada at the top.
- *
- * @param  array<string, Scope|null>|null  $grants
- */
+/** @param  array<string, Scope|null>|null  $grants */
 function reopener(?array $grants = null): Employee
 {
     $ada = Employee::factory()->create(['name' => 'Ada']);

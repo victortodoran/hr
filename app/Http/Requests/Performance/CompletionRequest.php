@@ -7,10 +7,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/**
- * Completing a Performance Evaluation: the Outcome its Manager gives the
- * whole, one from the fixed list.
- */
 class CompletionRequest extends FormRequest
 {
     /**
@@ -23,9 +19,6 @@ class CompletionRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Outcome of the whole.
-     */
     public function outcome(): Outcome
     {
         return Outcome::from($this->string('outcome')->value());

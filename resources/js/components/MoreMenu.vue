@@ -13,13 +13,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-/**
- * A detail header's ⋯ menu (rule L12): an icon button that names itself in
- * a Tooltip (F20), opening the slot's menu items, destructive ones last.
- * On a phone the button is a 44px target (P6).
- */
 defineProps<{
-    /** Names the button and its Tooltip, such as "More for this Project". */
     label: string;
 }>();
 
@@ -27,10 +21,7 @@ defineSlots<{
     default: () => unknown;
 }>();
 
-/**
- * The ⋯ button. Its Tooltip sits between it and the menu, so the menu is
- * anchored to it by hand: reka-ui would otherwise anchor it to the Tooltip.
- */
+/** The menu is anchored to the button by hand: reka-ui would otherwise anchor it to the Tooltip in between. */
 const trigger = ref<InstanceType<typeof Button> | null>(null);
 </script>
 

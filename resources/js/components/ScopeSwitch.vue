@@ -12,11 +12,6 @@ import { index as workEntries } from '@/routes/work-entries';
 import { index as workEntryList } from '@/routes/work-entry-list';
 import type { ScopedArea } from '@/types';
 
-/**
- * Moves between the Employee's own page of an area and the list across the
- * Employees they may see, labelled by how far that reaches (rule L19).
- * Hidden when only one applies.
- */
 const props = defineProps<{
     area: ScopedArea;
 }>();

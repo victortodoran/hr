@@ -13,10 +13,6 @@ import { show as employeePage } from '@/routes/employees';
 import { edit as security } from '@/routes/security';
 import type { Employee } from '@/types';
 
-/**
- * The user menu (rule L27): Your profile, the Employee's own Employee page,
- * which every Employee may open; Settings, which is Security; and Log out.
- */
 type Props = {
     employee: Employee;
 };

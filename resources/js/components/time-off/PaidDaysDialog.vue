@@ -19,14 +19,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Choice } from '@/types';
 
-/**
- * Edits an Employee's Paid Days per year in a small dialog, opened by an
- * "Edit…" button (B8) and closed once saved. It warns that the number counts for
- * every year, past ones included.
- */
 defineProps<{
     employee: Choice;
-    /** The Employee's Paid Days, the same number for every year. */
     paidDays: number;
 }>();
 

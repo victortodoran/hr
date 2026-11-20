@@ -15,9 +15,6 @@ use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         $this->configureDefaults();
@@ -25,9 +22,8 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * The signed-in Employee keeps what it reads about its access and
-     * reporting line for the request. A model kept past it, as tests
-     * signing in with actingAs() keep theirs, reads it afresh on the next.
+     * A model kept past the request, as actingAs() in tests keeps it, reads its
+     * access afresh on the next.
      */
     protected function forgetAccessAfterEachRequest(): void
     {
@@ -40,9 +36,6 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Configure default behaviors for production-ready applications.
-     */
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);

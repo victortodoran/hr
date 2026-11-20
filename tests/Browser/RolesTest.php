@@ -11,8 +11,7 @@ use function Pest\Laravel\actingAs;
 covers(RoleController::class);
 
 /**
- * Someone who manages Roles, through a Role called "Role Managers", next to
- * a Payroll Role held by Ben and an Auditor Role held by nobody.
+ * The Role manager, a Payroll Role held by Ben, and an Auditor Role held by nobody.
  *
  * @return array{Employee, Role, Role}
  */

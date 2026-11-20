@@ -2,14 +2,6 @@
 import StatusIcon from '@/components/StatusIcon.vue';
 import type { StatusBadgeState } from '@/types';
 
-/**
- * Two to six numbers about the current view, in one row with hairlines
- * between them (rules L10, K10): each a value in `text-stat` and a label
- * under it, with the state's icon before the label when it counts one
- * state. A muted value is one that doesn't count, such as Declined hours.
- * On a phone the row wraps. Inside a Home widget's card it goes `flush`,
- * without a border of its own (rule F18).
- */
 defineProps<{
     stats: {
         label: string;
@@ -17,7 +9,6 @@ defineProps<{
         state?: StatusBadgeState;
         muted?: boolean;
     }[];
-    /** Without its own border and padding, for a strip inside a Card. */
     flush?: boolean;
 }>();
 </script>

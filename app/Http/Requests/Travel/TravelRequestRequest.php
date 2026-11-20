@@ -10,13 +10,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
-/**
- * A Travel Request the signed-in Employee makes for themselves: one of their
- * own Assignments, a destination, a first and a last date and a purpose. It
- * starts today or later, every date falls within the Assignment's dates, and
- * it shares no day with their Pending or Approved Travel Requests or Time
- * Off.
- */
 class TravelRequestRequest extends FormRequest
 {
     /**
@@ -33,13 +26,7 @@ class TravelRequestRequest extends FormRequest
         ];
     }
 
-    /**
-     * Once every field is valid on its own, check the dates against the
-     * Assignment and against the Employee's other Travel Requests and Time
-     * Off.
-     *
-     * @return array<int, callable(Validator): void>
-     */
+    /** @return array<int, callable(Validator): void> */
     public function after(): array
     {
         return [function (Validator $validator): void {
@@ -53,11 +40,7 @@ class TravelRequestRequest extends FormRequest
         }];
     }
 
-    /**
-     * Refuse dates before the Assignment starts or after it ends. The
-     * Assignment falls within the Employee's period of work, so this keeps
-     * the travel within it too.
-     */
+    /** The Assignment falls within the Employee's period of work, so this keeps the travel within it too. */
     private function checkAssignmentDates(Validator $validator): void
     {
         $assignment = Assignment::query()->with('project:id,name')->findOrFail($this->integer('assignment_id'));
@@ -76,10 +59,6 @@ class TravelRequestRequest extends FormRequest
         }
     }
 
-    /**
-     * Refuse travel sharing a day with the Employee's own Pending or
-     * Approved Travel Requests. Declined and Cancelled ones never block.
-     */
     private function checkTravelOverlap(Validator $validator): void
     {
         $overlapped = $this->employee()->travelRequests()
@@ -96,10 +75,6 @@ class TravelRequestRequest extends FormRequest
         }
     }
 
-    /**
-     * Refuse travel sharing a day with the Employee's own Pending or
-     * Approved Time Off. Declined and Cancelled Time Off never blocks.
-     */
     private function checkTimeOffOverlap(Validator $validator): void
     {
         $overlapped = $this->employee()->timeOff()
@@ -116,11 +91,7 @@ class TravelRequestRequest extends FormRequest
         }
     }
 
-    /**
-     * The Travel Request as it is stored.
-     *
-     * @return array{assignment_id: int, destination: string, first_date: string, last_date: string, purpose: string}
-     */
+    /** @return array{assignment_id: int, destination: string, first_date: string, last_date: string, purpose: string} */
     public function travelRequest(): array
     {
         return [
@@ -132,9 +103,6 @@ class TravelRequestRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Employee making the Travel Request: always the one signed in.
-     */
     public function employee(): Employee
     {
         /** @var Employee */

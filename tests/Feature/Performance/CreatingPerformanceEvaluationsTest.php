@@ -18,10 +18,6 @@ covers(CreatePerformanceEvaluation::class, PerformanceEvaluationController::clas
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
-/**
- * Cara, who started long ago and reports to the given Manager, ready to be
- * given a Performance Evaluation.
- */
 function caraForANewEvaluation(Employee $manager): Employee
 {
     return Employee::factory()->startedLongAgo()->reportingTo($manager)->create(['name' => 'Cara']);

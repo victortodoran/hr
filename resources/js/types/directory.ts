@@ -9,10 +9,6 @@ export type DirectoryEntry = {
     manager: Choice | null;
 };
 
-/**
- * One Employee in a Reporting Chain, with where the viewer may follow their
- * name: their Employee page, their sheet over the Directory, or nowhere.
- */
 export type ChainMember = {
     id: number;
     name: string;
@@ -22,15 +18,10 @@ export type ChainMember = {
     link: 'employee' | 'directory' | null;
 };
 
-/**
- * An Employee's Reporting Chain: everyone above them from the highest, who
- * has no Manager, down, the Employee, and the Employees they are the Manager of.
- */
 export type ReportingChainView = {
     above: ChainMember[];
     employee: ChainMember;
     below: ChainMember[];
 };
 
-/** The tabs of the Directory page. */
 export type DirectoryTab = 'everyone' | 'reports';

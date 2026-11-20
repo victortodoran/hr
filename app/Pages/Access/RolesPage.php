@@ -6,39 +6,21 @@ use App\Enums\Permission;
 use App\Models\Employee;
 use App\Models\Role;
 
-/**
- * The Roles page as the props it renders: every Role, by name, with its
- * Permissions and holders, the one selected (edited in place), or a new
- * one being made; plus every Permission a Role can contain, and every
- * Employee who hasn't left, to give Roles to.
- */
 final class RolesPage
 {
-    /**
-     * The Roles page on the first Role by name.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function index(): array
     {
         return self::props('view', Role::query()->orderBy('name')->orderBy('id')->first());
     }
 
-    /**
-     * The Roles page on one Role.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function show(Role $role): array
     {
         return self::props('view', $role);
     }
 
-    /**
-     * The Roles page with a new Role being made.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function create(): array
     {
         return self::props('create', null);

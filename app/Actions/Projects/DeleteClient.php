@@ -5,14 +5,9 @@ namespace App\Actions\Projects;
 use App\Models\Client;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Deletes a Client, refusing while it still has Projects.
- */
 class DeleteClient
 {
-    /**
-     * @throws ValidationException
-     */
+    /** @throws ValidationException */
     public function delete(Client $client): void
     {
         if ($client->projects()->exists()) {

@@ -22,8 +22,7 @@ class RoleFactory extends Factory
     }
 
     /**
-     * Give the Role these Permissions. Map each Permission value to its
-     * Scope, or to null for company-wide Permissions.
+     * A null Scope marks a company-wide Permission.
      *
      * @param  array<string, Scope|null>  $grants
      */
@@ -36,9 +35,6 @@ class RoleFactory extends Factory
         });
     }
 
-    /**
-     * The Admin Role, which always holds every Permission.
-     */
     public function admin(): static
     {
         return $this->state(fn (array $attributes) => [

@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 
-/**
- * The app's neutral mark (G14): a simple glyph in a 28px rounded square,
- * followed by the app's name.
- */
 const name = usePage().props.name;
 </script>
 

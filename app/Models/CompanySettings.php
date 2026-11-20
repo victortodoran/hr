@@ -11,8 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * The installation's company (ADR 0003): its name and the single currency
- * every Pay and Travel Expense is recorded in. There is at most one row.
+ * There is at most one row (ADR 0003).
  *
  * @property int $id
  * @property string $name
@@ -27,27 +26,17 @@ class CompanySettings extends Model
     /** @use HasFactory<CompanySettingsFactory> */
     use HasFactory;
 
-    /**
-     * The installation's company settings, or null before installation.
-     */
     public static function current(): ?self
     {
         return static::query()->first();
     }
 
-    /**
-     * Whether the currency can no longer change, because Pay or Travel
-     * Expenses have been recorded in it.
-     */
     public static function isCurrencyLocked(): bool
     {
         return PayEntry::query()->exists() || TravelExpense::query()->exists();
     }
 
-    /**
-     * The currency every Pay and Travel Expense is recorded in. The company is installed
-     * before anyone can sign in, so its settings always exist by then.
-     */
+    /** The company is installed before anyone can sign in, so its settings always exist by then. */
     public static function payCurrency(): Currency
     {
         return new Currency(static::query()->sole()->currency);

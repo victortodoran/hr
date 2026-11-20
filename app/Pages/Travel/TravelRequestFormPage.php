@@ -5,19 +5,9 @@ namespace App\Pages\Travel;
 use App\Models\Assignment;
 use App\Models\Employee;
 
-/**
- * The Travel page with the sheet for making a Travel Request open over it
- * (rule L14), as the props it renders.
- */
 final class TravelRequestFormPage
 {
-    /**
-     * The Travel page's props (TravelPage), that the sheet is open, today,
-     * and the Assignments the Employee can still travel on, those not ended
-     * before today, by Project name with their dates.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function create(Employee $actor): array
     {
         return [

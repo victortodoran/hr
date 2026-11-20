@@ -18,29 +18,17 @@ import type {
     TableColumn,
 } from '@/types';
 
-/**
- * The Work tab of an Employee's page: their Work Entries in a Period, as
- * the Work Entries page lists them for this Employee, read-only. Reopening
- * and Export stay on that page, which "Open in Work Entries" opens on the
- * same Period.
- */
 const props = defineProps<{
     employee: Choice;
     work: {
         today: string;
         period: Period;
         entries: Paginated<ListedWorkEntry>;
-        /** Total hours of the Work Entries that aren't Declined. */
         total: number;
-        /** Total hours of the Declined ones, which count nowhere. */
         declinedTotal: number;
     };
 }>();
 
-/**
- * Day, Project (with the Status under it on a phone), Description, Status
- * and Hours.
- */
 const columns: TableColumn[] = [
     { key: 'date', label: 'Day' },
     { key: 'project', label: 'Project' },
@@ -66,7 +54,6 @@ const stats = computed(() => [
         : []),
 ]);
 
-/** The week on the Work page holding the Work Entry. */
 function weekOf(entry: ListedWorkEntry): string {
     return week.url({
         query: { employee: props.employee.id, week: entry.date },

@@ -11,11 +11,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use LogicException;
 
-/**
- * A new entry in an Assignment's Pay history: its kind, its amount in the
- * company currency as people type it (such as "4500.50"), and the day it
- * takes effect, which must fall while the Assignment runs and may be ahead.
- */
 class PayEntryRequest extends FormRequest
 {
     /**
@@ -66,11 +61,7 @@ class PayEntryRequest extends FormRequest
         ];
     }
 
-    /**
-     * The entry to record, with its amount in minor units.
-     *
-     * @return array{kind: string, amount: int, effective_from: string}
-     */
+    /** @return array{kind: string, amount: int, effective_from: string} */
     public function payEntry(): array
     {
         return [
@@ -80,9 +71,6 @@ class PayEntryRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Assignment the Pay is for.
-     */
     private function assignment(): Assignment
     {
         $assignment = $this->route('assignment');

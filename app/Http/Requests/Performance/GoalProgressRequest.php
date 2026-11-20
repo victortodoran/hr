@@ -7,9 +7,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/**
- * Changing a Goal's Progress: one from the fixed list, required.
- */
 class GoalProgressRequest extends FormRequest
 {
     /**
@@ -22,9 +19,6 @@ class GoalProgressRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Progress chosen.
-     */
     public function progress(): Progress
     {
         return Progress::from($this->string('progress')->value());

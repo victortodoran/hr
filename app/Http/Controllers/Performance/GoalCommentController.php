@@ -12,18 +12,8 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Writing Comments on a Goal, which the Employee and their effective
- * Manager both do while the Performance Evaluation is Open. A Comment is
- * never changed or removed on its own, so writing is all there is.
- */
 class GoalCommentController extends Controller
 {
-    /**
-     * Write a Comment on the Goal and lead back to the Goal's page. One
-     * whose Performance Evaluation was Completed since the policy check
-     * is refused, never written.
-     */
     public function store(GoalCommentRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor, CommentOnGoal $commentOnGoal): RedirectResponse
     {
         $written = $commentOnGoal->comment($goal, $actor, $request->body());

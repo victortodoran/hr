@@ -18,17 +18,9 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
-/**
- * An Employee's record, when adding or editing them. Adding one also asks
- * for their internal Job Title, which lives on their Internal Assignment
- * and is changed afterwards on the Assignments tab.
- */
 class EmployeeRequest extends FormRequest
 {
-    /**
-     * Emails are compared and stored in lowercase, so capitals never make
-     * two addresses different.
-     */
+    /** Emails are compared and stored in lowercase, so capitals never make two addresses different. */
     protected function prepareForValidation(): void
     {
         if (is_string($this->input('email'))) {
@@ -62,10 +54,6 @@ class EmployeeRequest extends FormRequest
         ];
     }
 
-    /**
-     * Refuses a new Manager who reports to the Employee, directly or not,
-     * since that would turn the reporting line into a loop.
-     */
     private function noLoopUnder(?Employee $employee): Closure
     {
         return function (string $attribute, mixed $managerId, Closure $fail) use ($employee): void {
@@ -76,10 +64,7 @@ class EmployeeRequest extends FormRequest
     }
 
     /**
-     * Once the record is valid on its own, refuse a new Manager or Leaving
-     * Date that would leave someone with Pending Work Entries or Pending Time
-     * Off with no Manager to decide them: the Employee themselves, or one of
-     * their Reports, whose effective Manager may come through them.
+     * A Report's effective Manager may come through the Employee, so their Reports are checked too.
      *
      * @return array<int, callable(Validator): void>
      */
@@ -110,14 +95,7 @@ class EmployeeRequest extends FormRequest
         }];
     }
 
-    /**
-     * Who, of the Employee and everyone below them, would be left with no
-     * Manager while they have Pending Work Entries, Time Off, Travel
-     * Requests or Travel Expenses, or an Open Performance Evaluation, once the record is saved with this Manager and Leaving Date and, for a
-     * Leaving Date, once it has passed. The change is tried in a transaction
-     * that is always undone, so the reporting line is read exactly as the
-     * rest of the app reads it. The Employee comes first, then by name.
-     */
+    /** The change is tried in a transaction that is always undone, so the reporting line is read exactly as the rest of the app reads it. */
     private function strandedBy(Employee $employee, ?int $managerId, ?string $leavingDate): ?Employee
     {
         $on = $leavingDate !== null && CarbonImmutable::parse($leavingDate)->gte(today())
@@ -141,10 +119,7 @@ class EmployeeRequest extends FormRequest
         }
     }
 
-    /**
-     * Refuses a Leaving Date for the last Employee who can manage Roles,
-     * since the company would lose the ability to change access.
-     */
+    /** Without anyone who can manage Roles, the company could never change access again. */
     private function keepsSomeoneWhoCanManageRoles(?Employee $employee): Closure
     {
         return function (string $attribute, mixed $leavingDate, Closure $fail) use ($employee): void {
@@ -185,11 +160,7 @@ class EmployeeRequest extends FormRequest
         ];
     }
 
-    /**
-     * Whether a new Employee is being added with a Former Employee's email,
-     * so the person is likely being rehired, which takes a new address
-     * (ADR 0001).
-     */
+    /** A rehired person takes a new email address (ADR 0001). */
     private function belongsToFormerEmployee(): bool
     {
         return $this->route('employee') === null

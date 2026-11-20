@@ -11,19 +11,9 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Every change to Roles and who holds them. Each change is written to the
- * Access Log, with who made it, in the same transaction as the change. At
- * most one Role is given to every new Employee: giving a Role to them takes
- * that from any other.
- */
 class ChangeAccess
 {
     /**
-     * Create a Role with the given Permissions, each mapped to its Scope or
-     * to null for company-wide Permissions, and say whether every new
-     * Employee gets it, and, when given, who holds it.
-     *
      * @param  array<string, string|null>  $grants
      * @param  array<int, int>|null  $holders
      */
@@ -44,10 +34,7 @@ class ChangeAccess
         });
     }
 
-    /**
-     * Create the one Admin Role, which always holds every Permission, so it
-     * stores no grants. New Employees don't get it.
-     */
+    /** Admin always holds every Permission, so it stores no grants. */
     public function createAdminRole(Employee $actor, string $name): Role
     {
         return DB::transaction(function () use ($actor, $name): Role {
@@ -62,12 +49,8 @@ class ChangeAccess
     }
 
     /**
-     * Rename the Role, replace its Permissions and Scopes, and say whether
-     * every new Employee gets it. Admin always holds every Permission, so
-     * the grants sent for it are ignored, and it is never given to every
-     * new Employee. When holders are given, the Role is given to and taken
-     * from Employees so exactly they hold it. Everything is refused together
-     * when it leaves nobody able to manage Roles.
+     * Admin always holds every Permission, so the grants sent for it are
+     * ignored.
      *
      * @param  array<string, string|null>  $grants
      * @param  array<int, int>|null  $holders
@@ -95,12 +78,7 @@ class ChangeAccess
         });
     }
 
-    /**
-     * Delete the Role, taking it from everyone who holds it. Admin can't be
-     * deleted.
-     *
-     * @throws ValidationException
-     */
+    /** @throws ValidationException */
     public function deleteRole(Employee $actor, Role $role): void
     {
         if ($role->is_admin) {
@@ -120,9 +98,6 @@ class ChangeAccess
         });
     }
 
-    /**
-     * Give the Role to an Employee.
-     */
     public function giveRole(Employee $actor, Role $role, Employee $employee): void
     {
         DB::transaction(function () use ($actor, $role, $employee): void {
@@ -132,11 +107,7 @@ class ChangeAccess
         });
     }
 
-    /**
-     * Give the Role to each of the Employees, all or none.
-     *
-     * @param  iterable<int, Employee>  $employees
-     */
+    /** @param  iterable<int, Employee>  $employees */
     public function giveRoleToEach(Employee $actor, Role $role, iterable $employees): void
     {
         DB::transaction(function () use ($actor, $role, $employees): void {
@@ -146,12 +117,7 @@ class ChangeAccess
         });
     }
 
-    /**
-     * Take the Role away from an Employee who holds it. One who doesn't
-     * hold it is not found.
-     *
-     * @throws ModelNotFoundException<Employee>
-     */
+    /** @throws ModelNotFoundException<Employee> */
     public function takeRole(Employee $actor, Role $role, Employee $employee): void
     {
         $role->employees()->findOrFail($employee->id);
@@ -159,10 +125,6 @@ class ChangeAccess
         $this->take($actor, $role, $employee);
     }
 
-    /**
-     * Take the Role away from an Employee known to hold it, recorded in the
-     * Access Log.
-     */
     private function take(Employee $actor, Role $role, Employee $employee): void
     {
         DB::transaction(function () use ($actor, $role, $employee): void {
@@ -175,9 +137,8 @@ class ChangeAccess
     }
 
     /**
-     * Refuse the change, undoing it, when it leaves nobody who can manage
-     * Roles from now on. A change that doesn't make things worse is let
-     * through, so an unrelated edit is never blocked.
+     * A change that doesn't make things worse is let through, so an unrelated
+     * edit is never blocked.
      *
      * @throws ValidationException
      */
@@ -190,21 +151,12 @@ class ChangeAccess
         }
     }
 
-    /**
-     * Whether any Employee can manage Roles from now on.
-     */
     private function someoneCanManageRoles(): bool
     {
         return Employee::query()->lastingRoleManagers()->exists();
     }
 
-    /**
-     * Give the Role to the listed Employees who don't hold it and take it
-     * from those who hold it but aren't listed, logging each; nothing when
-     * no list is given.
-     *
-     * @param  array<int, int>|null  $holders
-     */
+    /** @param  array<int, int>|null  $holders */
     private function holdBy(Employee $actor, Role $role, ?array $holders): void
     {
         if ($holders === null) {
@@ -219,10 +171,7 @@ class ChangeAccess
             ->each(fn (Employee $employee) => $this->take($actor, $role, $employee));
     }
 
-    /**
-     * Stop giving every other Role to new Employees, logging each, so at
-     * most one Role is given to them.
-     */
+    /** At most one Role is given to new Employees. */
     private function takeDefaultFromOthers(Employee $actor, ?Role $keep): void
     {
         Role::query()
@@ -236,11 +185,7 @@ class ChangeAccess
             });
     }
 
-    /**
-     * Give the Role exactly these Permissions and Scopes.
-     *
-     * @param  array<string, string|null>  $grants
-     */
+    /** @param  array<string, string|null>  $grants */
     private function grant(Role $role, array $grants): void
     {
         foreach ($grants as $permission => $scope) {
@@ -249,9 +194,8 @@ class ChangeAccess
     }
 
     /**
-     * The Role's name, Permissions and whether new Employees get it, as the
-     * Access Log keeps them. Admin's Permissions are not stored, so it is
-     * marked as Admin, meaning every Permission, instead.
+     * Admin's Permissions are not stored, so it is marked as Admin, meaning
+     * every Permission, instead.
      *
      * @return array{name: string, permissions?: array<string, string|null>, admin?: true, given_to_new_employees: bool}
      */
@@ -265,9 +209,9 @@ class ChangeAccess
     }
 
     /**
-     * Write the change to the Access Log. Every change passes through here,
-     * so it also makes the actor, who may have changed their own Roles, and
-     * the Employee given or losing a Role read their access afresh.
+     * Every change passes through here, so it also makes the actor, who may have
+     * changed their own Roles, and the Employee given or losing a Role read
+     * their access afresh.
      *
      * @param  array<string, mixed>|null  $before
      * @param  array<string, mixed>|null  $after

@@ -11,11 +11,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ProjectFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -24,9 +20,6 @@ class ProjectFactory extends Factory
         ];
     }
 
-    /**
-     * A Project done for a Client.
-     */
     public function forClient(?Client $client = null): static
     {
         return $this->state(fn (array $attributes) => [
@@ -34,9 +27,6 @@ class ProjectFactory extends Factory
         ]);
     }
 
-    /**
-     * The company's one Internal Project, with no Client and no dates.
-     */
     public function internal(): static
     {
         return $this->state(fn (array $attributes) => [

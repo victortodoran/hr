@@ -10,8 +10,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * A part of the company that every Employee belongs to.
- *
  * @property int $id
  * @property string $name
  * @property Carbon|null $created_at

@@ -18,9 +18,6 @@ covers(DirectoryController::class, DirectoryIndexPage::class, ReportingChain::cl
 
 beforeEach(fn () => travelTo('2026-03-01 09:00'));
 
-/**
- * An Employee who may browse the directory and see anyone's Reporting Chain.
- */
 function chainViewer(): Employee
 {
     return employeeWith([Permission::ViewDirectory->value => null]);

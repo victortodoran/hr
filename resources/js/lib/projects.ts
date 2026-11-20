@@ -5,7 +5,6 @@ import type { ProjectRecord } from '@/types';
  */
 export const noClient = 'none';
 
-/** A Project's fields as its form holds them. */
 export type ProjectFields = {
     name: string;
     client_id: string;
@@ -13,9 +12,6 @@ export type ProjectFields = {
     end_date: string;
 };
 
-/**
- * The form's fields as the Project stands now, or blank for a new one.
- */
 export function projectFields(project?: ProjectRecord): ProjectFields {
     return {
         name: project?.name ?? '',
@@ -25,9 +21,6 @@ export function projectFields(project?: ProjectRecord): ProjectFields {
     };
 }
 
-/**
- * The fields as the server takes them: no Client and no end date as null.
- */
 export function projectPayload({
     client_id,
     end_date,
@@ -40,14 +33,10 @@ export function projectPayload({
     };
 }
 
-/**
- * What deleting a Project asks about (rule X3): one anyone has been
- * assigned to stays, since that work is part of their record.
- */
+/** A Project anyone has been assigned to stays, since that work is part of their record (X3). */
 export const deleteProjectDescription =
     "This can't be undone. A Project anyone has been assigned to can't be deleted; set an end date instead.";
 
-/** How many Projects, such as "1 Project" or "3 Projects". */
 export function projectCount(count: number): string {
     return count === 1 ? '1 Project' : `${count} Projects`;
 }

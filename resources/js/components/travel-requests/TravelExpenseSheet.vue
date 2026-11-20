@@ -27,14 +27,6 @@ import type {
     TravelExpenseTyped,
 } from '@/types';
 
-/**
- * Adding a Travel Expense, or, given one, editing it, in a sheet over the
- * Travel Request's page (rule L14). A new one always needs its receipt;
- * editing shows the current receipt, kept unless another file replaces
- * it. Editing a Declined one shows why it was declined at the top and,
- * above Save, that saving sends it back as Pending (X8). Once saved, the
- * page shows it and the sheet closes.
- */
 const props = defineProps<{
     travelRequest: {
         id: number;
@@ -42,13 +34,10 @@ const props = defineProps<{
         first_date: string;
         last_date: string;
     };
-    /** The company currency, the amount's prefix. */
     currency: TravelCurrency;
-    /** The latest date one can be paid on, as YYYY-MM-DD. */
+    /** YYYY-MM-DD. */
     today: string;
-    /** The Travel Expense to edit; none to add a new one. */
     travelExpense?: TravelExpenseTyped | null;
-    /** The Employee's Manager, who decides the Travel Expense once saved. */
     manager?: string | null;
 }>();
 
@@ -94,7 +83,6 @@ const currentReceipt = computed(() =>
         : null,
 );
 
-/** Starts each sheet with the Travel Expense being edited, or blank. */
 watch(
     () => [open.value, props.travelExpense?.id] as const,
     ([isOpen]) => {

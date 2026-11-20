@@ -6,19 +6,9 @@ use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
-/**
- * How a Period in a URL's query is validated, wherever a page takes one:
- * a week, a month, or a custom period from one date to another of at most
- * Period::LONGEST_CUSTOM_MONTHS.
- */
 final class PeriodRules
 {
-    /**
-     * The rules for a Period in a URL's query: a week, a month, or a custom
-     * period from one date to another.
-     *
-     * @return array<string, array<int, string>>
-     */
+    /** @return array<string, array<int, string>> */
     public static function rules(): array
     {
         return [
@@ -29,10 +19,6 @@ final class PeriodRules
         ];
     }
 
-    /**
-     * Once From and To are valid on their own, refuse a custom period longer
-     * than Period::LONGEST_CUSTOM_MONTHS.
-     */
     public static function checkCustomLength(FormRequest $request, Validator $validator): void
     {
         if (! $request->filled(['from', 'to']) || $validator->errors()->hasAny(['from', 'to'])) {

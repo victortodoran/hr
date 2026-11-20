@@ -3,13 +3,6 @@ import FilterBar from '@/components/FilterBar.vue';
 import FilterSelect from '@/components/FilterSelect.vue';
 import type { ApprovalFilters, ChoiceToApprove, FilterChoice } from '@/types';
 
-/**
- * Filters for the Approvals Work Entries tab: one Employee and one Project
- * they have Pending Work Entries on, both always chosen, each offered with
- * how many Work Entries wait. Shows what the server resolved, and emits the
- * query string to reload the tab with whenever one changes; choosing
- * another Employee drops the Project, so their first one is shown.
- */
 const props = defineProps<{
     filters: ApprovalFilters;
     employees: ChoiceToApprove[];
@@ -21,7 +14,6 @@ const emit = defineEmits<{
 }>();
 
 defineSlots<{
-    /** The matching count and total, at the bar's right (rule K5). */
     summary?: () => unknown;
 }>();
 

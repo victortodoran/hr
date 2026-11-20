@@ -11,32 +11,13 @@ import type {
     StateChoice,
 } from '@/types';
 
-/**
- * Filters for a list across Employees, such as the Work Entries and Travel
- * Requests pages: a Period, a week, a month or a custom one, never after
- * today unless `allowFuture` is set; one Employee with something listed in
- * it, each offered with how many, or any Employee; a Project they have
- * something on, or any, unless the list gives no `projects` to choose
- * from; and one of the list's `states`, or any. Shows what
- * the server resolved, and emits the query string to reload the list with
- * whenever one changes. Changing the Period or state keeps "Any Employee"
- * but otherwise lets the server pick; changing anything but the Project
- * drops the Project. With nobody to choose, only the Period and state are
- * offered. An Employee with something on only one Project shows that
- * Project, without "Any Project" to choose; both list the same, so the
- * filter itself stays as it was. Built on `FilterBar`, like every list's
- * filters, so a list across Employees only adds what else it needs.
- */
 const props = withDefaults(
     defineProps<{
         filters: ListFilters<string>;
         today: string;
         employees: EmployeeWithCount[];
-        /** Left out on a list not filtered by Project, such as Time Off. */
         projects?: Choice[];
-        /** The states the list can be filtered by. */
         states: StateChoice[];
-        /** Lets the Period go past today, for what is planned ahead. */
         allowFuture?: boolean;
     }>(),
     { allowFuture: false },
@@ -61,7 +42,6 @@ function query(
     };
 }
 
-/** "all" when any Employee is chosen, kept across Periods and states. */
 const anyEmployee = (): string | undefined =>
     props.filters.employee === 'all' ? 'all' : undefined;
 
@@ -69,7 +49,6 @@ function choosePeriod(period: Record<string, string>): void {
     emit('change', query({ period, employee: anyEmployee() }));
 }
 
-/** Whether the one Employee shown has something on just one Project. */
 const hasOnlyOneProject = computed(
     () =>
         typeof props.filters.employee === 'number' &&

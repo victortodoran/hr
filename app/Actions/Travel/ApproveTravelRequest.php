@@ -6,17 +6,9 @@ use App\Enums\TravelRequestState;
 use App\Models\Employee;
 use App\Models\TravelRequest;
 
-/**
- * Approves a Pending Travel Request, as the Employee's effective Manager.
- */
 class ApproveTravelRequest
 {
-    /**
-     * Approve the Travel Request, recording who approved it and when, and
-     * return whether it changed. The write only changes one still Pending,
-     * so a decision or cancellation made since the policy check is never
-     * undone; then nothing changes and false is returned.
-     */
+    /** Only a still-Pending row changes, so a decision made since the policy check wins. */
     public function approve(TravelRequest $travelRequest, Employee $actor): bool
     {
         $changed = TravelRequest::query()

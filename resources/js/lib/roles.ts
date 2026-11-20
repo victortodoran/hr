@@ -1,15 +1,12 @@
 import type { PermissionChoice, Scope } from '@/types';
 
-/** Each Scope's name and what it covers, narrowest first. */
+/** Narrowest first. */
 export const scopes: { value: Scope; label: string; help: string }[] = [
     { value: 'own', label: 'Own', help: 'only themselves' },
     { value: 'reports', label: 'Reports', help: 'people who report to them' },
     { value: 'everyone', label: 'Everyone', help: 'whole company' },
 ];
 
-/**
- * The Permissions in their groups, both in the order the server sends them.
- */
 export function groupPermissions(
     permissions: PermissionChoice[],
 ): { group: string; permissions: PermissionChoice[] }[] {
@@ -28,7 +25,6 @@ export function groupPermissions(
     return groups;
 }
 
-/** "1 permission", "3 permissions". */
 export function countOf(count: number, one: string, many: string): string {
     return `${count} ${count === 1 ? one : many}`;
 }

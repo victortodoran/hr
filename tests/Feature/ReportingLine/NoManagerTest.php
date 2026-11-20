@@ -23,8 +23,6 @@ covers(EmployeeController::class, EmployeeRequest::class, TimeOffController::cla
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
 /**
- * The record of an Employee as the edit form sends it, with some changes.
- *
  * @param  array<string, mixed>  $changes
  * @return array<string, mixed>
  */

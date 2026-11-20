@@ -18,7 +18,6 @@ defineProps<{
 
 const { isCurrentUrl } = useCurrentUrl();
 
-/** An area's link is active on its own page and on its other pages (rule L18). */
 const isActive = (item: NavItem): boolean =>
     [item.href, ...(item.activeOn ?? [])].some((href) => isCurrentUrl(href));
 </script>

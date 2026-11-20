@@ -9,14 +9,12 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Signs an Employee out on their first request once they may no longer sign
- * in, such as the day after their Leaving Date.
+ * A session outlives the day an Employee may no longer sign in, so they are
+ * signed out on their next request.
  */
 class EnsureEmployeeCanSignIn
 {
-    /**
-     * @param  Closure(Request): (Response)  $next
-     */
+    /** @param  Closure(Request): (Response)  $next */
     public function handle(Request $request, Closure $next): Response
     {
         $employee = $request->user();

@@ -18,29 +18,14 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/**
- * The Goals of a Performance Evaluation, which only the Employee's
- * effective Manager gives, changes or removes, while it is Open. Giving
- * and removing lead back to the Performance Evaluation's page. Each Goal
- * has its own page, open to everyone who can see the Evaluation, with
- * its Progress and every change to it, and its Comments; its Manager
- * changes its title and description there.
- */
 class GoalController extends Controller
 {
-    /**
-     * Show the Performance Evaluation with the Add Goal sheet open over it
-     * (rule L14), so the form has a URL of its own.
-     */
+    /** The form opens as a sheet over this page (rule L14), so it has a URL of its own. */
     public function create(PerformanceEvaluation $performanceEvaluation, #[CurrentUser] Employee $actor): Response
     {
         return Inertia::render('performance-evaluations/Show', GoalFormPage::create($performanceEvaluation, $actor));
     }
 
-    /**
-     * Give the Performance Evaluation a Goal. One Completed since the
-     * policy check is refused, never given one.
-     */
     public function store(GoalRequest $request, PerformanceEvaluation $performanceEvaluation, GiveGoal $giveGoal): RedirectResponse
     {
         $given = $giveGoal->give($performanceEvaluation, $request->goal());
@@ -51,22 +36,11 @@ class GoalController extends Controller
         return to_route('performance-evaluations.show', $performanceEvaluation);
     }
 
-    /**
-     * Show the Goal with its Progress and every change to it, newest
-     * first, and its Comments, oldest first, and whether the viewer may
-     * change the Progress, write Comments, and change or remove the Goal.
-     * `?editing=1` opens it with the Edit Goal sheet open over it (rule L14).
-     */
     public function show(PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor, Request $request): Response
     {
         return Inertia::render('performance-evaluations/goals/Show', GoalPage::props($performanceEvaluation, $goal, $actor, $request->query('editing') === '1'));
     }
 
-    /**
-     * Change a Goal's title and description, which is done on its own
-     * page, then lead back there. One whose Performance Evaluation was
-     * Completed since the policy check is refused, never changed.
-     */
     public function update(GoalRequest $request, PerformanceEvaluation $performanceEvaluation, Goal $goal, ChangeGoal $changeGoal): RedirectResponse
     {
         $changed = $changeGoal->change($goal, $request->goal());
@@ -77,11 +51,6 @@ class GoalController extends Controller
         return to_route('performance-evaluations.goals.show', [$performanceEvaluation, $goal]);
     }
 
-    /**
-     * Remove a Goal from the Performance Evaluation. One whose
-     * Performance Evaluation was Completed since the policy check is
-     * refused, never removed.
-     */
     public function destroy(PerformanceEvaluation $performanceEvaluation, Goal $goal, RemoveGoal $removeGoal): RedirectResponse
     {
         $removed = $removeGoal->remove($goal);

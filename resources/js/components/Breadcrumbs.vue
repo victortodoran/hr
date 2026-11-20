@@ -9,10 +9,6 @@ import {
 } from '@/components/ui/breadcrumb';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
-/**
- * The ancestors of the current page, each followed by a separator that
- * leads to the page's own heading (rule L20).
- */
 defineProps<{
     breadcrumbs: BreadcrumbItemType[];
 }>();

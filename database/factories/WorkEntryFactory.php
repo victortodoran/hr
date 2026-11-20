@@ -14,11 +14,7 @@ use Illuminate\Support\Carbon;
  */
 class WorkEntryFactory extends Factory
 {
-    /**
-     * A few hours on the day the Assignment starts.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -29,9 +25,6 @@ class WorkEntryFactory extends Factory
         ];
     }
 
-    /**
-     * Approved by someone else, an hour ago unless told otherwise.
-     */
     public function approved(?Employee $approver = null): static
     {
         return $this->state(fn (array $attributes) => [
@@ -41,9 +34,6 @@ class WorkEntryFactory extends Factory
         ]);
     }
 
-    /**
-     * Declined by someone else an hour ago, with a reason.
-     */
     public function declined(?Employee $decliner = null, string $reason = 'Not on this Project'): static
     {
         return $this->state(fn (array $attributes) => [

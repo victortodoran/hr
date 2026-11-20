@@ -17,19 +17,12 @@ import type {
     TableColumn,
 } from '@/types';
 
-/**
- * The Travel tab of an Employee's page: their Travel Requests with a day in
- * a Period, as the Travel Requests page lists them for this Employee,
- * read-only. Export stays on that page, which "Open in Travel Requests"
- * opens on the same Period.
- */
 const props = defineProps<{
     employee: Choice;
     travel: {
         today: string;
         period: Period;
         travelRequests: Paginated<ListedTravelRequest>;
-        /** Their Travel Expenses that aren't Declined, in the company currency. */
         total: string;
     };
 }>();

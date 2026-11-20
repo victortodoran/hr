@@ -1,12 +1,7 @@
 <script setup lang="ts">
-/**
- * An Assignment's Capacity as a small bar beside its percentage (rule F11),
- * such as "▰▰▱ 60%". The bar only repeats the number, so it is hidden from
- * screen readers; on a phone only the percentage shows. The percentage
- * keeps one width, so the bars line up down a right-aligned column.
- */
+/** The bar only repeats the number, so screen readers skip it; the percentage keeps one width so the bars line up. */
 defineProps<{
-    /** A whole percentage of the Employee's time, from 0 to 100. */
+    /** A whole percentage, from 0 to 100. */
     capacity: number;
 }>();
 </script>

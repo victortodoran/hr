@@ -35,17 +35,7 @@ import type {
     WorkEntryWeek,
 } from '@/types';
 
-/**
- * One Employee's Work page: their Work Entries for a Period, as a List or
- * a month Calendar (a SegmentedControl switches the view, rule K3), under
- * a StatStrip of the hours Logged, Approved, Pending and Declined (not
- * counted) and on each Assignment (L10, K10). The header exports the
- * Period, and Add Work Entry, its one primary button (B2), opens today.
- * Only the open view's props are sent: the days and weeks for the List,
- * `calendar` for the Calendar. An Employee with no Manager records no Work
- * Entries, so with none in the Period an EmptyState says why instead
- * (S2).
- */
+/** Only the open view's props are sent. */
 const props = defineProps<{
     tab: WorkEntriesTab;
     employee: Choice;
@@ -57,25 +47,20 @@ const props = defineProps<{
     total: number;
     approvedHours: number;
     pendingHours: number;
-    /** The hours of the Period's Declined Work Entries, which count nowhere. */
     declinedHours: number;
-    /** Who approves the Employee's Work Entries; none for an Employee with no Manager. */
     manager: Choice | null;
     assignments: WorkEntryAssignment[];
     calendar?: WorkEntryCalendarWeek[];
     canManage: boolean;
-    /** Whether the week is the viewer's own. */
     isOwn: boolean;
 }>();
 
 const page = usePage();
 
-/** "Work" for the viewer's own week, "Ben's Work Entries" for another Employee's. */
 const title = computed(() =>
     props.isOwn ? 'Work' : `${props.employee.name}'s Work Entries`,
 );
 
-/** "Your Work Entries by day. Ben Ionescu approves each one." (rule C4). */
 const description = computed(() => {
     const whose = props.isOwn
         ? 'Your Work Entries'
@@ -86,7 +71,6 @@ const description = computed(() => {
         : `${whose} by day.`;
 });
 
-/** The breadcrumb opens the current week of whoever's week this is, so it holds whichever week is shown. */
 setLayoutProps({
     breadcrumbs: [
         {
@@ -98,11 +82,7 @@ setLayoutProps({
     ],
 });
 
-/**
- * Shows another Period, naming the Employee only when the Work Entries
- * aren't the viewer's own. `keep` keeps the page's own state, so the
- * phone's week agenda knows which end of the new month to start on.
- */
+/** `keep` keeps the page's own state, so the phone's week agenda knows which end of the new month to start on. */
 function showPeriod(query: Record<string, string>, keep = false): void {
     router.visit(
         index({
@@ -114,11 +94,6 @@ function showPeriod(query: Record<string, string>, keep = false): void {
     );
 }
 
-/**
- * Opens a view on the same Period: the Calendar on the month holding today
- * when the Period does, or else its first day; the List on the Calendar's
- * month.
- */
 function openTab(tab: WorkEntriesTab): void {
     const { from, to, query } = props.period;
     const anchor =
@@ -136,7 +111,6 @@ const views = [
     { value: 'calendar' as const, label: 'Calendar', icon: LayoutGrid },
 ];
 
-/** The rows holding typing that isn't saved yet, by row key. */
 const unsaved = reactive(new Set<string>());
 
 function markUnsaved(rowKey: string, isDirty: boolean): void {
@@ -147,19 +121,13 @@ function markUnsaved(rowKey: string, isDirty: boolean): void {
     }
 }
 
-/** Whether Saturdays and Sundays are shown, remembered in this browser. */
 const showWeekends = useLocalStorage('work-entries.show-weekends', true);
 
-/**
- * Asks before leaving with a Work Entry typed but not saved, whether for
- * another week, another page, a reload or closing the tab.
- */
 const guard = useUnsavedChanges(
     computed(() => unsaved.size > 0),
     () => unsaved.clear(),
 );
 
-/** The StatStrip: what the Period's hours add up to, and on each Assignment. */
 const stats = computed(() => [
     {
         label: `Logged ${describePeriod(props.period, props.weeks?.[0]?.number)}`,
@@ -191,10 +159,6 @@ const stats = computed(() => [
     })),
 ]);
 
-/**
- * Whether the Employee records no Work Entries (no Manager) and has none
- * in the Period, so the view is replaced by why (S2).
- */
 const recordsNone = computed(
     () =>
         props.manager === null &&
@@ -202,10 +166,8 @@ const recordsNone = computed(
         props.declinedHours === 0,
 );
 
-/** Where "See your Reports' Work" goes, when the viewer may see others' Work. */
 const othersReach = computed(() => page.props.auth.othersReach.work);
 
-/** The export's file address: the Employee's Work Entries in the Period. */
 function fileUrl(format: 'csv' | 'xlsx'): string {
     return exportFile.url({
         query: {
@@ -219,15 +181,10 @@ function fileUrl(format: 'csv' | 'xlsx'): string {
 const calendarView = ref<InstanceType<typeof WorkEntryCalendar> | null>(null);
 const listView = ref<InstanceType<typeof WorkEntryList> | null>(null);
 
-/** Whether the Period shown holds today. */
 const showsToday = computed(
     () => props.period.from <= props.today && props.today <= props.period.to,
 );
 
-/**
- * Opens today to add a Work Entry: its day panel on the Calendar, or its
- * add row on the List, first moving to the Period holding today.
- */
 async function addToday(): Promise<void> {
     if (!showsToday.value) {
         router.visit(
@@ -262,7 +219,6 @@ function openToday(): void {
     }
 }
 
-/** The month before or after the Calendar's, from the phone's week agenda. */
 function stepMonth(step: -1 | 1): void {
     showPeriod(
         {

@@ -9,24 +9,14 @@ import { Button } from '@/components/ui/button';
 import { show } from '@/routes/employees';
 import type { Choice, EmployeePageTab, Paginated, Period } from '@/types';
 
-/**
- * The shell of an Employee page tab that lists their records in a Period,
- * read-only: the Period to move through, the stats when there is anything
- * to count, and a section with the list's table (the default slot), its
- * pages, and an "Open in …" link to the full list on the same Period.
- */
 const props = defineProps<{
     employee: Choice;
-    /** The tab, kept in the URL when the Period changes. */
     tab: EmployeePageTab;
     period: Period;
     today: string;
-    /** Stops at today, for records never in the future. */
     noFuture?: boolean;
-    /** What the tab counts, shown when the list holds anything. */
     stats: { label: string; value: string; muted?: boolean }[];
     title: string;
-    /** The full list's name, as in "Open in Work Entries". */
     listName: string;
     listHref: InertiaLinkProps['href'];
     page: Paginated<unknown>;

@@ -19,8 +19,6 @@ covers(UpdateTrimmingAssignments::class, EmployeeController::class, EmployeeRequ
 beforeEach(fn () => travelTo('2026-03-01 09:00'));
 
 /**
- * A Project as the edit form sends it, with some changes.
- *
  * @param  array<string, mixed>  $changes
  * @return array<string, mixed>
  */
@@ -35,11 +33,7 @@ function projectChanging(Project $project, array $changes): array
     ];
 }
 
-/**
- * An Employee working since 2024, with a Manager.
- *
- * @param  array<string, mixed>  $attributes
- */
+/** @param  array<string, mixed>  $attributes */
 function staffMember(array $attributes = []): Employee
 {
     return Employee::factory()->create([
@@ -49,11 +43,7 @@ function staffMember(array $attributes = []): Employee
     ]);
 }
 
-/**
- * Each Assignment's dates, earliest first, as "start – end".
- *
- * @return array<int, string>
- */
+/** @return array<int, string> */
 function periodsOf(Employee|Project $owner): array
 {
     return $owner->assignments()->orderBy('start_date')->get()

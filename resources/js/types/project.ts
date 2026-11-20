@@ -9,10 +9,7 @@ export type ProjectRecord = {
     is_internal: boolean;
 };
 
-/**
- * A Project's team today, among the Assignments the viewer may see: how
- * many Employees run on it and their Capacity in all, in percent.
- */
+/** `capacity` in percent. */
 export type TeamToday = {
     employees: number;
     capacity: number;

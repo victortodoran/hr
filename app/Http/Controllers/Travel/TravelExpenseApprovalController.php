@@ -10,20 +10,9 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Lets an effective Manager approve Pending Travel Expenses from the
- * Approvals page, one or several at once, or from their Travel Request's
- * page.
- */
 class TravelExpenseApprovalController extends Controller
 {
-    /**
-     * Approve the selected Travel Expenses the actor may approve: Pending
-     * ones of Employees whose effective Manager they are. Each records who
-     * approved it and when, in its own right (ADR 0005). The rest are
-     * skipped, so sending the same approval twice changes nothing more, and
-     * the toast says how many of each.
-     */
+    /** Expenses the actor may not approve are skipped, so resending an approval changes nothing more (ADR 0005). */
     public function store(#[CurrentUser] Employee $actor, SelectedTravelExpensesRequest $request, ApproveTravelExpenses $approveTravelExpenses): RedirectResponse
     {
         $ids = $request->ids();

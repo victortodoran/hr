@@ -35,18 +35,13 @@ defineOptions({
     },
 });
 
-/**
- * Only the open tab's props are sent: `employees` and `search` on the
- * Everyone tab, `directReports` on the Reports tab.
- */
+/** Only the open tab's props are sent. */
 const props = defineProps<{
     tab: DirectoryTab;
-    /** The tabs the viewer may open; the bar shows only when there are two. */
     tabs: DirectoryTab[];
     employees?: Paginated<DirectoryEntry>;
     search?: string;
     directReports?: DirectReport[];
-    /** The Employee open in the sheet (`?person=`), with their Reporting Chain. */
     person: ReportingChainView | null;
 }>();
 
@@ -84,10 +79,6 @@ function openTab(tab: string | number): void {
     router.get(index.url({ query: { tab: String(tab) } }));
 }
 
-/**
- * The Employee whose sheet is open over the list (rule K8), kept in the
- * URL as `?person=`; opening one reloads only their Reporting Chain.
- */
 const {
     record: openedPerson,
     recordOpen: personOpen,
@@ -98,7 +89,6 @@ const {
     { param: 'person', reload: 'person' },
 );
 
-/** "Developer · Engineering", the line under the sheet's title. */
 const personDetail = computed(() =>
     [
         openedPerson.value?.employee.job_title,

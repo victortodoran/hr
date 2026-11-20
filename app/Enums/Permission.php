@@ -2,11 +2,7 @@
 
 namespace App\Enums;
 
-/**
- * Everything an Employee can be allowed to do. The list is fixed in code
- * (ADR 0004): companies choose which Permissions go into each Role, but
- * cannot invent new ones. Each value is also the name of its Gate.
- */
+/** The list is fixed in code (ADR 0004), and each value is also the name of its Gate. */
 enum Permission: string
 {
     case ViewEmployeeRecords = 'view-employee-records';
@@ -33,11 +29,7 @@ enum Permission: string
     case ManageRoles = 'manage-roles';
     case ManageCompany = 'manage-company';
 
-    /**
-     * The Permission's name as people read it, such as "Manage Roles": the
-     * domain terms in Title Case, everything else in sentence case (rules
-     * C1 and C2).
-     */
+    /** Domain terms in Title Case, everything else in sentence case (rules C1 and C2). */
     public function label(): string
     {
         return match ($this) {
@@ -67,12 +59,6 @@ enum Permission: string
         };
     }
 
-    /**
-     * The area of the HR system the Permission is about, as the Roles page
-     * groups them: Employees, Assignments, Pay, Work Entries, Time Off,
-     * Travel, Performance, Organization or Administration, in the
-     * Permissions' own order.
-     */
     public function group(): string
     {
         return match ($this) {
@@ -88,11 +74,7 @@ enum Permission: string
         };
     }
 
-    /**
-     * Whether this Permission is about Employees and so carries a Scope.
-     * The others always apply company-wide, adding Employees among them, as
-     * nobody reports to an Employee who isn't there yet.
-     */
+    /** Add employees applies company-wide, as nobody reports to an Employee who isn't there yet. */
     public function isScoped(): bool
     {
         return match ($this) {
@@ -116,10 +98,8 @@ enum Permission: string
     }
 
     /**
-     * The Scopes a Role can give this Permission with, narrowest first, or
-     * none when it applies company-wide. No Employee may reopen their own
-     * Work Entries, Travel Expenses or Performance Evaluations, so reopen
-     * can't be given for own.
+     * No Employee may reopen their own Work Entries, Travel Expenses or
+     * Performance Evaluations, so reopen can't be given for own.
      *
      * @return list<Scope>
      */
@@ -133,9 +113,8 @@ enum Permission: string
     }
 
     /**
-     * The Permissions that let someone see an Employee's Assignments: seeing
-     * or managing them, or seeing or managing their Pay, which belongs to
-     * them (ADR 0002). The one list the policy, the lists and the flags use.
+     * Pay belongs to the Assignment (ADR 0002), so seeing it shows them; the one
+     * list the policy, the lists and the flags use.
      *
      * @return list<Permission>
      */
@@ -145,10 +124,7 @@ enum Permission: string
     }
 
     /**
-     * The Permissions that open an Employee's page besides their own: seeing
-     * their record, their Assignments (seeingAssignments()), or their Time
-     * Off and Paid Days (seeingTimeOff()). The one list the policy and the
-     * command menu's search use.
+     * The one list the policy and the command menu's search use.
      *
      * @return list<Permission>
      */
@@ -158,9 +134,8 @@ enum Permission: string
     }
 
     /**
-     * The Permissions that let someone see an Employee's Work Entries: you
-     * can always see what you can act on. The one list the policy, the
-     * lists and the flags use.
+     * You can always see what you can act on; the one list the policy, the lists
+     * and the flags use.
      *
      * @return list<Permission>
      */
@@ -170,10 +145,8 @@ enum Permission: string
     }
 
     /**
-     * The Permissions that let someone see an Employee's Travel Requests,
-     * their Travel Expenses and the receipts: viewing travel, or reopening
-     * Travel Expenses, as you can always see what you can act on. The one
-     * list the policies, the Travel Requests page and the flags use.
+     * You can always see what you can act on; the one list the policies, the
+     * Travel Requests page and the flags use.
      *
      * @return list<Permission>
      */
@@ -183,10 +156,8 @@ enum Permission: string
     }
 
     /**
-     * The Permissions that let someone see an Employee's Time Off: viewing
-     * it, or managing their Paid Days, as setting Paid Days means seeing
-     * the Time Off that uses them. The one list the policy, the Time Off
-     * page across Employees and the flags use.
+     * Setting Paid Days means seeing the Time Off that uses them; the one list
+     * the policy, the Time Off page and the flags use.
      *
      * @return list<Permission>
      */
@@ -196,9 +167,7 @@ enum Permission: string
     }
 
     /**
-     * The Permissions that let someone read an Employee's Performance
-     * Evaluations without writing them: viewing them, or reopening them, as
-     * you can always see what you can act on. The one list the policy, the
+     * You can always see what you can act on; the one list the policy, the
      * Performance Evaluations page and the flags use.
      *
      * @return list<Permission>

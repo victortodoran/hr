@@ -13,17 +13,11 @@ use Inertia\Response;
 
 class SecurityController extends Controller
 {
-    /**
-     * Show the Employee's security settings page.
-     */
     public function edit(): Response
     {
         return Inertia::render('settings/Security', SecurityPage::props());
     }
 
-    /**
-     * Update the Employee's password.
-     */
     public function update(PasswordUpdateRequest $request, #[CurrentUser] Employee $employee): RedirectResponse
     {
         $employee->update([

@@ -11,11 +11,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class GoalFactory extends Factory
 {
-    /**
-     * A Goal on a new Performance Evaluation.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

@@ -9,15 +9,8 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 
-/**
- * One row's full record, opened by clicking the row (rule K8): what the
- * table can't show, such as the whole description, the receipt and the
- * record's history, with the row's decisions in the footer. It slides in
- * from the right, or up from the bottom on a phone.
- */
 defineProps<{
     title: string;
-    /** One line under the title, such as whose record it is. */
     description?: string;
 }>();
 

@@ -9,9 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * One Permission inside a Role, with its Scope when the Permission is about
- * Employees.
- *
  * @property int $id
  * @property int $role_id
  * @property Permission $permission

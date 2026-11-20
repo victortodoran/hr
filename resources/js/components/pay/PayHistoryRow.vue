@@ -18,18 +18,9 @@ import { formatDate, formatDateRange } from '@/lib/dates';
 import { formatPay, payKindNames } from '@/lib/pay';
 import type { AssignmentRecord, PayEntryRecord, PayKind } from '@/types';
 
-/**
- * An Assignment's Pay history, opened in place under its row (rules K2,
- * K21, S9): each Pay change newest first on a timeline, with the days it
- * applies and whether it is Upcoming, In effect or Past, its status icon
- * marking it on the timeline beside the badge naming it (S10). Those who may
- * manage Pay remove a change from its ⋯ menu, after confirming, and add
- * one with the inline form under the timeline. A change can't be edited:
- * a correction is a Remove and an Add.
- */
+/** A Pay change can't be edited: a correction is a Remove and an Add. */
 const props = defineProps<{
     assignment: AssignmentRecord & { pay: PayEntryRecord[] };
-    /** The company currency, given only to those who may manage Pay. */
     currency?: string;
 }>();
 
@@ -41,14 +32,12 @@ const kinds: { value: PayKind; label: string }[] = [
 const fieldId = (field: string): string =>
     `pay-${field}-${props.assignment.id}`;
 
-/** The days a change applies, such as "Aug 20, 2026 – Jan 19, 2027" (C9). */
 function applies(entry: PayEntryRecord): string {
     return entry.until
         ? formatDateRange(entry.effective_from, entry.until)
         : `from ${formatDate(entry.effective_from)}`;
 }
 
-/** Names a change for its buttons, such as "the Pay change from Aug 20, 2026". */
 function describe(entry: PayEntryRecord): string {
     return `the Pay change from ${formatDate(entry.effective_from)}`;
 }
@@ -68,7 +57,6 @@ function add(): void {
     });
 }
 
-/** The change the Remove dialog asks about. */
 const removing = ref<PayEntryRecord | null>(null);
 const removeOpen = ref(false);
 

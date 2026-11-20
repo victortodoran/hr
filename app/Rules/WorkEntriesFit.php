@@ -10,13 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
-/**
- * Keeps dates around the Work Entries they hold, so no Work Entry ever
- * falls outside its Assignment: a start can't be later than the first Work
- * Entry, and an end can't be earlier than the last. Ending an Employee or a
- * Project cuts its Assignments off, so their ends count too. With nothing
- * to hold yet (when adding one), anything fits.
- */
+/** Ending an Employee or a Project cuts its Assignments off, so their ends count too. */
 class WorkEntriesFit implements ValidationRule
 {
     /**
@@ -29,29 +23,19 @@ class WorkEntriesFit implements ValidationRule
         private string $message,
     ) {}
 
-    /**
-     * A start no later than the first of the Work Entries.
-     *
-     * @param  HasMany<WorkEntry, *>|HasManyThrough<WorkEntry, *, *>|null  $workEntries
-     */
+    /** @param  HasMany<WorkEntry, *>|HasManyThrough<WorkEntry, *, *>|null  $workEntries */
     public static function startOf(HasMany|HasManyThrough|null $workEntries, string $message): self
     {
         return new self($workEntries, isStart: true, message: $message);
     }
 
-    /**
-     * An end no earlier than the last of the Work Entries.
-     *
-     * @param  HasMany<WorkEntry, *>|HasManyThrough<WorkEntry, *, *>|null  $workEntries
-     */
+    /** @param  HasMany<WorkEntry, *>|HasManyThrough<WorkEntry, *, *>|null  $workEntries */
     public static function endOf(HasMany|HasManyThrough|null $workEntries, string $message): self
     {
         return new self($workEntries, isStart: false, message: $message);
     }
 
-    /**
-     * @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail
-     */
+    /** @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if ($this->workEntries === null) {

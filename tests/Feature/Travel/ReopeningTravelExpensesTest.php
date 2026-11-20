@@ -27,12 +27,7 @@ beforeEach(function () {
     Storage::fake(TravelExpense::RECEIPT_DISK);
 });
 
-/**
- * Rae, who may reopen the Travel Expenses of her Reports (or the given
- * grants instead), below Ada at the top.
- *
- * @param  array<string, Scope|null>|null  $grants
- */
+/** @param  array<string, Scope|null>|null  $grants */
 function travelReopener(?array $grants = null): Employee
 {
     $ada = Employee::factory()->create(['name' => 'Ada']);
@@ -40,13 +35,7 @@ function travelReopener(?array $grants = null): Employee
     return employeeWith($grants ?? [Permission::ReopenTravelExpenses->value => Scope::Reports], ['name' => 'Rae', 'manager_id' => $ada->id]);
 }
 
-/**
- * A Travel Expense paid on 4 Dec 2026 on an Approved trip of the
- * Employee's, Approved unless given another factory state, its receipt
- * stored on the disk.
- *
- * @param  array<string, mixed>  $attributes
- */
+/** @param  array<string, mixed>  $attributes */
 function reopenableExpenseOf(Employee $employee, string $state = 'approved', array $attributes = []): TravelExpense
 {
     $trip = TravelRequest::factory()->on(assignmentOf($employee))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);

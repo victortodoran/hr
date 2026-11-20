@@ -13,16 +13,8 @@ use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/**
- * Lets those who manage Departments keep the company's flat list of
- * Departments.
- */
 class DepartmentController extends Controller
 {
-    /**
-     * Show every Department, by name, with how many of its Employees the
-     * viewer may see.
-     */
     public function index(#[CurrentUser] Employee $actor): Response
     {
         return Inertia::render('departments/Index', DepartmentListPage::props($actor));
@@ -46,9 +38,6 @@ class DepartmentController extends Controller
         return to_route('departments.index');
     }
 
-    /**
-     * Delete a Department, refusing while any Employee still belongs to it.
-     */
     public function destroy(Department $department, DeleteDepartment $deleteDepartment): RedirectResponse
     {
         $deleteDepartment->delete($department);

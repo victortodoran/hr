@@ -13,10 +13,6 @@ import {
 import { noClient } from '@/lib/projects';
 import type { Choice } from '@/types';
 
-/**
- * A Project's Name, Client and dates, as the New Project and Edit Project
- * sheets both ask for them; the dates through DatePickers (K14).
- */
 defineProps<{
     clients: Choice[];
     errors: Partial<
