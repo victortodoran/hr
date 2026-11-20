@@ -117,7 +117,7 @@ it('tells pages an Admin holder has every company-wide Permission, so the menu s
     $ana = Employee::factory()->create();
     $ana->roles()->attach(Role::factory()->admin()->create());
 
-    actingAs($ana)->get(route('profile.edit'))
+    actingAs($ana)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.can', [
             'add-employees', 'manage-clients', 'manage-company', 'manage-departments', 'manage-projects', 'manage-roles', 'view-directory', 'view-projects',
         ]));

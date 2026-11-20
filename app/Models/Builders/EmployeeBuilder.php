@@ -111,6 +111,21 @@ class EmployeeBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to the Employees whose page the given Employee may
+     * open, matching EmployeePolicy::view(): themselves, and those a
+     * Permission for seeing Employee pages (Permission::seeingEmployeePages())
+     * reaches.
+     */
+    public function withPageVisibleTo(Employee $viewer): static
+    {
+        return $this->scoped(function () use ($viewer): void {
+            $this->where(fn (EmployeeBuilder $visible) => $visible
+                ->whereKey($viewer->id)
+                ->orWhere(fn (EmployeeBuilder $reached) => $viewer->limitToReachOf($reached, Permission::seeingEmployeePages())));
+        });
+    }
+
+    /**
      * Limit the query to the Employees whose Work Entries the given Employee
      * may see, matching WorkEntryPolicy::viewAny().
      */

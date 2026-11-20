@@ -10,9 +10,13 @@ import {
 import EmployeeInfo from '@/components/EmployeeInfo.vue';
 import { logout } from '@/routes';
 import { show as employeePage } from '@/routes/employees';
-import { edit } from '@/routes/profile';
+import { edit as security } from '@/routes/security';
 import type { Employee } from '@/types';
 
+/**
+ * The user menu (rule L27): Your profile, the Employee's own Employee page,
+ * which every Employee may open; Settings, which is Security; and Log out.
+ */
 type Props = {
     employee: Employee;
 };
@@ -34,16 +38,19 @@ defineProps<Props>();
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
             <Link
-                class="block w-full cursor-pointer"
+                class="w-full cursor-pointer max-sm:min-h-11"
                 :href="employeePage(employee.id)"
             >
-                <UserRound class="mr-2 h-4 w-4" />
+                <UserRound class="size-4" />
                 Your profile
             </Link>
         </DropdownMenuItem>
         <DropdownMenuItem :as-child="true">
-            <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
-                <Settings class="mr-2 h-4 w-4" />
+            <Link
+                class="w-full cursor-pointer max-sm:min-h-11"
+                :href="security()"
+            >
+                <Settings class="size-4" />
                 Settings
             </Link>
         </DropdownMenuItem>
@@ -51,13 +58,13 @@ defineProps<Props>();
     <DropdownMenuSeparator />
     <DropdownMenuItem :as-child="true">
         <Link
-            class="block w-full cursor-pointer"
+            class="w-full cursor-pointer max-sm:min-h-11"
             :href="logout()"
             @click="handleLogout"
             as="button"
             data-test="logout-button"
         >
-            <LogOut class="mr-2 h-4 w-4" />
+            <LogOut class="size-4" />
             Log out
         </Link>
     </DropdownMenuItem>

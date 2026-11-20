@@ -92,6 +92,8 @@ List each piece of a diff that sits in the wrong layer. These hold from the firs
 - **L23** L15's View all links to the widget's list page; when the widget's rows have no single list page (counters, Declined records of several kinds), View all is a button under the rows that shows the rest in place. A widget shows at most 5 rows, 3 on a phone. The widget's link to its area ("Open Approvals", "Open Work") sits on the right of its title.
 - **L24** Error pages (403/404/500, S5) sit on the L17 auth card: `AppMark`, the error as the title, then an `EmptyState` (icon, one sentence saying what happened and what to do) with **Go to Home** as its one `primary` button, in place of L17's one secondary link.
 - **L25** A side column (L6) is a hairline-bordered `bg-surface` panel, never a Card.
+- **L26** The top bar ends with search: from 640px a button that looks like a search field ("Search people, Projects…" with the ⌘K or Ctrl K hint), on a phone a search `IconButton`, which doesn't count as P2's one icon action. ⌘K or Ctrl+K opens the same `CommandMenu` (K22) on every page.
+- **L27** The user menu at the foot of the sidebar shows the person's name and email, then **Your profile** (their own Employee page), **Settings** (Security) and, after a separator, **Log out**; nothing else.
 
 ---
 
@@ -131,6 +133,7 @@ List each piece of a diff that sits in the wrong layer. These hold from the firs
 - **K19** A detail page's tab that shows one Employee's records from a list across Employees (Work Entries, Travel Requests) is read-only; a secondary **Open in …** section action opens the full list filtered to that Employee, where its actions and Export live.
 - **K20** Status filter chips (All plus each state, each with its count) may offer more than V8's three options, since the counts are what the chips add over a `Select`.
 - **K21** A row whose history is read and changed in place (an Assignment's Pay history) opens it under itself, as the `DataTable` row's full-width `after-row` on a `bg-surface` panel holding a timeline (a K1 exception), through a chevron `IconButton` in the first column (at the row's right on a phone) with `aria-expanded` and "Show/Hide … on …" as its label; the row's other actions stay in its ⋯ menu (K2).
+- **K22** `CommandMenu` is a reka-ui Combobox in a `Dialog` (a K7 exception; a bottom sheet on phone, P7) listing People, Projects, Clients, then Pages, at most 5 of each and only what the person could already open; Pages are the sidebar's own entries (L21), all shown before anything is typed. A person is a `PersonCell` with their Job Title (K13) and opens their Employee page, or their Directory entry when only the Directory shows them; a Project shows its Client on the right. With no match it says "Nothing matches “…”. Try part of a name." Choosing a result opens it; Esc closes the menu.
 
 ---
 

@@ -11,7 +11,7 @@ use function Pest\Laravel\actingAs;
 covers(HandleInertiaRequests::class);
 
 it('gives pages the signed-in Employee', function () {
-    actingAs(Employee::factory()->create(['name' => 'Cara Lopez']))->get(route('profile.edit'))
+    actingAs(Employee::factory()->create(['name' => 'Cara Lopez']))->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('auth.employee.name', 'Cara Lopez')
             ->missing('auth.user'),
@@ -19,7 +19,7 @@ it('gives pages the signed-in Employee', function () {
 });
 
 it('tells the pages whether to offer the Employees list, which only helps when the viewer may see more than their own record', function (?Scope $scope, bool $expected) {
-    actingAs(employeeWith($scope === null ? [Permission::ViewDirectory->value => null] : [Permission::ViewEmployeeRecords->value => $scope]))->get(route('profile.edit'))
+    actingAs(employeeWith($scope === null ? [Permission::ViewDirectory->value => null] : [Permission::ViewEmployeeRecords->value => $scope]))->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canListEmployees', $expected));
 })->with([
     'own' => [Scope::Own, false],

@@ -59,13 +59,13 @@ it('refuses sign-in from the day after the Leaving Date', function () {
 it('ends an existing session on the first request after the Leaving Date', function () {
     $cara = employeeWithDates(['start_date' => '2025-01-01', 'leaving_date' => '2026-03-01']);
 
-    actingAs($cara)->get(route('profile.edit'))->assertOk();
+    actingAs($cara)->get(route('landing'))->assertOk();
     session()->put('draft', 'unsaved notes');
     $token = session()->token();
 
     travelTo('2026-03-02 00:01');
 
-    get(route('profile.edit'))
+    get(route('landing'))
         ->assertRedirect(route('login'))
         ->assertSessionHasErrors(['email' => 'You can no longer sign in because you have left the company.'])
         ->assertSessionMissing('draft');

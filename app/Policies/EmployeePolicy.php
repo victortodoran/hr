@@ -5,7 +5,6 @@ namespace App\Policies;
 use App\Enums\DirectoryTab;
 use App\Enums\EmploymentStatus;
 use App\Enums\Permission;
-use App\Models\Assignment;
 use App\Models\Employee;
 
 /**
@@ -28,14 +27,12 @@ class EmployeePolicy
      * Roles, as it always shows their Reporting Chain. Opening anyone else's
      * needs something on it the viewer may see: their record, their
      * Assignments (which seeing their Pay also allows), or their Time Off
-     * and Paid Days.
+     * and Paid Days (Permission::seeingEmployeePages()).
      */
     public function view(Employee $actor, Employee $employee): bool
     {
         return $actor->is($employee)
-            || $actor->can(Permission::ViewEmployeeRecords->value, $employee)
-            || $actor->can('viewAny', [Assignment::class, $employee])
-            || $this->viewTimeOffAndPaidDays($actor, $employee);
+            || $actor->reachesThrough(Permission::seeingEmployeePages(), $employee);
     }
 
     /**

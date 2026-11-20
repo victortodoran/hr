@@ -233,8 +233,8 @@ it('refuses the list, and leaves it out of the navigation, for someone who may o
     $dan = employeeWith([Permission::ViewWorkEntries->value => Scope::Everyone]);
 
     actingAs($cara)->get(route('work-entry-list.index'))->assertForbidden();
-    actingAs($cara)->get(route('profile.edit'))
+    actingAs($cara)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeWorkEntryList', false));
-    actingAs($dan)->get(route('profile.edit'))
+    actingAs($dan)->get(route('landing'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeeWorkEntryList', true));
 });
