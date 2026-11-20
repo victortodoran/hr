@@ -122,7 +122,7 @@ const seeAlsoLinks = computed(() => {
     ].filter((link) => link.shown);
 });
 
-const hasActions = computed(() => props.canManage || props.canViewPay);
+const hasActions = computed(() => props.canManage || props.canManagePay);
 
 /**
  * The Assignments' columns from `md` up: Project, Job Title, Dates,
@@ -130,8 +130,12 @@ const hasActions = computed(() => props.canManage || props.canViewPay);
  * is written out in full so Tailwind finds it.
  */
 const assignmentGrid = computed(() => {
-    if (props.canViewPay) {
+    if (props.canViewPay && hasActions.value) {
         return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_minmax(0,1.1fr)_11rem]';
+    }
+
+    if (props.canViewPay) {
+        return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_minmax(0,1.1fr)]';
     }
 
     if (props.canManage) {
@@ -456,7 +460,7 @@ setLayoutProps({
                                     class="col-start-2 row-start-1 flex justify-end gap-1 md:col-start-auto md:row-start-auto"
                                 >
                                     <PayDialog
-                                        v-if="assignment.pay"
+                                        v-if="assignment.pay && currency"
                                         :assignment="{
                                             ...assignment,
                                             pay: assignment.pay,

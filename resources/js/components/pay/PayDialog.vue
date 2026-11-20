@@ -31,8 +31,8 @@ import type { AssignmentRecord, PayEntryRecord } from '@/types';
 
 const props = defineProps<{
     assignment: AssignmentRecord & { pay: PayEntryRecord[] };
-    /** The company currency; only given to those who may manage Pay. */
-    currency?: string;
+    /** The company currency, the Pay entered is in. */
+    currency: string;
 }>();
 
 const open = ref(false);
@@ -48,7 +48,6 @@ const entryInEffect = computed(() =>
         ? payInEffectOn(props.assignment.pay, inEffectOn.value)
         : null,
 );
-const canManagePay = computed(() => props.currency !== undefined);
 const fieldId = (field: string): string =>
     `pay-${field}-${props.assignment.id}`;
 
@@ -133,7 +132,6 @@ function add(): void {
                             >In effect</Badge
                         >
                         <Form
-                            v-if="canManagePay"
                             v-bind="
                                 PayEntryController.destroy.form([
                                     assignment.id,
@@ -156,7 +154,7 @@ function add(): void {
             </ul>
             <p v-else class="text-sm text-muted-foreground">No Pay yet.</p>
 
-            <form v-if="canManagePay" class="space-y-4" @submit.prevent="add">
+            <form class="space-y-4" @submit.prevent="add">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="grid gap-2">
                         <Label :for="fieldId('kind')">Kind</Label>

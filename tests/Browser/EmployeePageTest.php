@@ -57,6 +57,35 @@ it('opens every tab of an Employee\'s page, keeping the header, leading Time Off
         ->assertNoJavaScriptErrors();
 });
 
+it('gives the Pay button only to those who manage Pay, while those who only view it see the Pay in effect', function () {
+    CompanySettings::factory()->create();
+    $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara Lane']);
+    $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-01-05']);
+    PayEntry::factory()->for($relaunch)->create(['effective_from' => '2026-01-05', 'kind' => PayKind::Hourly, 'amount' => 2500]);
+    $viewsPay = employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+        Permission::ViewPay->value => Scope::Everyone,
+    ]);
+    $managesPay = employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Everyone,
+        Permission::ManagePay->value => Scope::Everyone,
+    ]);
+
+    actingAs($viewsPay);
+
+    visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
+        ->assertSeeIn('[data-test="assignment"]', '€25.00 per hour')
+        ->assertMissing('[aria-label="Pay on Relaunch"]')
+        ->assertNoJavaScriptErrors();
+
+    actingAs($managesPay);
+
+    visit(route('employees.show', ['employee' => $cara, 'tab' => 'assignments']))
+        ->click('[aria-label="Pay on Relaunch"]')
+        ->assertSee('Add Pay')
+        ->assertNoJavaScriptErrors();
+});
+
 it('drops an Assignment edit that was cancelled, so reopening shows what is saved and saving another change leaves it out', function () {
     $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara Lane']);
     $relaunch = assignmentOf($cara, 'Relaunch', ['start_date' => '2026-01-05', 'capacity' => 100]);
