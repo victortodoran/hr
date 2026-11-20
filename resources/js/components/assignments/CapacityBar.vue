@@ -18,7 +18,7 @@ defineProps<{
             aria-hidden="true"
         >
             <span
-                class="block h-full rounded-full bg-foreground/60"
+                class="block h-full rounded-full bg-chart-bar-strong"
                 :style="{ width: `${capacity}%` }"
             />
         </span>
