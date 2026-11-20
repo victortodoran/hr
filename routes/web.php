@@ -162,7 +162,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('can:'.Permission::ViewDirectory->value)->group(function () {
-        Route::get('directory/{employee}', [DirectoryController::class, 'show'])->name('directory.show');
+        Route::get('directory/{employee}', [DirectoryController::class, 'show'])->whereNumber('employee')->name('directory.show');
     });
 
     Route::middleware('can:'.Permission::ManageClients->value)->group(function () {

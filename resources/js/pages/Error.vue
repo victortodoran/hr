@@ -20,9 +20,9 @@ const pages: Record<
     { title: string; message: string; icon: Component }
 > = {
     403: {
-        title: 'You can’t open this page',
+        title: 'You don’t have access to this page',
         message:
-            'Your Role doesn’t give you the Permission this page needs. Ask an Admin if you need it.',
+            'It isn’t open to you right now. If you think it should be, ask whoever manages Roles.',
         icon: ShieldX,
     },
     404: {

@@ -13,7 +13,7 @@ use function Pest\Laravel\get;
  */
 beforeEach(fn () => config(['app.debug' => false]));
 
-it('shows a missing page as the Error page, signed out, with the shared app name', function () {
+it('shows a missing page as the Error page, signed out, with the app name', function () {
     get('/no-such-page')
         ->assertNotFound()
         ->assertInertia(fn (Assert $page) => $page
@@ -27,6 +27,19 @@ it('shows a refused page as the Error page with a 403', function () {
         ->get(route('approvals.index'))
         ->assertForbidden()
         ->assertInertia(fn (Assert $page) => $page->component('Error')->where('status', 403));
+});
+
+it('shows a failed page to a signed-in Employee as the Error page, without the exception or the database-backed shared props', function () {
+    Route::middleware('web')->get('/failing-page', fn () => throw new RuntimeException('Broken'));
+
+    $response = actingAs(employeeWith([Permission::ViewDirectory->value => null]))->get('/failing-page');
+
+    $response->assertInternalServerError()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 500)
+            ->missing('auth'));
+    expect($response->content())->not->toContain('Broken');
 });
 
 it('shows a failed page as the Error page with a 500', function () {

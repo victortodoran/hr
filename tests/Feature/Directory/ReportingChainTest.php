@@ -6,7 +6,7 @@ use App\Http\Controllers\Employees\DirectoryController;
 use App\Models\Assignment;
 use App\Models\Department;
 use App\Models\Employee;
-use App\Pages\Employees\DirectoryPage;
+use App\Pages\Employees\DirectoryIndexPage;
 use App\Support\ReportingChain;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -14,7 +14,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\travelTo;
 
-covers(DirectoryController::class, DirectoryPage::class, ReportingChain::class, Employee::class);
+covers(DirectoryController::class, DirectoryIndexPage::class, ReportingChain::class, Employee::class);
 
 beforeEach(fn () => travelTo('2026-03-01 09:00'));
 

@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useListFilters } from '@/composables/useListFilters';
+import { useRecordInUrl } from '@/composables/useRecordInUrl';
 import { index } from '@/routes/directory';
 import { show as employeePage } from '@/routes/employees';
 import type {
@@ -84,35 +85,25 @@ function openTab(tab: string | number): void {
 }
 
 /**
- * Opens an Employee's sheet over the list (rule K8), loading only their
- * Reporting Chain and keeping the tab, search and page in the URL.
+ * The Employee whose sheet is open over the list (rule K8), kept in the
+ * URL as `?person=`; opening one reloads only their Reporting Chain.
  */
-function openPerson(id: number): void {
-    router.get(
-        index.url({ mergeQuery: { person: id } }),
-        {},
-        { only: ['person'], preserveState: true, preserveScroll: true },
-    );
-}
-
-/** Closing the sheet drops `?person=` from the URL without a visit. */
-const personOpen = computed({
-    get: () => props.person !== null,
-    set: (open: boolean) => {
-        if (!open) {
-            router.replace({
-                url: index.url({ mergeQuery: { person: null } }),
-                props: (current) => ({ ...current, person: null }),
-                preserveState: true,
-                preserveScroll: true,
-            });
-        }
-    },
-});
+const {
+    record: openedPerson,
+    recordOpen: personOpen,
+    openRecord: openPerson,
+} = useRecordInUrl(
+    () =>
+        props.person ? [{ ...props.person, id: props.person.employee.id }] : [],
+    { param: 'person', reload: 'person' },
+);
 
 /** "Developer · Engineering", the line under the sheet's title. */
 const personDetail = computed(() =>
-    [props.person?.employee.job_title, props.person?.employee.department]
+    [
+        openedPerson.value?.employee.job_title,
+        openedPerson.value?.employee.department,
+    ]
         .filter(Boolean)
         .join(' · '),
 );
@@ -166,6 +157,11 @@ const personDetail = computed(() =>
                             <PersonCell
                                 v-if="row.manager"
                                 :name="row.manager.name"
+                                :href="
+                                    index({
+                                        mergeQuery: { person: row.manager.id },
+                                    })
+                                "
                             />
                             <span v-else class="text-muted-foreground"
                                 >None</span
@@ -223,9 +219,9 @@ const personDetail = computed(() =>
         </Tabs>
 
         <RecordSheet
-            v-if="person"
+            v-if="openedPerson"
             v-model:open="personOpen"
-            :title="person.employee.name"
+            :title="openedPerson.employee.name"
             :description="personDetail || undefined"
         >
             <section class="flex flex-col gap-3">
@@ -234,11 +230,11 @@ const personDetail = computed(() =>
                     Who they report to, up to the top of the company, and whom
                     they are the Manager of.
                 </p>
-                <ReportingChain :chain="person" />
+                <ReportingChain :chain="openedPerson" />
             </section>
-            <template v-if="person.employee.link === 'employee'" #footer>
+            <template v-if="openedPerson.employee.link === 'employee'" #footer>
                 <Button variant="secondary" as-child>
-                    <Link :href="employeePage(person.employee.id)"
+                    <Link :href="employeePage(openedPerson.employee.id)"
                         >Open Employee page</Link
                     >
                 </Button>

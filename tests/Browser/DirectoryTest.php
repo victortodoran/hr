@@ -5,7 +5,7 @@ use App\Models\Employee;
 
 use function Pest\Laravel\actingAs;
 
-it('opens a colleague\'s Reporting Chain in a sheet over the Directory, follows it up, and closes it', function () {
+it('opens a colleague\'s Reporting Chain in a sheet over the Directory, follows it up, closes it, and opens their Manager\'s from the Manager column', function () {
     $ada = Employee::factory()->create(['name' => 'Ada Top']);
     $ben = Employee::factory()->reportingTo($ada)->create(['name' => 'Ben Manager']);
     Employee::factory()->reportingTo($ben)->create(['name' => 'Cara Report']);
@@ -23,6 +23,9 @@ it('opens a colleague\'s Reporting Chain in a sheet over the Directory, follows 
         ->keys('[data-slot="record-sheet"]', 'Escape')
         ->assertQueryStringMissing('person')
         ->assertMissing('[data-slot="record-sheet"]')
+        ->click('main [data-slot="data-row"]:has-text("Cara Report") >> internal:role=link[name="Ben Manager"s]')
+        ->assertQueryStringHas('person', (string) $ben->id)
+        ->assertSeeIn('[data-slot="record-sheet"] h2', 'Ben Manager')
         ->assertNoJavaScriptErrors();
 });
 
@@ -36,10 +39,10 @@ it('opens a sheet on a phone from an old link to someone\'s Reporting Chain, fit
         ->resize(390, 844)
         ->assertQueryStringHas('person', (string) $cara->id)
         ->assertSeeIn('[data-slot="record-sheet"]', 'Ben Manager')
-        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->assertScript(fitsScreenWidth(), true)
         ->keys('[data-slot="record-sheet"]', 'Escape')
         ->click('main [data-slot="data-row"]:has-text("Ben Manager")')
         ->assertSeeIn('[data-slot="record-sheet"]', 'Cara Report')
-        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->assertScript(fitsScreenWidth(), true)
         ->assertNoJavaScriptErrors();
 });

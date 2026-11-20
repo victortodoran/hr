@@ -6,11 +6,6 @@ use Illuminate\Support\Facades\Password;
 
 use function Pest\Laravel\actingAs;
 
-/**
- * Checks that a page fits a 390px phone screen without sideways scrolling.
- */
-const AUTH_PAGE_FITS = 'document.documentElement.scrollWidth <= window.innerWidth';
-
 it('asks for a reset link on a phone, then goes back to log in', function () {
     Notification::fake();
     Employee::factory()->startedLongAgo()->create(['email' => 'cara@acme.test']);
@@ -18,7 +13,7 @@ it('asks for a reset link on a phone, then goes back to log in', function () {
     visit(route('password.request'))
         ->resize(390, 844)
         ->assertPresent('[data-slot="auth-card"] [data-slot="app-mark"]')
-        ->assertScript(AUTH_PAGE_FITS, true)
+        ->assertScript(fitsScreenWidth(), true)
         ->fill('#email', 'cara@acme.test')
         ->click('internal:role=button[name="Email reset link"s]')
         ->assertSee('We have emailed your password reset link.')
@@ -35,7 +30,7 @@ it('resets a password on a phone with the email shown read-only', function () {
         ->resize(390, 844)
         ->assertValue('#email', 'cara@acme.test')
         ->assertAttribute('#email', 'readonly', '')
-        ->assertScript(AUTH_PAGE_FITS, true)
+        ->assertScript(fitsScreenWidth(), true)
         ->fill('#password', 'a-new-password')
         ->fill('#password_confirmation', 'a-new-password')
         ->click('internal:role=button[name="Reset password"s]')
@@ -50,7 +45,7 @@ it('sets a password from an invitation on a phone with the email shown read-only
     visit(route('invitation.show', ['token' => $token, 'email' => $cara->email]))
         ->resize(390, 844)
         ->assertAttribute('#email', 'readonly', '')
-        ->assertScript(AUTH_PAGE_FITS, true)
+        ->assertScript(fitsScreenWidth(), true)
         ->fill('#password', 'a-new-password')
         ->fill('#password_confirmation', 'a-new-password')
         ->click('internal:role=button[name="Set password"s]')
@@ -64,7 +59,7 @@ it('confirms a password on a phone on the auth card', function () {
     visit(route('password.confirm'))
         ->resize(390, 844)
         ->assertPresent('[data-slot="auth-card"]')
-        ->assertScript(AUTH_PAGE_FITS, true)
+        ->assertScript(fitsScreenWidth(), true)
         ->fill('#password', 'password')
         ->click('internal:role=button[name="Confirm password"s]')
         ->assertPathIsNot('/user/confirm-password')
@@ -78,7 +73,7 @@ it('shows a missing page on a phone with Go to Home', function () {
     visit('/no-such-page')
         ->resize(390, 844)
         ->assertSee('Page not found')
-        ->assertScript(AUTH_PAGE_FITS, true)
+        ->assertScript(fitsScreenWidth(), true)
         ->click('internal:role=link[name="Go to Home"s]')
         ->assertPathIs('/home')
         ->assertNoJavaScriptErrors();

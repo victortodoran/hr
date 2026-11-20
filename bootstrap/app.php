@@ -10,6 +10,7 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
 use Inertia\ExceptionResponse;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -32,19 +33,22 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
 
-        /*
-         * With debugging off, a refused, missing or failed page renders the
-         * Error page with Go to Home (rule S5) instead of Laravel's own;
-         * with it on, the exception page stays for developers.
+        /**
+         * With debugging off, as in production, a refused, missing or failed
+         * page renders the Error page with Go to Home (rules S5, L24) instead
+         * of Laravel's own; with it on, the exception page stays for
+         * developers. The page gets only the app's name: the shared props
+         * read the database, which may be what failed, so they are dropped.
          */
         $exceptions->respond(function (Response $response, Throwable $exception, Request $request): Response {
             if (config('app.debug') || $request->expectsJson() || ! in_array($response->getStatusCode(), [403, 404, 500], true)) {
                 return $response;
             }
 
+            Inertia::flushShared();
+
             return (new ExceptionResponse($exception, $request, $response, app(Router::class), app(Kernel::class)))
-                ->render('Error', ['status' => $response->getStatusCode()])
-                ->withSharedData()
+                ->render('Error', ['status' => $response->getStatusCode(), 'name' => config('app.name')])
                 ->toResponse($request);
         });
     })->create();

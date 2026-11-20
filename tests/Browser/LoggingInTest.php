@@ -7,8 +7,8 @@ it('logs in on a phone, showing the app mark and fitting the screen', function (
 
     visit(route('login'))
         ->resize(390, 844)
-        ->assertPresent('[data-slot="app-mark"]')
-        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->assertPresent('[data-slot="auth-card"] [data-slot="app-mark"]')
+        ->assertScript(fitsScreenWidth(), true)
         ->fill('#email', 'cara@acme.test')
         ->fill('#password', 'password')
         ->click('internal:role=button[name="Log in"s]')

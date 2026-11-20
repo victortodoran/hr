@@ -1,0 +1,63 @@
+<script setup lang="ts">
+import InputError from '@/components/InputError.vue';
+import PasswordInput from '@/components/PasswordInput.vue';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+/**
+ * The fields for choosing a password on the auth card (rule L17): the
+ * account's email, read-only as the link fixed it, then the new password
+ * and its confirmation. Reset password and Set your password share them.
+ */
+defineProps<{
+    email: string;
+    passwordRules: string;
+    errors: Partial<
+        Record<'email' | 'password' | 'password_confirmation', string>
+    >;
+    /** The new password's label, such as "New password". */
+    passwordLabel?: string;
+}>();
+</script>
+
+<template>
+    <div class="flex flex-col gap-5">
+        <div class="grid gap-2">
+            <Label for="email">Email</Label>
+            <Input
+                id="email"
+                type="email"
+                autocomplete="email"
+                :default-value="email"
+                class="bg-surface text-muted-foreground"
+                readonly
+            />
+            <InputError :message="errors.email" />
+        </div>
+
+        <div class="grid gap-2">
+            <Label for="password">{{ passwordLabel ?? 'Password' }}</Label>
+            <PasswordInput
+                id="password"
+                name="password"
+                autocomplete="new-password"
+                autofocus
+                :passwordrules="passwordRules"
+                :aria-invalid="errors.password ? true : undefined"
+            />
+            <InputError :message="errors.password" />
+        </div>
+
+        <div class="grid gap-2">
+            <Label for="password_confirmation">Confirm password</Label>
+            <PasswordInput
+                id="password_confirmation"
+                name="password_confirmation"
+                autocomplete="new-password"
+                :passwordrules="passwordRules"
+                :aria-invalid="errors.password_confirmation ? true : undefined"
+            />
+            <InputError :message="errors.password_confirmation" />
+        </div>
+    </div>
+</template>

@@ -21,7 +21,7 @@ it('lands an Employee on Home after signing in, showing their month, Paid Days a
     visit(route('login'))
         ->fill('email', $cara->email)
         ->fill('password', 'password')
-        ->click('Log in')
+        ->click('internal:role=button[name="Log in"s]')
         ->assertPathIs('/home')
         ->assertSee('Hours this month')
         ->assertSee('1.5 h')

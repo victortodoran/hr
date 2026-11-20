@@ -3,12 +3,10 @@
 namespace App\Http\Controllers\Employees;
 
 use App\Enums\DirectoryTab;
-use App\Enums\EmploymentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employees\DirectoryListRequest;
 use App\Models\Employee;
 use App\Pages\Employees\DirectoryIndexPage;
-use App\Pages\Employees\DirectoryPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -33,10 +31,7 @@ class DirectoryController extends Controller
     {
         $tabs = DirectoryTab::openableBy($actor);
 
-        return Inertia::render('directory/Index', [
-            ...DirectoryIndexPage::props($actor, $request->tab($tabs), $tabs, $request->search()),
-            ...DirectoryPage::props($actor, $request->person()),
-        ]);
+        return Inertia::render('directory/Index', DirectoryIndexPage::props($actor, $request->tab($tabs), $tabs, $request->search(), $request->person()));
     }
 
     /**
@@ -44,10 +39,10 @@ class DirectoryController extends Controller
      * the Directory. Former Employees have left the directory, so they have
      * none.
      */
-    public function show(Employee $employee): RedirectResponse
+    public function show(int $employee): RedirectResponse
     {
-        abort_if($employee->employmentStatus() === EmploymentStatus::Former, 404);
+        $person = Employee::query()->notFormer()->findOrFail($employee);
 
-        return to_route('directory.index', ['person' => $employee->id]);
+        return to_route('directory.index', ['person' => $person->id]);
     }
 }

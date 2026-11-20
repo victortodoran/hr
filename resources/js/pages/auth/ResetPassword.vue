@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import InputError from '@/components/InputError.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
+import NewPasswordFields from '@/components/auth/NewPasswordFields.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import TextLink from '@/components/TextLink.vue';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { login } from '@/routes';
 import { update } from '@/routes/password';
 
@@ -33,43 +30,12 @@ defineProps<{
         v-slot="{ errors, processing }"
         class="flex flex-col gap-5"
     >
-        <div class="grid gap-2">
-            <Label for="email">Email</Label>
-            <Input
-                id="email"
-                type="email"
-                autocomplete="email"
-                :default-value="email"
-                class="bg-surface text-muted-foreground"
-                readonly
-            />
-            <InputError :message="errors.email" />
-        </div>
-
-        <div class="grid gap-2">
-            <Label for="password">New password</Label>
-            <PasswordInput
-                id="password"
-                name="password"
-                autocomplete="new-password"
-                autofocus
-                :passwordrules="passwordRules"
-                :aria-invalid="errors.password ? true : undefined"
-            />
-            <InputError :message="errors.password" />
-        </div>
-
-        <div class="grid gap-2">
-            <Label for="password_confirmation">Confirm password</Label>
-            <PasswordInput
-                id="password_confirmation"
-                name="password_confirmation"
-                autocomplete="new-password"
-                :passwordrules="passwordRules"
-                :aria-invalid="errors.password_confirmation ? true : undefined"
-            />
-            <InputError :message="errors.password_confirmation" />
-        </div>
+        <NewPasswordFields
+            :email="email"
+            :password-rules="passwordRules"
+            :errors="errors"
+            password-label="New password"
+        />
 
         <SubmitButton
             :processing="processing"
