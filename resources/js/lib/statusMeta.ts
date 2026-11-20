@@ -110,14 +110,25 @@ export const statusColours = Object.fromEntries(
 ) as Record<StatusBadgeState, string>;
 
 /**
- * Each Progress's dot on a Goal's History timeline: its tone's icon colour.
+ * Each tone's dot colour: the icon colour as a fill.
  */
-export const progressDotColours: Record<Progress, string> = {
-    'not-started': 'bg-status-upcoming-icon',
-    'on-track': 'bg-status-approved-icon',
-    'at-risk': 'bg-status-attention-icon',
-    done: 'bg-status-approved-icon',
+const toneDotColours: Record<StatusTone, string> = {
+    pending: 'bg-status-pending-icon',
+    approved: 'bg-status-approved-icon',
+    declined: 'bg-status-declined-icon',
+    neutral: 'bg-status-neutral-icon',
+    upcoming: 'bg-status-upcoming-icon',
+    attention: 'bg-status-attention-icon',
 };
+
+/**
+ * Each Progress's dot on a Goal's History timeline, through its tone.
+ */
+export const progressDotColours = Object.fromEntries(
+    (['not-started', 'on-track', 'at-risk', 'done'] as const).map(
+        (progress) => [progress, toneDotColours[statusTones[progress]]],
+    ),
+) as Record<Progress, string>;
 
 /**
  * The classes that draw a small Select trigger as a status pill, like a
@@ -125,3 +136,11 @@ export const progressDotColours: Record<Progress, string> = {
  */
 export const statusPillTrigger =
     'gap-1 rounded-full border-0 px-2.5 py-0.5 text-caption font-medium shadow-none data-[size=sm]:h-6 [&_svg]:opacity-70 [&_svg:not([class*=size-])]:size-3.5';
+
+/**
+ * A state's icon, through its tone, for a status pill that isn't a
+ * StatusBadge (a Progress Select's trigger), so it too carries the icon.
+ */
+export function statusIcon(state: StatusBadgeState): Component {
+    return toneIcons[statusTones[state]];
+}

@@ -13,7 +13,7 @@ defineProps<{
 <template>
     <div v-show="message">
         <p class="flex items-start gap-1.5 text-meta text-destructive">
-            <CircleAlert class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+            <CircleAlert class="mt-px size-4 shrink-0" aria-hidden="true" />
             <span>{{ message }}</span>
         </p>
     </div>

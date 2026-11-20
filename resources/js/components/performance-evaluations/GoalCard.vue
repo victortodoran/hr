@@ -27,7 +27,7 @@ import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { goalRemovalWarning } from '@/lib/goals';
 import { outcomes } from '@/lib/outcomes';
 import { progresses } from '@/lib/progress';
-import { statusColours, statusPillTrigger } from '@/lib/statusMeta';
+import { statusColours, statusIcon, statusPillTrigger } from '@/lib/statusMeta';
 import { show } from '@/routes/performance-evaluations/goals';
 import type { AssessedGoal, Progress } from '@/types';
 
@@ -160,6 +160,10 @@ const commentCountLabel = computed(() => {
                                 ]"
                                 :aria-label="`Progress of ${goal.title}`"
                             >
+                                <component
+                                    :is="statusIcon(progress.chosen.value)"
+                                    aria-hidden="true"
+                                />
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

@@ -36,6 +36,7 @@ import { progresses } from '@/lib/progress';
 import {
     progressDotColours,
     statusColours,
+    statusIcon,
     statusPillTrigger,
 } from '@/lib/statusMeta';
 import { index as mine } from '@/routes/my-performance-evaluations';
@@ -352,6 +353,10 @@ setLayoutProps({
                                         statusColours[progress.chosen.value],
                                     ]"
                                 >
+                                    <component
+                                        :is="statusIcon(progress.chosen.value)"
+                                        aria-hidden="true"
+                                    />
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
