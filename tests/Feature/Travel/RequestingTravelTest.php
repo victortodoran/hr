@@ -207,7 +207,7 @@ it('allows travel over Declined or Cancelled Travel Requests and Time Off, someo
     expect(storedTravelRequests($cara))->toHaveCount(4);
 });
 
-it('opens the form for requesting travel with today and the Assignments the Employee can still travel on, with their dates', function () {
+it('opens the Request Travel sheet over the Travel page, with today and the Assignments the Employee can still travel on, with their dates', function () {
     $cara = traveller();
     $globex = Client::factory()->create(['name' => 'Globex']);
     $relaunch = Assignment::factory()->for($cara)->for(Project::factory()->forClient($globex)->create(['name' => 'Relaunch', 'start_date' => '2026-01-05']))
@@ -221,7 +221,9 @@ it('opens the form for requesting travel with today and the Assignments the Empl
     actingAs($cara)->get(route('travel-requests.create'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('travel-requests/Create')
+            ->component('travel-requests/Index')
+            ->has('travelRequests.upcoming')
+            ->where('requesting', true)
             ->where('today', '2026-12-01')
             ->where('assignments', [
                 ['id' => $endsToday->id, 'project' => 'Archive Cleanup', 'client' => null, 'start_date' => '2026-11-02', 'end_date' => '2026-12-01'],

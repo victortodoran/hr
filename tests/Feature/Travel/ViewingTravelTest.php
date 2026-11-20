@@ -75,7 +75,7 @@ function carasTravel(Employee $cara): array
     $berlin = berlinTripWithHotel($cara)->travelRequest;
     TravelExpense::factory()->for($berlin)->declined()->create(['paid_on' => '2026-12-05', 'category' => 'meals', 'description' => 'Dinner', 'amount' => 5000, 'decline_reason' => 'Company card']);
     $relaunch = $berlin->assignment;
-    $globex = Assignment::factory()->for($cara)->for(Project::factory()->forClient(Client::factory()->create(['name' => 'Globex']))->create(['start_date' => '2026-01-05']))
+    $globex = Assignment::factory()->for($cara)->for(Project::factory()->forClient(Client::factory()->create(['name' => 'Globex']))->create(['name' => 'Checkout', 'start_date' => '2026-01-05']))
         ->create(['start_date' => '2026-11-02', 'end_date' => null]);
 
     $lisbon = TravelRequest::factory()->on($relaunch)->approved()->create(['destination' => 'Lisbon', 'first_date' => '2026-12-09', 'last_date' => '2026-12-10']);
@@ -103,14 +103,14 @@ it('splits the Employee\'s own travel into Upcoming, soonest first, and Past, ne
         ->assertInertia(fn (Assert $page) => $page
             ->component('travel-requests/Index')
             ->where('travelRequests.upcoming', [
-                ['id' => $travel['lisbon']->id, 'destination' => 'Lisbon', 'first_date' => '2026-12-09', 'last_date' => '2026-12-10', 'client' => null, 'state' => 'approved', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}470.00", 'approved_total' => "RON\u{a0}420.00", 'declined_expenses' => 0],
-                ['id' => $travel['rome']->id, 'destination' => 'Rome', 'first_date' => '2026-12-12', 'last_date' => '2026-12-13', 'client' => null, 'state' => 'approved', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}0.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 0],
-                ['id' => $travel['vienna']->id, 'destination' => 'Vienna', 'first_date' => '2026-12-20', 'last_date' => '2026-12-21', 'client' => 'Globex', 'state' => 'pending', 'takes_expenses' => false, 'entered_total' => null, 'approved_total' => null, 'declined_expenses' => 0],
+                ['id' => $travel['lisbon']->id, 'destination' => 'Lisbon', 'first_date' => '2026-12-09', 'last_date' => '2026-12-10', 'project' => 'Relaunch', 'client' => null, 'state' => 'approved', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}470.00", 'approved_total' => "RON\u{a0}420.00", 'declined_expenses' => 0],
+                ['id' => $travel['rome']->id, 'destination' => 'Rome', 'first_date' => '2026-12-12', 'last_date' => '2026-12-13', 'project' => 'Relaunch', 'client' => null, 'state' => 'approved', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}0.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 0],
+                ['id' => $travel['vienna']->id, 'destination' => 'Vienna', 'first_date' => '2026-12-20', 'last_date' => '2026-12-21', 'project' => 'Checkout', 'client' => 'Globex', 'state' => 'pending', 'takes_expenses' => false, 'entered_total' => null, 'approved_total' => null, 'declined_expenses' => 0],
             ])
             ->where('travelRequests.past', [
-                ['id' => $travel['paris']->id, 'destination' => 'Paris', 'first_date' => '2026-12-18', 'last_date' => '2026-12-18', 'client' => null, 'state' => 'cancelled', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}0.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 0],
-                ['id' => $travel['munich']->id, 'destination' => 'Munich', 'first_date' => '2026-12-15', 'last_date' => '2026-12-15', 'client' => null, 'state' => 'declined', 'takes_expenses' => false, 'entered_total' => null, 'approved_total' => null, 'declined_expenses' => 0],
-                ['id' => $travel['berlin']->id, 'destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'client' => null, 'state' => 'approved', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}1,990.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 1],
+                ['id' => $travel['paris']->id, 'destination' => 'Paris', 'first_date' => '2026-12-18', 'last_date' => '2026-12-18', 'project' => 'Relaunch', 'client' => null, 'state' => 'cancelled', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}0.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 0],
+                ['id' => $travel['munich']->id, 'destination' => 'Munich', 'first_date' => '2026-12-15', 'last_date' => '2026-12-15', 'project' => 'Relaunch', 'client' => null, 'state' => 'declined', 'takes_expenses' => false, 'entered_total' => null, 'approved_total' => null, 'declined_expenses' => 0],
+                ['id' => $travel['berlin']->id, 'destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05', 'project' => 'Relaunch', 'client' => null, 'state' => 'approved', 'takes_expenses' => true, 'entered_total' => "RON\u{a0}1,990.00", 'approved_total' => "RON\u{a0}0.00", 'declined_expenses' => 1],
             ]));
 });
 
@@ -147,10 +147,13 @@ it('shows Cara\'s Travel Request page in full, with its Travel Expenses, only he
                 'state' => 'approved', 'decided_by' => $berlin->decider?->name, 'decline_reason' => null, 'can_cancel' => false, 'can_decide' => false,
                 'expenses' => [
                     'items' => [
-                        ['id' => $hotel->id, 'paid_on' => '2026-12-04', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'pending', 'decline_reason' => null, 'can_change' => false, 'can_decide' => true, 'can_reopen' => false],
-                        ['id' => $dinner->id, 'paid_on' => '2026-12-05', 'category' => 'meals', 'description' => 'Dinner', 'amount' => "RON\u{a0}50.00", 'state' => 'declined', 'decline_reason' => 'Company card', 'can_change' => false, 'can_decide' => false, 'can_reopen' => false],
+                        ['id' => $hotel->id, 'paid_on' => '2026-12-04', 'category' => 'accommodation', 'description' => 'Hotel', 'amount' => "RON\u{a0}1,990.00", 'state' => 'pending', 'decline_reason' => null, 'declined_by' => null, 'receipt_is_image' => false, 'can_change' => false, 'can_decide' => true, 'can_reopen' => false],
+                        ['id' => $dinner->id, 'paid_on' => '2026-12-05', 'category' => 'meals', 'description' => 'Dinner', 'amount' => "RON\u{a0}50.00", 'state' => 'declined', 'decline_reason' => 'Company card', 'declined_by' => $dinner->decliner?->name, 'receipt_is_image' => false, 'can_change' => false, 'can_decide' => false, 'can_reopen' => false],
                     ],
                     'total' => "RON\u{a0}1,990.00",
+                    'approved_total' => "RON\u{a0}0.00",
+                    'pending_total' => "RON\u{a0}1,990.00",
+                    'declined_total' => "RON\u{a0}50.00",
                     'can_create' => false,
                 ],
             ])

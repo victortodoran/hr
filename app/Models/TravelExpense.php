@@ -37,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read TravelRequest $travelRequest
  * @property-read Employee|null $approver
+ * @property-read Employee|null $decliner
  */
 #[Fillable(['paid_on', 'amount', 'category', 'description', 'receipt_path'])] // @pest-mutate-ignore (class attributes never show as covered)
 #[UseEloquentBuilder(TravelExpenseBuilder::class)] // @pest-mutate-ignore (class attributes never show as covered)
@@ -134,5 +135,15 @@ class TravelExpense extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'approved_by');
+    }
+
+    /**
+     * The Manager who declined the Travel Expense, while it is Declined.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function decliner(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'declined_by');
     }
 }

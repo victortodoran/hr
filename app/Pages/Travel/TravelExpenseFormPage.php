@@ -3,62 +3,68 @@
 namespace App\Pages\Travel;
 
 use App\Models\CompanySettings;
+use App\Models\Employee;
 use App\Models\TravelExpense;
-use App\Models\TravelRequest;
 use App\Support\Currency;
-use App\Support\TravelHistory;
 
 /**
- * The Travel Expense forms as the props they render: recording one on a
- * Travel Request, and changing one, each leading back to the Travel
- * Request's page.
+ * The Add and Edit Travel Expense sheet as the props it adds to the
+ * Travel Request's page it opens over (rule L14).
  */
 final class TravelExpenseFormPage
 {
     /**
-     * The form for recording a Travel Expense on the Travel Request, named
-     * at its top, with the company currency and today, the latest date one
-     * can be paid on.
+     * The sheet for adding a Travel Expense, with the company currency and
+     * today, the latest date one can be paid on.
      *
-     * @return array{travelRequest: array{id: int, destination: string, first_date: string, last_date: string}, currency: array{code: string, decimals: int}, today: string}
+     * @return array{expenseSheet: 'add', currency: array{code: string, decimals: int}, today: string}
      */
-    public static function create(TravelRequest $travelRequest): array
+    public static function create(): array
     {
-        return self::shared($travelRequest, CompanySettings::payCurrency());
+        return [
+            'expenseSheet' => 'add',
+            ...self::shared(CompanySettings::payCurrency()),
+        ];
     }
 
     /**
-     * The form for changing a Travel Expense, filled in as it would be
-     * typed; its receipt is kept unless a new file is chosen.
+     * The sheet for editing a Travel Expense, filled in as it would be
+     * typed, with its receipt's file name, the receipt kept unless a new file is chosen; for a
+     * Declined one, who declined it and why, and the Manager it goes back
+     * to as Pending once saved.
      *
-     * @return array{travelRequest: array{id: int, destination: string, first_date: string, last_date: string}, currency: array{code: string, decimals: int}, today: string, travelExpense: array{id: int, paid_on: string, category: string, amount: string, description: string}}
+     * @return array{expenseSheet: 'edit', currency: array{code: string, decimals: int}, today: string, travelExpense: array{id: int, paid_on: string, category: string, amount: string, description: string, state: string, decline_reason: string|null, declined_by: string|null, receipt_name: string}, manager: string|null}
      */
-    public static function edit(TravelRequest $travelRequest, TravelExpense $travelExpense): array
+    public static function edit(TravelExpense $travelExpense, Employee $actor): array
     {
         $currency = CompanySettings::payCurrency();
 
         return [
-            ...self::shared($travelRequest, $currency),
+            'expenseSheet' => 'edit',
+            ...self::shared($currency),
             'travelExpense' => [
                 'id' => $travelExpense->id,
                 'paid_on' => $travelExpense->paid_on->toDateString(),
                 'category' => $travelExpense->category->value,
                 'amount' => $currency->toAmount($travelExpense->amount),
                 'description' => $travelExpense->description,
+                'state' => $travelExpense->state->value,
+                'decline_reason' => $travelExpense->decline_reason,
+                'declined_by' => $travelExpense->decliner?->name,
+                'receipt_name' => 'Receipt.'.strtolower(pathinfo($travelExpense->receipt_path, PATHINFO_EXTENSION)),
             ],
+            'manager' => $actor->manager?->name,
         ];
     }
 
     /**
-     * What both Travel Expense forms carry: the Travel Request it is on,
-     * the company currency, and today.
+     * What both sheets carry: the company currency and today.
      *
-     * @return array{travelRequest: array{id: int, destination: string, first_date: string, last_date: string}, currency: array{code: string, decimals: int}, today: string}
+     * @return array{currency: array{code: string, decimals: int}, today: string}
      */
-    private static function shared(TravelRequest $travelRequest, Currency $currency): array
+    private static function shared(Currency $currency): array
     {
         return [
-            'travelRequest' => TravelHistory::summary($travelRequest),
             'currency' => ['code' => $currency->code, 'decimals' => $currency->decimals()],
             'today' => today()->toDateString(),
         ];

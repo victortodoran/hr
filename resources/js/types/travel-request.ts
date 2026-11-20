@@ -19,6 +19,8 @@ export type TravelRequestSummary = {
     destination: string;
     first_date: string;
     last_date: string;
+    /** The Project of its Assignment. */
+    project: string;
     /** Empty for the Internal Assignment, whose Project has no Client. */
     client: string | null;
     state: TravelRequestState;
@@ -47,16 +49,6 @@ export type TravelRequestSummary = {
 export type TravelHistory = {
     upcoming: TravelRequestSummary[];
     past: TravelRequestSummary[];
-};
-
-/**
- * What names a Travel Request at the top of a Travel Expense's form.
- */
-export type TravelRequestName = {
-    id: number;
-    destination: string;
-    first_date: string;
-    last_date: string;
 };
 
 /**
@@ -108,6 +100,10 @@ export type TravelExpenseRecord = {
     state: TravelExpenseState;
     /** Why it was declined; only a Declined Travel Expense has one. */
     decline_reason: string | null;
+    /** The name of the Manager who declined it, while Declined. */
+    declined_by: string | null;
+    /** Whether the receipt is a picture, shown as a thumbnail; a PDF shows as a tile. */
+    receipt_is_image: boolean;
     /** Whether the viewer may change or delete it: only the Employee, while Pending or Declined. */
     can_change: boolean;
     /** Whether the viewer may approve or decline it: its Employee's effective Manager, while Pending. */
@@ -116,15 +112,21 @@ export type TravelExpenseRecord = {
     can_reopen: boolean;
 };
 
-/** The Travel Expenses of one Travel Request, with their total. */
+/** The Travel Expenses of one Travel Request, with their totals. */
 export type TravelExpenses = {
     items: TravelExpenseRecord[];
     /** Of those not Declined, already shown in the company currency. */
     total: string;
+    /** Of those Approved, already shown in the company currency. */
+    approved_total: string;
+    /** Of those Pending, already shown in the company currency. */
+    pending_total: string;
+    /** Of those Declined, which aren't counted, already shown in the company currency. */
+    declined_total: string;
     can_create: boolean;
 };
 
-/** A Travel Expense as its change form is filled in. */
+/** A Travel Expense as the Edit Travel Expense sheet is filled in. */
 export type TravelExpenseTyped = {
     id: number;
     paid_on: string;
@@ -132,6 +134,13 @@ export type TravelExpenseTyped = {
     /** As people type it, such as "1990.00". */
     amount: string;
     description: string;
+    state: TravelExpenseState;
+    /** Why it was declined; only a Declined Travel Expense has one. */
+    decline_reason: string | null;
+    /** The name of the Manager who declined it, while Declined. */
+    declined_by: string | null;
+    /** The receipt's file name as shown, such as "Receipt.pdf". */
+    receipt_name: string;
 };
 
 /** The company currency every Travel Expense is recorded in. */

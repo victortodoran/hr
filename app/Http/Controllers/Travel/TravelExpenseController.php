@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Pages\Travel\TravelExpenseFormPage;
+use App\Pages\Travel\TravelRequestPage;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -19,27 +20,35 @@ use LogicException;
 
 /**
  * Lets an Employee record, change and delete the Travel Expenses of their
- * own Travel Requests, each with its receipt, on forms of their own that
- * lead back to the Travel Request's page.
+ * own Travel Requests, each with its receipt, in a sheet over the Travel
+ * Request's page.
  */
 class TravelExpenseController extends Controller
 {
     /**
-     * Show the form for recording a Travel Expense on the Travel Request
+     * Show the Travel Request's page with the sheet for adding a Travel
+     * Expense open over it (rule L14), so the form has a URL of its own
      * (TravelExpenseFormPage).
      */
-    public function create(TravelRequest $travelRequest): Response
+    public function create(TravelRequest $travelRequest, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('travel-expenses/Create', TravelExpenseFormPage::create($travelRequest));
+        return Inertia::render('travel-requests/Show', [
+            ...TravelRequestPage::props($travelRequest, $actor),
+            ...TravelExpenseFormPage::create(),
+        ]);
     }
 
     /**
-     * Show the form for changing a Travel Expense, filled in as it would be
-     * typed (TravelExpenseFormPage).
+     * Show the Travel Request's page with the sheet for editing the Travel
+     * Expense open over it, filled in as it would be typed
+     * (TravelExpenseFormPage).
      */
-    public function edit(TravelRequest $travelRequest, TravelExpense $travelExpense): Response
+    public function edit(TravelRequest $travelRequest, TravelExpense $travelExpense, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('travel-expenses/Edit', TravelExpenseFormPage::edit($travelRequest, $travelExpense));
+        return Inertia::render('travel-requests/Show', [
+            ...TravelRequestPage::props($travelRequest, $actor),
+            ...TravelExpenseFormPage::edit($travelExpense, $actor),
+        ]);
     }
 
     /**
