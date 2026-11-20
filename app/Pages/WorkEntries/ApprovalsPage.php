@@ -153,13 +153,17 @@ final class ApprovalsPage
      */
     private static function timeOffToApprove(Employee $actor): array
     {
-        return TimeOff::query()
+        $toApprove = TimeOff::query()
             ->ofEmployees(Employee::query()->effectivelyManagedBy($actor))
             ->pending()
             ->with('employee:id,name,paid_days') // @pest-mutate-ignore (eager loading only saves queries; lazy loading gives the same props)
             ->orderBy('first_date')
             ->orderBy('id')
-            ->get()
+            ->get();
+        $years = array_values($toApprove->flatMap(fn (TimeOff $timeOff): array => range($timeOff->first_date->year, $timeOff->last_date->year))->unique()->sort()->all());
+        $paidDaysLeft = PaidDaysLeft::inEach($toApprove->pluck('employee')->unique('id'), $years);
+
+        return $toApprove
             ->map(fn (TimeOff $timeOff): array => [
                 'id' => $timeOff->id,
                 'employee' => $timeOff->employee->only('id', 'name'),
@@ -168,7 +172,10 @@ final class ApprovalsPage
                 'days' => $timeOff->weekdays(),
                 'is_paid' => $timeOff->is_paid,
                 'submitted_on' => $timeOff->created_at?->toDateString(),
-                'paid_days_left' => PaidDaysLeft::in($timeOff->employee, range($timeOff->first_date->year, $timeOff->last_date->year)),
+                'paid_days_left' => array_values(array_filter(
+                    $paidDaysLeft[$timeOff->employee->id],
+                    fn (array $left): bool => $left['year'] >= $timeOff->first_date->year && $left['year'] <= $timeOff->last_date->year,
+                )),
             ])
             ->all();
     }

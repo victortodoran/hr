@@ -153,7 +153,7 @@ it('gives most Employees Paid Days and one none, and Time Off in every state for
 
 it('gives Travel Requests in every state, on Client and Internal Assignments, sharing no day with other standing Travel Requests or Time Off', function () {
     seed(DemoSeeder::class);
-    $standing = TravelRequest::query()->standing()->get();
+    $standing = TravelRequest::query()->standing()->with('employee')->get();
 
     expect(TravelRequest::query()->pluck('state')->unique()->values()->all())->toEqualCanonicalizing(TravelRequestState::cases())
         ->and(TravelRequest::query()->where('state', TravelRequestState::Declined)->whereNull('decline_reason')->exists())->toBeFalse()
@@ -226,7 +226,7 @@ it('gives some Employees with a Manager an Open Performance Evaluation for this 
 it('gives this year\'s Goals a mix of Progress, each with the history that led to it, at least one At Risk', function () {
     seed(DemoSeeder::class);
 
-    $goals = Goal::query()->whereHas('performanceEvaluation', fn ($evaluations) => $evaluations->where('year', today()->year))->with('progressChanges', 'performanceEvaluation')->get();
+    $goals = Goal::query()->whereHas('performanceEvaluation', fn ($evaluations) => $evaluations->where('year', today()->year))->with('progressChanges.changedBy', 'performanceEvaluation.employee')->get();
 
     expect($goals->pluck('progress')->unique()->sort()->values()->all())->toEqualCanonicalizing([Progress::NotStarted, Progress::OnTrack, Progress::AtRisk, Progress::Done])
         ->and($goals->every(fn (Goal $goal): bool => $goal->progress === ($goal->progressChanges->first()->progress ?? Progress::NotStarted)

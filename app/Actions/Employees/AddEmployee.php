@@ -20,7 +20,8 @@ class AddEmployee
     public function __construct(private ChangeAccess $changeAccess) {}
 
     /**
-     * Every Role given is recorded in the Access Log against the actor.
+     * Every Role given is recorded in the Access Log against the actor, who
+     * reads their Reports afresh, as the new Employee may be among them.
      *
      * @param  array{name: string, email: string, department_id: int, manager_id: int|null, start_date: Carbon|string, leaving_date?: Carbon|string|null, job_title: string}  $details
      */
@@ -41,6 +42,7 @@ class AddEmployee
             return $employee;
         });
 
+        $actor->forgetAccess();
         $employee->sendInvitation();
 
         return $employee;

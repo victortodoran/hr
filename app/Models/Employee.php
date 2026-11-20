@@ -6,7 +6,7 @@ use App\Enums\EmploymentStatus;
 use App\Models\Builders\EmployeeBuilder;
 use App\Models\Concerns\HasAccess;
 use App\Notifications\Invitation;
-use Carbon\CarbonImmutable;
+use App\Support\PaidDaysLeft;
 use Carbon\CarbonInterface;
 use Database\Factories\EmployeeFactory;
 use Illuminate\Auth\Passwords\PasswordBroker;
@@ -62,6 +62,29 @@ class Employee extends Authenticatable implements MustVerifyEmail
     protected $attributes = [
         'paid_days' => 0,
     ];
+
+    /**
+     * The ids of the Employee's Reports, as keys for a quick lookup.
+     *
+     * @var array<int, int>|null
+     */
+    private ?array $reportIds = null;
+
+    /**
+     * The Employees whose effective Manager this Employee is, read on the
+     * first check and kept until forgetAccess().
+     *
+     * @var EloquentCollection<int, Employee>|null
+     */
+    private ?EloquentCollection $managed = null;
+
+    /**
+     * What waits for this Employee to decide, counted on the first ask and
+     * kept until forgetAccess(), as the sidebar and the page both ask.
+     *
+     * @var array{workEntries: int, timeOff: int, travelRequests: int, travelExpenses: int}|null
+     */
+    private ?array $waiting = null;
 
     /**
      * Emails are stored in lowercase, so capitals never make two addresses
@@ -166,14 +189,7 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function paidDaysLeftIn(int $year): int
     {
-        $taken = $this->timeOff()
-            ->standing()
-            ->paid()
-            ->overlapping(CarbonImmutable::createFromDate($year, 1, 1), CarbonImmutable::createFromDate($year, 12, 31)) // @pest-mutate-ignore (the surviving mutants only widen the year, and weekdaysIn() counts nothing outside it; the narrowing ones are tested)
-            ->get()
-            ->sum(fn (TimeOff $timeOff): int => $timeOff->weekdaysIn($year));
-
-        return $this->paid_days - $taken;
+        return PaidDaysLeft::in($this, [$year])[0]['days'];
     }
 
     /**
@@ -277,22 +293,25 @@ class Employee extends Authenticatable implements MustVerifyEmail
     /**
      * Everyone above the Employee in their Reporting Chain: their effective
      * Manager, that Manager's effective Manager, and so on up to an Employee
-     * with no Manager, nearest first.
+     * with no Manager, nearest first. Everyone above is read at once, and
+     * those who have left are skipped, as finding the effective Manager
+     * skips them.
      *
      * @return Collection<int, Employee>
      */
     public function reportingChain(): Collection
     {
-        $chain = collect();
-        $managerId = self::query()->withEffectiveManager()->whereKey($this->id)->value('effective_manager_id');
+        $above = self::query()->aboveInReportingLine($this)->get()->keyBy('id');
+        $managerOf = fn (Employee $employee): ?Employee => $employee->manager_id === null ? null : $above->pull($employee->manager_id);
+        $chain = new EloquentCollection;
 
-        while ($managerId !== null) {
-            $manager = self::query()->withEffectiveManager()->with(['department', 'internalAssignment'])->whereKey($managerId)->firstOrFail();
-            $chain->push($manager);
-            $managerId = $manager->effective_manager_id;
+        for ($manager = $managerOf($this); $manager !== null; $manager = $managerOf($manager)) {
+            if ($manager->employmentStatus() !== EmploymentStatus::Former) {
+                $chain->push($manager);
+            }
         }
 
-        return $chain;
+        return $chain->load(['department', 'internalAssignment']);
     }
 
     /**
@@ -351,38 +370,38 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function waitingForDecision(): array
     {
-        return $this->waitingFor(self::query()->effectivelyManagedBy($this)->pluck('employees.id')->all());
+        return $this->waiting ??= $this->effectivelyManaged()->isEmpty()
+            ? ['workEntries' => 0, 'timeOff' => 0, 'travelRequests' => 0, 'travelExpenses' => 0]
+            : $this->waitingFor($this->effectivelyManaged()->modelKeys());
     }
 
     /**
-     * What the sidebar shows of the Employee as a Manager, from one walk
-     * down the reporting line: whether they manage anyone (as
-     * managesAnyone()), whether they have Direct Reports (as
-     * hasDirectReports()), and how much is waiting for them to decide.
+     * What the sidebar shows of the Employee as a Manager, from the same
+     * walk down the reporting line as waitingForDecision(): whether they
+     * manage anyone (as managesAnyone()), whether they have Direct Reports
+     * (as hasDirectReports()), and how much is waiting for them to decide.
      *
      * @return array{managesAnyone: bool, hasDirectReports: bool, waiting: int}
      */
     public function asManager(): array
     {
-        $managed = $this->effectivelyManaged();
-
         return [
-            'managesAnyone' => $managed->isNotEmpty(),
-            'hasDirectReports' => self::anyStaying($managed),
-            'waiting' => $managed->isEmpty() ? 0 : array_sum($this->waitingFor($managed->modelKeys())),
+            'managesAnyone' => $this->managesAnyone(),
+            'hasDirectReports' => $this->hasDirectReports(),
+            'waiting' => array_sum($this->waitingForDecision()),
         ];
     }
 
     /**
      * The Employees whose effective Manager this Employee is, Former ones
      * included, with just enough to tell whether they have left. One level
-     * below a Manager is few Employees, so they are read whole.
+     * below a Manager is few Employees, so they are read whole, once.
      *
      * @return EloquentCollection<int, Employee>
      */
     private function effectivelyManaged(): EloquentCollection
     {
-        return self::query()->effectivelyManagedBy($this)->get(['id', 'start_date', 'leaving_date']);
+        return $this->managed ??= self::query()->effectivelyManagedBy($this)->get(['id', 'start_date', 'leaving_date']);
     }
 
     /**
@@ -463,7 +482,20 @@ class Employee extends Authenticatable implements MustVerifyEmail
      */
     public function hasInReports(Employee $other): bool
     {
-        return self::query()->reportsOf($this)->whereKey($other->id)->exists();
+        $this->reportIds ??= array_flip(self::query()->reportsOf($this)->pluck('employees.id')->all());
+
+        return isset($this->reportIds[$other->id]);
+    }
+
+    /**
+     * Forget the Reports, the Employees managed and what waits for a
+     * decision, for forgetAccess().
+     */
+    protected function forgetReportingLine(): void
+    {
+        $this->reportIds = null;
+        $this->managed = null;
+        $this->waiting = null;
     }
 
     /**

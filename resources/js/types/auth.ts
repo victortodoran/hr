@@ -1,12 +1,9 @@
+/** The signed-in Employee, as much as the user menu shows. */
 export type Employee = {
     id: number;
     name: string;
     email: string;
     avatar?: string;
-    email_verified_at: string | null;
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown;
 };
 
 /** An area whose records the ScopeSwitch splits into the Employee's own and others' (rule L19). */

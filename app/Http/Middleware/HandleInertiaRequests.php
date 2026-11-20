@@ -35,7 +35,8 @@ class HandleInertiaRequests extends Middleware
     /**
      * Define the props that are shared by default. The sidebar's Team,
      * Approvals and count all come from one read of whom the Employee
-     * manages, made at most once per request.
+     * manages, which the Employee keeps for the page to reuse. Of the
+     * Employee, only what the user menu shows is sent.
      *
      * @see https://inertiajs.com/shared-data
      *
@@ -44,18 +45,15 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $employee = $request->user();
-        $asManager = null;
-        $asManagerOnce = function () use ($employee, &$asManager): array {
-            return $asManager ??= $employee instanceof Employee
-                ? $employee->asManager()
-                : ['managesAnyone' => false, 'hasDirectReports' => false, 'waiting' => 0];
-        };
+        $asManager = fn (): array => $employee instanceof Employee
+            ? $employee->asManager()
+            : ['managesAnyone' => false, 'hasDirectReports' => false, 'waiting' => 0];
 
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'employee' => $employee,
+                'employee' => $employee instanceof Employee ? $employee->only('id', 'name', 'email') : null,
                 'can' => fn (): array => $employee instanceof Employee ? $employee->companyWidePermissions() : [],
                 'canListEmployees' => fn (): bool => $employee instanceof Employee
                     && $employee->reachesOthersThrough([Permission::ViewEmployeeRecords]),
@@ -63,19 +61,19 @@ class HandleInertiaRequests extends Middleware
                 'canSeeWorkEntryList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', WorkEntry::class),
                 'canSeeTimeOffList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', TimeOff::class),
                 'canSeeTravelRequestList' => fn (): bool => $employee instanceof Employee && $employee->can('viewList', TravelRequest::class),
-                'canSeeDirectory' => fn (): bool => $asManagerOnce()['hasDirectReports']
+                'canSeeDirectory' => fn (): bool => $asManager()['hasDirectReports']
                     || ($employee instanceof Employee && $employee->holds(Permission::ViewDirectory)),
-                'canSeeTeam' => fn (): bool => $asManagerOnce()['hasDirectReports'],
-                'canSeeApprovals' => fn (): bool => $asManagerOnce()['managesAnyone'],
-                'approvalsWaiting' => fn (): int => $asManagerOnce()['waiting'],
-                'canSeePerformanceEvaluations' => fn (): bool => $asManagerOnce()['managesAnyone']
+                'canSeeTeam' => fn (): bool => $asManager()['hasDirectReports'],
+                'canSeeApprovals' => fn (): bool => $asManager()['managesAnyone'],
+                'approvalsWaiting' => fn (): int => $asManager()['waiting'],
+                'canSeePerformanceEvaluations' => fn (): bool => $asManager()['managesAnyone']
                     || ($employee instanceof Employee && $employee->seesOthersPerformanceEvaluations()),
                 'othersReach' => fn (): array => $employee instanceof Employee ? [
                     'work' => $employee->othersReachThrough(Permission::seeingWorkEntries()),
                     'timeOff' => $employee->othersReachThrough(Permission::seeingTimeOff()),
                     'travel' => $employee->othersReachThrough(Permission::seeingTravel()),
                     'performance' => $employee->othersReachThrough(Permission::seeingPerformanceEvaluations())
-                        ?? ($asManagerOnce()['managesAnyone'] ? Scope::Reports : null),
+                        ?? ($asManager()['managesAnyone'] ? Scope::Reports : null),
                 ] : [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
