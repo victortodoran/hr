@@ -133,6 +133,18 @@ it('refuses an expired invitation', function () {
     expect($employee->refresh()->hasVerifiedEmail())->toBeFalse();
 });
 
+it('requires the password to be confirmed', function () {
+    $employee = Employee::factory()->invited()->create();
+    $token = inviteAndCaptureToken($employee);
+
+    post(route('invitation.store'), [
+        'token' => $token,
+        'email' => $employee->email,
+        'password' => 'a-new-password',
+        'password_confirmation' => 'something-else',
+    ])->assertSessionHasErrors('password');
+});
+
 it('sends an email with a link to set a password that expires in a week', function () {
     $employee = Employee::factory()->invited()->create(['email' => 'cara@acme.test']);
     $token = inviteAndCaptureToken($employee);
