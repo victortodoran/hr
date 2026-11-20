@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import Callout from '@/components/Callout.vue';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import TextLink from '@/components/TextLink.vue';
@@ -11,7 +12,7 @@ import { email } from '@/routes/password';
 defineOptions({
     layout: {
         title: 'Forgot password',
-        description: 'Enter your email to receive a password reset link',
+        description: 'We will email you a link to choose a new password.',
     },
 });
 
@@ -23,41 +24,37 @@ defineProps<{
 <template>
     <Head title="Forgot password" />
 
-    <div
-        v-if="status"
-        class="mb-4 text-center text-body font-medium text-foreground"
+    <Form
+        v-bind="email.form()"
+        v-slot="{ errors, processing }"
+        class="flex flex-col gap-5"
     >
-        {{ status }}
-    </div>
+        <Callout v-if="status" tone="info">{{ status }}</Callout>
 
-    <div class="space-y-6">
-        <Form v-bind="email.form()" v-slot="{ errors, processing }">
-            <div class="grid gap-2">
-                <Label for="email">Email address</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    name="email"
-                    autocomplete="off"
-                    v-focus
-                    placeholder="email@example.com"
-                />
-                <InputError :message="errors.email" />
-            </div>
-
-            <div class="my-6 flex items-center justify-start">
-                <SubmitButton
-                    :processing="processing"
-                    class="w-full"
-                    data-test="email-password-reset-link-button"
-                    >Email password reset link</SubmitButton
-                >
-            </div>
-        </Form>
-
-        <div class="space-x-1 text-center text-sm text-muted-foreground">
-            <span>Or, return to</span>
-            <TextLink :href="login()">log in</TextLink>
+        <div class="grid gap-2">
+            <Label for="email">Email</Label>
+            <Input
+                id="email"
+                type="email"
+                name="email"
+                required
+                autocomplete="email"
+                v-focus
+                placeholder="e.g. cara@company.com"
+                :aria-invalid="errors.email ? true : undefined"
+            />
+            <InputError :message="errors.email" />
         </div>
-    </div>
+
+        <SubmitButton
+            :processing="processing"
+            class="w-full"
+            data-test="email-password-reset-link-button"
+            >Email reset link</SubmitButton
+        >
+
+        <p class="text-center text-meta">
+            <TextLink :href="login()">Back to log in</TextLink>
+        </p>
+    </Form>
 </template>

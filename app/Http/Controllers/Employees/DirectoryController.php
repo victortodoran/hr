@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Pages\Employees\DirectoryIndexPage;
 use App\Pages\Employees\DirectoryPage;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,23 +25,29 @@ class DirectoryController extends Controller
      * Show current Employees by name, with their internal Job Title,
      * optionally searched by part of a name; or, on the Reports tab, the
      * viewer's Direct Reports. Only the open tab's props are sent.
+     * `?person=` opens an Employee's Reporting Chain in a sheet over the
+     * list (rule K8): everyone above them up to one with no Manager, and
+     * the Employees they are the Manager of.
      */
     public function index(#[CurrentUser] Employee $actor, DirectoryListRequest $request): Response
     {
         $tabs = DirectoryTab::openableBy($actor);
 
-        return Inertia::render('directory/Index', DirectoryIndexPage::props($actor, $request->tab($tabs), $tabs, $request->search()));
+        return Inertia::render('directory/Index', [
+            ...DirectoryIndexPage::props($actor, $request->tab($tabs), $tabs, $request->search()),
+            ...DirectoryPage::props($actor, $request->person()),
+        ]);
     }
 
     /**
-     * Show an Employee's Reporting Chain: everyone above them up to one with
-     * no Manager, and the Employees they are the Manager of.
-     * Former Employees have left the directory, so they have no page.
+     * Send an old link to an Employee's directory page to their sheet over
+     * the Directory. Former Employees have left the directory, so they have
+     * none.
      */
-    public function show(#[CurrentUser] Employee $actor, Employee $employee): Response
+    public function show(Employee $employee): RedirectResponse
     {
         abort_if($employee->employmentStatus() === EmploymentStatus::Former, 404);
 
-        return Inertia::render('directory/Show', DirectoryPage::props($actor, $employee));
+        return to_route('directory.index', ['person' => $employee->id]);
     }
 }

@@ -7,7 +7,8 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * The Directory page's tab and filter: part of a name.
+ * The Directory page's tab, filter (part of a name) and the person open
+ * in a sheet over it.
  */
 class DirectoryListRequest extends FormRequest
 {
@@ -18,6 +19,7 @@ class DirectoryListRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:255'],
+            'person' => ['nullable', 'integer'],
         ];
     }
 
@@ -27,6 +29,14 @@ class DirectoryListRequest extends FormRequest
     public function search(): string
     {
         return $this->string('search')->value();
+    }
+
+    /**
+     * The id of the Employee whose sheet is asked for, null when none is.
+     */
+    public function person(): ?int
+    {
+        return $this->filled('person') ? $this->integer('person') : null;
     }
 
     /**

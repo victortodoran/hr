@@ -3,22 +3,28 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { Network, Users } from '@lucide/vue';
 import { computed } from 'vue';
 import DataTable from '@/components/DataTable.vue';
+import ReportingChain from '@/components/employees/ReportingChain.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FilterBar from '@/components/FilterBar.vue';
 import FilterSearch from '@/components/FilterSearch.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import Pagination from '@/components/Pagination.vue';
+import PersonCell from '@/components/PersonCell.vue';
+import RecordSheet from '@/components/RecordSheet.vue';
+import RowActions from '@/components/RowActions.vue';
+import { Button } from '@/components/ui/button';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ValueOr from '@/components/ValueOr.vue';
 import { useListFilters } from '@/composables/useListFilters';
-import { index, show } from '@/routes/directory';
+import { index } from '@/routes/directory';
 import { show as employeePage } from '@/routes/employees';
 import type {
     DirectReport,
     DirectoryEntry,
     DirectoryTab,
     Paginated,
+    ReportingChainView,
     TableColumn,
 } from '@/types';
 
@@ -39,6 +45,8 @@ const props = defineProps<{
     employees?: Paginated<DirectoryEntry>;
     search?: string;
     directReports?: DirectReport[];
+    /** The Employee open in the sheet (`?person=`), with their Reporting Chain. */
+    person: ReportingChainView | null;
 }>();
 
 const tabLabels: Record<DirectoryTab, string> = {
@@ -47,16 +55,18 @@ const tabLabels: Record<DirectoryTab, string> = {
 };
 
 const everyoneColumns: TableColumn[] = [
-    { key: 'name', label: 'Name' },
-    { key: 'email', label: 'Email' },
-    { key: 'job_title', label: 'Job Title', minor: true },
+    { key: 'name', label: 'Name', phone: 'primary' },
+    { key: 'email', label: 'Email', phone: 'secondary' },
     { key: 'department', label: 'Department', minor: true },
     { key: 'manager', label: 'Manager', minor: true },
+    { key: 'actions', label: '', align: 'end', phone: 'end' },
 ];
 
-const reportsColumns: TableColumn[] = everyoneColumns.filter(
-    (column) => column.key !== 'manager',
-);
+const reportsColumns: TableColumn[] = [
+    { key: 'name', label: 'Name', phone: 'primary' },
+    { key: 'email', label: 'Email', phone: 'secondary' },
+    { key: 'department', label: 'Department', minor: true },
+];
 
 const emptyMessage = computed(
     () =>
@@ -72,6 +82,40 @@ const filters = useListFilters(index.url, { search: props.search ?? '' });
 function openTab(tab: string | number): void {
     router.get(index.url({ query: { tab: String(tab) } }));
 }
+
+/**
+ * Opens an Employee's sheet over the list (rule K8), loading only their
+ * Reporting Chain and keeping the tab, search and page in the URL.
+ */
+function openPerson(id: number): void {
+    router.get(
+        index.url({ mergeQuery: { person: id } }),
+        {},
+        { only: ['person'], preserveState: true, preserveScroll: true },
+    );
+}
+
+/** Closing the sheet drops `?person=` from the URL without a visit. */
+const personOpen = computed({
+    get: () => props.person !== null,
+    set: (open: boolean) => {
+        if (!open) {
+            router.replace({
+                url: index.url({ mergeQuery: { person: null } }),
+                props: (current) => ({ ...current, person: null }),
+                preserveState: true,
+                preserveScroll: true,
+            });
+        }
+    },
+});
+
+/** "Developer · Engineering", the line under the sheet's title. */
+const personDetail = computed(() =>
+    [props.person?.employee.job_title, props.person?.employee.department]
+        .filter(Boolean)
+        .join(' · '),
+);
 </script>
 
 <template>
@@ -103,13 +147,13 @@ function openTab(tab: string | number): void {
                     <DataTable
                         :columns="everyoneColumns"
                         :rows="employees.data"
+                        :on-row-click="(row) => openPerson(row.id)"
                     >
                         <template #cell-name="{ row }">
-                            <Link
-                                :href="show(row.id)"
-                                class="font-medium underline-offset-4 hover:underline"
-                                >{{ row.name }}</Link
-                            >
+                            <PersonCell
+                                :name="row.name"
+                                :detail="row.job_title"
+                            />
                         </template>
                         <template #cell-email="{ row }">
                             <a
@@ -118,19 +162,24 @@ function openTab(tab: string | number): void {
                                 >{{ row.email }}</a
                             >
                         </template>
-                        <template #cell-job_title="{ row }">
-                            <ValueOr :value="row.job_title" />
-                        </template>
                         <template #cell-manager="{ row }">
-                            <Link
+                            <PersonCell
                                 v-if="row.manager"
-                                :href="show(row.manager.id)"
-                                class="underline-offset-4 hover:underline"
-                                >{{ row.manager.name }}</Link
-                            >
+                                :name="row.manager.name"
+                            />
                             <span v-else class="text-muted-foreground"
                                 >None</span
                             >
+                        </template>
+                        <template #cell-actions="{ row }">
+                            <RowActions :label="row.name">
+                                <template #menu>
+                                    <DropdownMenuItem
+                                        @select="openPerson(row.id)"
+                                        >Open</DropdownMenuItem
+                                    >
+                                </template>
+                            </RowActions>
                         </template>
                         <template #empty>
                             <EmptyState :icon="Users" :message="emptyMessage" />
@@ -148,13 +197,13 @@ function openTab(tab: string | number): void {
                     :rows="directReports"
                 >
                     <template #cell-name="{ row }">
-                        <Link
-                            v-if="row.can_view"
-                            :href="employeePage(row.id)"
-                            class="font-medium underline-offset-4 hover:underline"
-                            >{{ row.name }}</Link
-                        >
-                        <span v-else class="font-medium">{{ row.name }}</span>
+                        <PersonCell
+                            :name="row.name"
+                            :detail="row.job_title"
+                            :href="
+                                row.can_view ? employeePage(row.id) : undefined
+                            "
+                        />
                     </template>
                     <template #cell-email="{ row }">
                         <a
@@ -162,9 +211,6 @@ function openTab(tab: string | number): void {
                             class="break-all underline-offset-4 hover:underline"
                             >{{ row.email }}</a
                         >
-                    </template>
-                    <template #cell-job_title="{ row }">
-                        <ValueOr :value="row.job_title" />
                     </template>
                     <template #empty>
                         <EmptyState
@@ -175,5 +221,28 @@ function openTab(tab: string | number): void {
                 </DataTable>
             </TabsContent>
         </Tabs>
+
+        <RecordSheet
+            v-if="person"
+            v-model:open="personOpen"
+            :title="person.employee.name"
+            :description="personDetail || undefined"
+        >
+            <section class="flex flex-col gap-3">
+                <h3 class="text-section">Reporting Chain</h3>
+                <p class="text-meta text-muted-foreground">
+                    Who they report to, up to the top of the company, and whom
+                    they are the Manager of.
+                </p>
+                <ReportingChain :chain="person" />
+            </section>
+            <template v-if="person.employee.link === 'employee'" #footer>
+                <Button variant="secondary" as-child>
+                    <Link :href="employeePage(person.employee.id)"
+                        >Open Employee page</Link
+                    >
+                </Button>
+            </template>
+        </RecordSheet>
     </PageContainer>
 </template>

@@ -197,8 +197,8 @@ it('links to an Employee\'s page from their Reporting Chain only when the viewer
     $ben = employeeWith([Permission::ViewDirectory->value => null, ...$grants], ['manager_id' => Employee::factory()->create()->id]);
     $cara = Employee::factory()->reportingTo($ben)->create();
 
-    actingAs($ben)->get(route('directory.show', $cara))
-        ->assertInertia(fn (Assert $page) => $page->where('reportingChain.employee.link', $expected));
+    actingAs($ben)->get(route('directory.index', ['person' => $cara->id]))
+        ->assertInertia(fn (Assert $page) => $page->where('person.employee.link', $expected));
 })->with([
     'assignments of reports' => [[Permission::ViewAssignments->value => Scope::Reports], 'employee'],
     'own only' => [[Permission::ViewEmployeeRecords->value => Scope::Own, Permission::ViewAssignments->value => Scope::Own], 'directory'],

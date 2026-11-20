@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import Callout from '@/components/Callout.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import TextLink from '@/components/TextLink.vue';
 import { logout } from '@/routes';
@@ -7,9 +8,8 @@ import { send } from '@/routes/verification';
 
 defineOptions({
     layout: {
-        title: 'Email verification',
-        description:
-            'Please verify your email address by clicking on the link we just emailed to you.',
+        title: 'Verify your email',
+        description: 'Open the link we emailed you to verify your address.',
     },
 });
 
@@ -19,27 +19,26 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Email verification" />
-
-    <div
-        v-if="status === 'verification-link-sent'"
-        class="mb-4 text-center text-body font-medium text-foreground"
-    >
-        A new verification link has been sent to the email address you provided
-        during registration.
-    </div>
+    <Head title="Verify your email" />
 
     <Form
         v-bind="send.form()"
-        class="space-y-6 text-center"
         v-slot="{ processing }"
+        class="flex flex-col gap-5"
     >
-        <SubmitButton :processing="processing" variant="secondary"
-            >Resend verification email</SubmitButton
+        <Callout v-if="status === 'verification-link-sent'" tone="info"
+            >We sent a new verification link to your email address.</Callout
         >
 
-        <TextLink :href="logout()" as="button" class="mx-auto block text-sm">
-            Log out
-        </TextLink>
+        <SubmitButton
+            :processing="processing"
+            variant="secondary"
+            class="w-full"
+            >Email a new link</SubmitButton
+        >
+
+        <p class="text-center text-meta">
+            <TextLink :href="logout()" as="button">Log out</TextLink>
+        </p>
     </Form>
 </template>
