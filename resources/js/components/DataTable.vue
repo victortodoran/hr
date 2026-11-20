@@ -21,6 +21,8 @@ import type { TableColumn } from '@/types';
  * - `hasAfterRow` gives the rows it picks a full-width line under them,
  *   filled by the `after-row` slot, such as a Declined record's reason in
  *   a Callout (rule G4);
+ * - `rowClass` adds classes to the rows it picks, such as muting those
+ *   that have ended;
  * - columns with a `phone` place stack each row on a phone (rule P4).
  */
 const props = defineProps<{
@@ -39,6 +41,8 @@ const props = defineProps<{
     onRowClick?: (row: Row) => void;
     /** Whether a row has a full-width line under it, from the `after-row` slot. */
     hasAfterRow?: (row: Row) => boolean;
+    /** Classes for a row, such as muted text for one that has ended. */
+    rowClass?: (row: Row) => string;
 }>();
 
 defineSlots<
@@ -192,6 +196,7 @@ function cellClass(column: TableColumn): string[] {
                     isRowSelected(line.row) ? 'bg-primary-soft' : '',
                     onRowClick ? 'cursor-pointer' : '',
                     hasAfter(line.row) ? 'border-b-0' : '',
+                    rowClass?.(line.row) ?? '',
                 ]"
                 @click="clicked(line.row, $event)"
             >
@@ -336,6 +341,7 @@ function cellClass(column: TableColumn): string[] {
                                   : '',
                             onRowClick ? 'cursor-pointer' : '',
                             hasAfter(line.row) ? 'border-b-0' : '',
+                            rowClass?.(line.row) ?? '',
                         ]"
                         @click="clicked(line.row, $event)"
                     >

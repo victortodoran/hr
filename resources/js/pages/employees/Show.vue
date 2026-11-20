@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
+import { createReusableTemplate, useMediaQuery } from '@vueuse/core';
 import {
     Briefcase,
     Building2,
     CalendarDays,
+    ChevronDown,
+    ChevronRight,
     FolderKanban,
     Mail,
     Pencil,
+    Plus,
     Target,
     UserRound,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import AssignmentController from '@/actions/App/Http/Controllers/Assignments/AssignmentController';
 import AssignmentForm from '@/components/assignments/AssignmentForm.vue';
+import CapacityBar from '@/components/assignments/CapacityBar.vue';
 import Callout from '@/components/Callout.vue';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -23,28 +28,34 @@ import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.
 import ReportingChain from '@/components/employees/ReportingChain.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FactList from '@/components/FactList.vue';
+import IconButton from '@/components/IconButton.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import PageHeader from '@/components/PageHeader.vue';
-import PayDialog from '@/components/pay/PayDialog.vue';
+import PayHistoryRow from '@/components/pay/PayHistoryRow.vue';
 import PersonCell from '@/components/PersonCell.vue';
 import StatStrip from '@/components/StatStrip.vue';
+import RowActions from '@/components/RowActions.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import TextLink from '@/components/TextLink.vue';
 import PaidDaysDialog from '@/components/time-off/PaidDaysDialog.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ValueOr from '@/components/ValueOr.vue';
 import { getInitials } from '@/composables/useInitials';
 import { formatDate, formatDateRange, formatPeriod } from '@/lib/dates';
 import { outcomes } from '@/lib/outcomes';
-import { formatPay } from '@/lib/pay';
+import { formatPay, payKindNames, payPeriods } from '@/lib/pay';
 import { formatDays } from '@/lib/time-off';
 import { edit, show } from '@/routes/employees';
 import { show as performanceEvaluationPage } from '@/routes/performance-evaluations';
 import type {
     AssignmentRecord,
+    AssignmentStats,
     Choice,
     EmployeePageRecord,
     EmployeePageTab,
@@ -82,7 +93,9 @@ const props = withDefaults(
         reportsNeedingAManager: ReportNeedingAManager[];
         /** Null for a Former Employee, who is no longer in the reporting line. */
         reportingChain?: ReportingChainView | null;
+        /** Earliest first, those that have ended last. */
         assignments?: AssignmentRecord[];
+        assignmentStats?: AssignmentStats;
         projects?: OpenProject[];
         canManage: boolean;
         canViewPay: boolean;
@@ -175,42 +188,177 @@ const recordFacts = computed(() =>
         : [],
 );
 
-const hasActions = computed(() => props.canManage || props.canManagePay);
+const isPhone = useMediaQuery('(max-width: 639px)');
 
 /**
- * The Assignments' columns from `md` up: Project, Job Title, Dates,
- * Capacity, then Pay and the buttons when the viewer gets them. Each string
- * is written out in full so Tailwind finds it.
+ * The Assignments' columns (rules K1, P4): the chevron opening the Pay
+ * history, Project, Job Title, Dates, Capacity, then Pay in effect and the
+ * next change for viewers who may see Pay, and the ⋯ menu for those who
+ * manage Assignments. On a phone each row stacks: the Project over its
+ * Client, Job Title and Capacity, with the Pay in effect and the buttons
+ * at the right, where the chevron moves too.
  */
-const assignmentGrid = computed(() => {
-    if (props.canViewPay && hasActions.value) {
-        return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_minmax(0,1.1fr)_11rem]';
+const assignmentColumns = computed<TableColumn[]>(() => [
+    ...(props.canViewPay ? [{ key: 'expand', label: '' }] : []),
+    { key: 'project', label: 'Project', phone: 'primary' as const },
+    { key: 'job_title', label: 'Job Title', phone: 'secondary' as const },
+    { key: 'dates', label: 'Dates' },
+    {
+        key: 'capacity',
+        label: 'Capacity',
+        align: 'end' as const,
+        phone: 'secondary' as const,
+    },
+    ...(props.canViewPay
+        ? [
+              {
+                  key: 'pay',
+                  label: 'Pay in effect',
+                  align: 'end' as const,
+                  phone: 'end' as const,
+              },
+              { key: 'next', label: 'Next change' },
+          ]
+        : []),
+    ...(props.canManage || (isPhone.value && props.canViewPay)
+        ? [
+              {
+                  key: 'actions',
+                  label: '',
+                  align: 'end' as const,
+                  phone: 'end' as const,
+              },
+          ]
+        : []),
+]);
+
+/** The Assignments whose Pay history is open. */
+const openPayHistories = ref<Set<number>>(new Set());
+
+function togglePayHistory(assignment: AssignmentRecord): void {
+    const opened = new Set(openPayHistories.value);
+
+    if (!opened.delete(assignment.id)) {
+        opened.add(assignment.id);
     }
 
-    if (props.canViewPay) {
-        return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_minmax(0,1.1fr)]';
-    }
+    openPayHistories.value = opened;
+}
 
-    if (props.canManage) {
-        return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem_11rem]';
-    }
+function isPayHistoryOpen(assignment: AssignmentRecord): boolean {
+    return props.canViewPay && openPayHistories.value.has(assignment.id);
+}
 
-    return 'md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)_5rem]';
-});
+/** Names the chevron's action, such as "Show Pay history on Relaunch". */
+function payHistoryLabel(assignment: AssignmentRecord): string {
+    return `${isPayHistoryOpen(assignment) ? 'Hide' : 'Show'} Pay history on ${assignment.project.name}`;
+}
 
-/** Each Assignment with the Pay in effect today, found once per render. */
-const assignmentRows = computed(() =>
-    (props.assignments ?? []).map((assignment) => ({
-        assignment,
-        pay: payInEffect(assignment),
-    })),
+/** The chevron opening an Assignment's Pay history, wherever its row puts it. */
+const [DefinePayHistoryToggle, PayHistoryToggle] = createReusableTemplate<{
+    row: AssignmentRecord;
+}>();
+
+/**
+ * Each Assignment's Pay as its row shows it: the change in effect today,
+ * or null when none has taken effect yet, and the soonest Upcoming one, the
+ * last of those listed newest first.
+ */
+const rowPay = computed(
+    () =>
+        new Map(
+            (props.assignments ?? []).map((assignment) => [
+                assignment.id,
+                {
+                    inEffect:
+                        assignment.pay?.find(
+                            (entry) => entry.state === 'in-effect',
+                        ) ?? null,
+                    next:
+                        assignment.pay?.findLast(
+                            (entry) => entry.state === 'upcoming',
+                        ) ?? null,
+                },
+            ]),
+        ),
 );
 
+function payOf(assignment: AssignmentRecord): {
+    inEffect: PayEntryRecord | null;
+    next: PayEntryRecord | null;
+} {
+    return rowPay.value.get(assignment.id) ?? { inEffect: null, next: null };
+}
+
+/** What a row says under its Project: Internal Assignment, or its Client. */
+function assignmentContext(assignment: AssignmentRecord): string {
+    return assignment.project.is_internal
+        ? 'Internal Assignment'
+        : (assignment.project.client ?? 'No Client');
+}
+
+/** An Assignment that has ended reads muted, its Ended badge aside. */
+function assignmentRowClass(assignment: AssignmentRecord): string {
+    return assignment.has_ended ? 'text-muted-foreground' : '';
+}
+
 /**
- * The entry in effect today, or null when none has taken effect yet.
+ * The numbers over the Assignments (rule K10): the Capacity assigned, how
+ * many are active and have ended, then the Pay in effect on each active
+ * one, for viewers who may see Pay. The server sends as many Pay as fit in
+ * six numbers and counts the rest, shown as one last number.
  */
-function payInEffect(assignment: AssignmentRecord): PayEntryRecord | null {
-    return assignment.pay?.find((entry) => entry.is_in_effect) ?? null;
+const assignmentStatItems = computed(() => {
+    const stats = props.assignmentStats;
+
+    if (!stats) {
+        return [];
+    }
+
+    return [
+        { label: 'Capacity assigned', value: `${stats.capacity_assigned}%` },
+        {
+            label: `Active ${stats.active === 1 ? 'Assignment' : 'Assignments'}${stats.ended > 0 ? ` · ${stats.ended} Ended` : ''}`,
+            value: String(stats.active),
+        },
+        ...(stats.pay_in_effect ?? []).map((pay) => ({
+            label: pay.is_internal
+                ? `${payKindNames[pay.kind]} ${payPeriods[pay.kind]}, in effect`
+                : `${payKindNames[pay.kind]} on ${pay.project}`,
+            value: pay.amount,
+        })),
+        ...(stats.more_pay_in_effect
+            ? [
+                  {
+                      label: 'Pay in effect on other Assignments',
+                      value: `+${stats.more_pay_in_effect} more`,
+                  },
+              ]
+            : []),
+    ];
+});
+
+/** The Assignment the sheet edits; none while adding one. */
+const editingAssignment = ref<AssignmentRecord | null>(null);
+const assignmentFormOpen = ref(false);
+
+function addAssignment(): void {
+    editingAssignment.value = null;
+    assignmentFormOpen.value = true;
+}
+
+function editAssignment(assignment: AssignmentRecord): void {
+    editingAssignment.value = assignment;
+    assignmentFormOpen.value = true;
+}
+
+/** The Assignment the Delete dialog asks about. */
+const deletingAssignment = ref<AssignmentRecord | null>(null);
+const deleteAssignmentOpen = ref(false);
+
+function askToDeleteAssignment(assignment: AssignmentRecord): void {
+    deletingAssignment.value = assignment;
+    deleteAssignmentOpen.value = true;
 }
 
 /** The Paid Days per year, from whichever the viewer gets. */
@@ -394,171 +542,169 @@ setLayoutProps({
                 </div>
             </TabsContent>
             <TabsContent value="assignments" class="mt-6 flex flex-col gap-10">
+                <StatStrip
+                    v-if="assignments && assignments.length > 0"
+                    :stats="assignmentStatItems"
+                    data-test="assignment-stats"
+                />
+
                 <EmployeePageSection v-if="assignments" title="Assignments">
                     <template v-if="canManage" #action>
-                        <AssignmentForm
-                            :employee="employee"
-                            :projects="projects"
-                        />
+                        <Button
+                            class="max-sm:h-11 max-sm:w-full"
+                            @click="addAssignment"
+                            ><Plus />Add Assignment</Button
+                        >
                     </template>
 
-                    <div class="overflow-hidden rounded-lg border text-sm">
-                        <div
-                            v-if="assignments.length > 0"
-                            :class="assignmentGrid"
-                            class="hidden gap-x-4 bg-muted/50 px-4 py-2 font-medium text-muted-foreground md:grid"
-                            aria-hidden="true"
-                        >
-                            <span>Project</span>
-                            <span>Job Title</span>
-                            <span>Dates</span>
-                            <span class="text-right">Capacity</span>
-                            <span v-if="canViewPay">Pay</span>
-                            <span v-if="hasActions" />
-                        </div>
-                        <ul
-                            v-if="assignments.length > 0"
-                            class="divide-y md:border-t"
-                        >
-                            <li
-                                v-for="{ assignment, pay } in assignmentRows"
-                                :key="assignment.id"
-                                :class="[
-                                    assignmentGrid,
-                                    assignment.has_ended &&
-                                        'text-muted-foreground',
-                                ]"
-                                class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 px-4 py-3 md:items-center"
+                    <DefinePayHistoryToggle v-slot="{ row }">
+                        <IconButton
+                            :label="payHistoryLabel(row)"
+                            :aria-expanded="isPayHistoryOpen(row)"
+                            class="max-sm:size-11"
+                            @click="togglePayHistory(row)"
+                            ><ChevronDown
+                                v-if="isPayHistoryOpen(row)" /><ChevronRight
+                                v-else
+                        /></IconButton>
+                    </DefinePayHistoryToggle>
+                    <DataTable
+                        :columns="assignmentColumns"
+                        :rows="assignments"
+                        :has-after-row="isPayHistoryOpen"
+                        :row-class="assignmentRowClass"
+                    >
+                        <template #head-expand>
+                            <span class="sr-only">Pay history</span>
+                        </template>
+                        <template #cell-expand="{ row }">
+                            <PayHistoryToggle :row="row" />
+                        </template>
+                        <template #cell-project="{ row }">
+                            <span
+                                class="flex flex-wrap items-center gap-x-2"
                                 data-test="assignment"
                             >
-                                <div
-                                    class="col-start-1 row-start-1 min-w-0 md:col-start-auto md:row-start-auto"
+                                <span class="font-medium">{{
+                                    row.project.name
+                                }}</span>
+                                <StatusBadge
+                                    v-if="row.has_ended"
+                                    state="ended"
+                                />
+                            </span>
+                            <span
+                                class="block text-meta font-normal text-muted-foreground max-sm:hidden"
+                                >{{ assignmentContext(row) }}</span
+                            >
+                        </template>
+                        <template #cell-job_title="{ row }">
+                            <span v-if="isPhone"
+                                >{{ assignmentContext(row) }} · </span
+                            ><ValueOr :value="row.job_title" />
+                        </template>
+                        <template #cell-dates="{ row }">
+                            <span class="whitespace-nowrap tabular-nums">{{
+                                formatPeriod(row.start_date, row.end_date)
+                            }}</span>
+                        </template>
+                        <template #cell-capacity="{ row }">
+                            <CapacityBar :capacity="row.capacity" />
+                        </template>
+                        <template #cell-pay="{ row }">
+                            <span
+                                v-if="payOf(row).inEffect"
+                                class="whitespace-nowrap tabular-nums"
+                                ><span class="font-semibold">{{
+                                    payOf(row).inEffect!.amount
+                                }}</span>
+                                {{
+                                    payPeriods[payOf(row).inEffect!.kind]
+                                }}</span
+                            ><span v-else class="text-muted-foreground"
+                                >None in effect</span
+                            >
+                        </template>
+                        <template #cell-next="{ row }">
+                            <span
+                                v-if="payOf(row).next"
+                                class="inline-flex flex-wrap items-center gap-2"
+                                ><span class="whitespace-nowrap tabular-nums">{{
+                                    formatDate(payOf(row).next!.effective_from)
+                                }}</span
+                                ><StatusBadge state="upcoming"
+                            /></span>
+                            <span v-else class="text-muted-foreground"
+                                >None</span
+                            >
+                        </template>
+                        <template #head-actions>
+                            <span class="sr-only">Actions</span>
+                        </template>
+                        <template #cell-actions="{ row }">
+                            <div class="flex items-center justify-end gap-1">
+                                <PayHistoryToggle
+                                    v-if="isPhone && canViewPay"
+                                    :row="row"
+                                />
+                                <RowActions
+                                    v-if="canManage"
+                                    :label="`the Assignment to ${row.project.name}`"
                                 >
-                                    <p
-                                        class="flex flex-wrap items-center gap-2 font-medium"
-                                        :class="
-                                            !assignment.has_ended &&
-                                            'text-foreground'
-                                        "
-                                    >
-                                        {{ assignment.project.name }}
-                                        <Badge
-                                            v-if="assignment.has_ended"
-                                            variant="secondary"
-                                            >Ended</Badge
+                                    <template #menu>
+                                        <DropdownMenuItem
+                                            @select="editAssignment(row)"
+                                            >Edit</DropdownMenuItem
                                         >
-                                    </p>
-                                    <p class="text-muted-foreground">
-                                        {{
-                                            assignment.project.is_internal
-                                                ? 'Internal'
-                                                : (assignment.project.client ??
-                                                  'No Client')
-                                        }}
-                                    </p>
-                                </div>
-                                <p
-                                    class="order-1 col-span-2 text-muted-foreground md:order-none md:col-span-1"
-                                >
-                                    <span class="sr-only">Job Title: </span
-                                    ><ValueOr :value="assignment.job_title" />
-                                </p>
-                                <p
-                                    class="order-1 col-span-2 text-muted-foreground md:order-none md:col-span-1"
-                                >
-                                    <span class="sr-only">Dates: </span
-                                    >{{
-                                        formatPeriod(
-                                            assignment.start_date,
-                                            assignment.end_date,
-                                        )
-                                    }}<span class="md:hidden">
-                                        · {{ assignment.capacity }}%
-                                        capacity</span
-                                    >
-                                </p>
-                                <p
-                                    class="hidden text-right text-muted-foreground tabular-nums md:block"
-                                >
-                                    <span class="sr-only">Capacity: </span
-                                    >{{ assignment.capacity }}%
-                                </p>
-                                <p
-                                    v-if="canViewPay"
-                                    class="order-2 col-span-2 md:order-none md:col-span-1"
-                                >
-                                    <span
-                                        class="text-muted-foreground md:sr-only"
-                                        >Pay: </span
-                                    ><span
-                                        v-if="pay"
-                                        class="font-medium"
-                                        :class="
-                                            !assignment.has_ended &&
-                                            'text-foreground'
-                                        "
-                                        >{{ formatPay(pay) }}</span
-                                    ><span v-else class="text-muted-foreground"
-                                        >None in effect</span
-                                    >
-                                </p>
-                                <div
-                                    v-if="hasActions"
-                                    class="col-start-2 row-start-1 flex justify-end gap-1 md:col-start-auto md:row-start-auto"
-                                >
-                                    <PayDialog
-                                        v-if="assignment.pay && currency"
-                                        :assignment="{
-                                            ...assignment,
-                                            pay: assignment.pay,
-                                        }"
-                                        :currency="currency"
-                                    />
-                                    <AssignmentForm
-                                        v-if="canManage"
-                                        :employee="employee"
-                                        :projects="projects"
-                                        :assignment="assignment"
-                                    />
-                                    <ConfirmDeleteDialog
-                                        v-if="assignment.can_delete"
-                                        :form="
-                                            AssignmentController.destroy.form(
-                                                assignment.id,
-                                            )
-                                        "
-                                        :title="`Delete the Assignment to ${assignment.project.name}?`"
-                                        description="Its Pay is deleted with it. This can't be undone."
-                                    >
-                                        <template #trigger>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                class="text-destructive"
-                                                :aria-label="`Delete the Assignment to ${assignment.project.name}`"
-                                                >Delete</Button
+                                        <template v-if="row.can_delete">
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                                variant="destructive"
+                                                @select="
+                                                    askToDeleteAssignment(row)
+                                                "
+                                                >Delete…</DropdownMenuItem
                                             >
                                         </template>
-                                    </ConfirmDeleteDialog>
-                                </div>
-                            </li>
-                        </ul>
-                        <EmptyState
-                            v-else
-                            :icon="FolderKanban"
-                            :message="`The Projects ${employee.name} is assigned to appear here. There are no Assignments yet.`"
-                        >
-                            <template v-if="canManage" #action>
-                                <AssignmentForm
-                                    :employee="employee"
-                                    :projects="projects"
-                                />
-                            </template>
-                        </EmptyState>
-                    </div>
+                                    </template>
+                                </RowActions>
+                            </div>
+                        </template>
+                        <template #after-row="{ row }">
+                            <PayHistoryRow
+                                v-if="row.pay"
+                                :assignment="{ ...row, pay: row.pay }"
+                                :currency="currency"
+                            />
+                        </template>
+                        <template #empty>
+                            <EmptyState
+                                :icon="FolderKanban"
+                                :message="`The Projects ${employee.name} is assigned to appear here. There are no Assignments yet.`"
+                            />
+                        </template>
+                    </DataTable>
                 </EmployeePageSection>
-            </TabsContent>
 
+                <AssignmentForm
+                    v-if="canManage"
+                    v-model:open="assignmentFormOpen"
+                    :employee="employee"
+                    :projects="projects"
+                    :assignment="editingAssignment"
+                />
+                <ConfirmDeleteDialog
+                    v-if="deletingAssignment"
+                    v-model:open="deleteAssignmentOpen"
+                    without-trigger
+                    :form="
+                        AssignmentController.destroy.form(deletingAssignment.id)
+                    "
+                    :title="`Delete the Assignment to ${deletingAssignment.project.name}`"
+                    description="Its Pay is deleted with it. This can't be undone."
+                    confirm-label="Delete Assignment"
+                />
+            </TabsContent>
             <TabsContent value="time-off" class="mt-6 flex flex-col gap-10">
                 <StatStrip
                     v-if="paidDaysStats.length > 0"

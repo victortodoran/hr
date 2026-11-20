@@ -1,4 +1,4 @@
-import type { PayEntryRecord, PayKind } from '@/types';
+import type { PayKind } from '@/types';
 
 /**
  * How often an amount of each kind of Pay is paid.
@@ -9,28 +9,16 @@ export const payPeriods: Record<PayKind, string> = {
 };
 
 /**
- * An entry's amount as people read it, such as "€4,500.00 per month".
+ * Each kind of Pay by its name (C1).
  */
-export function formatPay(entry: PayEntryRecord): string {
-    return `${entry.amount} ${payPeriods[entry.kind]}`;
-}
+export const payKindNames: Record<PayKind, string> = {
+    fixed: 'Fixed Pay',
+    hourly: 'Hourly Pay',
+};
 
 /**
- * The entry in effect on a YYYY-MM-DD date: the latest one taking effect on
- * or before it, or null when none has yet. The same rule as PayHistory on
- * the server.
+ * An amount of Pay as people read it, such as "€4,500.00 per month".
  */
-export function payInEffectOn(
-    entries: PayEntryRecord[],
-    date: string,
-): PayEntryRecord | null {
-    return entries.reduce<PayEntryRecord | null>(
-        (inEffect, entry) =>
-            entry.effective_from <= date &&
-            (inEffect === null ||
-                entry.effective_from > inEffect.effective_from)
-                ? entry
-                : inEffect,
-        null,
-    );
+export function formatPay(pay: { amount: string; kind: PayKind }): string {
+    return `${pay.amount} ${payPeriods[pay.kind]}`;
 }

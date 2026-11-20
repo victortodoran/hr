@@ -38,13 +38,16 @@ export const statusLabels: Record<StatusBadgeState, string> = {
     'on-track': 'On Track',
     'at-risk': 'At Risk',
     done: 'Done',
+    'in-effect': 'In effect',
+    past: 'Past',
+    ended: 'Ended',
 };
 
 /**
  * Each state's tone, the complete mapping of rule S9: Pending amber;
- * Approved, Completed, On Track and Done green; Declined red; Cancelled and
- * an Open Performance Evaluation grey; Upcoming and Not Started blue; At
- * Risk orange. A new state takes the tone of its meaning (S8).
+ * Approved, Completed, On Track, Done and In effect green; Declined red;
+ * Cancelled, an Open Performance Evaluation, Past and Ended grey; Upcoming
+ * and Not Started blue; At Risk orange. A new state takes the tone of its meaning (S8).
  */
 export const statusTones: Record<StatusBadgeState, StatusTone> = {
     pending: 'pending',
@@ -58,6 +61,9 @@ export const statusTones: Record<StatusBadgeState, StatusTone> = {
     'on-track': 'approved',
     'at-risk': 'attention',
     done: 'approved',
+    'in-effect': 'approved',
+    past: 'neutral',
+    ended: 'neutral',
 };
 
 /**

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Builders\AssignmentBuilder;
+use Carbon\CarbonInterface;
 use Database\Factories\AssignmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
@@ -110,6 +111,24 @@ class Assignment extends Model
     public function isInternal(): bool
     {
         return $this->project->is_internal;
+    }
+
+    /**
+     * Whether the Assignment ended before the day. The end date counts as a
+     * day of the Assignment, as in AssignmentBuilder::notEndedBefore().
+     */
+    public function hasEndedBefore(CarbonInterface $day): bool
+    {
+        return $this->end_date !== null && $this->end_date->isBefore($day->copy()->startOfDay());
+    }
+
+    /**
+     * Whether the Assignment runs on the day: started by then and not yet
+     * ended, as in AssignmentBuilder::runningOn().
+     */
+    public function isRunningOn(CarbonInterface $day): bool
+    {
+        return ! $this->start_date->isAfter($day->copy()->startOfDay()) && ! $this->hasEndedBefore($day);
     }
 
     /**
