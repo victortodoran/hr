@@ -38,7 +38,7 @@ function choose(value: unknown): void {
             v-for="option in props.options"
             :key="option.value"
             :value="option.value"
-            class="inline-flex items-center gap-1.5 rounded-md px-3 font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-xs [&_svg]:size-3.5"
+            class="inline-flex items-center gap-1.5 rounded-md px-3 font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:ring-1 data-[state=on]:ring-border [&_svg]:size-4"
             :class="size === 'sm' ? 'h-7 text-meta' : 'h-8 text-body'"
         >
             <component

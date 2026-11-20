@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight, Ellipsis, X } from '@lucide/vue';
+import { ChevronLeft, ChevronRight, X } from '@lucide/vue';
 import { nextTick, onMounted, ref } from 'vue';
 import Callout from '@/components/Callout.vue';
+import IconButton from '@/components/IconButton.vue';
+import RowActions from '@/components/RowActions.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
-    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import CopyWorkEntriesButton from '@/components/work-entries/CopyWorkEntriesButton.vue';
 import DeleteWorkEntry from '@/components/work-entries/DeleteWorkEntry.vue';
@@ -107,33 +106,21 @@ function summary(): string {
                 </p>
             </div>
             <div class="flex items-center">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Previous day"
+                <IconButton
+                    label="Previous day"
                     :disabled="previousDay === null"
                     @click="previousDay && emit('open', previousDay)"
                     ><ChevronLeft
-                /></Button>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Next day"
+                /></IconButton>
+                <IconButton
+                    label="Next day"
                     :disabled="nextDay === null"
                     @click="nextDay && emit('open', nextDay)"
                     ><ChevronRight
-                /></Button>
-                <Button
-                    v-if="!inSheet"
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Close"
-                    @click="emit('close')"
+                /></IconButton>
+                <IconButton v-if="!inSheet" label="Close" @click="emit('close')"
                     ><X
-                /></Button>
+                /></IconButton>
             </div>
         </div>
 
@@ -185,17 +172,12 @@ function summary(): string {
                             "
                             >{{ formatHours(entry.hours) }}</span
                         >
-                        <DropdownMenu v-if="entry.can_edit || entry.can_delete">
-                            <DropdownMenuTrigger as-child>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    :aria-label="`More for ${entry.description}`"
-                                    ><Ellipsis
-                                /></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                        <RowActions
+                            v-if="entry.can_edit || entry.can_delete"
+                            :label="entry.description"
+                            class="sm:opacity-100"
+                        >
+                            <template #menu>
                                 <DropdownMenuItem
                                     v-if="entry.can_edit"
                                     @select="editing = entry.id"
@@ -211,8 +193,8 @@ function summary(): string {
                                         >Delete</DropdownMenuItem
                                     >
                                 </template>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                            </template>
+                        </RowActions>
                     </div>
                     <Callout v-if="entry.declined" tone="declined">
                         Declined by {{ entry.declined.by }}:
@@ -252,7 +234,7 @@ function summary(): string {
             Hours can't be logged on days still to come.
         </p>
 
-        <template v-if="takesEntries">
+        <template v-if="takesEntries && editing === null">
             <h4 class="text-section sm:hidden">Add a Work Entry</h4>
             <WorkEntryRow
                 ref="addRow"

@@ -9,7 +9,7 @@ import type { Choice } from '@/types';
 
 /**
  * Copies the Work Entries of the latest earlier day with any onto a day,
- * such as "Copy Thursday's entries", saying why when it's refused. It is a
+ * such as "Copy Thursday's Work Entries", saying why when it's refused. It is a
  * plain button, so it can sit inside the day panel's add form.
  */
 const props = defineProps<{
@@ -35,8 +35,8 @@ function copy(): void {
 }
 
 /**
- * What the button says: "Copy Thursday's entries" when the day copied from
- * is in the week before, else "Copy entries from Thu 12", naming the month
+ * What the button says: "Copy Thursday's Work Entries" when the day copied from
+ * is in the week before, else "Copy Work Entries from Thu 12", naming the month
  * when it falls in another one than the day copied onto: "Fri 30 Oct".
  */
 function label(): string {
@@ -46,16 +46,16 @@ function label(): string {
         86_400_000;
 
     if (daysBefore < 7) {
-        return `Copy ${from.toLocaleDateString('en', { weekday: 'long' })}'s entries`;
+        return `Copy ${from.toLocaleDateString(undefined, { weekday: 'long' })}'s Work Entries`;
     }
 
     if (props.copyFrom.slice(0, 7) === props.date.slice(0, 7)) {
-        return `Copy entries from ${formatWeekdayAndDay(props.copyFrom)}`;
+        return `Copy Work Entries from ${formatWeekdayAndDay(props.copyFrom)}`;
     }
 
-    const month = from.toLocaleDateString('en', { month: 'short' });
+    const month = from.toLocaleDateString(undefined, { month: 'short' });
 
-    return `Copy entries from ${formatWeekdayAndDay(props.copyFrom)} ${month}`;
+    return `Copy Work Entries from ${formatWeekdayAndDay(props.copyFrom)} ${month}`;
 }
 </script>
 

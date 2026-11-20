@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight, Sun } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import IconButton from '@/components/IconButton.vue';
 import StatusIcon from '@/components/StatusIcon.vue';
-import { Button } from '@/components/ui/button';
-import { formatDateRange, formatLongDay, isWeekend } from '@/lib/dates';
+import { formatDateRange, isWeekend } from '@/lib/dates';
 import { timeOffKindLabel } from '@/lib/time-off';
 import { formatHours } from '@/lib/work-entries';
 import type { WorkEntryCalendarWeek, WorkEntryDay } from '@/types';
@@ -107,24 +107,15 @@ function stripState(day: WorkEntryDay) {
             <span class="text-meta text-muted-foreground tabular-nums"
                 >· {{ formatHours(week?.hours ?? 0) }}</span
             >
-            <Button
-                variant="ghost"
-                size="icon-sm"
-                class="ml-auto"
-                aria-label="Previous week"
-                @click="step(-1)"
+            <IconButton label="Previous week" class="ml-auto" @click="step(-1)"
                 ><ChevronLeft
-            /></Button>
+            /></IconButton>
             <span class="text-meta font-semibold whitespace-nowrap">{{
                 range
             }}</span>
-            <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Next week"
-                @click="step(1)"
+            <IconButton label="Next week" @click="step(1)"
                 ><ChevronRight
-            /></Button>
+            /></IconButton>
         </div>
 
         <div
@@ -181,7 +172,6 @@ function stripState(day: WorkEntryDay) {
                     class="flex w-full items-start gap-3 px-4 py-3 text-left text-body outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                     :class="day.date === today ? 'bg-primary-soft' : ''"
                     :data-agenda-day="day.date"
-                    :aria-label="formatLongDay(day.date)"
                     @click="emit('open', day.date)"
                 >
                     <span

@@ -65,6 +65,7 @@
 | `FactList`                       | Definition list for one record                                                           | L8, K11  |
 | `Callout`                        | info · attention · declined sentence with optional action                                | K12      |
 | `RowActions`                     | Hover icon buttons + ⋯ menu                                                              | K2       |
+| `IconButton`                     | Ghost icon-only button with its Tooltip, same words as its `aria-label`                  | F20      |
 | `RecordSheet`                    | Full record in a side sheet (`?record=`)                                                 | K8       |
 | `DecideDialog`                   | Decline with required reason, for 1…N records of one type                                | X5       |
 | `PersonCell`                     | Avatar + name (+ Job Title)                                                              | K13      |

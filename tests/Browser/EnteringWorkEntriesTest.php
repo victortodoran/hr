@@ -78,6 +78,7 @@ it('adds another Work Entry to a day that has some from its add row, and offers 
         ->assertNotPresent('[aria-label="More for Approved on Wednesday 11 November"]')
         ->assertNotPresent('[data-date="2026-11-10"] [data-test="add-row"]')
         ->assertPresent('[aria-label="Add another Work Entry on Wednesday 11 November"]')
+        ->hover('[data-date="2026-11-10"] [data-test="work-entry"]')
         ->click('[aria-label="Add another Work Entry on Tuesday 10 November"]')
         ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-10')
         ->assertNoJavaScriptErrors();
@@ -95,7 +96,7 @@ it('copies the Work Entries of the latest earlier day onto a day from its add fo
         ->click('[data-date="2026-11-09"] [data-test="add-row"]')
         ->assertDontSeeIn('[data-date="2026-11-09"]', 'Copy')
         ->click('[data-date="2026-11-13"] [data-test="add-row"]')
-        ->click("Copy Thursday's entries")
+        ->click("Copy Thursday's Work Entries")
         ->assertSee('Copied 2 Work Entries from Thu 12.')
         ->assertSeeIn('[data-date="2026-11-13"]', 'Checkout API')
         ->assertSeeIn('[data-date="2026-11-13"]', 'Team meeting')

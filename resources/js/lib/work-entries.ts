@@ -1,4 +1,4 @@
-import { formatMonth } from '@/lib/dates';
+import { formatDateRange, formatMonth } from '@/lib/dates';
 import type { Period, WorkEntryDay } from '@/types';
 
 /**
@@ -22,7 +22,7 @@ export function takesEntries(
 
 /**
  * What a Period's hours cover, such as "in November 2026", "in Week 46"
- * (given the week's ISO number) or "from 1 Oct to 14 Nov".
+ * (given the week's ISO number) or a custom range's dates.
  */
 export function describePeriod(period: Period, weekNumber?: number): string {
     const { mode, from, to } = period;
@@ -35,11 +35,5 @@ export function describePeriod(period: Period, weekNumber?: number): string {
         return `in Week ${weekNumber}`;
     }
 
-    const short = (date: string): string =>
-        new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-            day: 'numeric',
-            month: 'short',
-        });
-
-    return `from ${short(from)} to ${short(to)}`;
+    return formatDateRange(from, to);
 }

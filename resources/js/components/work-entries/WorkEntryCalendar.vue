@@ -490,29 +490,6 @@ defineExpose({ show });
                     </div>
                 </div>
             </div>
-            <ul
-                class="flex flex-wrap items-center gap-x-4 gap-y-2 text-caption text-muted-foreground"
-                aria-label="Legend"
-            >
-                <li
-                    v-for="state in states"
-                    :key="state"
-                    class="flex items-center gap-1.5"
-                >
-                    <StatusIcon :state="state" labelled />
-                    <span>{{ statusLabels[state] }}</span>
-                </li>
-                <li class="flex items-center gap-1.5">
-                    <Sun class="size-3.5" aria-hidden="true" />
-                    <span>Time Off</span>
-                </li>
-                <li class="ml-auto flex items-center gap-1">
-                    Select a day, or use
-                    <kbd class="rounded border px-1">←</kbd>
-                    <kbd class="rounded border px-1">→</kbd> and
-                    <kbd class="rounded border px-1">↵</kbd>
-                </li>
-            </ul>
         </template>
 
         <WorkWeekAgenda
@@ -524,6 +501,30 @@ defineExpose({ show });
             @open="show"
             @month="(step) => emit('month', step)"
         />
+
+        <ul
+            class="flex flex-wrap items-center gap-x-4 gap-y-2 text-caption text-muted-foreground"
+            aria-label="Legend"
+        >
+            <li
+                v-for="state in states"
+                :key="state"
+                class="flex items-center gap-1.5"
+            >
+                <StatusIcon :state="state" labelled />
+                <span>{{ statusLabels[state] }}</span>
+            </li>
+            <li class="flex items-center gap-1.5">
+                <Sun class="size-3.5" aria-hidden="true" />
+                <span>Time Off</span>
+            </li>
+            <li v-if="isWide" class="ml-auto flex items-center gap-1">
+                Select a day, or use
+                <kbd class="rounded border px-1">←</kbd>
+                <kbd class="rounded border px-1">→</kbd> and
+                <kbd class="rounded border px-1">↵</kbd>
+            </li>
+        </ul>
 
         <Sheet
             :open="!isWide && openDay !== null"

@@ -22,7 +22,7 @@ defineProps<{
 <template>
     <dl
         data-slot="stat-strip"
-        class="flex flex-wrap gap-x-6 gap-y-3 rounded-lg border px-4 py-3 sm:gap-0 sm:divide-x"
+        class="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border px-4 py-3 sm:flex sm:gap-0 sm:divide-x"
     >
         <div
             v-for="stat in stats"

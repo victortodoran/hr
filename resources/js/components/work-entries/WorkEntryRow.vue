@@ -285,7 +285,11 @@ defineExpose({ focusDescription, focusHours });
         <p
             v-if="entry?.state === 'declined'"
             class="text-meta text-muted-foreground"
-            :class="compact ? 'order-4 col-span-2' : 'sm:col-span-full'"
+            :class="
+                compact
+                    ? 'order-4 col-span-2'
+                    : 'sm:order-first sm:col-span-full'
+            "
         >
             Saving sends it back to Pending, for approval again.
         </p>
@@ -308,9 +312,7 @@ defineExpose({ focusDescription, focusHours });
                 >
                     <template v-if="entry">Save</template>
                     <template v-else
-                        ><span class="sm:hidden">Add Work Entry</span
-                        ><span class="max-sm:hidden">Add</span
-                        ><kbd
+                        >Add Work Entry<kbd
                             class="ml-1 rounded border border-primary-foreground/40 px-1 text-caption max-sm:hidden"
                             aria-hidden="true"
                             >↵</kbd
@@ -321,7 +323,7 @@ defineExpose({ focusDescription, focusHours });
         </div>
         <div v-else class="flex items-center gap-1">
             <SubmitButton :processing="form.processing">{{
-                entry ? 'Save' : 'Add'
+                entry ? 'Save' : 'Add Work Entry'
             }}</SubmitButton>
             <Button
                 v-if="!entry"

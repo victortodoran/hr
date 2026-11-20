@@ -24,6 +24,8 @@ it('opens today to add a Work Entry from the header, on the List and on the Cale
         ->assertQueryStringMissing('week')
         ->assertScript('document.activeElement.id', 'work-entry-description-2026-11-13')
         ->click('internal:role=button[name="Calendar"s]')
+        ->assertQueryStringHas('tab', 'calendar')
+        ->assertPresent('[data-calendar-day="2026-11-13"]')
         ->click('internal:role=button[name="Add Work Entry"s]')
         ->assertPresent('[data-panel-date="2026-11-13"]')
         ->assertScript('document.activeElement.id', 'work-entry-hours-2026-11-13')

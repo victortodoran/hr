@@ -28,7 +28,7 @@ it('adds, copies and deletes Work Entries from a Calendar day, stepping between 
         ->assertSeeIn('[aria-label="Legend"]', 'Select a day')
         ->click('[data-calendar-day="2026-11-11"]')
         ->assertScript('document.activeElement.id', 'work-entry-hours-2026-11-11')
-        ->click("Copy Tuesday's entries")
+        ->click("Copy Tuesday's Work Entries")
         ->assertSee('Copied 1 Work Entry from Tue 10.')
         ->assertSeeIn('[data-date="2026-11-11"]', 'Checkout API')
         ->assertSeeIn('[data-panel-date="2026-11-11"]', 'Checkout API')
