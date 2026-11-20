@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\Storage;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
 use function Pest\Laravel\seed;
+use function Pest\Laravel\travelTo;
 
 beforeEach(fn () => Storage::fake(TravelExpense::RECEIPT_DISK));
 
@@ -79,6 +80,36 @@ it('gives Ben Work Entries of his own on Relaunch, the older ones Approved by An
         ->and($approved->count() + $pending->count())->toBe($bensEntries->count())
         ->and($approved->every(fn (WorkEntry $entry): bool => $entry->approved_by === $ana->id))->toBeTrue()
         ->and($approved->max('date')->lt($pending->min('date')))->toBeTrue();
+});
+
+it('fills the year so far with Work Entries on working days, January to today, the older ones Approved by the Manager at the time', function () {
+    travelTo('2026-11-18 12:00');
+    seed(DemoSeeder::class);
+    $entries = WorkEntry::query()->with('employee.timeOff')->get();
+    $eve = Employee::query()->where('email', 'eve@acme.test')->sole();
+    $ben = Employee::query()->where('email', 'ben@acme.test')->sole();
+    $liasApproved = $entries->where('employee.email', 'lia@acme.test')->where('state', WorkEntryState::Approved);
+
+    expect($entries->map(fn (WorkEntry $entry): int => $entry->date->month)->unique()->sort()->values()->all())->toBe(range(1, 11))
+        ->and($entries->pluck('employee.email')->unique()->sort()->values()->all())->toBe(['ben@acme.test', 'cara@acme.test', 'eve@acme.test', 'finn@acme.test', 'hana@acme.test', 'ivan@acme.test', 'lia@acme.test'])
+        ->and($entries->every(fn (WorkEntry $entry): bool => $entry->date->isWeekday() && ! $entry->date->isAfter(today())
+            && $entry->employee->timeOff->whereIn('state', TimeOffState::standing())
+                ->every(fn (TimeOff $timeOff): bool => ! $entry->date->betweenIncluded($timeOff->first_date, $timeOff->last_date))))->toBeTrue()
+        ->and($entries->where('state', WorkEntryState::Approved)->every(fn (WorkEntry $entry): bool => $entry->approved_at?->isAfter($entry->date) === true))->toBeTrue()
+        ->and($liasApproved->every(fn (WorkEntry $entry): bool => $entry->approved_by === ($entry->approved_at?->isAfter($eve->leaving_date ?? today()) === true ? $ben->id : $eve->id)))->toBeTrue()
+        ->and($liasApproved->pluck('approved_by')->unique()->count())->toBe(2);
+});
+
+it('spreads Time Off and travel over the year, each decided before it started', function () {
+    travelTo('2026-11-18 12:00');
+    seed(DemoSeeder::class);
+    $decidedTimeOff = TimeOff::query()->whereNotNull('decided_at')->whereDate('first_date', '<', today())->get();
+    $decidedTravel = TravelRequest::query()->whereNotNull('decided_at')->whereDate('first_date', '<', today())->get();
+
+    expect(TimeOff::query()->where('state', TimeOffState::Approved)->whereDate('last_date', '<', today()->subMonths(3))->distinct()->count('employee_id'))->toBeGreaterThanOrEqual(6)
+        ->and(TravelRequest::query()->where('state', TravelRequestState::Approved)->whereDate('last_date', '<', today()->subMonths(3))->distinct()->count('employee_id'))->toBeGreaterThanOrEqual(5)
+        ->and($decidedTimeOff->every(fn (TimeOff $timeOff): bool => $timeOff->decided_at?->isBefore($timeOff->first_date) === true))->toBeTrue()
+        ->and($decidedTravel->every(fn (TravelRequest $travel): bool => $travel->decided_at?->isBefore($travel->first_date) === true))->toBeTrue();
 });
 
 it('gives Ana Approved Paid Time Off still to come', function () {
@@ -148,7 +179,7 @@ it('gives Ben a year of travel in every state, a dozen trips behind him and some
 it('lets Ben open Cara\'s Approved Berlin workshop and reopen its Approved Travel Expense', function () {
     seed(DemoSeeder::class);
     $ben = Employee::query()->where('email', 'ben@acme.test')->sole();
-    $workshop = TravelRequest::query()->where('destination', 'Berlin')->where('state', TravelRequestState::Approved)
+    $workshop = TravelRequest::query()->where('purpose', 'Checkout API workshop with Globex')->where('state', TravelRequestState::Approved)
         ->whereRelation('employee', 'email', 'cara@acme.test')->sole();
     $approved = $workshop->travelExpenses()->where('state', TravelExpenseState::Approved)->sole();
 
