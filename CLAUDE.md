@@ -32,7 +32,7 @@ Regenerate Wayfinder's route files with `npm run build`, which passes the form-h
 
 ### Design system
 
-Every UI change follows `docs/design-system/03-design-system.md` (mirrored as the UI rules in `CODING_STANDARDS.md`).
+Every UI change follows `docs/design-system/03-design-system.md`.
 
 - Cite rule IDs in PR descriptions and review comments ("follows L11, K9").
 - Start every new page from one of the five templates (L11–L17) and copy the matching mockup in `docs/design-system/mockups/`.
@@ -40,5 +40,5 @@ Every UI change follows `docs/design-system/03-design-system.md` (mirrored as th
 - Use the domain terms and the fixed verbs from C1–C3 exactly.
 - Every page works at 390px (P1–P12).
 - Before adding a component, check `docs/design-system/05-components.md`; when you add one, add its row there.
-- When no rule covers a case, say so and propose a new numbered rule, added to `03-design-system.md` (and `CODING_STANDARDS.md`) in the same PR. Follow the rules as written; a rule that seems wrong gets raised, never worked around silently.
+- When no rule covers a case, say so and propose a new numbered rule, added to `03-design-system.md` in the same PR. Follow the rules as written; a rule that seems wrong gets raised, never worked around silently.
 - Ask me before adding any library.

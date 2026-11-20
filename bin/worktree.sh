@@ -9,6 +9,10 @@
 #   bin/worktree.sh remove <branch>  removes the worktree, then drops its dev and test databases and
 #                                    the parallel copies; deletes the branch once origin/main has it
 #
+# `add` also adds a preview named after the branch to the main checkout's
+# .claude/launch.json, serving the worktree with `artisan serve` on the
+# first port from 8124 that no other preview uses; `remove` deletes it.
+#
 # Tests and pushes there (the pre-push hook runs the tests) use the
 # worktree's database when prefixed with the DB_DATABASE=... that `add`
 # prints; phpunit.xml's hr_testing only yields to a variable already in
@@ -26,6 +30,11 @@ usage() {
 command=$1
 branch=$2
 
+if ! command -v jq > /dev/null; then
+    echo "bin/worktree.sh needs jq to edit .claude/launch.json; install it with: brew install jq" >&2
+    exit 1
+fi
+
 main=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 path="$main/.claude/worktrees/$branch"
 # Lowercase letters, digits and underscores only, short enough that the
@@ -42,6 +51,24 @@ db_port=$(env_value DB_PORT)
 db_user=$(env_value DB_USERNAME)
 db_password=$(env_value DB_PASSWORD)
 main_database=$(env_value DB_DATABASE)
+
+# ICU en-US collation, as in CI, so names sort the same everywhere.
+icu="template template0 locale_provider icu icu_locale 'en-US'"
+
+launch_json="$main/.claude/launch.json"
+
+# Rewrites launch.json through a jq filter, given the filter's arguments.
+edit_launch_json() {
+    [ -f "$launch_json" ] || echo '{"version": "0.0.1", "configurations": []}' > "$launch_json"
+    local edited
+    edited=$(mktemp "$launch_json.XXXXXX")
+    if jq "$@" "$launch_json" > "$edited"; then
+        mv "$edited" "$launch_json"
+    else
+        rm -f "$edited"
+        return 1
+    fi
+}
 
 psql_admin() {
     PGPASSWORD=$db_password psql -h "$db_host" -p "$db_port" -U "$db_user" -d postgres -v ON_ERROR_STOP=1 -qAt "$@"
@@ -70,7 +97,7 @@ case $command in
         dev_origin="a copy of $main_database"
         if ! copy_error=$(psql_admin -c "create database \"$dev_database\" template \"$main_database\"" 2>&1); then
             echo "Couldn't copy $main_database ($copy_error), so $dev_database starts empty and migrated, with no demo data." >&2
-            psql_admin -c "create database \"$dev_database\""
+            psql_admin -c "create database \"$dev_database\" $icu"
             fresh_dev_database=true
             dev_origin="empty and migrated"
         fi
@@ -84,16 +111,28 @@ case $command in
                 php artisan migrate --force --no-interaction --quiet
             fi
         )
-        psql_admin -c "create database \"$database\""
+        psql_admin -c "create database \"$database\" $icu"
         ready=true
 
+        port=8124
+        while [ -f "$launch_json" ] && jq -e --argjson port "$port" 'any(.configurations[]; .port == $port)' "$launch_json" > /dev/null \
+            || lsof -nP -iTCP:"$port" -sTCP:LISTEN > /dev/null 2>&1; do
+            port=$((port + 1))
+        done
+        edit_launch_json --arg name "$branch" --arg artisan "$path/artisan" --argjson port "$port" \
+            '.configurations |= map(select(.name != $name)) + [{name: $name, runtimeExecutable: "php", runtimeArgs: [$artisan, "serve", "--port=\($port)", "--no-reload"], port: $port}]'
+
         echo "Worktree ready: $path"
+        echo "Preview it as \"$branch\" (port $port) from the main checkout's .claude/launch.json."
         echo "Its .env uses its own dev database, $dev_database, $dev_origin."
         echo "Run tests and pushes there with: DB_DATABASE=$database"
         ;;
     remove)
         names=$(databases)
         git -C "$main" worktree remove "$path"
+        if [ -f "$launch_json" ]; then
+            edit_launch_json --arg name "$branch" '.configurations |= map(select(.name != $name))'
+        fi
         for name in $names; do
             psql_admin -c "drop database \"$name\" with (force)"
         done

@@ -61,6 +61,16 @@ use Illuminate\Support\Str;
  *   ├── Hana (Manager)
  *   │   └── Ivan (leaving in six months)
  *   └── Finn (Payroll: everyone's Pay; Auditor)
+ *
+ * What each login shows:
+ *
+ *   ana@acme.test   Ben's Pending Work Entries and Travel to decide; Hana's and Finn's Evaluations to start
+ *   ben@acme.test   Cara's and Lia's Pending items to decide; his own Travel in every state; an At Risk Goal
+ *   hana@acme.test  Ivan's Pending items, and his Time Off and trip she Declined
+ *   finn@acme.test  everyone's Pay
+ *   cara@acme.test  a Declined Work Entry and Travel Expense; Pending Time Off and Travel
+ *   lia@acme.test   items decided by Ben though Eve is her Manager
+ *   ivan@acme.test  Declined Time Off and Travel; no Paid Days
  */
 class DemoSeeder extends Seeder
 {

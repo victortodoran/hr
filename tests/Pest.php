@@ -45,6 +45,12 @@ pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature');
 pest()->extend(BrowserTestCase::class)->use(RefreshDatabase::class)->in('Browser');
 
 /*
+ * Browser assertions and clicks wait up to 10 seconds, so a busy parallel
+ * run doesn't fail a page that is only slow to settle.
+ */
+pest()->browser()->timeout(10_000);
+
+/*
 |--------------------------------------------------------------------------
 | Helpers
 |--------------------------------------------------------------------------

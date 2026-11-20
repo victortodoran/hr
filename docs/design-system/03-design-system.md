@@ -1,6 +1,6 @@
 # UI rules (Ledger)
 
-> Replaces the UI section of `CODING_STANDARDS.md`. Each rule is one line a reviewer can check against a diff. Cite rules by ID in review comments ("breaks L8"). Tokens live in `resources/css/app.css` (see `04-tokens.css`). Mockups: `mockups/`.
+> Each rule is one line a reviewer can check against a diff. Tokens live in `resources/css/app.css` (see `04-tokens.css`). Mockups: `mockups/`.
 
 **The idea in one line:** grayscale ledger, numbers that line up, hairlines instead of boxes, and one violet `primary` used only for the main action, focus and selection.
 
@@ -37,6 +37,7 @@
 - **F19** Icons are lucide, 16px (`size-4`) with `stroke-width` 2; 14px only inside badges and dense rows; 20px only in EmptyState.
 - **F20** An icon sits beside text; an icon-only button has `aria-label` and a `Tooltip` with the same words.
 - **F21** A `Callout` takes its tone's status colours (`bg-status-attention`/`text-status-attention-foreground`, `bg-status-declined`/`text-status-declined-foreground`, info on `bg-surface` with `border-border`), never other colours; its icon matches the tone (`text-status-attention-icon`, `text-status-declined-icon`, `text-muted-foreground` for info).
+- **F22** Overlays (sheets, dialogs, popovers, menus, tooltips) open without animation when the system asks for reduced motion.
 
 ---
 

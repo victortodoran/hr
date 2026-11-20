@@ -53,6 +53,7 @@
         "lint:builders": "Fails when a public builder method in app/Models/Builders doesn't start with return $this->scoped(...).",
         "lint:browser-tests": "Fails when a browser test in tests/Browser still calls screenshot(), debug() or pause().",
         "lint:headings": "Fails when a page in resources/js/pages hand-builds an <h1> instead of opening with the Heading component.",
+        "lint:conflict-markers": "Fails when a tracked file still holds a merge conflict marker (<<<<<<<, ======= or >>>>>>> at the start of a line).",
         "test:failures": "Runs the tests (or the paths given) and prints one line per failure or error: file:line, test name and message."
     },
     "scripts": {
@@ -86,6 +87,7 @@
             "@lint:browser-tests",
             "@lint:headings",
             "@lint:colours",
+            "@lint:conflict-markers",
             "npm run build -- --logLevel warn",
             "npm run types:check",
             "@test",
@@ -99,6 +101,7 @@
         "lint:browser-tests": "bin/lint-browser-tests.sh",
         "lint:headings": "bin/lint-headings.sh",
         "lint:colours": "bin/lint-colours.sh",
+        "lint:conflict-markers": "bin/lint-conflict-markers.sh",
         "types:check": [
             "phpstan analyse --memory-limit=1G"
         ],

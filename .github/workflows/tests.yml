@@ -25,6 +25,8 @@ jobs:
           POSTGRES_USER: root
           POSTGRES_HOST_AUTH_METHOD: trust
           POSTGRES_DB: hr
+          # ICU en-US, like the local test databases bin/worktree.sh creates.
+          POSTGRES_INITDB_ARGS: "--locale-provider=icu --icu-locale=en-US"
         ports:
           - 5432:5432
         options: >-
