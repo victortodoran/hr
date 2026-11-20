@@ -206,7 +206,7 @@ List each piece of a diff that sits in the wrong layer. These hold from the firs
 - **P7** Popovers, Sheets and Dialogs open as bottom sheets (full height for forms), with the action buttons in a sticky footer.
 - **P8** The SelectionBar becomes a sticky full-width bottom bar.
 - **P9** FilterBar collapses to Search + a "Filters (n)" button opening a bottom sheet; chips stay visible under it.
-- **P10** The Work calendar becomes a week agenda (one row per day with its entries) under a month strip; tapping a day opens the day panel as a bottom sheet.
+- **P10** The Work calendar becomes a week agenda (one row per day with its entries) under a strip of that week's days with their state icons; ‹ › step a week, on into the month before or after; tapping a day opens the day panel as a bottom sheet.
 - **P11** StatStrip wraps to a 2-column grid; FactList stacks label over value.
 - **P12** Forms are one column; paired fields (V6) stack.
 
