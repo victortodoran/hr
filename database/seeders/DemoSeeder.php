@@ -46,9 +46,9 @@ use Illuminate\Support\Str;
  * and short threads of Comments from both sides on a few,
  * Completed ones for last year for Ben, Cara and Ivan,
  * leaving Hana's and Finn's for Ana to start. Dates are relative
- * to today, so the Future and Former Employees stay that way, and the last two weeks of Work Entries and the Time Off
+ * to today, so the Future and Former Employees stay that way, and the last two weeks of Work Entries and some of the Time Off
  * still to come are always Pending, waiting for each Employee's Manager (Ana, Ben
- * or Hana) to approve them. Everyone except the Future Employee can sign in
+ * or Hana) to decide them. Everyone except the Future Employee can sign in
  * with the password "password"; the Future Employee still has an invitation
  * waiting. Invitations are not emailed, so the seeder prints a fresh link to it.
  *
@@ -238,12 +238,12 @@ class DemoSeeder extends Seeder
         ]);
 
         $this->command?->info('Demo company seeded. Sign in as ana@acme.test (Admin), ben@acme.test, hana@acme.test, finn@acme.test, cara@acme.test, ivan@acme.test or lia@acme.test with the password "password".');
-        $this->command?->info('Dan\'s invitation, valid for a week: '.$this->invitationLink($dan));
+        $this->command?->info('Dan\'s invitation: '.$this->invitationLink($dan));
     }
 
     /**
-     * A fresh link to the Employee's invitation, since the one they were
-     * sent is stored hashed and was never emailed. It replaces that one.
+     * A fresh link to the Employee's invitation, since the token created
+     * when they were added is stored hashed. It replaces that one.
      */
     private function invitationLink(Employee $employee): string
     {

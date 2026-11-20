@@ -67,14 +67,18 @@ it('gives Ben Pending Work Entries of the Employees he manages to approve, next 
         ->and(WorkEntry::query()->where('state', WorkEntryState::Declined)->where('declined_by', $ben->id)->whereNotNull('decline_reason')->exists())->toBeTrue();
 });
 
-it('gives Ben Work Entries of his own, the older ones Approved by Ana and the recent ones Pending for her', function () {
+it('gives Ben Work Entries of his own on Relaunch, the older ones Approved by Ana and the recent ones Pending for her', function () {
     seed(DemoSeeder::class);
     $ana = Employee::query()->where('email', 'ana@acme.test')->sole();
-    $bensEntries = WorkEntry::query()->whereRelation('employee', 'email', 'ben@acme.test')->get();
+    $bensEntries = WorkEntry::query()->whereRelation('employee', 'email', 'ben@acme.test')->with('assignment.project')->get();
+    $approved = $bensEntries->where('state', WorkEntryState::Approved);
+    $pending = $bensEntries->where('state', WorkEntryState::Pending);
 
-    expect($bensEntries->where('state', WorkEntryState::Approved)->every(fn (WorkEntry $entry): bool => $entry->approved_by === $ana->id))->toBeTrue()
-        ->and($bensEntries->where('state', WorkEntryState::Approved)->isNotEmpty())->toBeTrue()
-        ->and($bensEntries->where('state', WorkEntryState::Pending)->isNotEmpty())->toBeTrue();
+    expect($bensEntries->every(fn (WorkEntry $entry): bool => $entry->assignment->project->name === 'Relaunch'))->toBeTrue()
+        ->and($approved->isNotEmpty() && $pending->isNotEmpty())->toBeTrue()
+        ->and($approved->count() + $pending->count())->toBe($bensEntries->count())
+        ->and($approved->every(fn (WorkEntry $entry): bool => $entry->approved_by === $ana->id))->toBeTrue()
+        ->and($approved->max('date')->lt($pending->min('date')))->toBeTrue();
 });
 
 it('gives Ana Approved Paid Time Off still to come', function () {
@@ -87,7 +91,8 @@ it('gives Ana Approved Paid Time Off still to come', function () {
 it('gives every Role to someone', function () {
     seed(DemoSeeder::class);
 
-    expect(Role::query()->doesntHave('employees')->pluck('name')->all())->toBe([]);
+    expect(Role::query()->doesntHave('employees')->pluck('name')->all())->toBe([])
+        ->and(Employee::query()->where('email', 'finn@acme.test')->sole()->roles()->pluck('name')->all())->toContain('Payroll', 'Auditor');
 });
 
 it('prints a working invitation link for the Future Employee', function () {
