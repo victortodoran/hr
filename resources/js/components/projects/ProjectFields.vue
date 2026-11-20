@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DatePicker from '@/components/DatePicker.vue';
 import InputError from '@/components/InputError.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,8 +14,8 @@ import { noClient } from '@/lib/projects';
 import type { Choice } from '@/types';
 
 /**
- * A Project's Name, Client and dates, as adding a Project and changing
- * one on its own page both ask for them.
+ * A Project's Name, Client and dates, as the New Project and Edit Project
+ * sheets both ask for them; the dates through DatePickers (K14).
  */
 defineProps<{
     clients: Choice[];
@@ -30,7 +31,7 @@ const endDate = defineModel<string>('endDate', { required: true });
 </script>
 
 <template>
-    <div class="space-y-6">
+    <div class="flex flex-col gap-5">
         <div class="grid gap-2">
             <Label for="project-name">Name</Label>
             <Input
@@ -66,21 +67,21 @@ const endDate = defineModel<string>('endDate', { required: true });
         <div class="grid gap-4 sm:grid-cols-2">
             <div class="grid gap-2">
                 <Label for="project-start">Start date</Label>
-                <Input
+                <DatePicker
                     id="project-start"
                     v-model="startDate"
-                    type="date"
                     required
+                    :invalid="Boolean(errors.start_date)"
                 />
                 <InputError :message="errors.start_date" />
             </div>
             <div class="grid gap-2">
                 <Label for="project-end">End date (optional)</Label>
-                <Input
+                <DatePicker
                     id="project-end"
                     v-model="endDate"
-                    type="date"
                     :min="startDate || undefined"
+                    :invalid="Boolean(errors.end_date)"
                 />
                 <InputError :message="errors.end_date" />
             </div>

@@ -34,5 +34,5 @@ export type PermissionChoice = {
 /** An Employee a Role can be given to: one who hasn't left. */
 export type RoleCandidate = RoleHolder;
 
-/** What the Roles page's right column is doing with the selected Role. */
-export type RolesPageMode = 'view' | 'edit' | 'create';
+/** Whether the Roles page shows the selected Role, editable in place, or a new one being made. */
+export type RolesPageMode = 'view' | 'create';

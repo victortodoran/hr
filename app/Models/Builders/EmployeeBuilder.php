@@ -100,6 +100,17 @@ class EmployeeBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to the Employees whose record the given Employee may
+     * see, through view employee records.
+     */
+    public function withRecordVisibleTo(Employee $viewer): static
+    {
+        return $this->scoped(function () use ($viewer): void {
+            $viewer->limitToReachOf($this, [Permission::ViewEmployeeRecords]);
+        });
+    }
+
+    /**
      * Limit the query to the Employees whose Work Entries the given Employee
      * may see, matching WorkEntryPolicy::viewAny().
      */

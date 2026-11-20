@@ -1,19 +1,28 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { Lock, Search } from '@lucide/vue';
+import { Link, router } from '@inertiajs/vue3';
+import { Lock, Plus, Search } from '@lucide/vue';
 import { computed, ref } from 'vue';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import DefaultRoleBadge from '@/components/roles/DefaultRoleBadge.vue';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { countOf } from '@/lib/roles';
-import { show } from '@/routes/roles';
+import { create, show } from '@/routes/roles';
 import type { RoleRecord, RolesPageMode } from '@/types';
 
 /**
- * Every Role, searchable by name, each with how many Permissions and people
- * it has, a lock on Admin and "Default" on the Role new Employees get. While
- * a Role is edited or made, the list fades and the Role being worked on is
- * marked; a new one sits at the top with the name typed so far.
+ * The Role list column of the settings template: every Role, searchable by
+ * name, each with how many Permissions and people it has, a lock on Admin
+ * and "Default" on the Role new Employees get, and New Role above them. A
+ * new Role being made sits at the top with the name typed so far. Below
+ * 1024px the list becomes a Role select beside New Role.
  */
 const props = defineProps<{
     roles: RoleRecord[];
@@ -37,56 +46,102 @@ const shown = computed(() => {
           );
 });
 
-const working = computed(() => props.mode !== 'view');
-
 function summary(role: RoleRecord): string {
-    const people =
-        role.holders.length === 0
-            ? 'Nobody yet'
-            : countOf(role.holders.length, 'person', 'people');
-
-    return `${countOf(props.permissionCount(role), 'permission', 'permissions')} · ${people}`;
+    return `${countOf(props.permissionCount(role), 'Permission', 'Permissions')} · ${countOf(role.holders.length, 'person', 'people')}`;
 }
+
+/** The Role picked in the phone's select, which opens it. */
+const picked = computed({
+    get: () => (props.selected === null ? 'new' : String(props.selected)),
+    set: (id: string) => {
+        if (id !== 'new') {
+            router.visit(show(Number(id)), {
+                preserveState: true,
+                preserveScroll: true,
+            });
+        }
+    },
+});
+
+const newRoleName = computed(() => props.newName.trim() || 'Untitled Role');
 </script>
 
 <template>
-    <Card class="gap-3 p-3">
-        <div class="relative">
-            <Search
-                class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                aria-hidden="true"
-            />
-            <Input
-                v-model="search"
-                type="search"
-                placeholder="Search roles"
-                aria-label="Search roles"
-                class="h-11 pl-9"
-            />
+    <div class="flex min-w-0 flex-col gap-3">
+        <div class="flex items-end gap-2 lg:hidden">
+            <div class="grid min-w-0 flex-1 gap-2">
+                <Label for="role-picker">Role</Label>
+                <Select v-model="picked">
+                    <SelectTrigger id="role-picker" class="h-11 w-full">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-if="mode === 'create'" value="new">{{
+                            newRoleName
+                        }}</SelectItem>
+                        <SelectItem
+                            v-for="role in roles"
+                            :key="role.id"
+                            :value="String(role.id)"
+                            >{{ role.name }}</SelectItem
+                        >
+                    </SelectContent>
+                </Select>
+            </div>
+            <Button
+                v-if="mode !== 'create'"
+                variant="secondary"
+                class="h-11"
+                as-child
+            >
+                <Link :href="create()" preserve-state preserve-scroll
+                    ><Plus />New Role</Link
+                >
+            </Button>
         </div>
 
-        <nav aria-label="Roles">
-            <ul class="grid gap-1">
+        <div class="flex items-center gap-2 max-lg:hidden">
+            <div class="relative min-w-0 flex-1">
+                <Search
+                    class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+                    aria-hidden="true"
+                />
+                <Input
+                    v-model="search"
+                    type="search"
+                    placeholder="Search"
+                    aria-label="Search Roles"
+                    class="h-8 pl-8"
+                />
+            </div>
+            <Button
+                v-if="mode !== 'create'"
+                variant="secondary"
+                size="sm"
+                as-child
+            >
+                <Link :href="create()" preserve-state preserve-scroll
+                    ><Plus />New Role</Link
+                >
+            </Button>
+        </div>
+
+        <nav aria-label="Roles" class="max-lg:hidden">
+            <ul class="grid gap-0.5">
                 <li v-if="mode === 'create'">
                     <div
-                        class="grid min-h-11 gap-0.5 rounded-md bg-muted px-3 py-2"
+                        class="grid gap-0.5 rounded-md bg-primary-soft px-3 py-2 ring-1 ring-primary-line ring-inset"
                         aria-current="page"
                     >
                         <span class="truncate font-medium">{{
-                            newName.trim() || 'Untitled Role'
+                            newRoleName
                         }}</span>
-                        <span class="text-xs text-muted-foreground"
+                        <span class="text-caption text-muted-foreground"
                             >New · not saved yet</span
                         >
                     </div>
                 </li>
-                <li
-                    v-for="role in shown"
-                    :key="role.id"
-                    :class="{
-                        'opacity-50': working && role.id !== selected,
-                    }"
-                >
+                <li v-for="role in shown" :key="role.id">
                     <Link
                         :href="show(role.id)"
                         preserve-state
@@ -94,41 +149,35 @@ function summary(role: RoleRecord): string {
                         :aria-current="
                             role.id === selected ? 'page' : undefined
                         "
-                        class="grid min-h-11 gap-0.5 rounded-md px-3 py-2 hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                        :class="{
-                            'bg-muted hover:bg-muted': role.id === selected,
-                        }"
+                        class="grid gap-0.5 rounded-md px-3 py-2 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-primary-soft aria-[current=page]:ring-1 aria-[current=page]:ring-primary-line aria-[current=page]:ring-inset"
                         data-test="role-item"
                     >
-                        <span class="flex min-w-0 items-center gap-2">
+                        <span class="flex min-w-0 items-center gap-1.5">
                             <span class="truncate font-medium">{{
                                 role.name
                             }}</span>
                             <Lock
                                 v-if="role.is_admin"
-                                class="size-3.5 shrink-0 text-muted-foreground"
+                                class="size-3.5 shrink-0 text-subtle-foreground"
                                 aria-label="Built in"
                             />
-                            <Badge
+                            <DefaultRoleBadge
                                 v-if="role.given_to_new_employees"
-                                variant="outline"
-                                >Default</Badge
-                            >
+                            />
                         </span>
-                        <span class="text-xs text-muted-foreground">{{
-                            mode === 'edit' && role.id === selected
-                                ? 'Editing…'
-                                : summary(role)
-                        }}</span>
+                        <span
+                            class="text-caption text-muted-foreground tabular-nums"
+                            >{{ summary(role) }}</span
+                        >
                     </Link>
                 </li>
             </ul>
             <p
                 v-if="shown.length === 0"
-                class="px-3 py-2 text-sm text-muted-foreground"
+                class="px-3 py-2 text-body text-muted-foreground"
             >
                 No Roles match "{{ search }}".
             </p>
         </nav>
-    </Card>
+    </div>
 </template>

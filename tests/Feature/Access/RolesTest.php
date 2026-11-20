@@ -75,10 +75,9 @@ it('refuses every Roles page to an Employee who does not manage Roles', function
     'the list' => [fn (Role $role) => route('roles.index')],
     'one Role' => [fn (Role $role) => route('roles.show', $role)],
     'a new Role' => [fn (Role $role) => route('roles.create')],
-    'editing a Role' => [fn (Role $role) => route('roles.edit', $role)],
 ]);
 
-it('opens the Roles page on the first Role by name, or on the Role in the URL, to view, edit or create', function (Closure $url, string $mode, ?string $selected) {
+it('opens the Roles page on the first Role by name, or on the Role in the URL, to view and edit in place, or create', function (Closure $url, string $mode, ?string $selected) {
     $admin = employeeWhoManagesRoles('Role Managers');
     $roles = [
         'Auditor' => Role::factory()->create(['name' => 'Auditor']),
@@ -95,7 +94,6 @@ it('opens the Roles page on the first Role by name, or on the Role in the URL, t
 })->with([
     'the list' => [fn (array $roles) => route('roles.index'), 'view', 'Auditor'],
     'one Role' => [fn (array $roles) => route('roles.show', $roles['Payroll']), 'view', 'Payroll'],
-    'editing a Role' => [fn (array $roles) => route('roles.edit', $roles['Payroll']), 'edit', 'Payroll'],
     'a new Role' => [fn (array $roles) => route('roles.create'), 'create', null],
 ]);
 

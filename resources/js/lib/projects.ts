@@ -39,3 +39,15 @@ export function projectPayload({
         end_date: end_date === '' ? null : end_date,
     };
 }
+
+/**
+ * What deleting a Project asks about (rule X3): one anyone has been
+ * assigned to stays, since that work is part of their record.
+ */
+export const deleteProjectDescription =
+    "This can't be undone. A Project anyone has been assigned to can't be deleted; set an end date instead.";
+
+/** How many Projects, such as "1 Project" or "3 Projects". */
+export function projectCount(count: number): string {
+    return count === 1 ? '1 Project' : `${count} Projects`;
+}

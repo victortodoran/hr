@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
-import { Plus, ShieldCheck } from '@lucide/vue';
+import { ShieldCheck } from '@lucide/vue';
 import { computed, ref, watch, watchEffect } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
-import PageHeader from '@/components/PageHeader.vue';
-import SettingsFrame from '@/components/SettingsFrame.vue';
-import { useCompanySettingsLinks } from '@/composables/useCompanySettingsLinks';
-import PageContainer from '@/components/PageContainer.vue';
 import RoleEditor from '@/components/roles/RoleEditor.vue';
 import RoleList from '@/components/roles/RoleList.vue';
-import RoleView from '@/components/roles/RoleView.vue';
+import RolePeople from '@/components/roles/RolePeople.vue';
 import { Button } from '@/components/ui/button';
-import { create, edit, index, show } from '@/routes/roles';
+import CompanySettingsLayout from '@/layouts/settings/CompanySettingsLayout.vue';
+import { create, index, show } from '@/routes/roles';
 import type {
     BreadcrumbItem,
     PermissionChoice,
@@ -21,9 +18,9 @@ import type {
 } from '@/types';
 
 /**
- * The Roles page: every Role in a list on the left, and on the right the
- * selected Role, either as it stands or being edited, or a new Role being
- * made. Which Role and what is being done to it live in the URL.
+ * The Roles part of Company settings (rule L16): the Role list column, and
+ * beside it the selected Role edited in place with the people holding it
+ * below, or a new Role being made. Which Role is open lives in the URL.
  */
 const props = defineProps<{
     mode: RolesPageMode;
@@ -65,17 +62,9 @@ function permissionCount(role: RoleRecord): number {
         : Object.keys(role.permissions).length;
 }
 
-const title = computed(() => {
-    if (props.mode === 'create') {
-        return 'New Role';
-    }
-
-    if (props.mode === 'edit' && selectedRole.value) {
-        return `Edit ${selectedRole.value.name}`;
-    }
-
-    return selectedRole.value?.name ?? 'Roles';
-});
+const title = computed(() =>
+    props.mode === 'create' ? 'New Role' : (selectedRole.value?.name ?? null),
+);
 
 watchEffect(() => {
     const breadcrumbs: BreadcrumbItem[] = [{ title: 'Roles', href: index() }];
@@ -84,84 +73,72 @@ watchEffect(() => {
         breadcrumbs.push({ title: 'New Role', href: create() });
     } else if (selectedRole.value) {
         breadcrumbs.push({
-            title: title.value,
-            href: (props.mode === 'edit' ? edit : show)(selectedRole.value.id),
+            title: selectedRole.value.name,
+            href: show(selectedRole.value.id),
         });
     }
 
     setLayoutProps({ breadcrumbs });
 });
-
-const settingsLinks = useCompanySettingsLinks();
 </script>
 
 <template>
-    <Head :title="title === 'Roles' ? 'Roles' : `${title} · Roles`" />
+    <Head :title="title === null ? 'Roles' : `${title} · Roles`" />
 
-    <PageContainer width="full">
-        <PageHeader
-            title="Roles"
-            description="What each Role allows, and who holds it"
+    <CompanySettingsLayout>
+        <div
+            class="grid items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-8"
         >
-            <template v-if="mode !== 'create'" #actions>
-                <Button class="min-h-11" as-child>
-                    <Link :href="create()" preserve-state preserve-scroll>
-                        <Plus class="size-4" aria-hidden="true" />
-                        New Role
-                    </Link>
-                </Button>
-            </template>
-        </PageHeader>
+            <RoleList
+                class="lg:sticky lg:top-4"
+                :roles="roles"
+                :selected="selected"
+                :mode="mode"
+                :permission-count="permissionCount"
+                :new-name="draftName"
+            />
 
-        <SettingsFrame :items="settingsLinks" label="Company settings">
-            <div class="flex flex-col gap-8">
-                <div
-                    class="grid items-start gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]"
-                >
-                    <RoleList
-                        class="lg:sticky lg:top-4"
+            <section
+                class="flex min-w-0 flex-col gap-8"
+                aria-label="Selected Role"
+            >
+                <RoleEditor
+                    v-if="mode === 'create'"
+                    key="create"
+                    v-model:draft-name="draftName"
+                    :role="null"
+                    :roles="roles"
+                    :permissions="permissions"
+                    :employees="employees"
+                    :cancel-to="cancelNewTo"
+                />
+                <template v-else-if="selectedRole">
+                    <RoleEditor
+                        :key="selectedRole.id"
+                        :role="selectedRole"
                         :roles="roles"
-                        :selected="selected"
-                        :mode="mode"
-                        :permission-count="permissionCount"
-                        :new-name="draftName"
+                        :permissions="permissions"
+                        :employees="employees"
+                        :cancel-to="show(selectedRole.id).url"
                     />
-
-                    <section class="min-w-0" aria-label="Selected Role">
-                        <RoleEditor
-                            v-if="mode === 'create'"
-                            key="create"
-                            v-model:draft-name="draftName"
-                            :role="null"
-                            :roles="roles"
-                            :permissions="permissions"
-                            :employees="employees"
-                            :cancel-to="cancelNewTo"
-                        />
-                        <RoleEditor
-                            v-else-if="mode === 'edit' && selectedRole"
-                            :key="`edit-${selectedRole.id}`"
-                            :role="selectedRole"
-                            :roles="roles"
-                            :permissions="permissions"
-                            :employees="employees"
-                            :cancel-to="show(selectedRole.id).url"
-                        />
-                        <RoleView
-                            v-else-if="selectedRole"
-                            :key="selectedRole.id"
-                            :role="selectedRole"
-                            :permissions="permissions"
-                            :employees="employees"
-                        />
-                        <EmptyState
-                            v-else
-                            :icon="ShieldCheck"
-                            message="Roles say what the Employees holding them may do. There are none yet."
-                        />
-                    </section>
-                </div>
-            </div>
-        </SettingsFrame>
-    </PageContainer>
+                    <RolePeople
+                        :key="`people-${selectedRole.id}`"
+                        :role="selectedRole"
+                        :employees="employees"
+                    />
+                </template>
+                <EmptyState
+                    v-else
+                    :icon="ShieldCheck"
+                    message="Roles say what the Employees holding them may do. There are none yet."
+                >
+                    <template #action>
+                        <Button variant="secondary" as-child>
+                            <Link :href="create()">New Role</Link>
+                        </Button>
+                    </template>
+                </EmptyState>
+            </section>
+        </div>
+    </CompanySettingsLayout>
 </template>

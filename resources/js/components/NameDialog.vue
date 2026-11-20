@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
@@ -18,25 +17,41 @@ import { Label } from '@/components/ui/label';
 import type { RouteFormDefinition } from '@/wayfinder';
 
 /**
- * Renames something by its name alone, the one such dialog across the app,
- * opened by a "Rename" button and closed once the new name is saved.
+ * Asks for a name, the one such dialog across the app: renaming something
+ * by its name alone, opened by a "Rename…" button and closed once the new
+ * name is saved, or adding a record by its name, given a `title` and a
+ * `submitLabel`. Opened from elsewhere, such as a ⋯ menu item, it takes
+ * `v-model:open` and `without-trigger` instead.
  */
-defineProps<{
-    /** Where the new name is sent, from a Wayfinder `.form()`. */
-    form: RouteFormDefinition<'post'>;
-    /** The name as it stands, which the field starts from. */
-    name: string;
-    /** The name field's id, unique on the page. */
-    fieldId: string;
-}>();
+withDefaults(
+    defineProps<{
+        /** Where the new name is sent, from a Wayfinder `.form()`. */
+        form: RouteFormDefinition<'post'>;
+        /** The name as it stands, which the field starts from. */
+        name: string;
+        /** The name field's id, unique on the page. */
+        fieldId: string;
+        /** The dialog's title; "Rename <name>" unless given. */
+        title?: string;
+        /** The button that saves; "Save" unless given. */
+        submitLabel?: string;
+        /** Leaves out the trigger, for a dialog opened through `v-model:open`. */
+        withoutTrigger?: boolean;
+    }>(),
+    {
+        title: undefined,
+        submitLabel: 'Save',
+        withoutTrigger: false,
+    },
+);
 
-const open = ref(false);
+const open = defineModel<boolean>('open', { default: false });
 </script>
 
 <template>
     <Dialog v-model:open="open">
-        <DialogTrigger as-child>
-            <Button variant="secondary" size="sm">Rename</Button>
+        <DialogTrigger v-if="!withoutTrigger" as-child>
+            <Button variant="secondary" size="sm">Rename…</Button>
         </DialogTrigger>
         <DialogContent>
             <Form
@@ -47,7 +62,7 @@ const open = ref(false);
                 v-slot="{ errors, processing }"
             >
                 <DialogHeader>
-                    <DialogTitle>Rename {{ name }}</DialogTitle>
+                    <DialogTitle>{{ title ?? `Rename ${name}` }}</DialogTitle>
                 </DialogHeader>
 
                 <div class="grid gap-2">
@@ -67,7 +82,9 @@ const open = ref(false);
                             >Cancel</Button
                         >
                     </DialogClose>
-                    <SubmitButton :processing="processing">Save</SubmitButton>
+                    <SubmitButton :processing="processing">{{
+                        submitLabel
+                    }}</SubmitButton>
                 </DialogFooter>
             </Form>
         </DialogContent>

@@ -49,13 +49,17 @@ class ClientController extends Controller
         return to_route('clients.index');
     }
 
+    /**
+     * Rename a Client, back on the page it was renamed from: the Clients or
+     * the Client's own page.
+     */
     public function update(ClientRequest $request, Client $client): RedirectResponse
     {
         $client->update($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client renamed.')]);
 
-        return to_route('clients.index');
+        return back();
     }
 
     /**

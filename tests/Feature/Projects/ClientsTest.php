@@ -96,13 +96,14 @@ it('rejects a Client name that is missing, too long or already taken', function 
     'taken' => ['Acme', 'The name has already been taken.'],
 ]);
 
-it('lets a Client manager rename a Client, keeping its Projects', function () {
+it('lets a Client manager rename a Client from its page, keeping its Projects', function () {
     $acme = Client::factory()->create(['name' => 'Acme']);
     $project = Project::factory()->forClient($acme)->create();
 
     actingAs(clientManager())
+        ->from(route('clients.show', $acme))
         ->patch(route('clients.update', $acme), ['name' => 'Acme Corp'])
-        ->assertRedirect(route('clients.index'))
+        ->assertRedirect(route('clients.show', $acme))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Client renamed.']);
 
     expect($acme->refresh()->name)->toBe('Acme Corp')

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
-import { Ellipsis, Plus } from '@lucide/vue';
+import { Plus } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import TravelRequestApprovalController from '@/actions/App/Http/Controllers/Travel/TravelRequestApprovalController';
 import TravelRequestCancellationController from '@/actions/App/Http/Controllers/Travel/TravelRequestCancellationController';
@@ -10,6 +10,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DecideDialog from '@/components/DecideDialog.vue';
 import FactList from '@/components/FactList.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import MoreMenu from '@/components/MoreMenu.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import StatStrip from '@/components/StatStrip.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -18,17 +19,7 @@ import TravelExpenseList from '@/components/travel-requests/TravelExpenseList.vu
 import TravelExpenseSheet from '@/components/travel-requests/TravelExpenseSheet.vue';
 import { Button } from '@/components/ui/button';
 import { useOverlayRoute } from '@/composables/useOverlayRoute';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { formatDateRange } from '@/lib/dates';
 import { formatDays } from '@/lib/time-off';
 import { show as showEmployee } from '@/routes/employees';
@@ -153,9 +144,6 @@ const canAddExpense = computed(
 
 const cancelOpen = ref(false);
 
-/** The ⋯ button, anchoring its menu past the Tooltip around it. */
-const moreTrigger = ref<InstanceType<typeof Button> | null>(null);
-
 const { open: sheetOpen, setOpen: setSheetOpen } = useOverlayRoute(
     () => props.expenseSheet !== undefined,
     () => show(props.travelRequest.id).url,
@@ -257,34 +245,14 @@ watch(
                         ><Plus />Add Travel Expense</Link
                     >
                 </Button>
-                <DropdownMenu v-if="travelRequest.can_cancel">
-                    <Tooltip>
-                        <DropdownMenuTrigger as-child>
-                            <TooltipTrigger as-child>
-                                <Button
-                                    ref="moreTrigger"
-                                    variant="secondary"
-                                    size="icon"
-                                    class="max-sm:size-11 max-sm:flex-none!"
-                                    aria-label="More for this Travel Request"
-                                >
-                                    <Ellipsis />
-                                </Button>
-                            </TooltipTrigger>
-                        </DropdownMenuTrigger>
-                        <TooltipContent
-                            >More for this Travel Request</TooltipContent
-                        >
-                    </Tooltip>
-                    <DropdownMenuContent
-                        align="end"
-                        :reference="moreTrigger?.$el as HTMLElement | undefined"
+                <MoreMenu
+                    v-if="travelRequest.can_cancel"
+                    label="More for this Travel Request"
+                >
+                    <DropdownMenuItem @select="cancelOpen = true"
+                        >Cancel Travel Request…</DropdownMenuItem
                     >
-                        <DropdownMenuItem @select="cancelOpen = true"
-                            >Cancel Travel Request…</DropdownMenuItem
-                        >
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                </MoreMenu>
             </template>
         </PageHeader>
 

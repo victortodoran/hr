@@ -36,6 +36,42 @@ it('lists the Departments by name for an Employee who manages them', function ()
         );
 });
 
+it('counts each Department\'s Employees whose record the viewer may see, Former ones included, as the filtered Employees list shows them', function (Scope $scope, int $financeCount, int $salesCount) {
+    $finance = Department::factory()->create(['name' => 'Finance']);
+    $sales = Department::factory()->create(['name' => 'Sales']);
+    $ana = employeeWith([
+        Permission::ManageDepartments->value => null,
+        Permission::ViewEmployeeRecords->value => $scope,
+    ], ['department_id' => $sales->id]);
+    Employee::factory()->reportingTo($ana)->create(['department_id' => $finance->id]);
+    Employee::factory()->former()->reportingTo($ana)->create(['department_id' => $finance->id]);
+    Employee::factory()->create(['department_id' => $finance->id]);
+
+    actingAs($ana)->get(route('departments.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('showsEmployeeCounts', true)
+            ->where('departments.0.name', 'Finance')
+            ->where('departments.0.employee_count', $financeCount)
+            ->where('departments.1.name', 'Sales')
+            ->where('departments.1.employee_count', $salesCount)
+            ->etc(),
+        );
+})->with([
+    'everyone' => [Scope::Everyone, 3, 1],
+    'reports only' => [Scope::Reports, 2, 0],
+]);
+
+it('leaves out the Employee counts for a viewer who may not list Employees', function () {
+    Employee::factory()->create(['department_id' => Department::factory()->create(['name' => 'Finance'])->id]);
+
+    actingAs(admin())->get(route('departments.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('showsEmployeeCounts', false)
+            ->missing('departments.0.employee_count')
+            ->etc(),
+        );
+});
+
 it('refuses the Departments page to an Employee who does not manage Departments', function () {
     actingAs(employeeWith([Permission::ViewDirectory->value => null]))
         ->get(route('departments.index'))
@@ -46,7 +82,7 @@ it('lets an Admin create a Department', function () {
     actingAs(admin())
         ->post(route('departments.store'), ['name' => 'Finance'])
         ->assertRedirect(route('departments.index'))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Department created.']);
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Department added.']);
 
     expect(Department::query()->where('name', 'Finance')->exists())->toBeTrue();
 });

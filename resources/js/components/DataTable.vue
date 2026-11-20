@@ -13,7 +13,9 @@ import type { TableColumn } from '@/types';
  *
  * Optional extensions:
  * - `groupBy` starts a group row, filled by the `group` slot, wherever the
- *   key changes between rows (rows come in group order);
+ *   key changes between rows (rows come in group order); with `groups`,
+ *   every group listed gets its group row in that order, one with no rows
+ *   included, such as a Project no one is assigned to;
  * - `selection` adds a tick-box to every row, to every group row and to the
  *   header, each ticking the rows it covers;
  * - `onRowClick` opens a row's record when the row is clicked, ignoring
@@ -30,6 +32,8 @@ const props = defineProps<{
     rows: Row[];
     rowKey?: (row: Row) => PropertyKey;
     groupBy?: (row: Row) => string;
+    /** Every group in order, so a group with no rows still shows its group row. */
+    groups?: string[];
     selection?: {
         isSelected: (id: number) => boolean;
         toggle: (id: number, checked: boolean) => void;
@@ -76,6 +80,25 @@ const phoneColumns = computed(() => ({
 
 /** The rows in order, with a group row before each run of one group. */
 const lines = computed<Line[]>(() => {
+    const groupBy = props.groupBy;
+
+    if (props.groups && groupBy) {
+        return props.groups.flatMap((group): Line[] => {
+            const rows = props.rows
+                .map((row, index) => ({ row, index }))
+                .filter(({ row }) => groupBy(row) === group);
+
+            return [
+                { kind: 'group', group, rows: rows.map(({ row }) => row) },
+                ...rows.map(({ row, index }) => ({
+                    kind: 'row' as const,
+                    row,
+                    index,
+                })),
+            ];
+        });
+    }
+
     const result: Line[] = [];
     let current: Extract<Line, { kind: 'group' }> | null = null;
 
@@ -254,7 +277,7 @@ function cellClass(column: TableColumn): string[] {
                 <slot name="after-row" :row="line.row" />
             </div>
         </template>
-        <slot v-if="rows.length === 0" name="empty" />
+        <slot v-if="lines.length === 0" name="empty" />
     </div>
 
     <div
@@ -385,7 +408,7 @@ function cellClass(column: TableColumn): string[] {
                         </td>
                     </tr>
                 </template>
-                <tr v-if="rows.length === 0">
+                <tr v-if="lines.length === 0">
                     <td :colspan="columnCount">
                         <slot name="empty" />
                     </td>

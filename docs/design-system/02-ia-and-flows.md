@@ -163,7 +163,7 @@ On a phone, the sheets become full-height bottom sheets with a sticky footer but
     - The chevron expands the **Pay history** timeline: Upcoming · In effect · Past, each with an ⋯ menu, and "Add a Pay change" inline (Kind, Amount, Takes effect from).
     - Ended Assignments sit at the bottom. **Add Assignment** opens a sheet.
 4. **Roles (settings template).**
-    - Sub-nav · Role list · Role detail. The detail shows Name, "Give to new Employees" and a **permission matrix**: groups (Employees, Assignments, Pay, …) with "n of m", one row per Permission, and a `ScopeControl` per row (None · Own · Reports · Everyone, with only valid options enabled).
+    - Sub-nav · Role list · Role detail. The detail shows Name, "New Employees get this Role" and a **permission matrix**: groups (Employees, Assignments, Pay, …) with "n of m", one row per Permission, and a `ScopeControl` per row (None · Own · Reports · Everyone, with only valid options enabled).
     - A sticky save bar ("3 unsaved changes · Cancel · Save changes") and People holding the Role below.
     - For Admin, an info Callout with the matrix collapsed.
 5. **Projects and Clients (list template).**

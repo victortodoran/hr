@@ -15,7 +15,8 @@ final class ProjectPage
 {
     /**
      * The Project and its team: the Assignments to it that the viewer may
-     * see, by Employee and then from the earliest. Whether the viewer may
+     * see, by Employee and then from the earliest, and how many of them run
+     * today and with how much Capacity in all. Whether the viewer may
      * change or delete it, and if so the Clients it can be for.
      *
      * @return array<string, mixed>
@@ -23,6 +24,7 @@ final class ProjectPage
     public static function props(Employee $actor, Project $project): array
     {
         $canManage = $actor->can('update', $project);
+        $runningToday = $project->assignments()->visibleTo($actor)->runningOn(today());
 
         return [
             'project' => [
@@ -38,6 +40,10 @@ final class ProjectPage
                 ->orderByEmployeeName()
                 ->get()
                 ->map(fn (Assignment $assignment): array => TeamMember::of($assignment)),
+            'teamToday' => [
+                'employees' => (clone $runningToday)->distinct()->count('employee_id'),
+                'capacity' => (int) $runningToday->sum('capacity'),
+            ],
             'canManage' => $canManage,
             'clients' => $canManage ? ProjectFormPage::clients() : [],
         ];

@@ -1,19 +1,56 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
-import { FolderKanban } from '@lucide/vue';
+import { Pencil } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import TeamTable from '@/components/assignments/TeamTable.vue';
-import EmptyState from '@/components/EmptyState.vue';
-import PageHeader from '@/components/PageHeader.vue';
+import MoreMenu from '@/components/MoreMenu.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import ClientDialogs from '@/components/projects/ClientDialogs.vue';
+import { Button } from '@/components/ui/button';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { formatPeriod } from '@/lib/dates';
 import { index, show } from '@/routes/clients';
 import { show as showProject } from '@/routes/projects';
-import type { Choice, ClientProject } from '@/types';
+import type { Choice, ClientProject, TeamAssignment } from '@/types';
 
+/**
+ * A Client and who works for it today (rule L12): one table of the
+ * Assignments running today on its Projects, grouped by Project, each
+ * group row naming the Project and its dates; a Project no one is
+ * assigned to keeps its group row, saying so. Rename… and the ⋯ menu's
+ * Delete… open the same dialogs as the Clients' row menus (K7, X6).
+ */
 const props = defineProps<{
     client: Choice;
     projects: ClientProject[];
 }>();
+
+/** The Client as the Rename and Delete dialogs take it. */
+const record = computed(() => ({
+    ...props.client,
+    projects_count: props.projects.length,
+}));
+
+const renameOpen = ref(false);
+const deleteOpen = ref(false);
+
+type ProjectAssignment = TeamAssignment & { project_id: number };
+
+const assignments = computed<ProjectAssignment[]>(() =>
+    props.projects.flatMap((project) =>
+        project.team.map((member) => ({ ...member, project_id: project.id })),
+    ),
+);
+
+const groups = computed(() =>
+    props.projects.map((project) => String(project.id)),
+);
+
+/** The Project a group row stands for, as a list of one to loop over. */
+function projectsOf(group: string): ClientProject[] {
+    return props.projects.filter((project) => String(project.id) === group);
+}
 
 setLayoutProps({
     breadcrumbs: [
@@ -29,37 +66,56 @@ setLayoutProps({
     <PageContainer width="full">
         <PageHeader
             :title="client.name"
-            description="Its Projects, and who is assigned to each today"
-        />
-
-        <section
-            v-for="project in projects"
-            :key="project.id"
-            class="flex flex-col gap-3"
+            description="This Client's Projects, and the Assignments you can see on each today."
         >
-            <div class="flex items-baseline justify-between gap-4">
-                <h2 class="font-medium">
+            <template #actions>
+                <Button variant="secondary" @click="renameOpen = true"
+                    ><Pencil />Rename…</Button
+                >
+                <MoreMenu label="More for this Client">
+                    <DropdownMenuItem
+                        variant="destructive"
+                        @select="deleteOpen = true"
+                        >Delete Client…</DropdownMenuItem
+                    >
+                </MoreMenu>
+            </template>
+        </PageHeader>
+
+        <TeamTable
+            :assignments="assignments"
+            :group-by="(row) => String(row.project_id)"
+            :groups="groups"
+            empty="The Projects done for this Client appear here. It has none yet."
+        >
+            <template #group="{ group, rows }">
+                <div
+                    v-for="project in projectsOf(group)"
+                    :key="project.id"
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5"
+                >
                     <Link
                         :href="showProject(project.id)"
-                        class="underline-offset-4 hover:underline"
+                        class="font-medium text-foreground underline-offset-4 hover:underline"
                         >{{ project.name }}</Link
                     >
-                </h2>
-                <p class="text-sm text-muted-foreground">
-                    {{ formatPeriod(project.start_date, project.end_date) }}
-                </p>
-            </div>
-            <TeamTable
-                :assignments="project.team"
-                empty="Nobody you can see is assigned to this Project today."
-            />
-        </section>
+                    <span class="text-muted-foreground tabular-nums">{{
+                        formatPeriod(project.start_date, project.end_date)
+                    }}</span>
+                    <span
+                        v-if="rows.length === 0"
+                        class="text-muted-foreground"
+                        data-test="no-one-assigned"
+                        >· No one you can see is assigned today</span
+                    >
+                </div>
+            </template>
+        </TeamTable>
 
-        <div v-if="projects.length === 0" class="rounded-lg border">
-            <EmptyState
-                :icon="FolderKanban"
-                message="The Projects done for this Client appear here. It has none yet."
-            />
-        </div>
+        <ClientDialogs
+            v-model:rename-open="renameOpen"
+            v-model:delete-open="deleteOpen"
+            :client="record"
+        />
     </PageContainer>
 </template>
