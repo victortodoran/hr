@@ -4,7 +4,6 @@ namespace App\Pages\Employees;
 
 use App\Enums\EmployeePageTab;
 use App\Enums\EmploymentStatus;
-use App\Enums\PeriodMode;
 use App\Enums\Permission;
 use App\Models\Assignment;
 use App\Models\CompanySettings;
@@ -51,7 +50,7 @@ final class EmployeePage
      *
      * @return array<string, mixed>
      */
-    public static function props(Employee $actor, Employee $employee, ?EmployeePageTab $asked, ?Period $period = null): array
+    public static function props(Employee $actor, Employee $employee, ?EmployeePageTab $asked, Period $period): array
     {
         $canViewAssignments = $actor->can('viewAny', [Assignment::class, $employee]);
         $canManage = $actor->can('create', [Assignment::class, $employee]);
@@ -72,7 +71,6 @@ final class EmployeePage
             $lists['performance'] ? EmployeePageTab::Performance : null,
         ]));
         $tab = in_array($asked, $tabs, true) ? $asked : EmployeePageTab::Overview;
-        $period ??= Period::month(today()->format('Y-m'));
 
         return [
             'employee' => [
@@ -126,19 +124,14 @@ final class EmployeePage
     /**
      * The Work tab: the Employee's Work Entries in the Period, as the Work
      * Entries page lists them for this Employee, oldest first and 25 to a
-     * page, with their total hours and those Declined. A Period starting
-     * after today shows this month instead, and a custom one ends today, as
-     * on that page.
+     * page, with their total hours and those Declined. The Period is held
+     * back to today, as on that page.
      *
      * @return array{today: string, period: Period, entries: mixed, total: float|int, declinedTotal: float|int}
      */
     private static function work(Employee $actor, Employee $employee, Period $period): array
     {
-        if ($period->from->isAfter(today())) {
-            $period = Period::month(today()->format('Y-m'));
-        } elseif ($period->mode === PeriodMode::Custom && $period->to->isAfter(today())) {
-            $period = Period::custom($period->from, today());
-        }
+        $period = $period->notAfterToday();
 
         $list = WorkEntryListPage::props($actor, ['period' => $period, 'employee' => $employee->id, 'project' => null, 'state' => null]);
         abort_unless($list['filters']['employee'] === $employee->id, 403); // @pest-mutate-ignore (the tab is only offered to viewers the list shows the Employee to)
@@ -188,14 +181,7 @@ final class EmployeePage
             ->withAtRiskGoalsCount()
             ->orderByDesc('year')
             ->get()
-            ->map(fn (PerformanceEvaluation $evaluation): array => [
-                'id' => $evaluation->id,
-                'year' => $evaluation->year,
-                'state' => $evaluation->state->value,
-                'goals_count' => (int) $evaluation->goals_count,
-                'at_risk_goals_count' => $evaluation->openAtRiskGoalsCount(),
-                'outcome' => $evaluation->completedOutcome()?->value,
-            ])
+            ->map(fn (PerformanceEvaluation $evaluation): array => $evaluation->listed())
             ->all());
     }
 

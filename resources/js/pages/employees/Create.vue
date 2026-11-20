@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import EmployeeController from '@/actions/App/Http/Controllers/Employees/EmployeeController';
 import EmployeeFields from '@/components/employees/EmployeeFields.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
 import { Button } from '@/components/ui/button';
+import UnsavedChangesDialog from '@/components/UnsavedChangesDialog.vue';
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges';
 import { employeeFields, employeePayload } from '@/lib/employees';
 import { create, index } from '@/routes/employees';
 import type { Choice, ManagerChoice } from '@/types';
@@ -22,7 +25,8 @@ defineOptions({
 /**
  * Adding an Employee (rule L13): their record and internal Job Title, in
  * the form template's sections. Adding them invites them to set a
- * password; Cancel returns to the Employees.
+ * password; Cancel returns to the Employees. Leaving with anything
+ * entered asks first (V9).
  */
 defineProps<{
     departments: Choice[];
@@ -34,6 +38,8 @@ const form = useForm({ ...employeeFields(), job_title: '' });
 function addEmployee(): void {
     form.transform(employeePayload).submit(EmployeeController.store());
 }
+
+const guard = useUnsavedChanges(computed(() => form.isDirty));
 </script>
 
 <template>
@@ -68,5 +74,13 @@ function addEmployee(): void {
                 </Button>
             </div>
         </form>
+
+        <UnsavedChangesDialog
+            :open="guard.pending.value !== null"
+            title="Discard this new Employee"
+            description="They haven't been added yet. If you leave now, everything you entered will be lost."
+            @keep="guard.keep"
+            @discard="guard.discard"
+        />
     </PageContainer>
 </template>

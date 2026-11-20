@@ -56,3 +56,19 @@ it('fits the Add Employee form on a phone, its paired dates stacked, and cancels
         ->assertPathIs('/employees')
         ->assertNoJavaScriptErrors();
 });
+
+it('asks before leaving the Add Employee form with anything entered', function () {
+    actingAs(employeeWith([Permission::AddEmployees->value => null, Permission::ViewEmployeeRecords->value => Scope::Everyone]));
+
+    visit(route('employees.create'))
+        ->fill('#name', 'Cara Lane')
+        ->click('internal:role=link[name="Cancel"s]')
+        ->assertSee('Discard this new Employee')
+        ->click('internal:role=button[name="Keep editing"s]')
+        ->assertPathIs('/employees/create')
+        ->assertValue('#name', 'Cara Lane')
+        ->click('internal:role=link[name="Cancel"s]')
+        ->click('internal:role=button[name="Discard"s]')
+        ->assertPathIs('/employees')
+        ->assertNoJavaScriptErrors();
+});

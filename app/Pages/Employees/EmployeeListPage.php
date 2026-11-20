@@ -22,17 +22,18 @@ final class EmployeeListPage
      * Managers to filter by, only those of Employees the viewer may see;
      * and whether the viewer may add an Employee.
      *
+     * @param  array{search: string, status: EmploymentStatus|null, department: int|null, manager: Employee|null}  $filters
      * @return array<string, mixed>
      */
-    public static function props(Employee $actor, string $search, ?EmploymentStatus $status, ?int $departmentId, ?int $managerId): array
+    public static function props(Employee $actor, array $filters): array
     {
         $matching = self::visibleTo($actor)
-            ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
-            ->when($departmentId, fn (EmployeeBuilder $query, int $departmentId) => $query->where('department_id', $departmentId))
-            ->when($managerId, fn (EmployeeBuilder $query, int $managerId) => $query->where('effective_manager_id', $managerId));
+            ->whereLike('name', '%'.addcslashes($filters['search'], '\\%_').'%')
+            ->when($filters['department'], fn (EmployeeBuilder $query, int $departmentId) => $query->where('department_id', $departmentId))
+            ->when($filters['manager'], fn (EmployeeBuilder $query, Employee $manager) => $query->effectivelyManagedBy($manager));
 
         $employees = $matching->clone()
-            ->when($status, fn (EmployeeBuilder $query, EmploymentStatus $status) => $query->inEmploymentStatus($status))
+            ->when($filters['status'], fn (EmployeeBuilder $query, EmploymentStatus $status) => $query->inEmploymentStatus($status))
             ->with(['department:id,name', 'effectiveManager:id,name', 'internalAssignment:id,employee_id,project_id,job_title'])
             ->orderBy('name')
             ->orderBy('id')
@@ -53,10 +54,10 @@ final class EmployeeListPage
 
         return [
             'employees' => $employees,
-            'search' => $search,
-            'status' => $status?->value,
-            'department' => $departmentId,
-            'manager' => $managerId,
+            'search' => $filters['search'],
+            'status' => $filters['status']?->value,
+            'department' => $filters['department'],
+            'manager' => $filters['manager']?->id,
             'counts' => ['all' => $counts->sum(), ...$counts->all()],
             'departments' => Department::query()
                 ->whereIn('id', self::visibleTo($actor)->toBase()->select('department_id'))

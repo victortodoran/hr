@@ -37,7 +37,7 @@ it('saves a changed Leaving Date, and asks before leaving with unsaved changes',
 
     pickDate($page, '#leaving_date', '2099-06-30')
         ->click('internal:role=link[name="Cancel"s]')
-        ->assertSee('Discard your changes?')
+        ->assertSee('Discard changes')
         ->click('internal:role=button[name="Keep editing"s]')
         ->assertPathIs("/employees/{$cara->id}/edit")
         ->click('internal:role=button[name="Save"s]')

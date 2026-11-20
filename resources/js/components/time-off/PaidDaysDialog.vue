@@ -21,7 +21,7 @@ import type { Choice } from '@/types';
 
 /**
  * Edits an Employee's Paid Days per year in a small dialog, opened by an
- * "Edit" button and closed once saved. It warns that the number counts for
+ * "Edit…" button (B8) and closed once saved. It warns that the number counts for
  * every year, past ones included.
  */
 defineProps<{
@@ -39,8 +39,8 @@ const open = ref(false);
             <Button
                 variant="secondary"
                 size="sm"
-                aria-label="Edit Paid Days per year"
-                >Edit</Button
+                aria-label="Edit Paid Days per year…"
+                >Edit…</Button
             >
         </DialogTrigger>
         <DialogContent>

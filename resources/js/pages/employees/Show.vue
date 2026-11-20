@@ -26,8 +26,10 @@ import FactList from '@/components/FactList.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PayDialog from '@/components/pay/PayDialog.vue';
+import PersonCell from '@/components/PersonCell.vue';
 import StatStrip from '@/components/StatStrip.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
+import TextLink from '@/components/TextLink.vue';
 import PaidDaysDialog from '@/components/time-off/PaidDaysDialog.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -112,10 +114,6 @@ const props = withDefaults(
     }>(),
     { projects: () => [] },
 );
-
-/** A link inside text: underlined, so it reads as one without hovering. */
-const linkClass =
-    'rounded-sm text-foreground underline decoration-border-strong underline-offset-4 hover:decoration-current focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
 const tabLabels = computed<Record<EmployeePageTab, string>>(() => ({
     overview: 'Overview',
@@ -239,7 +237,7 @@ const timeOffColumns: TableColumn[] = [
 
 const performanceColumns: TableColumn[] = [
     { key: 'year', label: 'Year' },
-    { key: 'goals_count', label: 'Goals' },
+    { key: 'goals_count', label: 'Goals', align: 'end' },
     { key: 'state', label: 'Status', align: 'end' },
 ];
 
@@ -277,7 +275,7 @@ setLayoutProps({
                         v-if="employee.job_title"
                         class="inline-flex items-center gap-1.5"
                     >
-                        <Briefcase class="size-3.5" aria-hidden="true" />{{
+                        <Briefcase class="size-4" aria-hidden="true" />{{
                             employee.job_title
                         }}
                     </li>
@@ -286,19 +284,17 @@ setLayoutProps({
                             v-if="record.department"
                             class="inline-flex items-center gap-1.5"
                         >
-                            <Building2 class="size-3.5" aria-hidden="true" />{{
+                            <Building2 class="size-4" aria-hidden="true" />{{
                                 record.department
                             }}
                         </li>
                         <li class="inline-flex items-center gap-1.5">
-                            <UserRound class="size-3.5" aria-hidden="true" />
+                            <UserRound class="size-4" aria-hidden="true" />
                             <template v-if="record.manager"
                                 >Manager
-                                <Link
-                                    :href="show(record.manager.id)"
-                                    :class="linkClass"
-                                    >{{ record.manager.name }}</Link
-                                ></template
+                                <TextLink :href="show(record.manager.id)">{{
+                                    record.manager.name
+                                }}</TextLink></template
                             >
                             <template v-else>No Manager</template>
                         </li>
@@ -306,16 +302,15 @@ setLayoutProps({
                             v-if="since"
                             class="inline-flex items-center gap-1.5"
                         >
-                            <CalendarDays
-                                class="size-3.5"
-                                aria-hidden="true"
-                            />{{ since }}
+                            <CalendarDays class="size-4" aria-hidden="true" />{{
+                                since
+                            }}
                         </li>
                         <li
                             class="inline-flex min-w-0 items-center gap-1.5 break-all"
                         >
                             <Mail
-                                class="size-3.5 shrink-0"
+                                class="size-4 shrink-0"
                                 aria-hidden="true"
                             />{{ record.email }}
                         </li>
@@ -343,10 +338,9 @@ setLayoutProps({
                         ? ' and '
                         : ', '
                 }}</template
-                ><Link
+                ><TextLink
                     :href="report.can_edit ? edit(report.id) : show(report.id)"
-                    :class="linkClass"
-                    >{{ report.name }}</Link
+                    >{{ report.name }}</TextLink
                 ></template
             >
             still
@@ -384,11 +378,9 @@ setLayoutProps({
                     <EmployeePageSection v-if="record" title="Record">
                         <FactList :facts="recordFacts">
                             <template v-if="record.manager" #fact-Manager>
-                                <Link
-                                    :href="show(record.manager.id)"
-                                    :class="linkClass"
-                                    >{{ record.manager.name }}</Link
-                                >
+                                <TextLink :href="show(record.manager.id)">{{
+                                    record.manager.name
+                                }}</TextLink>
                             </template>
                         </FactList>
                     </EmployeePageSection>
@@ -630,7 +622,10 @@ setLayoutProps({
                             <StatusBadge :state="row.state" />
                         </template>
                         <template #cell-decided_by="{ row }">
-                            {{ row.decided_by ?? '' }}
+                            <PersonCell
+                                v-if="row.decided_by"
+                                :name="row.decided_by"
+                            />
                         </template>
                         <template #empty>
                             <EmptyState
@@ -671,6 +666,11 @@ setLayoutProps({
                                 data-test="performance-evaluation"
                                 >{{ row.year }}</Link
                             >
+                        </template>
+                        <template #cell-goals_count="{ row }">
+                            <span class="tabular-nums">{{
+                                row.goals_count
+                            }}</span>
                         </template>
                         <template #cell-state="{ row }">
                             <div

@@ -106,6 +106,24 @@ final readonly class Period implements Arrayable
     }
 
     /**
+     * The period held back to today, for records never in the future: one
+     * starting after today gives way to the current week, for a week, or
+     * else the current month, and a custom one ends today at the latest.
+     */
+    public function notAfterToday(): self
+    {
+        if ($this->from->isAfter(today())) {
+            return $this->mode === PeriodMode::Week ? self::week(today()) : self::month(today()->format('Y-m'));
+        }
+
+        if ($this->mode === PeriodMode::Custom && $this->to->isAfter(today())) {
+            return self::custom($this->from, today());
+        }
+
+        return $this;
+    }
+
+    /**
      * Whether a day falls within the period.
      */
     public function contains(DateTimeInterface $day): bool

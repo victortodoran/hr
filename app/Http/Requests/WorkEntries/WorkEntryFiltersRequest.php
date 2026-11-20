@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\WorkEntries;
 
-use App\Enums\PeriodMode;
 use App\Support\Period;
 use App\Support\PeriodRules;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -46,16 +45,8 @@ class WorkEntryFiltersRequest extends FormRequest
      */
     public function filters(): array
     {
-        $period = Period::fromQuery($this->query()) ?? Period::month(today()->format('Y-m'));
-
-        if ($period->from->isAfter(today())) {
-            $period = $period->mode === PeriodMode::Week ? Period::week(today()) : Period::month(today()->format('Y-m'));
-        } elseif ($period->mode === PeriodMode::Custom && $period->to->isAfter(today())) {
-            $period = Period::custom($period->from, today());
-        }
-
         return [
-            'period' => $period,
+            'period' => (Period::fromQuery($this->query()) ?? Period::month(today()->format('Y-m')))->notAfterToday(),
             'employee' => $this->filled('employee') ? $this->integer('employee') : null,
             'project' => $this->filled('project') ? $this->integer('project') : null,
         ];

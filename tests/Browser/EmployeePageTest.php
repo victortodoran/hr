@@ -224,7 +224,7 @@ it('edits an Employee\'s Paid Days per year in a dialog that warns it changes pa
 
     visit(route('employees.show', ['employee' => $cara, 'tab' => 'time-off']))
         ->assertSee('20 days')
-        ->click('internal:role=button[name="Edit Paid Days per year"s]')
+        ->click('internal:role=button[name="Edit Paid Days per year…"s]')
         ->assertSee('This also changes past years')
         ->fill('#paid-days', '25')
         ->click('internal:role=button[name="Save"s]')

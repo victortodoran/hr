@@ -31,7 +31,7 @@ class EmployeeController extends Controller
      */
     public function index(#[CurrentUser] Employee $actor, EmployeeListRequest $request): Response
     {
-        return Inertia::render('employees/Index', EmployeeListPage::props($actor, $request->search(), $request->status(), $request->departmentId(), $request->managerId()));
+        return Inertia::render('employees/Index', EmployeeListPage::props($actor, $request->filters()));
     }
 
     /**
@@ -69,7 +69,7 @@ class EmployeeController extends Controller
     {
         $tab = $request->query('tab');
 
-        return Inertia::render('employees/Show', EmployeePage::props($actor, $employee, is_string($tab) ? EmployeePageTab::tryFrom($tab) : null, Period::fromQuery($request->query())));
+        return Inertia::render('employees/Show', EmployeePage::props($actor, $employee, is_string($tab) ? EmployeePageTab::tryFrom($tab) : null, Period::fromQuery($request->query()) ?? Period::month(today()->format('Y-m'))));
     }
 
     /**

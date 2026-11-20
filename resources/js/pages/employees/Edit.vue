@@ -9,6 +9,7 @@ import EmploymentStatusBadge from '@/components/employees/EmploymentStatusBadge.
 import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
+import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import UnsavedChangesDialog from '@/components/UnsavedChangesDialog.vue';
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges';
@@ -77,11 +78,9 @@ const guard = useUnsavedChanges(computed(() => form.isDirty));
             </p>
             <ul class="mt-1 list-inside list-disc">
                 <li v-for="report in reportsNeedingAManager" :key="report.id">
-                    <Link
-                        :href="edit(report.id)"
-                        class="font-medium underline underline-offset-4"
-                        >{{ report.name }}</Link
-                    >
+                    <TextLink :href="edit(report.id)">{{
+                        report.name
+                    }}</TextLink>
                 </li>
             </ul>
         </Callout>
@@ -130,7 +129,7 @@ const guard = useUnsavedChanges(computed(() => form.isDirty));
 
         <UnsavedChangesDialog
             :open="guard.pending.value !== null"
-            title="Discard your changes?"
+            title="Discard changes"
             :description="`Your changes to ${employee.name}'s record aren't saved yet.`"
             @keep="guard.keep"
             @discard="guard.discard"

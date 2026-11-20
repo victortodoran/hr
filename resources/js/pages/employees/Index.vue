@@ -229,7 +229,7 @@ function open(row: EmployeeListEntry): void {
                         message="Employees whose record you may see appear here. There are none yet."
                     >
                         <template v-if="canAdd" #action>
-                            <Button as-child>
+                            <Button variant="secondary" as-child>
                                 <Link :href="create()">Add Employee</Link>
                             </Button>
                         </template>
