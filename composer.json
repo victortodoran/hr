@@ -85,6 +85,7 @@
             "@lint:builders",
             "@lint:browser-tests",
             "@lint:headings",
+            "@lint:colours",
             "npm run build -- --logLevel warn",
             "npm run types:check",
             "@test",
@@ -97,6 +98,7 @@
         "lint:builders": "@php bin/lint-builders.php",
         "lint:browser-tests": "bin/lint-browser-tests.sh",
         "lint:headings": "bin/lint-headings.sh",
+        "lint:colours": "bin/lint-colours.sh",
         "types:check": [
             "phpstan analyse --memory-limit=1G"
         ],
