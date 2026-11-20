@@ -6,18 +6,9 @@ use App\Enums\TravelRequestState;
 use App\Models\Employee;
 use App\Models\TravelRequest;
 
-/**
- * Declines a Pending Travel Request, as the Employee's effective Manager.
- */
 class DeclineTravelRequest
 {
-    /**
-     * Decline the Travel Request, recording who declined it, when and why,
-     * and return whether it changed. It is kept on record and the Employee
-     * sees the reason. The write only changes one still Pending, so a
-     * decision or cancellation made since the policy check is never undone;
-     * then nothing changes and false is returned.
-     */
+    /** Only a still-Pending row changes, so a decision made since the policy check wins. */
     public function decline(TravelRequest $travelRequest, Employee $actor, string $reason): bool
     {
         $changed = TravelRequest::query()

@@ -1,10 +1,4 @@
 <script setup lang="ts">
-/**
- * The column every page sits in (rule L2): `full` grows with the screen up
- * to 1600px, for lists, details, dashboards and settings; `form` is a
- * 672px column for form pages. Gutters follow F13 and the vertical rhythm
- * F14: 20px from the PageHeader to the content, 32px between sections.
- */
 withDefaults(
     defineProps<{
         width?: 'full' | 'form';

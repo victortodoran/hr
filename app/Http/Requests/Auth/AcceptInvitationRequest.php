@@ -11,10 +11,7 @@ class AcceptInvitationRequest extends FormRequest
 {
     use PasswordValidationRules;
 
-    /**
-     * Emails are compared and stored in lowercase, so capitals never make
-     * two addresses different.
-     */
+    /** Emails are compared and stored in lowercase, so capitals never make two addresses different. */
     protected function prepareForValidation(): void
     {
         if (is_string($this->input('email'))) {
@@ -22,11 +19,7 @@ class AcceptInvitationRequest extends FormRequest
         }
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         return [

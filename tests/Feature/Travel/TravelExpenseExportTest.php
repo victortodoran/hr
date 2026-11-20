@@ -22,21 +22,12 @@ beforeEach(function () {
     CompanySettings::factory()->create(['currency' => 'RON']);
 });
 
-/**
- * Fay from Finance, who may view the travel of everyone (or the given
- * grants instead).
- *
- * @param  array<string, Scope|null>|null  $grants
- */
+/** @param  array<string, Scope|null>|null  $grants */
 function travelExpenseExporter(?array $grants = null): Employee
 {
     return employeeWith($grants ?? [Permission::ViewTravel->value => Scope::Everyone], ['name' => 'Fay']);
 }
 
-/**
- * An Approved Travel Request of the Employee's on their Assignment to the
- * Project, from the first to the last date.
- */
 function exportedTripOf(Employee $employee, string $destination, string $first = '2026-11-03', string $last = '2026-11-05', string $project = 'Relaunch'): TravelRequest
 {
     return TravelRequest::factory()->on(assignmentOf($employee, $project))->approved()

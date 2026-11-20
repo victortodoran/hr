@@ -13,10 +13,7 @@ use function Pest\Laravel\actingAs;
 
 covers(AccessServiceProvider::class, Employee::class, Permission::class, Scope::class, RolePermission::class, Role::class);
 
-/*
- * Throwaway routes keep the Permission check apart from any real page: one
- * about a target Employee, one company-wide.
- */
+/* Throwaway routes keep the Permission check apart from any real page. */
 beforeEach(function () {
     Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/_test/employees/{employee}', fn (Employee $employee) => 'ok')

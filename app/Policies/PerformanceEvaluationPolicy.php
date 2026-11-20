@@ -7,26 +7,12 @@ use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
 
 /**
- * Who may act on Performance Evaluations. Every Employee sees their own
- * with no Permission needed, and the Permissions for reading them
- * (Permission::seeingPerformanceEvaluations()) let others read them, never
- * write them. Only the Employee's effective Manager creates
- * one, gives, changes or removes its Goals, gives their Outcomes and
- * Completes it: no Role grants that, and
- * since nobody is their own effective Manager, nobody sets their own.
- * The Employee and their effective Manager both change its Goals'
- * Progress and write Comments on them while it is Open.
+ * No Role grants writing them, and since nobody is their own effective
+ * Manager, nobody writes their own.
  */
 class PerformanceEvaluationPolicy
 {
-    /**
-     * The Performance Evaluations page is for Employees who are the
-     * effective Manager of anyone, Former Employees included, since a
-     * Former Employee's Evaluation can still be written, and for anyone
-     * one of the Permissions for reading them
-     * (Permission::seeingPerformanceEvaluations()) reaches beyond
-     * themselves.
-     */
+    /** Former Employees count, since a Former Employee's Evaluation can still be written. */
     public function viewList(Employee $actor): bool
     {
         return $actor->managesAnyone()
@@ -46,11 +32,6 @@ class PerformanceEvaluationPolicy
             || $actor->reachesThrough(Permission::seeingPerformanceEvaluations(), $performanceEvaluation->employee);
     }
 
-    /**
-     * The New Performance Evaluation page is for Employees who may create
-     * at least one: someone they effectively manage still lacks one for
-     * the current or the next year.
-     */
     public function createAny(Employee $actor): bool
     {
         foreach (PerformanceEvaluation::creatableYears() as $year) {
@@ -62,52 +43,32 @@ class PerformanceEvaluationPolicy
         return false;
     }
 
-    /**
-     * Only the Employee's effective Manager may create their Performance
-     * Evaluation, and only for the current or the next year, while the
-     * Employee works for the company on some day of it and has none for it
-     * yet.
-     */
     public function create(Employee $actor, Employee $employee, int $year): bool
     {
         return Employee::query()->awaitingPerformanceEvaluationFrom($actor, $year)->whereKey($employee->id)->exists();
     }
 
-    /**
-     * Only the Employee's effective Manager may give, change or remove the
-     * Goals of their Performance Evaluation, give their Outcomes and its
-     * summary, and Complete it, and only while it is Open.
-     */
     public function edit(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
         return $performanceEvaluation->state->isEditable()
             && $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee);
     }
 
-    /**
-     * Changing the Progress of its Goals: the Employee whose Evaluation it
-     * is and their effective Manager, only while it is Open. No Role
-     * grants it, so readers see the Progress without changing it.
-     */
+    /** No Role grants it, so readers see the Progress without changing it. */
     public function changeProgress(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
         return $this->takesPartWhileOpen($actor, $performanceEvaluation);
     }
 
-    /**
-     * Writing Comments on its Goals: the Employee whose Evaluation it is
-     * and their effective Manager, only while it is Open. No Role grants
-     * it, so readers read the thread without writing in it.
-     */
+    /** No Role grants it, so readers read the thread without writing in it. */
     public function comment(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
         return $this->takesPartWhileOpen($actor, $performanceEvaluation);
     }
 
     /**
-     * Seeing the Outcomes and summary of a Performance Evaluation the actor
-     * may open: its effective Manager always, while writing them, and
-     * anyone else only once it is Completed.
+     * Anyone but the effective Manager sees them only once Completed, while the
+     * Manager may still be writing them.
      */
     public function seeOutcomes(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
@@ -115,12 +76,7 @@ class PerformanceEvaluationPolicy
             || $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee);
     }
 
-    /**
-     * Reopening a Completed Performance Evaluation, sending it back to Open
-     * so its Manager can correct it: only someone whom reopen performance
-     * evaluations reaches the Employee for. Being their Manager isn't
-     * enough on its own, and nobody reopens their own.
-     */
+    /** Being their Manager isn't enough on its own, and nobody reopens their own. */
     public function reopen(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
         return $performanceEvaluation->isCompleted()
@@ -128,10 +84,6 @@ class PerformanceEvaluationPolicy
             && $actor->reachesThrough([Permission::ReopenPerformanceEvaluations], $performanceEvaluation->employee);
     }
 
-    /**
-     * Whether it is Open and the actor is its Employee or their effective
-     * Manager, the two who keep its Goals' Progress and Comments.
-     */
     private function takesPartWhileOpen(Employee $actor, PerformanceEvaluation $performanceEvaluation): bool
     {
         return $performanceEvaluation->state->isEditable()
@@ -139,10 +91,6 @@ class PerformanceEvaluationPolicy
                 || $this->isEffectiveManagerOf($actor, $performanceEvaluation->employee));
     }
 
-    /**
-     * Whether the actor is the Employee's effective Manager, the one who
-     * writes their Performance Evaluations.
-     */
     private function isEffectiveManagerOf(Employee $actor, Employee $employee): bool
     {
         return Employee::query()->effectivelyManagedBy($actor)->whereKey($employee->id)->exists();

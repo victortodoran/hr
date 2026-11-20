@@ -38,27 +38,14 @@ import type {
     Scope,
 } from '@/types';
 
-/**
- * The Role detail of the settings template, edited in place: its name,
- * whether new Employees get it, and its Permissions as a matrix grouped by
- * area with "n of m" per group and a ScopeControl (or a Switch, for a
- * company-wide Permission) per row. Changes collect in a sticky save bar
- * that counts them (rule V10), and leaving with any asks first. Admin
- * shows a Callout instead, its matrix collapsed. A new Role also picks the
- * people who will hold it, saved with it.
- */
 const props = defineProps<{
-    /** The Role being edited, or null when making a new one. */
     role: RoleRecord | null;
     roles: RoleRecord[];
     permissions: PermissionChoice[];
-    /** Every Employee who can be given a Role. */
     employees: RoleCandidate[];
-    /** Where Cancel leads on a new Role. */
     cancelTo: string;
 }>();
 
-/** The name typed so far, which the Role list shows for a new Role. */
 const draftName = defineModel<string>('draftName', { default: '' });
 
 const creating = computed(() => props.role === null);
@@ -80,7 +67,6 @@ function snapshot(data: RoleForm): RoleForm {
     };
 }
 
-/** The Role as last saved, which changes are counted against. */
 const initial = ref<RoleForm>(
     snapshot({
         name: props.role?.name ?? '',
@@ -98,8 +84,6 @@ watch(
     { immediate: true },
 );
 
-/* Details */
-
 const takenName = computed(() => {
     const name = form.name.trim();
 
@@ -116,7 +100,6 @@ const nameError = computed(() =>
         : form.errors.name,
 );
 
-/** The Role new Employees get now, when it's another one. */
 const currentDefault = computed(() =>
     props.roles.find(
         (other) => other.given_to_new_employees && other.id !== props.role?.id,
@@ -141,11 +124,8 @@ watch(copyFrom, (id) => {
     form.permissions = { ...source?.permissions };
 });
 
-/* Permissions */
-
 const groups = computed(() => groupPermissions(props.permissions));
 
-/** Admin's matrix is collapsed until asked for. */
 const showAdminMatrix = ref(false);
 
 function isGranted(permission: PermissionChoice): boolean {
@@ -195,8 +175,6 @@ function grantedIn(permissions: PermissionChoice[]): number {
     return permissions.filter(isGranted).length;
 }
 
-/* People, for a new Role */
-
 const people = computed(
     () =>
         new Map<number, RoleHolder>(
@@ -221,8 +199,6 @@ function addHolders(ids: number[]): void {
 function removeHolder(id: number): void {
     form.holders = form.holders.filter((holder) => holder !== id);
 }
-
-/* Saving */
 
 const changes = computed(() => {
     let count = 0;
@@ -249,7 +225,6 @@ const blocked = computed(
         (!creating.value && !dirty.value),
 );
 
-/** Refusals the server gave that no field shows, such as leaving nobody able to manage Roles. */
 const otherErrors = computed(() =>
     Object.entries(form.errors as Record<string, string>)
         .filter(([field]) => field !== 'name')
@@ -280,7 +255,6 @@ function save(): void {
 
 const guard = useUnsavedChanges(dirty);
 
-/** Puts back the Role as last saved, or leaves a new one. */
 function cancel(): void {
     if (creating.value) {
         guard.leave(props.cancelTo);

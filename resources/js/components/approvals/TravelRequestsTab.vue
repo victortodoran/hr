@@ -23,11 +23,6 @@ import { formatDate, formatDateRange } from '@/lib/dates';
 import { formatDays } from '@/lib/time-off';
 import type { TableColumn, TravelRequestToApprove } from '@/types';
 
-/**
- * The Travel Requests tab of the Approvals page: the Pending Travel
- * Requests of the Employees the viewer manages, approved or declined one
- * at a time from its row or its RecordSheet.
- */
 const props = defineProps<{
     toApprove: TravelRequestToApprove[];
 }>();
@@ -47,7 +42,6 @@ const { record, recordOpen, openRecord, closeRecord } = useRecordInUrl(
 
 const { approving, approveOne } = useApproveOne();
 
-/** The Employee's other Pending Travel Requests, for the RecordSheet. */
 const otherPending = computed(() =>
     record.value === null
         ? []
@@ -58,7 +52,6 @@ const otherPending = computed(() =>
           ),
 );
 
-/** Whose Travel Request a row is and where to, naming its buttons. */
 function describe(travel: TravelRequestToApprove): string {
     return `${travel.employee.name}'s Travel Request to ${travel.destination}`;
 }

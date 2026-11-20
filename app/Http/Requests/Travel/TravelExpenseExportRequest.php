@@ -7,11 +7,6 @@ use App\Support\Period;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 
-/**
- * Exporting the Approved Travel Expenses from the Travel Requests page:
- * its Period, Employee and Project, and the file's format. The page's
- * state filter is about Travel Requests, so the file leaves it out.
- */
 class TravelExpenseExportRequest extends TravelRequestListRequest
 {
     /**
@@ -26,7 +21,7 @@ class TravelExpenseExportRequest extends TravelRequestListRequest
     }
 
     /**
-     * The filters asked for, as on the page but without a state.
+     * The page's state filter is about Travel Requests, so the file leaves it out.
      *
      * @return array{period: Period, employee: int|'all', project: int|null}
      */
@@ -37,9 +32,6 @@ class TravelExpenseExportRequest extends TravelRequestListRequest
         return ['period' => $filters['period'], 'employee' => $filters['employee'], 'project' => $filters['project']];
     }
 
-    /**
-     * The format the file is written in.
-     */
     public function spreadsheetFormat(): SpreadsheetFormat
     {
         return SpreadsheetFormat::from($this->string('format')->value());

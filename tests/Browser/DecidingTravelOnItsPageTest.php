@@ -22,8 +22,7 @@ beforeEach(function () {
 });
 
 /**
- * Ben, who manages Cara and may view her travel, so he still sees her
- * Travel Requests once he has decided them.
+ * Ben may also view Cara's travel, so he still sees her Travel Requests once he has decided them.
  *
  * @return array{Employee, Employee}
  */

@@ -8,11 +8,6 @@ import { formatHours } from '@/lib/work-entries';
 import { index as workEntries } from '@/routes/work-entries';
 import type { HoursThisMonth } from '@/types';
 
-/**
- * The signed-in Employee's hours this month as a StatStrip (rule K10):
- * those logged, Declined left out, and how many of them are Pending and
- * Approved. With none yet, it says so.
- */
 const props = defineProps<{
     hoursThisMonth: HoursThisMonth;
 }>();

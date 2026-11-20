@@ -10,12 +10,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
-/**
- * The Travel Requests page's filters: a Period, a week, a month or a
- * custom period of at most three months, in the future too as travel is
- * planned ahead; an Employee, or "all" for any Employee; a Project and a
- * state, any state when none is chosen.
- */
 class TravelRequestListRequest extends FormRequest
 {
     /**
@@ -39,12 +33,7 @@ class TravelRequestListRequest extends FormRequest
         return [fn (Validator $validator) => PeriodRules::checkCustomLength($this, $validator)];
     }
 
-    /**
-     * The filters asked for: the current month when no Period is, and any
-     * Employee ("all") when no one Employee is; null where none is set.
-     *
-     * @return array{period: Period, employee: int|'all', project: int|null, state: string|null}
-     */
+    /** @return array{period: Period, employee: int|'all', project: int|null, state: string|null} */
     public function filters(): array
     {
         return [

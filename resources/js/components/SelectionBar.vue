@@ -1,20 +1,9 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 
-/**
- * Appears once a row is ticked (rule K9): floating at the bottom centre,
- * it says "N selected · total", offers "Select all N matching" when more
- * match than are ticked, Clear, and the list's bulk actions in the
- * `actions` slot, the last of them the screen's one `primary` button (B2).
- * On a phone it becomes a full-width bar stuck to the bottom (P8), with
- * the count and Clear on one line, the actions sharing the next, and
- * "Select all" below them; the page shortens the actions' labels there.
- */
 defineProps<{
     count: number;
-    /** How many rows match the filters, offered as "Select all"; none hides it. */
     matching?: number;
-    /** What the selection adds up to, such as "45 h". */
     total?: string;
 }>();
 

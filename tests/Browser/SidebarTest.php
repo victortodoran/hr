@@ -13,7 +13,6 @@ covers(HandleInertiaRequests::class);
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
-/** The sidebar's link names, group by group. */
 const SIDEBAR_NAMES = <<<'JS'
     JSON.stringify([...document.querySelectorAll('[data-sidebar="group"]')]
         .map((group) => [...group.querySelectorAll('[data-sidebar="menu-button"]')]

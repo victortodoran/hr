@@ -5,15 +5,11 @@ namespace App\Actions\Travel;
 use App\Enums\TravelRequestState;
 use App\Models\Employee;
 
-/**
- * Makes a Travel Request for the signed-in Employee.
- */
 class MakeTravelRequest
 {
     /**
-     * Make the Travel Request. It is Pending until the Employee's Manager
-     * decides, except for an Employee with no Manager, whose Travel Request
-     * is Approved at once with nobody deciding.
+     * An Employee with no Manager has nobody to decide, so their Travel Request
+     * is Approved at once.
      *
      * @param  array{assignment_id: int, destination: string, first_date: string, last_date: string, purpose: string}  $details
      */

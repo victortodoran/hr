@@ -18,10 +18,6 @@ beforeEach(function () {
     CompanySettings::factory()->create();
 });
 
-/**
- * Cara's Travel Request to Berlin from Thu 3 to Sat 5 Dec 2026 on Relaunch,
- * Pending unless given another factory state.
- */
 function carasTravelRequest(?string $state = null): TravelRequest
 {
     $factory = TravelRequest::factory()->on(assignmentOf(Employee::factory()->startedLongAgo()->create(['name' => 'Cara'])));

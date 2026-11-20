@@ -43,33 +43,13 @@ import type {
     PerformanceEvaluationRecord,
 } from '@/types';
 
-/**
- * One Performance Evaluation (rule L12): its Goals as cards, each with its
- * Progress, its Comment count and a link to its own page. The Employee and
- * their Manager change each Goal's Progress from its card while it is
- * Open. Only the Employee's effective Manager adds Goals, from the header
- * or the empty state, in the Add Goal sheet whose own URL renders this
- * page with `addingGoal` set (L14); they give each Goal its Outcome from
- * its card. Beside the Goals, from 1280px (L6), the Year as a whole panel
- * holds the Outcome of the whole, the summary, saved with its button, and
- * Complete, which asks first because Cara then sees the Outcomes (X4).
- * Once Completed, the header shows when, and the Outcome reads as plain
- * text in a StatStrip (S11, L10). Anyone else reads the Goals, and the
- * Outcomes only once it is Completed.
- */
 const props = defineProps<{
     evaluation: PerformanceEvaluationRecord;
-    /** Whether the Performance Evaluation is the viewer's own. */
     isOwn: boolean;
-    /** Whether the viewer may add, edit or delete its Goals and give their Outcomes, and Complete it. */
     canEdit: boolean;
-    /** Whether the viewer may change its Goals' Progress. */
     canChangeProgress: boolean;
-    /** Whether the viewer sees its Outcomes and summary. */
     canSeeOutcomes: boolean;
-    /** Whether the viewer may send it, Completed, back to Open for its Manager to correct. */
     canReopen: boolean;
-    /** Whether the Add Goal sheet is open. */
     addingGoal?: boolean;
 }>();
 
@@ -78,7 +58,6 @@ const { open: addGoalOpen, setOpen: setAddGoalOpen } = useOverlayRoute(
     () => show(props.evaluation.id).url,
 );
 
-/** The summary, saved with its button; saved, it is the form's new starting point. */
 const summaryForm = useForm({ summary: props.evaluation.summary ?? '' });
 
 watch(
@@ -96,19 +75,14 @@ function saveSummary(): void {
 /** The Outcome of the whole that Complete sends: the one kept after a Reopen, until another is picked. */
 const pickedOutcome = ref<Outcome | ''>(props.evaluation.outcome ?? '');
 
-/** Whether every Goal has an Outcome and the saved summary is written. */
 const goalsAndSummaryReady = computed(
     () =>
         props.evaluation.goals.every((goal) => goal.outcome !== null) &&
         Boolean(props.evaluation.summary?.trim()),
 );
 
-/** Why Complete can't be pressed yet, or null once it can. */
 const notReadyReason = computed(() => {
-    /**
-     * Deliberately stricter than the server: Completing sends no summary,
-     * so with unsaved edits it would Complete with the old saved one.
-     */
+    /** Deliberately stricter than the server: Completing sends no summary, so it would Complete with the old saved one. */
     if (summaryForm.isDirty) {
         return 'Save the summary first to Complete it.';
     }
@@ -124,7 +98,6 @@ const notReadyReason = computed(() => {
     return null;
 });
 
-/** Performance › year for the Employee; Performance Evaluations › name · year for their Manager. */
 const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
     ? [{ title: 'Performance', href: mine() }]
     : [
@@ -134,12 +107,10 @@ const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
           },
       ];
 
-/** Whether the Manager is giving Outcomes, which needs a Goal to assess. */
 const isAssessing = computed(
     () => props.canEdit && props.evaluation.goals.length > 0,
 );
 
-/** What the page's sentences call the Employee ("Cara"). */
 const employeeFirstName = computed(() =>
     firstName(props.evaluation.employee.name),
 );
@@ -148,7 +119,6 @@ const title = props.isOwn
     ? String(props.evaluation.year)
     : `${props.evaluation.employee.name} · ${props.evaluation.year}`;
 
-/** The page's title: whose Evaluation, and for which year. */
 const heading = props.isOwn
     ? `Your ${props.evaluation.year} Performance Evaluation`
     : `${props.evaluation.employee.name}'s ${props.evaluation.year} Performance Evaluation`;

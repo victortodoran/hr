@@ -10,11 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class CompanySettingsFactory extends Factory
 {
-    /**
-     * A company paying in euros.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

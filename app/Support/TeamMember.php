@@ -4,10 +4,6 @@ namespace App\Support;
 
 use App\Models\Assignment;
 
-/**
- * One member of a Project's team as the Client's and the Project's pages
- * show them: their Assignment to the Project and whose it is.
- */
 final class TeamMember
 {
     /**

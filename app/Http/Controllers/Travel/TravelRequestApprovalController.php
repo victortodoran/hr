@@ -11,18 +11,9 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Lets an Employee's effective Manager approve their Pending Travel Request.
- */
 class TravelRequestApprovalController extends Controller
 {
-    /**
-     * Approve the Travel Request, recording who approved it and when. One
-     * decided or cancelled since the policy check is refused, never changed.
-     * It is decided from the Approvals page or its own page, and the actor
-     * goes back to where they decided it, unless they may no longer see it
-     * once decided, then to the Approvals page's Travel Requests tab.
-     */
+    /** Deciding can take it out of what the actor may see, so they then go to the Approvals page instead. */
     public function store(TravelRequest $travelRequest, #[CurrentUser] Employee $actor, ApproveTravelRequest $approveTravelRequest): RedirectResponse
     {
         $changed = $approveTravelRequest->approve($travelRequest, $actor);

@@ -14,17 +14,12 @@ use function Pest\Laravel\travelTo;
 
 covers(AssignmentController::class, AssignmentRequest::class, AssignmentPolicy::class, Assignment::class, Employee::class, Project::class);
 
-/**
- * An Employee who may put anyone on a Project, such as someone in HR.
- */
 function assignmentManager(): Employee
 {
     return employeeWith([Permission::ManageAssignments->value => Scope::Everyone]);
 }
 
 /**
- * A valid Assignment form, with any fields overridden.
- *
  * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
  */

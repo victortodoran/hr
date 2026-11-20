@@ -13,12 +13,7 @@ use Illuminate\Support\Carbon;
  */
 class AssignmentFactory extends Factory
 {
-    /**
-     * Define the model's default state: an open-ended Assignment that starts
-     * once both the Employee and the Project have.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -33,10 +28,6 @@ class AssignmentFactory extends Factory
         ];
     }
 
-    /**
-     * The Employee's Internal Assignment: to the Internal Project, over their
-     * whole period of work, with no internal Job Title yet and 0% capacity.
-     */
     public function internal(): static
     {
         return $this->state(fn (array $attributes) => [

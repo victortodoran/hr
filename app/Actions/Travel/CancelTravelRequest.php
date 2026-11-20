@@ -5,17 +5,11 @@ namespace App\Actions\Travel;
 use App\Enums\TravelRequestState;
 use App\Models\TravelRequest;
 
-/**
- * Cancels an Employee's own Travel Request before it starts.
- */
 class CancelTravelRequest
 {
     /**
-     * Cancel the Travel Request and return whether it changed. It is kept on
-     * record and no longer blocks other Travel Requests or Time Off on its
-     * days. The write only changes one still cancellable, so a decline,
-     * cancellation or first date reached since the policy check is never
-     * overridden; then nothing changes and false is returned.
+     * Only a still-cancellable row changes, so a decline or first date reached
+     * since the policy check wins.
      */
     public function cancel(TravelRequest $travelRequest): bool
     {

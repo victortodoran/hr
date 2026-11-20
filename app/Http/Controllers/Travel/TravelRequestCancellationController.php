@@ -8,16 +8,8 @@ use App\Models\TravelRequest;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Lets an Employee cancel their own Travel Request before it starts.
- */
 class TravelRequestCancellationController extends Controller
 {
-    /**
-     * Cancel the Travel Request. It is kept on record and no longer blocks
-     * other Travel Requests or Time Off on its days. One no longer
-     * cancellable since the policy check is refused, never changed.
-     */
     public function store(TravelRequest $travelRequest, CancelTravelRequest $cancelTravelRequest): RedirectResponse
     {
         $changed = $cancelTravelRequest->cancel($travelRequest);

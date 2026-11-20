@@ -11,20 +11,12 @@ use App\Models\PerformanceEvaluation;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 
-/**
- * Every reusable query on Employees.
- *
- * @extends ModelBuilder<Employee>
- */
+/** @extends ModelBuilder<Employee> */
 class EmployeeBuilder extends ModelBuilder
 {
     use SearchesByName;
 
-    /**
-     * Limit the query to Employees who can manage Roles from now on: current
-     * Employees with no Leaving Date who hold Admin or a Role granting manage
-     * roles. Anyone else can't sign in, or soon won't be able to.
-     */
+    /** Anyone with a Leaving Date soon can't sign in, so doesn't count. */
     public function lastingRoleManagers(): static
     {
         return $this->scoped(function (): void {
@@ -36,14 +28,7 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Employees whose effective Manager the given
-     * Employee is: one level below them, Future and Former Employees
-     * included. It walks down from the Manager, passing below only those
-     * who have left, so it reads just their part of the reporting line; a
-     * Manager who has left is nobody's effective Manager. It matches
-     * withEffectiveManager() for today, which walks the same line up.
-     */
+    /** Walks down past only those who have left, so it reads just the Manager's part of the line; it must match withEffectiveManager() for today. */
     public function effectivelyManagedBy(Employee $manager): static
     {
         return $this->scoped(function () use ($manager): void {
@@ -68,10 +53,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Manager's Reports: everyone below them in the
-     * reporting line, the same Employees hasInReports() accepts.
-     */
     public function reportsOf(Employee $manager): static
     {
         return $this->scoped(function () use ($manager): void {
@@ -88,11 +69,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to everyone above the Employee in the reporting line:
-     * their Manager, that Manager's Manager, and so on, Former Employees
-     * included. The other way from reportsOf().
-     */
     public function aboveInReportingLine(Employee $employee): static
     {
         return $this->scoped(function () use ($employee): void {
@@ -109,12 +85,7 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Employees whose Work Entries, or Travel
-     * Expenses, the given Employee may reopen through the reopen Permission
-     * given: those its Scopes cover, never themselves. Being someone's
-     * Manager doesn't count, so without the Permission it's nobody.
-     */
+    /** Being someone's Manager doesn't count, so without the Permission it's nobody. */
     public function reopenableBy(Employee $reopener, Permission $reopen): static
     {
         return $this->scoped(function () use ($reopener, $reopen): void {
@@ -123,10 +94,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Employees whose record the given Employee may
-     * see, through view employee records.
-     */
     public function withRecordVisibleTo(Employee $viewer): static
     {
         return $this->scoped(function () use ($viewer): void {
@@ -134,12 +101,7 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Employees whose page the given Employee may
-     * open, matching EmployeePolicy::view(): themselves, and those a
-     * Permission for seeing Employee pages (Permission::seeingEmployeePages())
-     * reaches.
-     */
+    /** Must match EmployeePolicy::view(). */
     public function withPageVisibleTo(Employee $viewer): static
     {
         return $this->scoped(function () use ($viewer): void {
@@ -149,12 +111,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the people the given Employee can find and open,
-     * never Former Employees: those whose Employee page they may open
-     * (withPageVisibleTo()), and, when they hold view directory, everyone
-     * the Directory lists, the current Employees.
-     */
     public function findableBy(Employee $viewer): static
     {
         return $this->scoped(function () use ($viewer): void {
@@ -166,10 +122,7 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Employees whose Work Entries the given Employee
-     * may see, matching WorkEntryPolicy::viewAny().
-     */
+    /** Must match WorkEntryPolicy::viewAny(). */
     public function withWorkEntriesVisibleTo(Employee $viewer): static
     {
         return $this->scoped(function () use ($viewer): void {
@@ -177,11 +130,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Employees whose travel the given Employee may
-     * see across Employees, through the Permissions that show it
-     * (Permission::seeingTravel()).
-     */
     public function withTravelVisibleTo(Employee $viewer): static
     {
         return $this->scoped(function () use ($viewer): void {
@@ -189,11 +137,7 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Employees whose Time Off the given Employee may
-     * see, through the Permissions that show it (Permission::seeingTimeOff()),
-     * matching EmployeePolicy::viewTimeOffAndPaidDays().
-     */
+    /** Must match EmployeePolicy::viewTimeOffAndPaidDays(). */
     public function withTimeOffVisibleTo(Employee $viewer): static
     {
         return $this->scoped(function () use ($viewer): void {
@@ -201,13 +145,7 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Employees whose Performance Evaluations the
-     * given Employee may open from the Performance Evaluations page: those
-     * whose effective Manager they are, and those a Permission for reading
-     * them (Permission::seeingPerformanceEvaluations()) reaches, leaving
-     * out the viewer, whose own are on the Performance page.
-     */
+    /** Leaves out the viewer, whose own are on the Performance page. */
     public function withPerformanceEvaluationsVisibleTo(Employee $viewer): static
     {
         return $this->scoped(function () use ($viewer): void {
@@ -218,11 +156,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Employees with something only their Manager can
-     * settle: Pending Work Entries, Time Off, Travel Requests or Travel
-     * Expenses to decide, or an Open Performance Evaluation to complete.
-     */
     public function withWorkForTheirManager(): static
     {
         return $this->scoped(function (): void {
@@ -235,11 +168,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Employees who may still have a Performance
-     * Evaluation created for the year: they work for the company on some
-     * day of it and have none for it yet.
-     */
     public function awaitingPerformanceEvaluationFor(int $year): static
     {
         return $this->scoped(function () use ($year): void {
@@ -248,10 +176,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Employees who have a Performance Evaluation for the
-     * year, only an Open or only a Completed one when a state is given.
-     */
     public function withPerformanceEvaluationFor(int $year, ?PerformanceEvaluationState $state = null): static
     {
         return $this->scoped(function () use ($year, $state): void {
@@ -261,12 +185,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Employees the given Employee may create a
-     * Performance Evaluation for the year for: those they effectively
-     * manage who are awaiting one for it, and nobody unless it is the
-     * current or the next year.
-     */
     public function awaitingPerformanceEvaluationFrom(Employee $manager, int $year): static
     {
         return $this->scoped(function () use ($manager, $year): void {
@@ -280,11 +198,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Employees who work for the company on at least
-     * one day of the calendar year: started by its end, and not left
-     * before its start.
-     */
     public function employedDuring(int $year): static
     {
         return $this->scoped(function () use ($year): void {
@@ -293,9 +206,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Employees who are current today.
-     */
     public function current(): static
     {
         return $this->scoped(function (): void {
@@ -303,10 +213,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Employees who aren't Former today: no Leaving Date,
-     * or one from today on. Future Employees are included.
-     */
     public function notFormer(): static
     {
         return $this->scoped(function (): void {
@@ -314,9 +220,6 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Employees who are future, current or former today.
-     */
     public function inEmploymentStatus(EmploymentStatus $status): static
     {
         return $this->scoped(function () use ($status): void {
@@ -328,13 +231,7 @@ class EmployeeBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Add each Employee's effective_manager_id: walking up from their stored
-     * Manager, the first Employee who hasn't left, today or on the given day.
-     * It is worked out when read, so nothing needs reassigning when a Manager
-     * leaves. The walk only climbs past Managers who have left, so it ends at
-     * the one row that's picked.
-     */
+    /** Worked out when read, so nothing needs reassigning when a Manager leaves; the walk only climbs past Managers who have left, so it ends at the one row picked. */
     public function withEffectiveManager(?CarbonInterface $on = null): static
     {
         return $this->scoped(function () use ($on): void {

@@ -6,12 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-/**
- * A page of a list that never lands past its end. After a bulk action from
- * a later page, such as approving every Work Entry on it, the page asked
- * for may no longer exist; the list then shows its last page instead of an
- * empty one that looks like nothing is left.
- */
+/** After a bulk action empties a later page, the list shows its last page instead of an empty one that looks like nothing is left. */
 final class PageWithin
 {
     /**

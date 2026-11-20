@@ -6,23 +6,12 @@ import { index as directory } from '@/routes/directory';
 import { show as employeePage } from '@/routes/employees';
 import type { ChainMember } from '@/types';
 
-/**
- * One person in a Reporting Chain, on one compact line: a PersonCell with
- * their initials, name and Job Title. The viewed Employee is marked rather than linked; a
- * Future Employee elsewhere in the chain says so, while the viewed one's
- * status is already in the page header.
- */
+/** The viewed Employee's status is already in the page header, so only others say they're Future. */
 const props = defineProps<{
     member: ChainMember;
-    /** Whether this is the Employee whose Reporting Chain is shown. */
     isViewed?: boolean;
 }>();
 
-/**
- * Where the member's name leads: their Employee page, or their sheet
- * over the Directory. Null on the viewed Employee's own line, and when the
- * viewer may open neither (`link` is null).
- */
 const href = computed(() => {
     if (props.isViewed) {
         return null;

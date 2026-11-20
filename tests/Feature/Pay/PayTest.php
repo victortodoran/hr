@@ -32,17 +32,11 @@ beforeEach(function () {
     CompanySettings::factory()->create(['currency' => 'EUR']);
 });
 
-/**
- * An Employee who may manage everyone's Pay, such as someone in Payroll.
- */
 function payManager(): Employee
 {
     return employeeWith([Permission::ManagePay->value => Scope::Everyone]);
 }
 
-/**
- * Cara's Assignment to Relaunch, running through 2026.
- */
 function relaunchAssignment(): Assignment
 {
     $cara = Employee::factory()->startedLongAgo()->create(['name' => 'Cara']);
@@ -52,8 +46,6 @@ function relaunchAssignment(): Assignment
 }
 
 /**
- * A Pay entry as the add form sends it, with some changes.
- *
  * @param  array<string, mixed>  $changes
  * @return array<string, mixed>
  */

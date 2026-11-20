@@ -9,23 +9,10 @@ use App\Models\PerformanceEvaluation;
 use App\Support\PageWithin;
 use Carbon\CarbonImmutable;
 
-/**
- * The Performance Evaluations page as the props it renders: one year's
- * list of the Employees whose Performance Evaluations the viewer may open
- * here who have one for it, each with that Performance Evaluation.
- */
 final class PerformanceEvaluationListPage
 {
     /**
-     * The Employees whose Performance Evaluations the viewer may open here
-     * (those they effectively manage, and those one of the Permissions for
-     * reading them reaches) who have one for the year, Former Employees
-     * included, by name, optionally narrowed to part of a name, one state,
-     * or one Employee, given back when the viewer may open theirs here and
-     * ignored otherwise. Each comes with that Performance Evaluation; those
-     * still without one are started from the New Performance Evaluation
-     * page. The years to choose from run back from the next one to the
-     * earliest Start Date among those Employees.
+     * An Employee filter the viewer may not open here is ignored rather than refused.
      *
      * @param  array{year: int, search: string, state: PerformanceEvaluationState|null, employee: int|null}  $filters
      * @return array<string, mixed>

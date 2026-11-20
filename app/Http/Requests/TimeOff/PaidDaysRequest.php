@@ -5,9 +5,6 @@ namespace App\Http\Requests\TimeOff;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-/**
- * An Employee's Paid Days: a whole number of days a year, 0 or more.
- */
 class PaidDaysRequest extends FormRequest
 {
     /**

@@ -8,15 +8,8 @@ use App\Models\TimeOff;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Lets an Employee cancel their own Time Off before it starts.
- */
 class TimeOffCancellationController extends Controller
 {
-    /**
-     * Cancel the Time Off. It is kept on record and uses no Paid Days from
-     * now on.
-     */
     public function store(TimeOff $timeOff, CancelTimeOff $cancelTimeOff): RedirectResponse
     {
         $changed = $cancelTimeOff->cancel($timeOff);

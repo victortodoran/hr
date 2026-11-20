@@ -19,34 +19,18 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/**
- * Lists, shows, adds and edits Employees, each as far as the viewer's
- * Permissions and Scope allow.
- */
 class EmployeeController extends Controller
 {
-    /**
-     * List the Employees whose record the viewer may see, optionally
-     * narrowed to part of a name, a Department, a Manager and a status.
-     */
     public function index(#[CurrentUser] Employee $actor, EmployeeListRequest $request): Response
     {
         return Inertia::render('employees/Index', EmployeeListPage::props($actor, $request->filters()));
     }
 
-    /**
-     * Show the form for adding an Employee.
-     */
     public function create(): Response
     {
         return Inertia::render('employees/Create', EmployeeFormPage::create());
     }
 
-    /**
-     * Add an Employee and invite them to set their password, then show
-     * their Employee page, or, when the actor may add Employees but not see
-     * this one, the form to add another.
-     */
     public function store(#[CurrentUser] Employee $actor, EmployeeRequest $request, AddEmployee $addEmployee): RedirectResponse
     {
         /** @var array{name: string, email: string, department_id: int, manager_id: int|null, start_date: string, leaving_date?: string|null, job_title: string} $details */
@@ -61,10 +45,6 @@ class EmployeeController extends Controller
             : to_route('employees.create');
     }
 
-    /**
-     * Show an Employee's page on the tab asked for, as far as the viewer may
-     * see it, with the Work and Travel tabs on the Period asked for.
-     */
     public function show(#[CurrentUser] Employee $actor, Employee $employee, Request $request): Response
     {
         $tab = $request->query('tab');
@@ -72,21 +52,12 @@ class EmployeeController extends Controller
         return Inertia::render('employees/Show', EmployeePage::props($actor, $employee, is_string($tab) ? EmployeePageTab::tryFrom($tab) : null, Period::fromQuery($request->query()) ?? Period::month(today()->format('Y-m'))));
     }
 
-    /**
-     * Show the form for editing an Employee's record.
-     */
     public function edit(#[CurrentUser] Employee $actor, Employee $employee): Response
     {
         return Inertia::render('employees/Edit', EmployeeFormPage::edit($actor, $employee));
     }
 
-    /**
-     * Save changes to an Employee's record. Their Assignments are trimmed
-     * to end by their Leaving Date in the same transaction. The form opens
-     * again, or their page when the change, such as a new Manager, took
-     * them out of what the viewer may change; both read their Reports
-     * afresh, as a new Manager or Leaving Date changes them.
-     */
+    /** A new Manager or Leaving Date changes both Employees' Reports, so their access is read afresh. */
     public function update(#[CurrentUser] Employee $actor, EmployeeRequest $request, Employee $employee, UpdateTrimmingAssignments $updateTrimming): RedirectResponse
     {
         $updateTrimming->updateEmployee($employee, $request->validated());

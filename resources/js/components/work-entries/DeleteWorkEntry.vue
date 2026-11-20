@@ -5,17 +5,9 @@ import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import { Button } from '@/components/ui/button';
 import type { WorkEntryRecord } from '@/types';
 
-/**
- * Deletes a Work Entry through the app's one confirm-delete dialog, its
- * title a statement (rule C7); its places share this wording. It opens
- * from its own icon button, or, with `without-trigger`, through
- * `v-model:open` from a ⋯ menu's Delete item.
- */
 defineProps<{
     entry: WorkEntryRecord;
-    /** The URL query asking for the Period shown, so deleting returns to it. */
     periodQuery: Record<string, string>;
-    /** Leaves out the icon button, for a dialog opened from a menu. */
     withoutTrigger?: boolean;
 }>();
 

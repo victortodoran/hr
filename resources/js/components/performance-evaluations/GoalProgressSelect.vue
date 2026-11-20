@@ -12,19 +12,11 @@ import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { progresses } from '@/lib/progress';
 import type { Progress } from '@/types';
 
-/**
- * A Goal's Progress as a Select whose trigger is the Progress's own
- * StatusBadge (rules S6, F6), saved as soon as one is picked, with a tick
- * once saved. On a phone the trigger is a 44px target (P6).
- */
 const props = defineProps<{
-    /** The Progress as saved. */
     progress: Progress;
     performanceEvaluationId: number;
     goalId: number;
-    /** What the dropdown is called for screen readers, such as "Progress of Lead the API". */
     label: string;
-    /** The trigger's id, when something on the page points at it. */
     id?: string;
 }>();
 

@@ -35,12 +35,7 @@ beforeEach(function () {
     travelTo('2026-11-13 09:00');
 });
 
-/**
- * Ben, below Ada at the top, and Cara, his Direct Report, who records her
- * own hours.
- *
- * @return array{ben: Employee, cara: Employee}
- */
+/** @return array{ben: Employee, cara: Employee} */
 function benAndCara(): array
 {
     $ben = managerBen();

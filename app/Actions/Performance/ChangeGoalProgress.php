@@ -10,19 +10,11 @@ use App\Models\ProgressChange;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Changes a Goal's Progress and keeps the change, with who made it and
- * the Progress before, in one transaction, only while its Performance
- * Evaluation is Open.
- */
 class ChangeGoalProgress
 {
     /**
-     * Change the Goal's Progress and return the change kept, or null when
-     * the Goal already has that Progress, which keeps nothing. Refuse,
-     * changing nothing, when its Performance Evaluation was Completed
-     * since the policy check. The Evaluation is locked before the Goal,
-     * as Completing does.
+     * The Evaluation is locked before the Goal, in the same order Completing
+     * locks them.
      *
      * @throws AuthorizationException
      */

@@ -7,26 +7,13 @@ use App\Models\TimeOff;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
-/**
- * An Employee's Paid Days left, year by year, counting Pending and Approved
- * Paid Time Off. Home, the Time Off page and their Employee page show this
- * year's and, from 1 October, next year's beside it, since Paid Time Off can
- * be requested into next year.
- *
- * @phpstan-type PaidDaysLeftInYear array{year: int, days: int}
- */
+/** @phpstan-type PaidDaysLeftInYear array{year: int, days: int} */
 final class PaidDaysLeft
 {
-    /**
-     * The month from which next year's Paid Days left show too.
-     */
+    /** Paid Time Off can be requested into next year, so from this month next year's Paid Days left show too. */
     private const int NEXT_YEAR_FROM_MONTH = 10;
 
-    /**
-     * The Paid Days left this year and, from October, next year.
-     *
-     * @return list<PaidDaysLeftInYear>
-     */
+    /** @return list<PaidDaysLeftInYear> */
     public static function of(Employee $employee): array
     {
         $today = today();
@@ -37,8 +24,6 @@ final class PaidDaysLeft
     }
 
     /**
-     * The Paid Days left in each of the given years, in their order.
-     *
      * @param  list<int>  $years
      * @return list<PaidDaysLeftInYear>
      */
@@ -48,11 +33,7 @@ final class PaidDaysLeft
     }
 
     /**
-     * The Paid Days left in each of the given years, in their order, for
-     * each of the Employees, by Employee id: their Paid Days, which every
-     * year gets in full, minus the weekdays that year of their Pending and
-     * Approved Paid Time Off, read for all of them at once. It is negative
-     * when their Paid Days were lowered below what is already taken.
+     * Negative when an Employee's Paid Days were lowered below what is already taken.
      *
      * @param  Collection<int, Employee>  $employees
      * @param  list<int>  $years

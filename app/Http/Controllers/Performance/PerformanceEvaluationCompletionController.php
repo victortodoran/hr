@@ -9,21 +9,10 @@ use App\Models\PerformanceEvaluation;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Completing a Performance Evaluation: its Manager gives the whole its
- * Outcome, which closes it, once it has Goals, every Goal has an Outcome
- * and the summary is written. It can't be changed after that unless it's
- * Reopened.
- */
 class PerformanceEvaluationCompletionController extends Controller
 {
     public function __construct(private readonly AssessPerformanceEvaluation $assess) {}
 
-    /**
-     * Give the whole its Outcome and Complete the Performance Evaluation,
-     * or refuse, saving nothing, while anything is missing. One Completed
-     * since the policy check is refused, never changed.
-     */
     public function store(CompletionRequest $request, PerformanceEvaluation $performanceEvaluation): RedirectResponse
     {
         $completed = $this->assess->complete($performanceEvaluation, $request->outcome());

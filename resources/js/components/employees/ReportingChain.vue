@@ -3,11 +3,6 @@ import { computed } from 'vue';
 import ChainMemberCard from '@/components/employees/ChainMemberCard.vue';
 import type { ChainMember, ReportingChainView } from '@/types';
 
-/**
- * An Employee's Reporting Chain as one compact vertical list: everyone
- * above them from the highest down, joined by a line, then the Employee,
- * then those they are the Manager of, indented under them.
- */
 const props = defineProps<{
     chain: ReportingChainView;
 }>();

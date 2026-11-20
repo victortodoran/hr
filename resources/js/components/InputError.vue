@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { CircleAlert } from '@lucide/vue';
 
-/**
- * A field's error: icon and sentence in the destructive colour, shown in
- * place of the help text (rule V5).
- */
 defineProps<{
     message?: string;
 }>();

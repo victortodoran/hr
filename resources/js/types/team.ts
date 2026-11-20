@@ -1,7 +1,3 @@
-/**
- * One of the viewer's Direct Reports on the Team page, with whether the
- * viewer may open their Employee page.
- */
 export type DirectReport = {
     id: number;
     name: string;

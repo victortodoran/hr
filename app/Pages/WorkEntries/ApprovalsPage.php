@@ -19,18 +19,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 
-/**
- * The Approvals page, an inbox of what waits for the viewer's decision as an
- * effective Manager, as the props it renders: how many Work Entries, Time
- * Off, Travel Requests and Travel Expenses wait, and the open tab's list.
- * Only the open tab's list is loaded.
- */
 final class ApprovalsPage
 {
     /**
-     * The open tab, with how many Work Entries, Time Off, Travel Requests and
-     * Travel Expenses wait for the viewer's decision.
-     *
      * @param  array{employee: int|null, project: int|null}  $requested
      * @return array<string, mixed>
      */
@@ -52,15 +43,7 @@ final class ApprovalsPage
     }
 
     /**
-     * The Work Entries tab, one Employee and one Project at a time: the
-     * Pending Work Entries of the chosen Employee on the chosen Project,
-     * oldest first, with their total hours. The Employees to choose from are
-     * those whose effective Manager the viewer is and who have Pending Work
-     * Entries, and the Projects those the chosen Employee has Pending Work
-     * Entries on, each by name with how many. An Employee or Project not
-     * among them, or none, falls back to the first, so approving the last of
-     * one moves on to the first left. With nothing Pending at all, there is
-     * nobody to choose.
+     * An Employee or Project not on offer falls back to the first, so approving the last of one moves on to the first left.
      *
      * @param  array{employee: int|null, project: int|null}  $requested
      * @return array<string, mixed>
@@ -122,9 +105,7 @@ final class ApprovalsPage
     }
 
     /**
-     * Every week the matching Work Entries fall in, earliest first, by its
-     * Monday, with the hours of all of them in it, not only those on the
-     * page shown, so a week split across pages keeps its full subtotal.
+     * Hours cover every matching Work Entry, not only the page shown, so a week split across pages keeps its full subtotal.
      *
      * @return list<array{starts_on: string, ends_on: string, number: int, hours: int|float}>
      */
@@ -144,10 +125,7 @@ final class ApprovalsPage
     }
 
     /**
-     * The Time Off tab: the Pending Time Off of the Employees whose effective
-     * Manager the actor is, earliest first, each with that Employee's Paid
-     * Days left in every year it touches. Paid Days left already count the
-     * Pending Time Off.
+     * Paid Days left already count the Pending Time Off.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -180,13 +158,7 @@ final class ApprovalsPage
             ->all();
     }
 
-    /**
-     * The Travel Requests tab: the Pending Travel Requests of the Employees
-     * whose effective Manager the actor is, earliest first, each with its
-     * Assignment's Project and Client and the days it counts.
-     *
-     * @return array<int, array<string, mixed>>
-     */
+    /** @return array<int, array<string, mixed>> */
     private static function travelRequestsToApprove(Employee $actor): array
     {
         return TravelRequest::query()
@@ -211,14 +183,7 @@ final class ApprovalsPage
             ->all();
     }
 
-    /**
-     * The Travel Expenses tab: the Pending Travel Expenses of the Employees
-     * whose effective Manager the actor is, grouped by their Travel Request,
-     * earliest travel first, and within it by the date paid. Each amount is
-     * shown in the company currency.
-     *
-     * @return array<int, array<string, mixed>>
-     */
+    /** @return array<int, array<string, mixed>> */
     private static function travelExpensesToApprove(Employee $actor): array
     {
         $currency = CompanySettings::payCurrency();

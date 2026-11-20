@@ -2,31 +2,18 @@ import { router, usePage } from '@inertiajs/vue3';
 import type { ComputedRef, WritableComputedRef } from 'vue';
 import { computed, ref, watch } from 'vue';
 
-/**
- * Which row's RecordSheet is open, kept in the URL as `?record=` (or the
- * `param` given, such as `?person=`) so a reload or a shared link opens it
- * again (rule K8). By default the sheet is drawn from the list's own rows,
- * so changing it replaces the URL without a visit. With `reload`, the
- * sheet's record comes from the server instead: opening one visits the
- * URL reloading only that prop, and `rows` reads the record from it.
- * Once the row leaves the list (decided, on another page, or not sent)
- * the sheet closes and the parameter goes.
- */
+/** Kept in the URL so a reload or a shared link opens the RecordSheet again (rule K8). */
 export function useRecordInUrl<Row extends { id: number }>(
     rows: () => Row[],
     {
         param = 'record',
         reload,
     }: {
-        /** The query parameter that names the open row. */
         param?: string;
-        /** The prop the server fills with the open record, reloaded on open. */
         reload?: string;
     } = {},
 ): {
-    /** The open row, or null while no sheet is open. */
     record: ComputedRef<Row | null>;
-    /** Binds the RecordSheet's `open`; closing it clears the parameter. */
     recordOpen: WritableComputedRef<boolean>;
     openRecord: (id: number) => void;
     closeRecord: () => void;

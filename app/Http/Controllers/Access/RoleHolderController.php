@@ -11,16 +11,8 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Lets Employees who manage Roles give Roles to Employees and take them
- * away, including from themselves.
- */
 class RoleHolderController extends Controller
 {
-    /**
-     * Give the Role to Employees who haven't left and don't hold it yet,
-     * all together.
-     */
     public function store(#[CurrentUser] Employee $actor, GiveRoleRequest $request, Role $role, ChangeAccess $changeAccess): RedirectResponse
     {
         $employees = $request->employees();
@@ -34,9 +26,6 @@ class RoleHolderController extends Controller
         return to_route('roles.show', $role);
     }
 
-    /**
-     * Take the Role away from an Employee who holds it.
-     */
     public function destroy(#[CurrentUser] Employee $actor, Role $role, Employee $employee, ChangeAccess $changeAccess): RedirectResponse
     {
         $changeAccess->takeRole($actor, $role, $employee);

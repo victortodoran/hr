@@ -6,16 +6,11 @@ use App\Models\Employee;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-/**
- * The email inviting a new Employee to set their password.
- */
 class Invitation extends Notification
 {
     public function __construct(public readonly string $token) {}
 
-    /**
-     * @return array<int, string>
-     */
+    /** @return array<int, string> */
     public function via(Employee $notifiable): array
     {
         return ['mail'];

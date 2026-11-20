@@ -6,11 +6,6 @@ import { index as departments } from '@/routes/departments';
 import { index as roles } from '@/routes/roles';
 import type { NavItem } from '@/types';
 
-/**
- * The pages of Company settings the signed-in Employee may manage, in
- * sub-nav order: Company, Departments, Roles (rule L18 folds them into one
- * sidebar entry, which opens the first).
- */
 export function useCompanySettingsLinks(): ComputedRef<NavItem[]> {
     const page = usePage();
 

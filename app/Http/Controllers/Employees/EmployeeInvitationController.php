@@ -7,15 +7,8 @@ use App\Models\Employee;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Lets those who manage Employees resend an invitation to an Employee who
- * has yet to set a password.
- */
 class EmployeeInvitationController extends Controller
 {
-    /**
-     * Send a fresh invitation; the previous link stops working.
-     */
     public function store(Employee $employee): RedirectResponse
     {
         $employee->sendInvitation();

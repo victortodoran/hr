@@ -16,28 +16,17 @@ import {
 } from '@/components/date-picker';
 import { countDays, formatDateRange } from '@/lib/dates';
 
-/**
- * A first and a last date in one field (rule K14): type both, or pick the
- * first and then the last day from the calendar the icon opens. Once
- * chosen and left, it reads like every range (C9), "Nov 30 – Dec 4, 2026",
- * with the days counted under it: "3 days", or "5 weekdays" with
- * `weekdaysOnly`, skipping Saturdays and Sundays. The models are the two
- * dates as YYYY-MM-DD, '' when empty. `id` lands on a hidden input that
- * moves focus to the field, so `<Label for>` works. Other attributes, such
- * as `class`, go to the field.
- */
+/** `id` lands on a hidden input that moves focus to the field, so `<Label for>` works. */
 defineOptions({ inheritAttrs: false });
 
 const props = defineProps<{
     id: string;
-    /** The earliest date that can be chosen, as YYYY-MM-DD. */
+    /** YYYY-MM-DD. */
     min?: string;
-    /** The latest date that can be chosen, as YYYY-MM-DD. */
+    /** YYYY-MM-DD. */
     max?: string;
-    /** Counts only Mondays to Fridays, as "5 weekdays". */
     weekdaysOnly?: boolean;
     required?: boolean;
-    /** Marks the field as refused, such as when its error shows. */
     invalid?: boolean;
 }>();
 
@@ -66,7 +55,6 @@ const isComplete = computed(
     () => start.value !== '' && end.value !== '' && start.value <= end.value,
 );
 
-/** The days chosen as people read them, such as "5 weekdays". */
 const dayCount = computed(() => {
     const days = countDays(start.value, end.value, props.weekdaysOnly);
     const unit = props.weekdaysOnly ? 'weekday' : 'day';

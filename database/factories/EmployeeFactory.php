@@ -13,16 +13,9 @@ use Illuminate\Support\Str;
  */
 class EmployeeFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
     protected static ?string $password;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -36,10 +29,6 @@ class EmployeeFactory extends Factory
         ];
     }
 
-    /**
-     * An Employee who has been added but hasn't accepted their invitation:
-     * no usable password and an unverified email.
-     */
     public function invited(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -48,11 +37,7 @@ class EmployeeFactory extends Factory
         ]);
     }
 
-    /**
-     * An Employee who started on Mon 6 Jan 2025, well before the dates tests
-     * freeze time at, so Paid Days, Assignments and Work Entries don't hang
-     * on the random default Start Date.
-     */
+    /** Well before the dates tests freeze time at, so Paid Days, Assignments and Work Entries don't hang on the random default Start Date. */
     public function startedLongAgo(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -60,9 +45,6 @@ class EmployeeFactory extends Factory
         ]);
     }
 
-    /**
-     * An Employee whose Manager is the given Employee.
-     */
     public function reportingTo(Employee $manager): static
     {
         return $this->state(fn (array $attributes) => [
@@ -70,9 +52,6 @@ class EmployeeFactory extends Factory
         ]);
     }
 
-    /**
-     * An Employee whose Start Date is still ahead.
-     */
     public function future(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -80,9 +59,6 @@ class EmployeeFactory extends Factory
         ]);
     }
 
-    /**
-     * An Employee whose Leaving Date has passed.
-     */
     public function former(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -91,9 +67,6 @@ class EmployeeFactory extends Factory
         ]);
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [

@@ -6,11 +6,7 @@ import EmptyState from '@/components/EmptyState.vue';
 import { Button } from '@/components/ui/button';
 import { home } from '@/routes';
 
-/**
- * The page a refused, missing or failed visit shows outside local
- * debugging (rules S5, L24): the EmptyState pattern on the auth surface,
- * so it works signed in or out, with Go to Home.
- */
+/** On the auth surface, so it works signed in or out. */
 const props = defineProps<{
     status: 403 | 404 | 500;
 }>();

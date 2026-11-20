@@ -3,13 +3,8 @@ import { CalendarDays } from '@lucide/vue';
 import { DatePickerTrigger, DateRangePickerTrigger } from 'reka-ui';
 import IconButton from '@/components/IconButton.vue';
 
-/**
- * The calendar icon inside a DatePicker's or DateRangePicker's field that
- * opens its calendar, named in a Tooltip (rule F20). It looks small inside
- * the field, but takes a 44px touch on phone (F15).
- */
+/** It looks small inside the field, but takes a 44px touch on a phone (F15). */
 defineProps<{
-    /** Opens a DateRangePicker's calendar instead of a DatePicker's. */
     range?: boolean;
 }>();
 </script>

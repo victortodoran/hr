@@ -4,18 +4,9 @@ namespace App\Pages\Projects;
 
 use App\Models\Project;
 
-/**
- * The Projects page as the props it renders: the company's Projects a page
- * at a time, the Internal Project among them.
- */
 final class ProjectListPage
 {
-    /**
-     * The Projects, the Internal Project first and the rest by name,
-     * optionally searched by part of a name.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function props(string $search): array
     {
         return [

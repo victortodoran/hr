@@ -17,44 +17,24 @@ use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/**
- * Lets Employees see the company's Projects, and those who manage Projects
- * create, edit and delete them. The Internal Project is listed but fixed.
- */
 class ProjectController extends Controller
 {
-    /**
-     * Show the Projects a page at a time, the Internal Project first and the
-     * rest by name, optionally searched by part of a name.
-     */
     public function index(NameSearchRequest $request): Response
     {
         return Inertia::render('projects/Index', ProjectListPage::props($request->search()));
     }
 
-    /**
-     * Show the Projects with the sheet for a new Project open over them
-     * (rule L14), so the form has a URL of its own, with the Clients it
-     * can be for. The list behind the sheet keeps its search.
-     */
+    /** The form opens as a sheet over this page (rule L14), so it has a URL of its own. */
     public function create(NameSearchRequest $request): Response
     {
         return Inertia::render('projects/Index', ProjectFormPage::create($request->search()));
     }
 
-    /**
-     * Show a Project and its team: the Assignments to it that the viewer may
-     * see, by Employee and then from the earliest. Whoever may change it
-     * does so here.
-     */
     public function show(#[CurrentUser] Employee $actor, Project $project): Response
     {
         return Inertia::render('projects/Show', ProjectPage::props($actor, $project));
     }
 
-    /**
-     * Add a Project and open its page.
-     */
     public function store(ProjectRequest $request): RedirectResponse
     {
         $project = Project::query()->create($request->validated());
@@ -64,11 +44,6 @@ class ProjectController extends Controller
         return to_route('projects.show', $project);
     }
 
-    /**
-     * Change a Project's name, dates or Client. Its Assignments are trimmed
-     * to end by its end date in the same transaction. Saving stays on the
-     * Project's page.
-     */
     public function update(ProjectRequest $request, Project $project, UpdateTrimmingAssignments $updateTrimming): RedirectResponse
     {
         $updateTrimming->updateProject($project, $request->validated());
@@ -78,10 +53,6 @@ class ProjectController extends Controller
         return to_route('projects.show', $project);
     }
 
-    /**
-     * Delete a Project, refusing once anyone has been assigned to it, since
-     * that work is part of their record.
-     */
     public function destroy(Project $project, DeleteProject $deleteProject): RedirectResponse
     {
         $deleteProject->delete($project);

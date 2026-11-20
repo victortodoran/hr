@@ -5,15 +5,11 @@ namespace App\Actions\TimeOff;
 use App\Enums\TimeOffState;
 use App\Models\Employee;
 
-/**
- * Requests Time Off for an Employee.
- */
 class RequestTimeOff
 {
     /**
-     * Request the Time Off. It is Pending until the Employee's Manager
-     * decides, except for an Employee with no Manager, whose Time Off is
-     * Approved at once with nobody deciding.
+     * An Employee with no Manager has nobody to decide, so their Time Off is
+     * Approved at once.
      *
      * @param  array{first_date: string, last_date: string, is_paid: bool}  $attributes
      */

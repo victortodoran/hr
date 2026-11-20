@@ -5,18 +5,13 @@ namespace App\Actions\Travel;
 use App\Enums\TravelExpenseState;
 use App\Models\TravelExpense;
 
-/**
- * Deletes a Travel Expense recorded by mistake, with its receipt.
- */
 class DeleteTravelExpense
 {
     use WritesTravelExpenses;
 
     /**
-     * Delete the Travel Expense and its receipt, and return whether it was
-     * deleted. The delete only removes one still Pending or Declined, so an
-     * approval made since the policy check is never undone; then nothing is
-     * deleted and false is returned.
+     * Only a Pending or Declined row is deleted, so an approval made since the
+     * policy check wins.
      */
     public function delete(TravelExpense $travelExpense): bool
     {

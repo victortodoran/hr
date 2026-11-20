@@ -9,16 +9,9 @@ use App\Support\Period;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 
-/**
- * Every reusable query on Assignments.
- *
- * @extends ModelBuilder<Assignment>
- */
+/** @extends ModelBuilder<Assignment> */
 class AssignmentBuilder extends ModelBuilder
 {
-    /**
-     * Limit the query to Internal Assignments.
-     */
     public function internal(): static
     {
         return $this->scoped(function (): void {
@@ -26,10 +19,6 @@ class AssignmentBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Assignments to Projects other than the Internal
-     * Project.
-     */
     public function notInternal(): static
     {
         return $this->scoped(function (): void {
@@ -37,10 +26,7 @@ class AssignmentBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Assignments the Employee may see, matching
-     * AssignmentPolicy::viewAny().
-     */
+    /** Must match AssignmentPolicy::viewAny(). */
     public function visibleTo(Employee $actor): static
     {
         return $this->scoped(function () use ($actor): void {
@@ -48,10 +34,7 @@ class AssignmentBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Assignments running on the day: started by then and
-     * not yet ended. The end date counts as a day of the Assignment.
-     */
+    /** The end date counts as a day of the Assignment. */
     public function runningOn(CarbonInterface $day): static
     {
         return $this->scoped(function () use ($day): void {
@@ -59,10 +42,6 @@ class AssignmentBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Assignments running on at least one day of the
-     * Period: started by its last day and not ended before its first.
-     */
     public function runningDuring(Period $period): static
     {
         return $this->scoped(function () use ($period): void {
@@ -70,10 +49,6 @@ class AssignmentBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Assignments not ended before the day: with no end
-     * date, or ending on it or later.
-     */
     public function notEndedBefore(CarbonInterface $day): static
     {
         return $this->scoped(function () use ($day): void {
@@ -81,9 +56,6 @@ class AssignmentBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Order Assignments by their Employee's name, then from the earliest.
-     */
     public function orderByEmployeeName(): static
     {
         return $this->scoped(function (): void {

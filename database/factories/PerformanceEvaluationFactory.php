@@ -14,11 +14,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class PerformanceEvaluationFactory extends Factory
 {
-    /**
-     * An Open Performance Evaluation for this year, with no Goals yet.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -27,10 +23,6 @@ class PerformanceEvaluationFactory extends Factory
         ];
     }
 
-    /**
-     * Completed an hour ago with two Goals, each Met, Met as a whole and a
-     * summary.
-     */
     public function completed(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -41,9 +33,6 @@ class PerformanceEvaluationFactory extends Factory
         ])->has(Goal::factory()->count(2)->state(['outcome' => Outcome::Met]));
     }
 
-    /**
-     * For the Employee.
-     */
     public function of(Employee $employee): static
     {
         return $this->state(fn (array $attributes) => ['employee_id' => $employee->id]);

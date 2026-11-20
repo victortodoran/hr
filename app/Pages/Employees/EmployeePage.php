@@ -24,11 +24,6 @@ use App\Support\ReportingChain;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * The Employee page as the props it renders, in tabs: Overview,
- * Assignments & Pay, Time Off, Work, Travel and Performance. Each tab is
- * only built when it is open. The Reports needing a new Manager are shown
- * on the edit form too.
- *
  * @phpstan-import-type PaidDaysLeftInYear from PaidDaysLeft
  *
  * @phpstan-type PayChangeRow array{id: int, effective_from: string, until: string|null, kind: string, amount: string, state: value-of<PayChangeState>}
@@ -37,28 +32,10 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class EmployeePage
 {
-    /**
-     * The most Pay items the Assignments' stat strip holds beside its two
-     * other numbers, keeping it within six (rule K10).
-     */
+    /** Keeps the Assignments' stat strip within six items beside its two other numbers (rule K10). */
     private const int MOST_PAY_SHOWN = 4;
 
-    /**
-     * An Employee's page in tabs, each offered only when the viewer may see
-     * something on it. Overview: their Reporting Chain unless they have
-     * left. Assignments & Pay: their Assignments, with Pay for viewers
-     * allowed to see it. Time Off: their Paid Days to set, and their Time
-     * Off with this year's Paid Days left. Work, Travel and Performance:
-     * their records the viewer may see on the lists across Employees, the
-     * Work Entries and Travel Requests in the Period asked for, this month
-     * by default. Only the open tab's data is loaded, apart from what the
-     * header shows on every tab to viewers who may see the Employee's
-     * record: their employment status, their record, and, once they have
-     * left, the Employees still reporting to them; an unknown or forbidden
-     * tab opens Overview.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function props(Employee $actor, Employee $employee, ?EmployeePageTab $asked, Period $period): array
     {
         $canViewAssignments = $actor->can('viewAny', [Assignment::class, $employee]);
@@ -111,12 +88,7 @@ final class EmployeePage
     }
 
     /**
-     * Which lists across Employees the viewer may open with the Employee
-     * listed on them: the Work Entries and Travel Requests pages when the
-     * viewer may open them and see the Employee's Work Entries or travel
-     * there, and the Performance Evaluations page when the Employee's are
-     * among those the viewer may open there, which never includes the
-     * viewer's own.
+     * The Performance Evaluations page never lists the viewer's own.
      *
      * @return array{work: bool, travel: bool, performance: bool}
      */
@@ -131,10 +103,7 @@ final class EmployeePage
     }
 
     /**
-     * The Work tab: the Employee's Work Entries in the Period, as the Work
-     * Entries page lists them for this Employee, oldest first and 25 to a
-     * page, with their total hours and those Declined. The Period is held
-     * back to today, as on that page.
+     * The Period is held back to today, as on the Work Entries page.
      *
      * @return array{today: string, period: Period, entries: mixed, total: float|int, declinedTotal: float|int}
      */
@@ -154,14 +123,7 @@ final class EmployeePage
         ];
     }
 
-    /**
-     * The Travel tab: the Employee's Travel Requests with a day in the
-     * Period, as the Travel Requests page lists them for this Employee, by
-     * first date and 25 to a page, with what was spent on them, Declined
-     * Travel Expenses left out.
-     *
-     * @return array{today: string, period: Period, travelRequests: mixed, total: string}
-     */
+    /** @return array{today: string, period: Period, travelRequests: mixed, total: string} */
     private static function travel(Employee $actor, Employee $employee, Period $period): array
     {
         $list = TravelRequestListPage::props($actor, ['period' => $period, 'employee' => $employee->id, 'project' => null, 'state' => null]);
@@ -175,14 +137,7 @@ final class EmployeePage
         ];
     }
 
-    /**
-     * The Performance tab: the Employee's Performance Evaluations for every
-     * year, newest first, each with its state, how many Goals it holds, how
-     * many of them are At Risk while Open and, once Completed, the Outcome
-     * of the whole, as the Employee's own Performance page lists them.
-     *
-     * @return list<array{id: int, year: int, state: string, goals_count: int, at_risk_goals_count: int, outcome: string|null}>
-     */
+    /** @return list<array{id: int, year: int, state: string, goals_count: int, at_risk_goals_count: int, outcome: string|null}> */
     private static function performanceEvaluations(Employee $employee): array
     {
         return array_values($employee->performanceEvaluations()
@@ -194,12 +149,7 @@ final class EmployeePage
             ->all());
     }
 
-    /**
-     * The Reports needing a new Manager, each with whether the viewer may
-     * edit them to choose one.
-     *
-     * @return list<array{id: int, name: string, can_edit: bool}>
-     */
+    /** @return list<array{id: int, name: string, can_edit: bool}> */
     private static function reportsToReassign(Employee $actor, Employee $employee): array
     {
         $reports = self::reportsNeedingAManager($employee);
@@ -212,13 +162,7 @@ final class EmployeePage
         return array_values(array_map(fn (array $report): array => [...$report, 'can_edit' => in_array($report['id'], $editable, true)], $reports));
     }
 
-    /**
-     * The Assignments & Pay tab: the Employee's Assignments, with Pay when
-     * a currency is given, the numbers summing them up, and the Projects
-     * they can be put on, to those who may manage their Assignments.
-     *
-     * @return array{assignments: list<AssignmentRow>, assignmentStats: AssignmentStats, projects: array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>}
-     */
+    /** @return array{assignments: list<AssignmentRow>, assignmentStats: AssignmentStats, projects: array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>} */
     private static function assignmentsTab(Employee $employee, ?Currency $currency, bool $canManage): array
     {
         $assignments = self::assignments($employee, $currency, $canManage);
@@ -231,13 +175,6 @@ final class EmployeePage
     }
 
     /**
-     * The numbers over the Assignments: the Capacity of those running today
-     * added up, how many run today and how many have ended, and, when Pay
-     * is shown, the Pay in effect on each one running today. At most
-     * MOST_PAY_SHOWN Pay are listed, so the numbers fit one strip (rule
-     * K10); when more are in effect, one fewer is listed and the rest are
-     * counted.
-     *
      * @param  list<AssignmentRow>  $assignments
      * @return AssignmentStats
      */
@@ -254,8 +191,7 @@ final class EmployeePage
     }
 
     /**
-     * The Pay in effect as the strip lists it: all of it when it fits,
-     * otherwise all but the room for one item counting the rest.
+     * When more Pay is in effect than fits the strip (rule K10), one item's room goes to counting the rest.
      *
      * @param  list<array{project: string, is_internal: bool, kind: string, amount: string}>  $payInEffect
      * @return array{pay_in_effect: list<array{project: string, is_internal: bool, kind: string, amount: string}>, more_pay_in_effect: int}
@@ -273,8 +209,6 @@ final class EmployeePage
     }
 
     /**
-     * The Pay in effect today on each of the Assignments that has one.
-     *
      * @param  list<AssignmentRow>  $assignments
      * @return list<array{project: string, is_internal: bool, kind: string, amount: string}>
      */
@@ -298,12 +232,7 @@ final class EmployeePage
         return $inEffect;
     }
 
-    /**
-     * The Time Off tab: the Employee's Paid Days, to those who may set them,
-     * and their Time Off, to those who may see it.
-     *
-     * @return array{paidDays: int|null, timeOff: array<string, mixed>|null}
-     */
+    /** @return array{paidDays: int|null, timeOff: array<string, mixed>|null} */
     private static function timeOffTab(Employee $employee, bool $canSetPaidDays, bool $canViewTimeOff): array
     {
         return [
@@ -312,12 +241,7 @@ final class EmployeePage
         ];
     }
 
-    /**
-     * When the Employee has left, the Employees whose Manager is still set to
-     * them, one level down, and who need a new Manager.
-     *
-     * @return array<int, array{id: int, name: string}>
-     */
+    /** @return array<int, array{id: int, name: string}> */
     public static function reportsNeedingAManager(Employee $employee): array
     {
         if ($employee->employmentStatus() !== EmploymentStatus::Former) {
@@ -334,12 +258,7 @@ final class EmployeePage
             ->all();
     }
 
-    /**
-     * The Employee's record as their page shows it, with the Manager they
-     * effectively report to.
-     *
-     * @return array{email: string, start_date: string, leaving_date: string|null, department: string|null, manager: array{id: int, name: string}|null}
-     */
+    /** @return array{email: string, start_date: string, leaving_date: string|null, department: string|null, manager: array{id: int, name: string}|null} */
     private static function record(Employee $employee): array
     {
         $effective = Employee::query()->withEffectiveManager()->findOrFail($employee->id);
@@ -353,12 +272,7 @@ final class EmployeePage
         ];
     }
 
-    /**
-     * The Employee's Paid Days, their Paid Days left this year and, from
-     * October, next year, and their Time Off in every state, latest first.
-     *
-     * @return array{paid_days: int, paid_days_left: list<PaidDaysLeftInYear>, requests: array<int, array{id: int, first_date: string, last_date: string, days: int, is_paid: bool, state: string, decided_by: string|null, decline_reason: string|null}>}
-     */
+    /** @return array{paid_days: int, paid_days_left: list<PaidDaysLeftInYear>, requests: array<int, array{id: int, first_date: string, last_date: string, days: int, is_paid: bool, state: string, decided_by: string|null, decline_reason: string|null}>} */
     private static function timeOff(Employee $employee): array
     {
         return [
@@ -375,12 +289,7 @@ final class EmployeePage
     }
 
     /**
-     * The Employee's Assignments, earliest first with those that have ended
-     * last, each with its Pay history when a currency is given, which only
-     * happens for viewers allowed to see the Employee's Pay, and whether
-     * each can be deleted, for viewers who may manage the Employee's
-     * Assignments. An Assignment is active from its start date until it
-     * ends.
+     * A currency is only given for viewers allowed to see the Employee's Pay.
      *
      * @return list<AssignmentRow>
      */
@@ -415,12 +324,7 @@ final class EmployeePage
         ], array_values($assignments));
     }
 
-    /**
-     * The Assignment's Pay history, newest first: each Pay change with the
-     * last day it applies and where it stands today (PayHistory::changes()).
-     *
-     * @return list<PayChangeRow>
-     */
+    /** @return list<PayChangeRow> */
     private static function payHistory(Assignment $assignment, Currency $currency): array
     {
         return array_map(fn (array $change): array => [
@@ -433,12 +337,7 @@ final class EmployeePage
         ], PayHistory::changes($assignment, today()));
     }
 
-    /**
-     * The Projects an Employee can be put on: every Project except the
-     * Internal Project and those that have finished, by name.
-     *
-     * @return array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}>
-     */
+    /** @return array<int, array{id: int, name: string, client: string|null, start_date: string|null, end_date: string|null}> */
     private static function openProjects(): array
     {
         return Project::query()

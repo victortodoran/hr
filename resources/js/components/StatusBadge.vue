@@ -10,15 +10,8 @@ import {
 import { cn } from '@/lib/utils';
 import type { StatusBadgeState } from '@/types';
 
-/**
- * Shows a state as its tone's icon and its word (rules S6, S7): the tone
- * and icon come from statusMeta, so colour never carries the state alone.
- * The label defaults to the state's name; pass slot content to word it
- * differently.
- */
 const props = defineProps<{
     state: StatusBadgeState;
-    /** Classes merged over the badge's own, such as a width. */
     class?: HTMLAttributes['class'];
 }>();
 

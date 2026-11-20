@@ -32,19 +32,6 @@ import type {
     WorkEntryDay,
 } from '@/types';
 
-/**
- * A month of Work Entries (WorkEntryCalendar), one row per ISO week from
- * Monday, Saturday and Sunday left out when weekends are hidden. Each row
- * starts with its week number and hours; each day shows its hours, a line
- * per Work Entry with its state's icon (S10), a Declined one struck
- * through (S12), and its Time Off or nothing logged. Today's date sits in
- * a `primary` dot and the selected day has a `primary` ring on a soft fill
- * (F2). One day at a time takes focus: ←→ step a day, ↑↓ a week, and ↵
- * opens it in the WorkDayPanel, in a popover beside it. On a phone the
- * month becomes a week agenda (P10) and the panel a bottom sheet (P7).
- * Closing the panel, or opening another day, asks first while a form in
- * it holds unsaved typing.
- */
 const props = defineProps<{
     weeks: WorkEntryCalendarWeek[];
     today: string;
@@ -56,13 +43,10 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    /** Whether a form holds typing that isn't saved yet, by row key. */
     dirty: [rowKey: string, isDirty: boolean];
-    /** Show the month before (-1) or after (1), from the phone's week agenda. */
     month: [step: -1 | 1];
 }>();
 
-/** Whether the screen is wide enough for the month grid and a popover. */
 const isWide = useMediaQuery('(min-width: 640px)');
 
 /** The Period as changes made on the Calendar send it, so they come back to the Calendar. */
@@ -71,10 +55,8 @@ const calendarPeriod = computed((): Period => ({
     query: { ...props.period.query, tab: 'calendar' },
 }));
 
-/** The day opened up, if any. */
 const openDate = ref<string | null>(null);
 
-/** The Assignment of the Work Entry last added on this page. */
 const lastAssignmentId = ref<number | null>(null);
 
 const monthDays = computed(() =>
@@ -83,7 +65,6 @@ const monthDays = computed(() =>
     ),
 );
 
-/** The month's days on show, in order, without weekends when hidden. */
 const shownMonthDays = computed(() =>
     monthDays.value.filter((day) => props.showWeekends || !isWeekend(day.date)),
 );
@@ -92,7 +73,6 @@ const openDay = computed(
     () => monthDays.value.find((day) => day.date === openDate.value) ?? null,
 );
 
-/** The day that takes focus and shows as selected: today when shown, else the first. */
 const selectedDate = ref<string>('');
 
 function selectDefault(): void {
@@ -106,7 +86,6 @@ function selectDefault(): void {
 
 selectDefault();
 
-/** Another month closes the day opened up and selects its default day. */
 watch(
     () => JSON.stringify(props.period.query),
     () => {
@@ -126,10 +105,8 @@ watch(
     },
 );
 
-/** The day whose form holds typing that isn't saved yet, if any. */
 const dirtyDate = ref<string | null>(null);
 
-/** The day to open, or null to close, once the unsaved typing is given up. */
 const awaitingLeave = ref<{ date: string | null } | null>(null);
 
 function markDirty(date: string, isDirty: boolean): void {
@@ -142,10 +119,6 @@ function markDirty(date: string, isDirty: boolean): void {
     emit('dirty', `calendar-${date}`, isDirty);
 }
 
-/**
- * Opens a day, or with null closes the one open, asking first while the
- * open day's form holds unsaved typing.
- */
 function show(date: string | null): void {
     if (date === openDate.value) {
         return;
@@ -164,10 +137,6 @@ function show(date: string | null): void {
     }
 }
 
-/**
- * Keeps the open day open when it is clicked away from, or Esc is pressed,
- * while its form holds unsaved typing, and asks instead.
- */
 function holdUnsaved(event: Event): void {
     if (dirtyDate.value === null) {
         return;
@@ -177,7 +146,6 @@ function holdUnsaved(event: Event): void {
     awaitingLeave.value ??= { date: null };
 }
 
-/** Gives up the unsaved typing and goes on to the day asked for, or closes. */
 function leave(): void {
     const date = awaitingLeave.value?.date ?? null;
 
@@ -190,10 +158,6 @@ function leave(): void {
     }
 }
 
-/**
- * Puts focus where the work goes on once a popover or the unsaved-typing
- * dialog closes: in the open day's Hours, or back on the day just closed.
- */
 async function returnFocus(event: Event): Promise<void> {
     event.preventDefault();
     await nextTick();
@@ -213,7 +177,6 @@ function takesEntries(day: WorkEntryDay): boolean {
     return takesEntriesOn(day, props.canManage, props.today);
 }
 
-/** The shown day `step` days on from a date, within the month. */
 function shownDayFrom(date: string, step: -1 | 1): string | null {
     const shown = shownMonthDays.value;
     const index = shown.findIndex((day) => day.date === date);
@@ -227,7 +190,6 @@ function dayButton(date: string): HTMLButtonElement | null {
     );
 }
 
-/** The date a number of days from another, as YYYY-MM-DD. */
 function addDays(date: string, days: number): string {
     const moved = new Date(`${date}T00:00:00Z`);
     moved.setUTCDate(moved.getUTCDate() + days);
@@ -235,7 +197,6 @@ function addDays(date: string, days: number): string {
     return moved.toISOString().slice(0, 10);
 }
 
-/** ←→ step a shown day, ↑↓ a week, staying in the month. */
 function moveFocus(event: KeyboardEvent): void {
     const from = selectedDate.value;
     let to: string | null = null;
@@ -266,18 +227,14 @@ const weekdays = computed(() =>
     ),
 );
 
-/** A row's days, without Saturday and Sunday when weekends are hidden. */
 function shownDays(week: WorkEntryCalendarWeek): (WorkEntryDay | null)[] {
     return props.showWeekends ? week.days : week.days.slice(0, 5);
 }
 
-/** The Work Entry states, in the order the legend names them. */
 const states = ['pending', 'approved', 'declined'] as const;
 
-/** How many Work Entry lines a day shows before "+2 more". */
 const shownEntries = 3;
 
-/** What a day's button says to a screen reader. */
 function dayLabel(day: WorkEntryDay): string {
     const parts = [formatLongDay(day.date)];
 
@@ -302,7 +259,6 @@ const columns = computed(() =>
         : 'grid-cols-[4rem_repeat(5,minmax(0,1fr))]',
 );
 
-/** Opens a day's panel, as the page's Add Work Entry does for today. */
 defineExpose({ show });
 </script>
 

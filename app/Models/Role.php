@@ -13,8 +13,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * A named, customizable set of Permissions (ADR 0004).
- *
  * @property int $id
  * @property string $name
  * @property bool $is_admin
@@ -48,9 +46,7 @@ class Role extends Model
     }
 
     /**
-     * The Role's Permissions in the fixed Permission order, each mapped to
-     * its Scope, or to null for company-wide Permissions. Admin holds every
-     * Permission, with everyone for those about Employees.
+     * Admin stores no grants but holds every Permission, with everyone for those about Employees.
      *
      * @return array<string, string|null>
      */

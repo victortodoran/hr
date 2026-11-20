@@ -19,19 +19,13 @@ beforeEach(function () {
     travelTo('2026-12-01 09:00');
 });
 
-/**
- * Cara, who started on 6 Jan 2025 and has 20 Paid Days a year.
- *
- * @param  array<string, mixed>  $attributes
- */
+/** @param  array<string, mixed>  $attributes */
 function timeOffRequester(array $attributes = []): Employee
 {
     return Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'paid_days' => 20, 'manager_id' => fn () => Employee::factory()->startedLongAgo()->create()->id, ...$attributes]);
 }
 
 /**
- * Time Off as the request form sends it, with some changes.
- *
  * @param  array<string, mixed>  $changes
  * @return array<string, mixed>
  */
@@ -40,11 +34,7 @@ function timeOffForm(array $changes = []): array
     return ['first_date' => '2026-12-14', 'last_date' => '2026-12-16', 'is_paid' => true, ...$changes];
 }
 
-/**
- * The Employee's Time Off as stored, oldest request first.
- *
- * @return array<int, array<string, mixed>>
- */
+/** @return array<int, array<string, mixed>> */
 function storedTimeOff(Employee $employee): array
 {
     return TimeOff::query()->where('employee_id', $employee->id)->orderBy('id')->get()

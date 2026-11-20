@@ -8,12 +8,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
-/**
- * Approving Pending Time Off. Paid Time Off is checked again against the
- * Employee's Paid Days, which may have been lowered since it was requested.
- * Their Paid Days left already count it while it is Pending, so its own
- * weekdays are added back before comparing.
- */
 class TimeOffApprovalRequest extends FormRequest
 {
     /**
@@ -25,10 +19,7 @@ class TimeOffApprovalRequest extends FormRequest
     }
 
     /**
-     * Refuse Paid Time Off whose weekdays in any year it touches no longer
-     * fit that year's Paid Days left besides itself, and say how many are
-     * left so the Manager can decline it instead. Days left below 0, after
-     * HR lowered Paid Days, are told as none left.
+     * Paid Days may have been lowered since the request, and Paid Days left already count this Pending Time Off, so its own weekdays are added back.
      *
      * @return array<int, Closure(Validator): void>
      */
@@ -61,9 +52,6 @@ class TimeOffApprovalRequest extends FormRequest
         }];
     }
 
-    /**
-     * The Time Off being approved.
-     */
     public function timeOff(): TimeOff
     {
         /** @var TimeOff */

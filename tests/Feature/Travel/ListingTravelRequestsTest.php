@@ -24,20 +24,12 @@ beforeEach(function () {
     CompanySettings::factory()->create(['currency' => 'RON']);
 });
 
-/**
- * Dana, who may view the travel of everyone (or the given grants instead).
- *
- * @param  array<string, Scope|null>|null  $grants
- */
+/** @param  array<string, Scope|null>|null  $grants */
 function travelViewer(?array $grants = null): Employee
 {
     return employeeWith($grants ?? [Permission::ViewTravel->value => Scope::Everyone], ['name' => 'Dana']);
 }
 
-/**
- * An Approved Travel Request of the Employee's on their Assignment to the
- * Project, from the first to the last date.
- */
 function tripOf(Employee $employee, string $destination, string $first, string $last, string $project = 'Relaunch'): TravelRequest
 {
     return TravelRequest::factory()->on(assignmentOf($employee, $project))->approved()
@@ -45,8 +37,6 @@ function tripOf(Employee $employee, string $destination, string $first, string $
 }
 
 /**
- * Matches a page of listed Travel Requests that are these, in this order.
- *
  * @param  list<int>  $ids
  * @return Closure(Collection<int, array{id: int}>): bool
  */

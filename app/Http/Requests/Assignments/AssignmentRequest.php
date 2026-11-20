@@ -15,14 +15,6 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use LogicException;
 
-/**
- * An Assignment's Project, Job Title, dates and Capacity, when putting
- * an Employee on a Project or changing an Assignment. The Project is chosen
- * once, when the Assignment is created. Every Assignment must fall within
- * its Employee's working period and its Project's dates. The Internal
- * Assignment only takes an internal Job Title, which is optional, and a
- * Capacity; its dates follow the Employee.
- */
 class AssignmentRequest extends FormRequest
 {
     /**
@@ -54,12 +46,7 @@ class AssignmentRequest extends FormRequest
         ];
     }
 
-    /**
-     * Once the Project and dates are valid on their own, check that they fit
-     * the Employee and the Project.
-     *
-     * @return array<int, Closure(Validator): void>
-     */
+    /** @return array<int, Closure(Validator): void> */
     public function after(): array
     {
         return [function (Validator $validator): void {
@@ -71,11 +58,6 @@ class AssignmentRequest extends FormRequest
         }];
     }
 
-    /**
-     * Refuse a new Assignment on a finished Project, and any Assignment that
-     * starts before, or may run past, the Employee's or the Project's dates.
-     * The Internal Assignment takes the Employee's dates.
-     */
     private function checkDates(Validator $validator, Project $project, Employee $employee): void
     {
         if ($this->assignment() === null && $project->hasFinished()) {
@@ -93,20 +75,13 @@ class AssignmentRequest extends FormRequest
         }
     }
 
-    /**
-     * Why a date that would leave Work Entries outside the Assignment is
-     * refused, naming its Employee and leaving :date for the rule.
-     */
+    /** Leaves :date in the message for the rule to fill. */
     private function workEntriesMessage(string $message): string
     {
         return __($message, ['name' => $this->employee()->name]);
     }
 
-    /**
-     * The dates the form asks for.
-     *
-     * @return array{start_date: Carbon, end_date: Carbon|null}
-     */
+    /** @return array{start_date: Carbon, end_date: Carbon|null} */
     private function period(): array
     {
         return [
@@ -115,9 +90,6 @@ class AssignmentRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Assignment being changed, or null when creating one.
-     */
     private function assignment(): ?Assignment
     {
         $assignment = $this->route('assignment');
@@ -125,9 +97,6 @@ class AssignmentRequest extends FormRequest
         return $assignment instanceof Assignment ? $assignment : null; // @pest-mutate-ignore (the route parameter is always an Assignment or absent)
     }
 
-    /**
-     * The Employee the Assignment belongs to.
-     */
     private function employee(): Employee
     {
         $employee = $this->assignment()->employee ?? $this->route('employee');
@@ -135,9 +104,6 @@ class AssignmentRequest extends FormRequest
         return $employee instanceof Employee ? $employee : throw new LogicException('An Assignment always belongs to an Employee.'); // @pest-mutate-ignore (both routes always bind an Employee or an Assignment)
     }
 
-    /**
-     * The Project the Assignment is for: its own, or the one chosen.
-     */
     private function project(): Project
     {
         return $this->assignment()->project ?? Project::query()->findOrFail($this->integer('project_id'));

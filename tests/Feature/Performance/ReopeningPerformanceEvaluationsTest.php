@@ -21,8 +21,7 @@ covers(PerformanceEvaluationReopeningController::class, AssessPerformanceEvaluat
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
 /**
- * Ben, who manages Cara, whose 2026 Performance Evaluation he has
- * Completed.
+ * Ben, his Report Cara, and her 2026 Performance Evaluation he has Completed.
  *
  * @return array{Employee, Employee, PerformanceEvaluation}
  */

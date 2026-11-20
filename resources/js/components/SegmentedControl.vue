@@ -7,27 +7,17 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-/**
- * Switches the view of the same data, or a choice of at most three
- * options (rules K3, V8): List · Calendar, Paid · Unpaid. One option is
- * always on; the one on sits raised on the track, and ←/→ move between
- * them. An option can be disabled, and can explain itself in a Tooltip,
- * which also shows on a disabled one (the Role matrix's ScopeControl, V8).
- */
 const props = defineProps<{
     options: {
         value: Value;
         label: string;
         icon?: Component;
         disabled?: boolean;
-        /** Explains the option on hover and focus. */
         tooltip?: string;
     }[];
-    /** Names the choice for screen readers, such as "View". */
     label: string;
     size?: 'default' | 'sm';
     disabled?: boolean;
-    /** Spans its container on a phone, with 44px targets (P6). */
     fillOnPhone?: boolean;
 }>();
 

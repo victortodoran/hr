@@ -31,14 +31,7 @@ import {
 import { computed } from 'vue';
 import IconButton from '@/components/IconButton.vue';
 
-/**
- * The month calendar a DatePicker or DateRangePicker opens below its
- * field: ‹ month › and a grid of days, the chosen day, or the first and
- * last day of a range, in `primary` and the days between in `primary-soft`
- * (rule F2), today in bold.
- */
 const props = defineProps<{
-    /** Draws a DateRangePicker's calendar instead of a DatePicker's. */
     range?: boolean;
 }>();
 

@@ -4,18 +4,10 @@ import { ArrowRight } from '@lucide/vue';
 import TextLink from '@/components/TextLink.vue';
 import { Card } from '@/components/ui/card';
 
-/**
- * One widget on Home (rules L9, L15): a Card with a `text-section` title,
- * an optional note after it in the `meta` slot, an optional link to the
- * page it summarises on the right, an optional one-line description, and
- * its rows or stats in the default slot.
- */
 defineProps<{
     title: string;
     description?: string;
-    /** Where the header link goes, such as the Approvals page. */
     href?: InertiaLinkProps['href'];
-    /** The header link's words, such as "Open Approvals". */
     linkLabel?: string;
 }>();
 

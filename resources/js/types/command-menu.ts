@@ -1,7 +1,3 @@
-/**
- * The command menu's search results (App\Pages\Search\CommandMenuResults):
- * at most five of each, only what the viewer could already open.
- */
 export type CommandMenuResults = {
     people: {
         id: number;

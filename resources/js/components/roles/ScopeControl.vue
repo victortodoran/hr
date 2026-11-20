@@ -4,22 +4,12 @@ import SegmentedControl from '@/components/SegmentedControl.vue';
 import { scopes } from '@/lib/roles';
 import type { Scope } from '@/types';
 
-/**
- * A scoped Permission's row in the Role editor's matrix: a SegmentedControl
- * of all four Scopes, None · Own · Reports · Everyone (rule V8), where None
- * leaves the Permission out of the Role and the Scopes the Permission can't
- * take are disabled. Each option says what it means in a Tooltip. On a
- * phone it spans the row, with 44px targets.
- */
 const props = defineProps<{
-    /** The Permission's name, which labels the group. */
     label: string;
-    /** The Scopes the Permission can be given with. */
     allowed: Scope[];
     disabled?: boolean;
 }>();
 
-/** The Scope the Role gives the Permission with, or 'none' when it leaves it out. */
 const model = defineModel<Scope | 'none'>({ required: true });
 
 const options = computed(() =>

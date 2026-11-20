@@ -13,15 +13,8 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-/**
- * A row's actions (rule K2): one or two frequent ones as `ghost` icon
- * buttons in the default slot, and the rest in the ⋯ menu's `menu` slot,
- * destructive items last. On a pointer screen they show while the row is
- * hovered or holds focus, so keyboards still reach them. Each icon button
- * names itself in a Tooltip (rule F20).
- */
+/** On a pointer screen they show while the row is hovered or holds focus, so keyboards still reach them. */
 defineProps<{
-    /** Names the row, for the ⋯ button, such as "Cara Lane's Work Entry on Nov 10". */
     label: string;
 }>();
 
@@ -30,10 +23,7 @@ defineSlots<{
     menu?: () => unknown;
 }>();
 
-/**
- * The ⋯ button. Its Tooltip sits between it and the menu, so the menu is
- * anchored to it by hand: reka-ui would otherwise anchor it to the Tooltip.
- */
+/** The menu is anchored to the button by hand: reka-ui would otherwise anchor it to the Tooltip in between. */
 const trigger = ref<InstanceType<typeof Button> | null>(null);
 </script>
 

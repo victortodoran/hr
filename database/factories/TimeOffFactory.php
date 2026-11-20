@@ -12,11 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TimeOffFactory extends Factory
 {
-    /**
-     * Pending Paid Time Off for a week a month from now.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         $first = today()->addMonth()->startOfWeek();
@@ -29,9 +25,6 @@ class TimeOffFactory extends Factory
         ];
     }
 
-    /**
-     * Unpaid Time Off, using no Paid Days.
-     */
     public function unpaid(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -39,9 +32,6 @@ class TimeOffFactory extends Factory
         ]);
     }
 
-    /**
-     * Approved by someone else an hour ago, unless told who.
-     */
     public function approved(?Employee $approver = null): static
     {
         return $this->state(fn (array $attributes) => [
@@ -51,9 +41,6 @@ class TimeOffFactory extends Factory
         ]);
     }
 
-    /**
-     * Declined by someone else an hour ago, with a reason.
-     */
     public function declined(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -64,9 +51,6 @@ class TimeOffFactory extends Factory
         ]);
     }
 
-    /**
-     * Cancelled by the Employee an hour ago, while it was Pending.
-     */
     public function cancelled(): static
     {
         return $this->state(fn (array $attributes) => [

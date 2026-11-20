@@ -9,35 +9,20 @@ import {
 } from '@/components/ui/tooltip';
 import { formatHours } from '@/lib/work-entries';
 
-/**
- * Hours per month as bars, without a chart library (rule K18): grayscale
- * bars sized against the busiest month, the current one in `primary`, the
- * Pending hours of each bar hatched on top, a one-letter axis label under
- * each, and a legend with the Approved and Pending totals. Each bar names
- * its hours in a Tooltip and its `aria-label` and, given an `href`, opens
- * that month; an sr-only table lists the hours for screen readers.
- */
 const props = defineProps<{
     bars: {
-        /** The month's full name, such as "November 2026". */
         label: string;
-        /** Its axis label, such as "N". */
         axisLabel: string;
-        /** Every counted hour, Pending included. */
+        /** Pending included. */
         hours: number;
-        /** How many of those hours are still Pending. */
         pendingHours: number;
-        /** Whether this is the current month, drawn in `primary`. */
         current: boolean;
         href?: InertiaLinkProps['href'];
     }[];
-    /** What the sr-only table holds, such as "Your hours each month of 2026". */
     caption: string;
-    /** A line after the legend, such as "Declined not counted". */
     note?: string;
 }>();
 
-/** The busiest month's hours, which a full-height bar stands for. */
 const most = computed(() => Math.max(...props.bars.map((bar) => bar.hours), 0));
 
 const pendingTotal = computed(() =>
@@ -50,12 +35,10 @@ const approvedTotal = computed(
         pendingTotal.value,
 );
 
-/** A part's share of the busiest month, as a CSS height. */
 function heightOf(part: number): string {
     return most.value === 0 ? '0%' : `${(part / most.value) * 100}%`;
 }
 
-/** What a bar says, such as "November 2026: 96 h, 36 h Pending". */
 function describe(bar: (typeof props.bars)[number]): string {
     return [
         `${bar.label}: ${formatHours(bar.hours)}`,

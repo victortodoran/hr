@@ -40,8 +40,7 @@ function evaluationsListLine(): array
 }
 
 /**
- * Assert the page's rows for the viewer, each as its name, its
- * Evaluation's state and its Outcome.
+ * Each expected row is its name, its Evaluation's state and its Outcome.
  *
  * @param  array<string, string>  $query
  * @param  array<mixed>  $expected

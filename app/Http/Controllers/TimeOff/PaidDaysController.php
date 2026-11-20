@@ -9,15 +9,8 @@ use App\Models\Employee;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Lets those who manage Paid Days set an Employee's Paid Days: one number
- * that applies to every year, past ones included.
- */
 class PaidDaysController extends Controller
 {
-    /**
-     * Set the Employee's Paid Days.
-     */
     public function store(PaidDaysRequest $request, Employee $employee): RedirectResponse
     {
         $employee->paid_days = $request->integer('days');

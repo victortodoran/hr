@@ -9,14 +9,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Carbon;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
-/**
- * Keeps an Employee's or a Project's dates around its Assignments: the start
- * can't be later than the first Assignment starts, and the end can't be
- * earlier than the last one starts, since every Assignment falls within
- * those dates. The Internal Assignment follows the Employee's dates, so it
- * never stands in the way. With no owner yet (when adding one), anything
- * fits.
- */
+/** The Internal Assignment follows the Employee's dates, so it never stands in the way. */
 class AssignmentsFit implements ValidationRule
 {
     /**
@@ -28,25 +21,17 @@ class AssignmentsFit implements ValidationRule
         private string $message,
     ) {}
 
-    /**
-     * A start date no later than the owner's first Assignment starts.
-     */
     public static function startOf(Employee|Project|null $owner, string $message): self
     {
         return new self($owner, isStart: true, message: $message);
     }
 
-    /**
-     * An end date no earlier than the owner's last Assignment starts.
-     */
     public static function endOf(Employee|Project|null $owner, string $message): self
     {
         return new self($owner, isStart: false, message: $message);
     }
 
-    /**
-     * @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail
-     */
+    /** @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if ($this->owner === null) {

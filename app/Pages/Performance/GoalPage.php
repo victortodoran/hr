@@ -9,18 +9,10 @@ use App\Models\PerformanceEvaluation;
 use App\Models\ProgressChange;
 use App\Support\PerformanceEvaluationHeading;
 
-/**
- * A Goal's own page as the props it renders: the Goal with its Progress
- * and every change to it, and its Comments.
- */
 final class GoalPage
 {
     /**
-     * The Goal with its Progress and every change to it, newest first, and
-     * its Comments, oldest first, and whether the viewer may change the
-     * Progress, write Comments, and edit or delete the Goal, and whether
-     * it opens with the Edit Goal sheet open (rule L14), which only someone
-     * who may edit it gets.
+     * Only someone who may edit the Goal gets it with the Edit Goal sheet open (rule L14).
      *
      * @return array<string, mixed>
      */

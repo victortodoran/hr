@@ -6,17 +6,9 @@ use App\Enums\TimeOffState;
 use App\Models\Employee;
 use App\Models\TimeOff;
 
-/**
- * Approves Pending Time Off, as the Employee's effective Manager.
- */
 class ApproveTimeOff
 {
-    /**
-     * Approve the Time Off, recording who approved it and when, and return
-     * whether it changed. The write only changes Time Off still Pending, so
-     * a cancellation or decision made since the policy check is never
-     * overwritten; then nothing changes and false is returned.
-     */
+    /** Only a still-Pending row changes, so a decision made since the policy check wins. */
     public function approve(Employee $actor, TimeOff $timeOff): bool
     {
         $changed = TimeOff::query()

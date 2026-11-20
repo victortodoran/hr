@@ -16,10 +16,6 @@ beforeEach(function () {
     travelTo('2026-12-01 09:00');
 });
 
-/**
- * Cara's Time Off from Mon 14 to Wed 16 Dec 2026, Pending unless given
- * another factory state.
- */
 function carasTimeOff(?string $state = null): TimeOff
 {
     $factory = TimeOff::factory()->for(Employee::factory()->startedLongAgo()->create(['name' => 'Cara', 'paid_days' => 20]));

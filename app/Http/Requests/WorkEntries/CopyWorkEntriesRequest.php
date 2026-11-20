@@ -13,14 +13,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use LogicException;
 
-/**
- * The day to copy an Employee's Work Entries onto, from the latest of the
- * days before it, at most a week back, that has any that aren't Declined.
- * Only those whose Assignment runs on the day are copied, and only onto a
- * day with no Work Entries yet but Declined ones, up to today and without
- * Time Off. A day holds at most 24 hours, and Declined hours count
- * nowhere, so copying one onto such a day never goes past them.
- */
 class CopyWorkEntriesRequest extends FormRequest
 {
     /** @var Collection<int, WorkEntry>|null */
@@ -41,8 +33,7 @@ class CopyWorkEntriesRequest extends FormRequest
     }
 
     /**
-     * Once the date is valid on its own, check there is something to copy
-     * onto it.
+     * No 24-hour check: a day holds at most 24 hours and Declined hours count nowhere, so copying onto a day with only Declined ones never goes past it.
      *
      * @return array<int, Closure(Validator): void>
      */
@@ -83,18 +74,11 @@ class CopyWorkEntriesRequest extends FormRequest
         }];
     }
 
-    /**
-     * The day to copy onto.
-     */
     public function day(): CarbonImmutable
     {
         return CarbonImmutable::parse($this->string('date')->value())->startOfDay();
     }
 
-    /**
-     * The latest day in the week before the date with any of the Employee's
-     * Work Entries that aren't Declined; null when there is none.
-     */
     public function sourceDate(): ?CarbonImmutable
     {
         if ($this->sourceDateFound) {
@@ -110,10 +94,6 @@ class CopyWorkEntriesRequest extends FormRequest
         return $this->sourceDate = is_string($latest) ? CarbonImmutable::parse($latest)->startOfDay() : null;
     }
 
-    /**
-     * The source day as people read it: "Thu 12", or "Fri 31 Oct" when it
-     * falls in another month than the day copied onto.
-     */
     public function sourceLabel(): string
     {
         $source = $this->sourceDate();
@@ -121,12 +101,7 @@ class CopyWorkEntriesRequest extends FormRequest
         return $source === null ? '' : $source->format($source->isSameMonth($this->day()) ? 'D j' : 'D j M');
     }
 
-    /**
-     * The source day's Work Entries that aren't Declined and whose
-     * Assignment runs on the date, in the order they were recorded.
-     *
-     * @return Collection<int, WorkEntry>
-     */
+    /** @return Collection<int, WorkEntry> */
     public function toCopy(): Collection
     {
         if ($this->toCopy !== null) {
@@ -145,9 +120,6 @@ class CopyWorkEntriesRequest extends FormRequest
                 ->get();
     }
 
-    /**
-     * The Employee whose Work Entries these are.
-     */
     public function employee(): Employee
     {
         $employee = $this->route('employee');

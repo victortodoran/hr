@@ -21,12 +21,7 @@ beforeEach(function () {
     travelTo('2026-11-11 09:00');
 });
 
-/**
- * Ben, below Ada at the top, with Cara reporting to him and Dev reporting
- * to Cara.
- *
- * @return array{ada: Employee, ben: Employee, cara: Employee, dev: Employee}
- */
+/** @return array{ada: Employee, ben: Employee, cara: Employee, dev: Employee} */
 function waitingTeam(): array
 {
     $ada = Employee::factory()->create(['name' => 'Ada']);
@@ -37,9 +32,6 @@ function waitingTeam(): array
     return compact('ada', 'ben', 'cara', 'dev');
 }
 
-/**
- * Assert the Approvals count the signed-in Employee sees in the sidebar.
- */
 function assertApprovalsWaiting(Employee $employee, int $count): void
 {
     actingAs($employee)->get(route('landing'))

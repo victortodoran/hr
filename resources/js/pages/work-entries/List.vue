@@ -40,25 +40,16 @@ defineOptions({
     },
 });
 
-/**
- * Work Entries of the Employees the viewer may see, a Period and an Employee
- * at a time, or every Employee at once, with reopening the selected ones.
- * Approving happens on Approvals.
- */
 const props = defineProps<{
     filters: WorkEntryListFilters;
     today: string;
     canReopen: boolean;
     entries: Paginated<ListedWorkEntry>;
-    /** Total hours of every Work Entry matching the filters. */
     total: number;
-    /** Total hours of the matching Declined Work Entries, which count nowhere. */
     declinedTotal: number;
-    /** Every matching Work Entry's ID; only sent when asked for. */
+    /** Only sent when asked for. */
     matchingIds?: number[];
-    /** Who has Work Entries in the Period, by name, with how many. */
     employees: EmployeeWithCount[];
-    /** The Projects the Employee shown, or anyone, has Work Entries on in the Period. */
     projects: Choice[];
 }>();
 
@@ -68,12 +59,6 @@ const states: StateChoice<WorkEntryState>[] = [
     { value: 'declined', label: 'Declined' },
 ];
 
-/**
- * The list's columns: a checkbox when the viewer can reopen, then Day,
- * Employee, Description, Project, Status and Hours. On a phone a row keeps
- * the checkbox, Day, Employee and Hours, with the Status, and why it was
- * Declined, under the name.
- */
 const columns = computed<TableColumn[]>(() => [
     ...(props.canReopen ? [{ key: 'select', label: 'Select' }] : []),
     { key: 'date', label: 'Day' },
@@ -114,9 +99,6 @@ const canSelectAllMatching = computed(
         props.canReopen,
 );
 
-/**
- * The week on the Work page holding the Work Entry, for its Employee.
- */
 function weekOf(entry: ListedWorkEntry): string {
     return week.url({
         query: { employee: entry.employee.id, week: entry.date },

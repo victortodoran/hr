@@ -12,19 +12,10 @@ use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\Style;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/**
- * An export as a file to download, shared by every export: a bold header
- * row, then the rows, written one by one so a long list never sits in
- * memory, with cells for dates and text that read the same way in each.
- */
+/** Rows are written one by one, so a long list never sits in memory. */
 final class Spreadsheet
 {
     /**
-     * The query's models, in its order, as a download named after what it
-     * holds and the Period, such as "work-entries-2026-11-01-to-2026-11-30.csv":
-     * the headers, then one row per model of the cells it gives. The models
-     * are read 500 at a time while the file is sent.
-     *
      * @template TModel of Model
      *
      * @param  Builder<TModel>  $query
@@ -48,10 +39,7 @@ final class Spreadsheet
         }, $name, ['Content-Type' => $format->contentType()]);
     }
 
-    /**
-     * A day as a date cell in Excel, formatted like 2026-11-03, or as that
-     * text in a CSV file, which has no dates; empty when there is none.
-     */
+    /** A CSV file has no dates, so there the day is text. */
     public static function date(?DateTimeInterface $day, SpreadsheetFormat $format): Cell
     {
         return match (true) {
@@ -61,13 +49,7 @@ final class Spreadsheet
         };
     }
 
-    /**
-     * Text as text. Excel keeps it so; in a CSV file, text starting like a
-     * formula (=, +, - or @, or their full-width forms, even after spaces, or
-     * a tab or a carriage return) gets a leading apostrophe, so a description
-     * such as "=HYPERLINK(...)" doesn't run when the file is opened in a
-     * spreadsheet.
-     */
+    /** In a CSV file, text starting like a formula gets a leading apostrophe, so it doesn't run when the file is opened in a spreadsheet. */
     public static function text(string $text, SpreadsheetFormat $format): Cell
     {
         if ($format === SpreadsheetFormat::Csv && preg_match('/^\s*[=+\-@\x{FF1D}\x{FF0B}\x{FF0D}\x{FF20}]|^[\t\r]/u', $text) === 1) {

@@ -8,28 +8,18 @@ import { timeOffKindLabel } from '@/lib/time-off';
 import { formatHours } from '@/lib/work-entries';
 import type { WorkEntryCalendarWeek, WorkEntryDay } from '@/types';
 
-/**
- * The Calendar on a phone (rule P10): one week of the month at a time, a
- * strip of its days with each one's state icon, then a row per day with
- * its Work Entries and hours, today highlighted. ‹ › step a week, and on
- * from the month's first or last week to the month before or after.
- * Tapping a day opens it in the day panel's bottom sheet.
- */
 const props = defineProps<{
     weeks: WorkEntryCalendarWeek[];
     today: string;
     showWeekends: boolean;
-    /** The day open in the panel, if any. */
     selectedDate: string | null;
 }>();
 
 const emit = defineEmits<{
     open: [date: string];
-    /** Show the month before (-1) or after (1). */
     month: [step: -1 | 1];
 }>();
 
-/** The week holding today, or else the month's first. */
 function defaultWeek(): number {
     const index = props.weeks.findIndex((week) =>
         week.days.some((day) => day?.date === props.today),
@@ -40,7 +30,6 @@ function defaultWeek(): number {
 
 const weekIndex = ref(defaultWeek());
 
-/** Which end of the next month to start on, once it arrives. */
 const arriving = ref<'first' | 'last' | null>(null);
 
 watch(
@@ -58,7 +47,6 @@ watch(
 
 const week = computed(() => props.weeks[weekIndex.value]);
 
-/** The week's days in the month, without weekends when hidden. */
 const days = computed(() =>
     (week.value?.days ?? []).filter(
         (day): day is WorkEntryDay =>
@@ -66,7 +54,6 @@ const days = computed(() =>
     ),
 );
 
-/** The week's strip, a column per weekday, blank for other months' days. */
 const strip = computed(() =>
     (week.value?.days ?? [])
         .map((day, index) => ({ day, letter: 'MTWTFSS'[index] }))
@@ -94,7 +81,6 @@ function step(by: -1 | 1): void {
     emit('month', by);
 }
 
-/** The state the strip shows for a day: its first Work Entry's. */
 function stripState(day: WorkEntryDay) {
     return day.entries[0]?.state ?? null;
 }

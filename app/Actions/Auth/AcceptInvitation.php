@@ -7,16 +7,10 @@ use App\Models\Employee;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Lets an invited Employee set their password from the invitation email,
- * which also verifies their email.
- */
 class AcceptInvitation
 {
     /**
-     * Set the invited Employee's password and verify their email, refusing
-     * an invitation link that is invalid or has expired, and an Employee
-     * whose Leaving Date has passed, who can't sign in anyway.
+     * A Former Employee is refused, as they can't sign in anyway.
      *
      * @param  array{email: string, password: string, password_confirmation: string, token: string}  $credentials
      *

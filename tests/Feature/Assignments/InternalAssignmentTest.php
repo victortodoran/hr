@@ -18,12 +18,7 @@ covers(AssignmentController::class, DeleteAssignment::class, AssignmentRequest::
 
 beforeEach(fn () => travelTo('2026-03-01 09:00'));
 
-/**
- * An Employee working since 2024 with their Internal Assignment, who has a
- * Manager.
- *
- * @param  array<string, mixed>  $attributes
- */
+/** @param  array<string, mixed>  $attributes */
 function internallyAssigned(array $attributes = []): Employee
 {
     $employee = Employee::factory()->create([
@@ -36,9 +31,6 @@ function internallyAssigned(array $attributes = []): Employee
     return $employee;
 }
 
-/**
- * The Internal Assignment's dates as "start – end".
- */
 function internalPeriodOf(Employee $employee): string
 {
     $internal = $employee->internalAssignment()->sole();

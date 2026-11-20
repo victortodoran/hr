@@ -27,22 +27,11 @@ defineOptions({
     },
 });
 
-/**
- * The Employee's own Time Off (rule L11): a StatStrip of their Paid Days
- * left (L10), then every request, latest first, with Cancel in the ⋯ menu
- * of those whose first date is still to come (K2, X4). Request Time Off,
- * the one primary (B2), opens its sheet over the page; the sheet's own
- * URL, `time-off/create`, renders this page with `requesting` set (L14).
- */
 const props = defineProps<{
-    /** The Employee's effective Manager, who decides their Time Off, if they have one. */
     manager: string | null;
-    /** This year's Paid Days left and, from October, next year's. */
     paidDaysLeft: PaidDaysLeftInYear[];
     timeOff: TimeOffRecord[];
-    /** Whether the Request Time Off sheet is open. */
     requesting?: boolean;
-    /** The earliest first date, sent with the sheet. */
     today?: string;
 }>();
 
@@ -73,7 +62,6 @@ const { open: sheetOpen, setOpen: setSheetOpen } = useOverlayRoute(
     () => index().url,
 );
 
-/** The Time Off the Cancel Time Off dialog asks about. */
 const cancelling = ref<TimeOffRecord | null>(null);
 const cancelOpen = ref(false);
 

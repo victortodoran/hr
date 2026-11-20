@@ -14,19 +14,11 @@ import { index, show } from '@/routes/clients';
 import { show as showProject } from '@/routes/projects';
 import type { Choice, ClientProject, TeamAssignment } from '@/types';
 
-/**
- * A Client and who works for it today (rule L12): one table of the
- * Assignments running today on its Projects, grouped by Project, each
- * group row naming the Project and its dates; a Project no one is
- * assigned to keeps its group row, saying so. Rename… and the ⋯ menu's
- * Delete… open the same dialogs as the Clients' row menus (K7, X6).
- */
 const props = defineProps<{
     client: Choice;
     projects: ClientProject[];
 }>();
 
-/** The Client as the Rename and Delete dialogs take it. */
 const record = computed(() => ({
     ...props.client,
     projects_count: props.projects.length,

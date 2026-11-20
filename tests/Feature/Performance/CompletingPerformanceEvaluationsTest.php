@@ -25,8 +25,7 @@ covers(GoalOutcomeController::class, GoalOutcomeRequest::class, PerformanceEvalu
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
 /**
- * Cara's Open 2026 Performance Evaluation with two Goals, written by Ben,
- * her Manager.
+ * Ben, his Report Cara, her Open 2026 Performance Evaluation and its two Goals.
  *
  * @return array{Employee, Employee, PerformanceEvaluation, Goal, Goal}
  */
@@ -41,25 +40,16 @@ function carasEvaluation(): array
     return [$ben, $cara, $evaluation, $api, $mentoring];
 }
 
-/**
- * The route that saves the summary.
- */
 function summaryRoute(PerformanceEvaluation $evaluation): string
 {
     return route('performance-evaluations.summary.update', $evaluation);
 }
 
-/**
- * The route that gives the whole its Outcome, Completing it.
- */
 function completionRoute(PerformanceEvaluation $evaluation): string
 {
     return route('performance-evaluations.completion.store', $evaluation);
 }
 
-/**
- * The route that gives one Goal its Outcome.
- */
 function goalOutcomeRoute(Goal $goal): string
 {
     return route('performance-evaluations.goals.outcome.update', [$goal->performance_evaluation_id, $goal]);

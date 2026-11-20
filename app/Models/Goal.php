@@ -14,10 +14,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Something an Employee's Manager asks them to achieve during the year of
- * one Performance Evaluation, with a title and a description. It belongs
- * to no Assignment or Project.
- *
  * @property int $id
  * @property int $performance_evaluation_id
  * @property string $title
@@ -37,20 +33,12 @@ class Goal extends Model
     /** @use HasFactory<GoalFactory> */
     use HasFactory;
 
-    /**
-     * Every Goal starts Not Started.
-     *
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     protected $attributes = [
         'progress' => 'not-started', // @pest-mutate-ignore (the column defaults to not-started too, so stored Goals look the same)
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -67,21 +55,13 @@ class Goal extends Model
         return $this->belongsTo(PerformanceEvaluation::class);
     }
 
-    /**
-     * Every change to its Progress, newest first.
-     *
-     * @return HasMany<ProgressChange, $this>
-     */
+    /** @return HasMany<ProgressChange, $this> */
     public function progressChanges(): HasMany
     {
         return $this->hasMany(ProgressChange::class)->latest('id');
     }
 
-    /**
-     * The Comments written on it, oldest first.
-     *
-     * @return HasMany<Comment, $this>
-     */
+    /** @return HasMany<Comment, $this> */
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class)->orderBy('id');

@@ -15,24 +15,12 @@ import { edit as editTravelExpense } from '@/routes/travel-requests/expenses';
 import { index as workEntries } from '@/routes/work-entries';
 import type { NeedsAttention, NeedsAttentionItem } from '@/types';
 
-/**
- * The signed-in Employee's Declined Work Entries, Travel Requests, Travel
- * Expenses and Time Off, a row each: its StatusBadge, what it is, linked to
- * where it lives, the reason as one muted line (two at most), and Edit on
- * the right for the kinds that are edited (a Work Entry on its week, a
- * Travel Expense in its form).
- */
 const props = defineProps<{
     needsAttention: NeedsAttention;
 }>();
 
 type Href = NonNullable<InertiaLinkProps['href']>;
 
-/**
- * How a row reads and where it leads: what the item is, such as
- * "Work Entry · Nov 10, 2026, Relaunch, 1.5 h", where it lives, and
- * where it is edited, when it can be.
- */
 function describe(item: NeedsAttentionItem): {
     name: string;
     href: Href;

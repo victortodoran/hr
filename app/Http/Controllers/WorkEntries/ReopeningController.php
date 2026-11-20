@@ -10,20 +10,8 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Reopening Work Entries from the Work Entries page: sending Approved ones
- * back to Pending so they can be corrected. Only a Role that grants reopening
- * reopens them; being the Manager is not enough, and nobody reopens their
- * own.
- */
 class ReopeningController extends Controller
 {
-    /**
-     * Reopen the selected Work Entries the actor may reopen: Approved ones of
-     * Employees their reopen Scope covers, never their own, sent back to
-     * Pending with their approval withdrawn. The rest are skipped, and the
-     * toast says how many of each.
-     */
     public function store(#[CurrentUser] Employee $actor, SelectedWorkEntriesRequest $request, ReopenWorkEntries $reopenWorkEntries): RedirectResponse
     {
         $ids = $request->ids();

@@ -11,9 +11,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/**
- * A Project's name, dates and optional Client, when creating or editing one.
- */
 class ProjectRequest extends FormRequest
 {
     /**

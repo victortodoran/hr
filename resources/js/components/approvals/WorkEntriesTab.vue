@@ -36,23 +36,13 @@ import type {
     TableColumn,
 } from '@/types';
 
-/**
- * The Work Entries tab of the Approvals page: the Pending Work Entries of
- * one Employee on one Project, grouped by week with each week's hours
- * (rule K1). Each is approved or declined from its row or its
- * RecordSheet, or the ticked ones together from the SelectionBar. With
- * nothing waiting there is no Employee to choose.
- */
 const props = defineProps<{
     filters: ApprovalFilters;
     entries: Paginated<ApprovalEntry>;
-    /** Total hours of every Work Entry matching the filters. */
     total: number;
-    /** Every week the matching Work Entries fall in, with all their hours. */
     weeks: ApprovalWeek[];
-    /** How many Work Entries wait for the viewer, across every Employee. */
     waiting: number;
-    /** Every matching Work Entry's ID; only sent when asked for. */
+    /** Only sent when asked for. */
     matchingIds?: number[];
     employees: ChoiceToApprove[];
     projects: ChoiceToApprove[];
@@ -78,7 +68,6 @@ const { record, recordOpen, openRecord, closeRecord } = useRecordInUrl(
 
 const { approving, approveOne: approve } = useApproveOne();
 
-/** The other Pending Work Entries of the open one's week, on this page. */
 const otherPending = computed(() => {
     const open = record.value;
 
@@ -111,11 +100,7 @@ const selectedOnPage = computed(() =>
     props.entries.data.filter((entry) => selection.isSelected(entry.id)),
 );
 
-/**
- * The ticked Work Entries' hours, when they are known: all on this page,
- * or every matching one. A selection spread over pages has no total, as
- * only this page's hours are here.
- */
+/** A selection spread over pages has no total, as only this page's hours are here. */
 const selectedHours = computed((): string | undefined => {
     if (selected.value.length === props.entries.total) {
         return formatHours(props.total);
@@ -130,12 +115,10 @@ const selectedHours = computed((): string | undefined => {
     );
 });
 
-/** Whose Work Entry a row is and when, naming its tick-box and buttons. */
 function describe(entry: ApprovalEntry): string {
     return `${entry.employee.name}'s Work Entry on ${formatDate(entry.date)}`;
 }
 
-/** What the DecideDialog says it declines. */
 function summaryOf(entries: ApprovalEntry[]): string {
     const hours = entries.reduce((sum, entry) => sum + entry.hours, 0);
     const days =

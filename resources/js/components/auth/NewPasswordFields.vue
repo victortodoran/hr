@@ -4,18 +4,13 @@ import PasswordInput from '@/components/PasswordInput.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-/**
- * The fields for choosing a password on the auth card (rule L17): the
- * account's email, read-only as the link fixed it, then the new password
- * and its confirmation. Reset password and Set your password share them.
- */
+/** The email is read-only because the link fixed it. */
 defineProps<{
     email: string;
     passwordRules: string;
     errors: Partial<
         Record<'email' | 'password' | 'password_confirmation', string>
     >;
-    /** The new password's label, such as "New password". */
     passwordLabel?: string;
 }>();
 </script>

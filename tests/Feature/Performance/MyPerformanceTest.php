@@ -15,9 +15,6 @@ covers(MyPerformanceEvaluationController::class, MyPerformanceEvaluationsPage::c
 
 beforeEach(fn () => travelTo('2026-12-01 09:00'));
 
-/**
- * Cara, who started long ago and reports to Ben.
- */
 function caraOnMyPerformance(): Employee
 {
     return Employee::factory()->startedLongAgo()->reportingTo(managerBen())->create(['name' => 'Cara']);

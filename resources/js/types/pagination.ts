@@ -1,6 +1,3 @@
-/**
- * One page of a Laravel paginator, as Inertia receives it.
- */
 export type Paginated<T> = {
     data: T[];
     from: number | null;

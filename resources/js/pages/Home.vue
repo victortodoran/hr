@@ -26,24 +26,15 @@ defineOptions({
     },
 });
 
-/**
- * Home on the dashboard template (rule L15): a widget per block, in
- * priority order. Each block is null when it doesn't apply to the Employee.
- */
 defineProps<{
-    /** Whether the Employee has no Manager, so records no Work Entries; only true when they can see Work Entries. */
     hasNoManager: boolean;
     /** Null for an Employee with no Manager and anyone who can't see Work Entries. */
     hoursThisMonth: HoursThisMonth | null;
     /** Null exactly when hoursThisMonth is. */
     hoursThisYear: HoursThisYear | null;
-    /** This year's Paid Days left and, from October, next year's. */
     paidDaysLeft: PaidDaysLeftInYear[];
-    /** The next Pending or Approved Time Off that hasn't ended. */
     nextTimeOff: TimeOffDetails | null;
-    /** What of the Employee's was declined; null when nothing is. */
     needsAttention: NeedsAttention | null;
-    /** What waits for the Employee to decide; null when nothing does. */
     waitingForYou: ApprovalsWaiting | null;
 }>();
 </script>

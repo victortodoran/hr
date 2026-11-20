@@ -6,18 +6,9 @@ use App\Enums\TimeOffState;
 use App\Models\Employee;
 use App\Models\TimeOff;
 
-/**
- * Declines Pending Time Off, as the Employee's effective Manager.
- */
 class DeclineTimeOff
 {
-    /**
-     * Decline the Time Off, recording who declined it, when and why, and
-     * return whether it changed. It is kept on record, uses no Paid Days and
-     * the Employee sees the reason. The write only changes Time Off still
-     * Pending, so a cancellation or decision made since the policy check is
-     * never overwritten; then nothing changes and false is returned.
-     */
+    /** Only a still-Pending row changes, so a decision made since the policy check wins. */
     public function decline(Employee $actor, TimeOff $timeOff, string $reason): bool
     {
         $changed = TimeOff::query()

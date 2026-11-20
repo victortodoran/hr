@@ -13,12 +13,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TravelRequestFactory extends Factory
 {
-    /**
-     * A Pending Travel Request for three days a month from now, on a new
-     * open-ended Assignment of the Employee's.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         $first = today()->addMonth();
@@ -33,9 +28,6 @@ class TravelRequestFactory extends Factory
         ];
     }
 
-    /**
-     * On one of the Employee's Assignments, for that Employee.
-     */
     public function on(Assignment $assignment): static
     {
         return $this->state(fn (array $attributes) => [
@@ -44,9 +36,6 @@ class TravelRequestFactory extends Factory
         ]);
     }
 
-    /**
-     * Approved by someone else an hour ago, unless told who.
-     */
     public function approved(?Employee $approver = null): static
     {
         return $this->state(fn (array $attributes) => [
@@ -56,9 +45,6 @@ class TravelRequestFactory extends Factory
         ]);
     }
 
-    /**
-     * Declined by someone else an hour ago, with a reason.
-     */
     public function declined(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -69,10 +55,6 @@ class TravelRequestFactory extends Factory
         ]);
     }
 
-    /**
-     * Approved by someone else two hours ago, then cancelled by the
-     * Employee an hour ago.
-     */
     public function cancelledAfterApproval(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -83,9 +65,6 @@ class TravelRequestFactory extends Factory
         ]);
     }
 
-    /**
-     * Cancelled by the Employee an hour ago, while it was Pending.
-     */
     public function cancelled(): static
     {
         return $this->state(fn (array $attributes) => [

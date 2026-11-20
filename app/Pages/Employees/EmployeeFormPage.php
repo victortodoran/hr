@@ -7,29 +7,15 @@ use App\Models\Department;
 use App\Models\Employee;
 use Illuminate\Database\Eloquent\Collection;
 
-/**
- * The forms for adding and editing an Employee as the props they render,
- * each offering the Departments and possible Managers to choose from.
- */
 final class EmployeeFormPage
 {
-    /**
-     * The form for adding an Employee.
-     *
-     * @return array{departments: Collection<int, Department>, managers: array<int, array{id: int, name: string, status: string}>}
-     */
+    /** @return array{departments: Collection<int, Department>, managers: array<int, array{id: int, name: string, status: string}>} */
     public static function create(): array
     {
         return self::choices(null);
     }
 
-    /**
-     * The form for editing an Employee's record, filled in as it is, with
-     * whether the viewer may resend their invitation and, when they have
-     * left, the reports needing a new Manager.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function edit(Employee $actor, Employee $employee): array
     {
         return [
@@ -50,9 +36,7 @@ final class EmployeeFormPage
     }
 
     /**
-     * The Departments and possible Managers the form offers. Former
-     * Employees can't become anyone's Manager, though an Employee's current
-     * Manager stays on offer after leaving so the record can still be saved.
+     * An Employee's current Manager stays on offer after leaving, so the record can still be saved.
      *
      * @return array{departments: Collection<int, Department>, managers: array<int, array{id: int, name: string, status: string}>}
      */

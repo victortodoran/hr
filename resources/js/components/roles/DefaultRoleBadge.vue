@@ -5,11 +5,6 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-
-/**
- * Marks the Role every new Employee is given: a "Default" badge that says
- * so in a Tooltip and to screen readers.
- */
 </script>
 
 <template>

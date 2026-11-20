@@ -9,17 +9,9 @@ use App\Models\TravelRequest;
 use App\Support\Period;
 use Illuminate\Database\Eloquent\Builder;
 
-/**
- * Every reusable query on Travel Expenses.
- *
- * @extends ModelBuilder<TravelExpense>
- */
+/** @extends ModelBuilder<TravelExpense> */
 class TravelExpenseBuilder extends ModelBuilder
 {
-    /**
-     * Limit the query to Pending Travel Expenses, which wait for the
-     * Employee's Manager to approve or decline them.
-     */
     public function pending(): static
     {
         return $this->scoped(function (): void {
@@ -27,9 +19,6 @@ class TravelExpenseBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Approved Travel Expenses, which can be reopened.
-     */
     public function approved(): static
     {
         return $this->scoped(function (): void {
@@ -37,10 +26,6 @@ class TravelExpenseBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to Declined Travel Expenses, whose amount counts
-     * nowhere.
-     */
     public function declined(): static
     {
         return $this->scoped(function (): void {
@@ -48,11 +33,6 @@ class TravelExpenseBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Travel Expenses the actor may approve or
-     * decline: Pending ones of the Employees whose effective Manager they
-     * are, so never their own.
-     */
     public function decidableBy(Employee $actor): static
     {
         return $this->scoped(function () use ($actor): void {
@@ -60,10 +40,6 @@ class TravelExpenseBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Travel Expenses whose amount counts towards
-     * a total: all but the Declined ones.
-     */
     public function notDeclined(): static
     {
         return $this->scoped(function (): void {
@@ -71,12 +47,7 @@ class TravelExpenseBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the filters given, each optional: an Employee and
-     * a Project, by ID, the Period they were paid in and a state.
-     *
-     * @param  array{employee?: int|null, project?: int|null, period?: Period|null, state?: string|null}  $filters
-     */
+    /** @param  array{employee?: int|null, project?: int|null, period?: Period|null, state?: string|null}  $filters */
     public function filteredBy(array $filters): static
     {
         return $this->scoped(function () use ($filters): void {
@@ -90,12 +61,7 @@ class TravelExpenseBuilder extends ModelBuilder
         });
     }
 
-    /**
-     * Limit the query to the Travel Expenses of the given Employees, as a
-     * query or by ID.
-     *
-     * @param  EmployeeBuilder|array<int, int|string>  $employees
-     */
+    /** @param  EmployeeBuilder|array<int, int|string>  $employees */
     public function ofEmployees(EmployeeBuilder|array $employees): static
     {
         return $this->scoped(function () use ($employees): void {

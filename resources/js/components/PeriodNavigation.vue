@@ -10,19 +10,9 @@ import { Label } from '@/components/ui/label';
 import { formatDate } from '@/lib/dates';
 import type { Period } from '@/types';
 
-/**
- * Chooses the Period a page shows, such as Work Entries or Travel Requests. Week steps a week at a time
- * with "This week", Month uses the month picker, and Custom takes a From and
- * a To date, with no arrows. Later weeks, months and dates can be chosen
- * unless `noFuture` is set, when Custom also starts no later than today.
- * Switching mode stays near what is shown: the new Period holds today when
- * the old one does, or else its first day, and Custom starts on the
- * Period shown. Emits the URL query asking for the chosen Period.
- */
 const props = defineProps<{
     period: Period;
     today: string;
-    /** Stops at today: no later week or month, and no date after today. */
     noFuture?: boolean;
 }>();
 
@@ -36,7 +26,6 @@ const modes: { mode: Period['mode']; label: string }[] = [
     { mode: 'custom', label: 'Custom' },
 ];
 
-/** The day a new Period is chosen around: today when shown, or else the first day. */
 const anchor = computed(() =>
     props.period.from <= props.today && props.today <= props.period.to
         ? props.today
@@ -64,9 +53,6 @@ function chooseMode(mode: Period['mode']): void {
     );
 }
 
-/**
- * The date a number of days away, as a YYYY-MM-DD date.
- */
 function addDays(date: string, days: number): string {
     const moved = new Date(`${date}T00:00:00`);
     moved.setDate(moved.getDate() + days);
@@ -89,7 +75,6 @@ watch(
     },
 );
 
-/** Why the custom period asked for last was refused, if it was. */
 const errors = computed(() => usePage().props.errors);
 </script>
 

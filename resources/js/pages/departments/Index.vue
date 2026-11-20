@@ -27,7 +27,6 @@ defineOptions({
 });
 
 const props = defineProps<{
-    /** Each with how many of its Employees the viewer may see, when they may list Employees. */
     departments: (Department & { employee_count?: number })[];
     showsEmployeeCounts: boolean;
 }>();
@@ -42,7 +41,6 @@ const columns = computed<TableColumn[]>(() => [
 
 const adding = ref(false);
 
-/** The Department the Rename and Delete dialogs are about. */
 const chosen = ref<Department & { employee_count?: number }>();
 const renameOpen = ref(false);
 const deleteOpen = ref(false);

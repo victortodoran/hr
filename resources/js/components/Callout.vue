@@ -2,13 +2,6 @@
 import { CircleX, Info, TriangleAlert } from '@lucide/vue';
 import { computed } from 'vue';
 
-/**
- * A sentence the person must read on this page (rule K12): a decline
- * reason, "Eve Stan has left…", "No Manager…". `info` is neutral,
- * `attention` needs them, `declined` was refused. It may carry one action
- * in the `action` slot, which moves under the sentence on a phone; a page
- * shows at most one above its content.
- */
 const props = defineProps<{
     tone: 'info' | 'attention' | 'declined';
 }>();

@@ -2,10 +2,6 @@
 import StatusBadge from '@/components/StatusBadge.vue';
 import type { EmploymentStatus, StatusBadgeState } from '@/types';
 
-/**
- * An Employee's status as a StatusBadge: "Current Employee", or just
- * "Current" when `short`, such as in a phone row with little room.
- */
 defineProps<{
     status: EmploymentStatus;
     short?: boolean;

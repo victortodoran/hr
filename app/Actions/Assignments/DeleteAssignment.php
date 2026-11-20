@@ -7,15 +7,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Deletes an Assignment made by mistake, its Pay with it, refusing the
- * Internal Assignment and one with Work Entries or Travel Requests, which
- * can only be ended.
+ * Only for an Assignment made by mistake: the Internal Assignment and one
+ * with Work Entries or Travel Requests can only be ended.
  */
 class DeleteAssignment
 {
-    /**
-     * @throws ValidationException
-     */
+    /** @throws ValidationException */
     public function delete(Assignment $assignment): void
     {
         DB::transaction(function () use ($assignment): void {

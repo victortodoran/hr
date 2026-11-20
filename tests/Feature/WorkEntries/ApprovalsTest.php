@@ -43,10 +43,7 @@ it('adds up every week the matching Work Entries fall in, including those on lat
             ]));
 });
 
-/**
- * An approver who is already some Employee's Manager, so the Approvals page
- * is open to them.
- */
+/** Already some Employee's Manager, so the Approvals page is open to them. */
 function managingApprover(): Employee
 {
     $ben = managerBen();
@@ -150,8 +147,7 @@ it('refuses the Approvals page to someone who manages nobody, however their Role
 });
 
 /**
- * Ben approving for Cara and Dev, who will have Pending Work Entries, and
- * Bea, who has only Approved ones.
+ * Cara and Dev will have Pending Work Entries; Bea has only Approved ones.
  *
  * @return array{ben: Employee, cara: Employee, dev: Employee, bea: Employee}
  */

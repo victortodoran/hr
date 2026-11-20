@@ -10,12 +10,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
-/**
- * The Time Off page's filters, across Employees: a Period, a week, a month
- * or a custom period of at most three months, in the future too as Time
- * Off is planned ahead; an Employee, or "all" for any Employee; and a
- * state, any state when none is chosen.
- */
 class TimeOffListRequest extends FormRequest
 {
     /**
@@ -38,12 +32,7 @@ class TimeOffListRequest extends FormRequest
         return [fn (Validator $validator) => PeriodRules::checkCustomLength($this, $validator)];
     }
 
-    /**
-     * The filters asked for: the current month when no Period is, and any
-     * Employee ("all") when no one Employee is; null where no state is set.
-     *
-     * @return array{period: Period, employee: int|'all', state: string|null}
-     */
+    /** @return array{period: Period, employee: int|'all', state: string|null} */
     public function filters(): array
     {
         return [

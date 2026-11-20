@@ -15,9 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 
 /**
- * A piece of work Employees can be assigned to, optionally for a Client.
- * The one Internal Project (ADR 0002) is work for the company itself: it has
- * no Client and no dates, because it runs for as long as the company does.
+ * The Internal Project has no Client and no dates, as it runs for as long as the company does (ADR 0002).
  *
  * @property int $id
  * @property string $name
@@ -35,11 +33,7 @@ class Project extends Model
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -49,19 +43,13 @@ class Project extends Model
         ];
     }
 
-    /**
-     * The company's one Internal Project, created at install.
-     */
+    /** Created at install, so sole() always finds it. */
     public static function internal(): self
     {
         return self::query()->internal()->sole();
     }
 
-    /**
-     * Every Project, as a filter's choices, by name.
-     *
-     * @return array<int, array{id: int, name: string}>
-     */
+    /** @return array<int, array{id: int, name: string}> */
     public static function choices(): array
     {
         return self::query()
@@ -80,41 +68,26 @@ class Project extends Model
         return $this->belongsTo(Client::class);
     }
 
-    /**
-     * Who works on the Project, and when.
-     *
-     * @return HasMany<Assignment, $this>
-     */
+    /** @return HasMany<Assignment, $this> */
     public function assignments(): HasMany
     {
         return $this->hasMany(Assignment::class);
     }
 
-    /**
-     * The hours worked on the Project's Assignments.
-     *
-     * @return HasManyThrough<WorkEntry, Assignment, $this>
-     */
+    /** @return HasManyThrough<WorkEntry, Assignment, $this> */
     public function workEntries(): HasManyThrough
     {
         return $this->hasManyThrough(WorkEntry::class, Assignment::class);
     }
 
-    /**
-     * The Travel Requests made on the Project's Assignments, in every state.
-     *
-     * @return HasManyThrough<TravelRequest, Assignment, $this>
-     */
+    /** @return HasManyThrough<TravelRequest, Assignment, $this> */
     public function travelRequests(): HasManyThrough
     {
         return $this->hasManyThrough(TravelRequest::class, Assignment::class);
     }
 
     /**
-     * Why an Assignment over the period wouldn't fit the Project's dates, by
-     * the field to blame; empty when it fits. A null end means the
-     * Assignment is open-ended. The Internal Project has no dates, so
-     * anything fits it.
+     * The Internal Project has no dates, so anything fits it.
      *
      * @return array<'start_date'|'end_date', string>
      */
@@ -133,19 +106,12 @@ class Project extends Model
         return $refusals;
     }
 
-    /**
-     * Whether the Project ended before today, so nobody new can join it.
-     */
     public function hasFinished(): bool
     {
         return $this->end_date?->isBefore(today()) ?? false;
     }
 
-    /**
-     * The Project's dates as the pages show them.
-     *
-     * @return array{start_date: string|null, end_date: string|null}
-     */
+    /** @return array{start_date: string|null, end_date: string|null} */
     public function dates(): array
     {
         return [

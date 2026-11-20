@@ -11,15 +11,8 @@ import { formatDays } from '@/lib/time-off';
 import { create as requestTimeOff, index as timeOff } from '@/routes/time-off';
 import type { PaidDaysLeftInYear, TimeOffDetails } from '@/types';
 
-/**
- * The signed-in Employee's Time Off: Paid Days left as a StatStrip (rule
- * K10), then their next Time Off as a row with its StatusBadge, or, with
- * none coming, a way to request some.
- */
 const props = defineProps<{
-    /** This year's Paid Days left and, from October, next year's. */
     paidDaysLeft: PaidDaysLeftInYear[];
-    /** The next Pending or Approved Time Off that hasn't ended. */
     nextTimeOff: TimeOffDetails | null;
 }>();
 

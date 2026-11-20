@@ -35,31 +35,18 @@ defineOptions({
     },
 });
 
-/**
- * For one year, the Employees the viewer effectively manages or may read
- * the Performance Evaluations of who have one for it, each with that
- * Performance Evaluation. New Performance Evaluation, the one primary
- * (B2), starts one for those still without in a dialog over the list,
- * whose own URL, `performance-evaluations/create`, renders this page with
- * `creating` set (L14). An Employee's page links here narrowed to them,
- * which the bar shows as an Employee to clear.
- */
 const props = defineProps<{
     year: number;
     years: number[];
     search: string;
     state: PerformanceEvaluationState | null;
-    /** The one Employee the list is narrowed to, null when it isn't. */
     employee: Choice | null;
     canCreate: boolean;
     employees: Paginated<PerformanceEvaluationRow>;
-    /** Whether the New Performance Evaluation dialog is open. */
     creating?: boolean;
-    /** The years it may be for, with who may get one, sent with the dialog. */
     creatableYears?: CreatableYear[];
 }>();
 
-/** The list's year and filters, which opening and closing the dialog keep. */
 const listQuery = computed(() => ({
     year: String(props.year),
     ...(props.search ? { search: props.search } : {}),

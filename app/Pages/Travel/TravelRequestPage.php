@@ -7,20 +7,9 @@ use App\Models\Employee;
 use App\Models\TravelRequest;
 use App\Support\TravelHistory;
 
-/**
- * One Travel Request's page as the props it renders.
- */
 final class TravelRequestPage
 {
-    /**
-     * The Travel Request in full with its Travel Expenses, and what the
-     * viewer may do to them, which only the Employee themselves ever may.
-     * Whether it is the viewer's own sets where its breadcrumbs lead: their
-     * Travel page; for anyone else the Travel Requests page when the viewer
-     * may open it, or else the Employee's record when they may open that.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function props(TravelRequest $travelRequest, Employee $actor): array
     {
         return [

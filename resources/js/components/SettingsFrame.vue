@@ -4,14 +4,8 @@ import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
 import type { NavItem } from '@/types';
 
-/**
- * The settings template's frame (rule L16): a 200px sub-nav of text links
- * with a marker on the open one, beside a content column of at most
- * 880px. Below 1024px the sub-nav becomes a row above the content.
- */
 defineProps<{
     items: NavItem[];
-    /** Names the sub-nav for screen readers, such as "Company settings". */
     label: string;
 }>();
 

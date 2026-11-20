@@ -4,18 +4,9 @@ namespace App\Pages\Employees;
 
 use App\Models\Employee;
 
-/**
- * The directory as the props it renders: current Employees a page at a
- * time, with no Assignments, dates or Pay.
- */
 final class DirectoryListPage
 {
-    /**
-     * Current Employees by name, with their internal Job Title, Department
-     * and effective Manager, optionally searched by part of a name.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function props(string $search): array
     {
         return [

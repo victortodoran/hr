@@ -2,21 +2,9 @@ import { router } from '@inertiajs/vue3';
 import type { Ref } from 'vue';
 import { computed, ref } from 'vue';
 
-/**
- * The rows ticked on a paginated list, kept across its pages: tick one, a
- * whole page, or every match (reloaded as an optional page prop listing
- * their IDs) on a paginated list, and clear them. Pair it with pagination links that preserve
- * state, or a page change remounts the list and drops the selection.
- * `submit` sends a bulk action for the selected rows, once at a time, and
- * then unticks the rows it sent.
- */
+/** Pair it with pagination links that preserve state, or a page change remounts the list and drops the selection. */
 export function useBulkSelection(
-    /** The rows on the current page that may be selected. */
     selectableOnPage: () => { id: number }[],
-    /**
-     * The optional page prop with every matching row's ID, and its name;
-     * left out for a list shown whole, which has no other matches.
-     */
     matching?: { prop: string; ids: () => number[] | undefined },
 ): {
     selected: Ref<number[]>;
@@ -75,7 +63,6 @@ export function useBulkSelection(
         selected.value = [];
     }
 
-    /** Whether a bulk action is on its way, so it can't be sent twice. */
     const processing = ref(false);
 
     function submit(url: string, onSuccess?: () => void): void {

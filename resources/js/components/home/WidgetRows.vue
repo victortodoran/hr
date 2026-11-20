@@ -2,11 +2,6 @@
 import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 
-/**
- * A Home widget's rows, separated by hairlines (rules L15, L23): the first
- * five, or three on a phone, with "View all" under them showing the rest in
- * place when there are more.
- */
 const props = defineProps<{
     rows: Row[];
     rowKey: (row: Row) => string;
@@ -16,13 +11,11 @@ defineSlots<{
     default: (props: { row: Row }) => unknown;
 }>();
 
-/** How many rows show before "View all", on a phone and wider. */
 const PHONE_ROWS = 3;
 const ROWS = 5;
 
 const showsAll = ref(false);
 
-/** Hides a row past the first few until "View all" is pressed. */
 function hiddenClass(position: number): string {
     if (showsAll.value) {
         return '';
@@ -35,7 +28,6 @@ function hiddenClass(position: number): string {
     return position >= PHONE_ROWS ? 'max-sm:hidden' : '';
 }
 
-/** "View all" shows only where rows are hidden: on a phone, or wider too. */
 const viewAllClass = computed(() =>
     props.rows.length > ROWS ? '' : 'sm:hidden',
 );

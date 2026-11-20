@@ -15,28 +15,15 @@ import {
 } from '@/components/ui/dialog';
 import type { RouteFormDefinition } from '@/wayfinder';
 
-/**
- * Asks before deleting something, the one such question across the app,
- * in red; a step that only changes state, such as reopening or cancelling,
- * asks through `ConfirmDialog` instead. The `trigger` slot is the button that opens it, a plain
- * "Delete" unless given; the dialog closes once the request succeeds, and
- * shows the refusal when it doesn't. Opened from elsewhere, such as a menu
- * item that would unmount a trigger inside it, it takes `v-model:open` and
- * `without-trigger` instead.
- */
 withDefaults(
     defineProps<{
-        /** Where the delete is sent, from a Wayfinder `.form()`. */
         form: RouteFormDefinition<'post'>;
         title: string;
         description: string;
         /** Keeps this dialog's errors apart when several share a page. */
         errorBag?: string;
-        /** The button that goes ahead. */
         confirmLabel?: string;
-        /** The button that closes the dialog without going ahead. */
         dismissLabel?: string;
-        /** Leaves out the trigger, for a dialog opened through `v-model:open`. */
         withoutTrigger?: boolean;
     }>(),
     {

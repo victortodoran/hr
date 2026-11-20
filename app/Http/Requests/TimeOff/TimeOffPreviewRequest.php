@@ -9,12 +9,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
-/**
- * Time Off the signed-in Employee is about to request for themselves:
- * whole days from a first to a last date, covering at most a year, Paid
- * or Unpaid, starting today or later. It is enough to preview the days it
- * would take; requesting it checks the rest.
- */
+/** Enough to preview the days it would take; requesting it checks the rest. */
 class TimeOffPreviewRequest extends FormRequest
 {
     /**
@@ -29,11 +24,7 @@ class TimeOffPreviewRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Time Off as it is stored.
-     *
-     * @return array{first_date: string, last_date: string, is_paid: bool}
-     */
+    /** @return array{first_date: string, last_date: string, is_paid: bool} */
     public function timeOff(): array
     {
         return [
@@ -43,39 +34,24 @@ class TimeOffPreviewRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Time Off as an unsaved model, to count its days.
-     */
     public function unsavedTimeOff(): TimeOff
     {
         return new TimeOff($this->timeOff());
     }
 
-    /**
-     * The Employee requesting the Time Off: always the one signed in.
-     */
     public function employee(): Employee
     {
         /** @var Employee */
         return $this->user();
     }
 
-    /**
-     * Once the dates are valid on their own, check the Time Off covers at
-     * most a year.
-     *
-     * @return array<int, callable(Validator): void>
-     */
+    /** @return array<int, callable(Validator): void> */
     public function after(): array
     {
         return [fn (Validator $validator) => $this->checkLength($validator)];
     }
 
-    /**
-     * Refuse Time Off covering more than a year, counting both its first and
-     * last date: from 14 Dec 2026 it can last until 13 Dec 2027. Longer
-     * leave is several Time Off. A year from 29 Feb ends on 27 Feb.
-     */
+    /** Counting both ends, Time Off from 14 Dec 2026 may last until 13 Dec 2027, and from 29 Feb until 27 Feb. */
     private function checkLength(Validator $validator): void
     {
         if ($validator->errors()->isNotEmpty()) {

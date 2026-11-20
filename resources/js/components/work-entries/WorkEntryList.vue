@@ -27,15 +27,6 @@ import type {
     WorkEntryWeek,
 } from '@/types';
 
-/**
- * The List view: one table of the Period's Work Entries, a row per Work
- * Entry under a row per ISO week with its hours. A run of days with the
- * same kind of Time Off and nothing logged folds into one row; days still
- * to come with nothing on them aren't listed. Each Work Entry's ⋯ menu
- * Edits or Deletes it (rule K2). On a phone each Work Entry stacks into
- * two lines. The add form opens on one day at a time: from an empty day's
- * quiet row, or the add row a day with Work Entries shows on hover.
- */
 const props = defineProps<{
     employee: Choice;
     period: Period;
@@ -48,14 +39,9 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    /** Whether a row holds typing that isn't saved yet, by row key. */
     dirty: [rowKey: string, isDirty: boolean];
 }>();
 
-/**
- * A row of the table under a week: a day with its Work Entries, or a run
- * of days folded into one.
- */
 type Segment =
     | { type: 'day'; day: WorkEntryDay }
     | {
@@ -76,19 +62,12 @@ function formatShort(date: string): string {
     });
 }
 
-/**
- * A run of days, such as "Mon 23 – Fri 27", or "Mon 23" for one day.
- */
 function formatRun(from: string, to: string): string {
     return from === to
         ? formatWeekdayAndDay(from)
         : `${formatWeekdayAndDay(from)} – ${formatWeekdayAndDay(to)}`;
 }
 
-/**
- * A week's dates, such as "2 Nov – 8 Nov", or "1 Nov" for a week the
- * Period holds one day of.
- */
 function formatWeekDates(week: WorkEntryWeek): string {
     return week.from === week.to
         ? formatShort(week.from)
@@ -99,11 +78,7 @@ function takesEntries(day: WorkEntryDay): boolean {
     return takesEntriesOn(day, props.canManage, props.today);
 }
 
-/**
- * The days listed: every day of the Period, or with weekends hidden, every
- * day but a Saturday or Sunday with no Work Entries, so hours are never out
- * of sight. Should that leave no day at all, every day is listed.
- */
+/** Hidden weekends still list a day with Work Entries, so hours are never out of sight; with no day left, every day is listed. */
 const shownDays = computed(() => {
     if (props.showWeekends) {
         return props.days;
@@ -116,12 +91,6 @@ const shownDays = computed(() => {
     return shown.length > 0 ? shown : props.days;
 });
 
-/**
- * Folds a week's days into rows: consecutive days with the same kind of
- * Time Off and no Work Entries become one, counting only weekdays. Future
- * days with nothing on them are left out. A day of Time Off the viewer can
- * still add hours to keeps its own row.
- */
 function segmentsOf(days: WorkEntryDay[]): Segment[] {
     const segments: Segment[] = [];
 
@@ -153,11 +122,6 @@ function segmentsOf(days: WorkEntryDay[]): Segment[] {
     return segments;
 }
 
-/**
- * The listed days, one block per week under a row naming it. A week left
- * with no day to list, because its only days are hidden weekends, has no
- * block.
- */
 const blocks = computed(() =>
     props.weeks
         .map((week) => ({
@@ -177,36 +141,23 @@ function segmentKey(segment: Segment): string {
         : `${segment.type}-${segment.from}`;
 }
 
-/**
- * The Work Entries turned into fields to change them, each with the day it
- * was opened on: one saved onto another day shows there as saved, since
- * its row on the old day is gone before it can say it was saved.
- */
+/** Keeps the day each was opened on: one saved onto another day shows there as saved, since its old row is gone before it can say so. */
 const editing = reactive(new Map<number, string>());
 
-/** The Work Entry whose Delete is being confirmed, if any. */
 const deleting = ref<WorkEntryRecord | null>(null);
 
-/** The Assignment of the Work Entry last added on this page. */
 const lastAssignmentId = ref<number | null>(null);
 
-/** The day the add form is open on, if any; only one is open at a time. */
 const activeDate = ref<string | null>(null);
 
-/** What to do once giving up unsaved typing is confirmed. */
 const heldAction = ref<(() => void) | null>(null);
 
-/** The rows holding typing that isn't saved yet, by row key. */
 const dirtyRows = reactive(new Set<string>());
 
 let addRow: InstanceType<typeof WorkEntryRow> | null = null;
 let addRowDate: string | null = null;
 
-/**
- * Keeps hold of the open add form. When it moves to another day, the old
- * day's row may let go after the new one is held, so only the day held
- * lets go.
- */
+/** When the form moves to another day, the old day's row may let go after the new one is held, so only the day held lets go. */
 function rememberAddRow(date: string, row: unknown): void {
     if (row) {
         addRow = row as InstanceType<typeof WorkEntryRow>;
@@ -227,10 +178,6 @@ function rowChanged(rowKey: string, isDirty: boolean): void {
     emit('dirty', rowKey, isDirty);
 }
 
-/**
- * Does something that gives up a row's typing, asking first when it holds
- * any that isn't saved.
- */
 function unlessUnsaved(rowKey: string, action: () => void): void {
     if (dirtyRows.has(rowKey)) {
         heldAction.value = action;
@@ -239,10 +186,6 @@ function unlessUnsaved(rowKey: string, action: () => void): void {
     }
 }
 
-/**
- * Opens the add form on a day, closing the one open on another day; when
- * that one holds unsaved typing, asks first.
- */
 function openAdd(date: string): void {
     if (activeDate.value === null || activeDate.value === date) {
         void showAdd(date);
@@ -263,20 +206,14 @@ function closeAdd(): void {
     activeDate.value = null;
 }
 
-/** Esc in the add form closes it, asking first when it holds unsaved typing. */
 function dismissAdd(date: string): void {
     unlessUnsaved(`new-${date}`, closeAdd);
 }
 
-/** Esc while changing a Work Entry gives up, asking first when it was changed. */
 function dismissEdit(entryId: number): void {
     unlessUnsaved(`entry-${entryId}`, () => editing.delete(entryId));
 }
 
-/**
- * Once the dialog asking about unsaved typing closes, puts the cursor back
- * in the open add form rather than on whatever opened the dialog.
- */
 function refocusAddForm(event: Event): void {
     if (addRow !== null) {
         event.preventDefault();
@@ -290,7 +227,6 @@ function leaveUnsaved(): void {
     action?.();
 }
 
-/** A form open in one Period isn't carried into another. */
 watch(
     () => JSON.stringify(props.period.query),
     () => {
@@ -299,17 +235,12 @@ watch(
     },
 );
 
-/**
- * Whether "Next day" stops at a day: a weekday up to today without Time
- * Off.
- */
 function takesNextEntry(day: WorkEntryDay): boolean {
     return (
         !isWeekend(day.date) && day.time_off === null && day.date <= props.today
     );
 }
 
-/** The day of the Period "Next day" moves the add form to, if any. */
 const nextDay = computed(() => {
     const date = activeDate.value;
 
@@ -319,17 +250,12 @@ const nextDay = computed(() => {
               ?.date ?? null);
 });
 
-/**
- * After a Work Entry is added, keeps the add form on the same day, empty,
- * with the cursor in Description for the next one.
- */
 async function entryAdded(assignmentId: number): Promise<void> {
     lastAssignmentId.value = assignmentId;
     await nextTick();
     addRow?.focusDescription();
 }
 
-/** Opens the add form on a day, as the page's Add Work Entry does for today. */
 defineExpose({ addOn: openAdd });
 </script>
 

@@ -15,9 +15,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class TravelExpenseFactory extends Factory
 {
     /**
-     * A Pending Travel Expense paid yesterday on a new Approved Travel
-     * Request. Its receipt path points to no file; pass one stored on the
-     * receipt disk when a test reads it.
+     * The receipt path points to no file; pass one stored on the receipt disk when a test reads it.
      *
      * @return array<string, mixed>
      */
@@ -33,9 +31,6 @@ class TravelExpenseFactory extends Factory
         ];
     }
 
-    /**
-     * Approved by someone else an hour ago.
-     */
     public function approved(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -45,9 +40,6 @@ class TravelExpenseFactory extends Factory
         ]);
     }
 
-    /**
-     * Declined by someone else an hour ago, with a reason.
-     */
     public function declined(): static
     {
         return $this->state(fn (array $attributes) => [

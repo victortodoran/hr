@@ -16,27 +16,10 @@ use App\Support\WorkEntrySpreadsheet;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/**
- * The Work Entries page as the props it renders: Work Entries of the
- * Employees the viewer may see, one Period and one Employee at a time, or
- * every Employee at once, with what the viewer may reopen. Who is listed
- * comes from the viewer's view, manage and reopen Scopes.
- */
 final class WorkEntryListPage
 {
     /**
-     * The Work Entries matching the filters, in every state unless one is
-     * chosen, oldest first, with the total hours of those that aren't
-     * Declined, and of those that are. The Employees to choose from are
-     * those the viewer may see with Work Entries in the Period in the chosen
-     * state, by name with how many, and the one asked for when the viewer
-     * may see them, even with none, as an Employee's page links here for
-     * them; an Employee not among them, or none, falls back to the first,
-     * while "all" keeps every Employee. The
-     * Projects to choose from are those the chosen Employee, or anyone, has
-     * Work Entries on during the Period; one not among them falls back to
-     * any Project. With no Work Entries in the Period, there is nobody to
-     * choose.
+     * The Employee asked for is offered even with no Work Entries, as an Employee's page links here for them.
      *
      * @param  array{period: Period, employee: int|'all'|null, project: int|null, state: string|null}  $requested
      * @return array<string, mixed>
@@ -105,12 +88,7 @@ final class WorkEntryListPage
     }
 
     /**
-     * The page as a file to download: every Work Entry it lists under the
-     * filters, across all its pages, oldest first like the page, as a CSV
-     * or Excel file named after the Period.
-     *
-     * With `ownOnly`, the file holds the viewer's own Work Entries under
-     * the filters instead, as their Work page shows them.
+     * With `ownOnly`, the file holds the viewer's own Work Entries, as their Work page shows them.
      *
      * @param  array{period: Period, employee: int|'all'|null, project: int|null, state: string|null}  $filters
      */
@@ -126,10 +104,6 @@ final class WorkEntryListPage
         return WorkEntrySpreadsheet::download($entries, $format, $filters['period']);
     }
 
-    /**
-     * Narrows Work Entries to those in the Period, and in the state, or any
-     * state when none is given.
-     */
     private static function inPeriod(WorkEntryBuilder $entries, Period $period, ?string $state): WorkEntryBuilder
     {
         return $entries->filteredBy(['period' => $period, 'state' => $state]);

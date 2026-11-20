@@ -26,18 +26,11 @@ beforeEach(function () {
     Storage::fake(TravelExpense::RECEIPT_DISK);
 });
 
-/**
- * Cara, who reports to Mona.
- */
 function expenseRecorder(): Employee
 {
     return Employee::factory()->startedLongAgo()->reportingTo(Employee::factory()->startedLongAgo()->create(['name' => 'Mona']))->create(['name' => 'Cara']);
 }
 
-/**
- * Cara's trip to Berlin from 3 to 5 Dec 2026, Approved unless given another
- * factory state, or pending.
- */
 function berlinTrip(Employee $cara, string $state = 'approved'): TravelRequest
 {
     $factory = TravelRequest::factory()->on(assignmentOf($cara));
@@ -46,9 +39,6 @@ function berlinTrip(Employee $cara, string $state = 'approved'): TravelRequest
 }
 
 /**
- * A Travel Expense as its form sends it: 1,990 RON of Accommodation paid
- * on 5 Dec 2026, with a PDF receipt, with some changes.
- *
  * @param  array<string, mixed>  $changes
  * @return array<string, mixed>
  */
@@ -64,11 +54,7 @@ function expenseForm(array $changes = []): array
     ];
 }
 
-/**
- * A Travel Expense on the Travel Request, its receipt stored on the disk.
- *
- * @param  array<string, mixed>  $attributes
- */
+/** @param  array<string, mixed>  $attributes */
 function recordedExpense(TravelRequest $travelRequest, string $state = 'pending', array $attributes = []): TravelExpense
 {
     $path = TravelExpense::RECEIPT_FOLDER.'/'.fake()->uuid().'.pdf';

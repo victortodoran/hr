@@ -6,7 +6,6 @@ import type { EmployeeRecord } from '@/types';
  */
 export const noManager = 'none';
 
-/** An Employee's record as the Add and Edit Employee forms hold it. */
 export type EmployeeFormFields = {
     name: string;
     email: string;
@@ -17,10 +16,6 @@ export type EmployeeFormFields = {
     leaving_date: string;
 };
 
-/**
- * The form's fields as the Employee's record stands now, or blank for a
- * new Employee.
- */
 export function employeeFields(employee?: EmployeeRecord): EmployeeFormFields {
     return {
         name: employee?.name ?? '',
@@ -36,10 +31,6 @@ export function employeeFields(employee?: EmployeeRecord): EmployeeFormFields {
     };
 }
 
-/**
- * The fields as the server takes them: "No Manager" and no Leaving Date as
- * null.
- */
 export function employeePayload<Fields extends EmployeeFormFields>({
     manager_id,
     leaving_date,

@@ -11,11 +11,7 @@ class ResetEmployeePassword implements ResetsUserPasswords
 {
     use PasswordValidationRules;
 
-    /**
-     * Validate and reset the Employee's forgotten password.
-     *
-     * @param  array<string, string>  $input
-     */
+    /** @param  array<string, string>  $input */
     public function reset(Employee $employee, array $input): void
     {
         Validator::make($input, [

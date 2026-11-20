@@ -7,9 +7,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/**
- * A Department's name, when creating or renaming one.
- */
 class DepartmentRequest extends FormRequest
 {
     /**

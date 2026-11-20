@@ -5,11 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
-/**
- * A Goal's Title and "What achieving it looks like" fields with the tip
- * on saying what done looks like, as the Add Goal and Edit Goal sheet
- * asks for them.
- */
 defineProps<{
     errors: Partial<Record<'title' | 'description', string>>;
 }>();

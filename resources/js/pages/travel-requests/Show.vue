@@ -34,45 +34,19 @@ import type {
     TravelRequestRecord,
 } from '@/types';
 
-/**
- * One Travel Request on the detail template (rule L12): its destination,
- * StatusBadge and dates in the header; a Declined one's reason in a
- * Callout; the totals of its Travel Expenses in a StatStrip, Declined ones
- * not counted (S12); then its Travel Expenses beside its Details.
- *
- * The Employee themselves may cancel it from the ⋯ menu (X4) and add,
- * edit and delete its Travel Expenses; Add and Edit Travel Expense open a
- * sheet over the page, whose URLs render this page with `expenseSheet`
- * set (L14). Their effective Manager approves or declines it, and its
- * Pending Travel Expenses, here as on the Approvals page; anyone else
- * sees it.
- */
 const props = defineProps<{
     travelRequest: TravelRequestRecord;
     employee: Choice;
-    /** Whether the Travel Request is the viewer's own. */
     isOwn: boolean;
-    /** Whether the viewer may open the Employee's record, where the breadcrumb leads. */
     canViewEmployee: boolean;
-    /** Whether the viewer may open the Travel Requests page, where the breadcrumbs lead first. */
     canViewTravelRequests: boolean;
-    /** Which Travel Expense sheet is open, if any. */
     expenseSheet?: 'add' | 'edit';
-    /** The company currency, sent with the sheet. */
     currency?: TravelCurrency;
-    /** The latest date paid, sent with the sheet. */
     today?: string;
-    /** The Travel Expense being edited, sent with the Edit sheet. */
     travelExpense?: TravelExpenseTyped;
-    /** The Employee's effective Manager, or null with none, sent with the Edit sheet. */
     manager?: string | null;
 }>();
 
-/**
- * Travel › destination for the Employee themselves; Travel Requests ›
- * name · destination for a viewer who may open that page; Employees › name ›
- * destination for anyone else.
- */
 const leadingBreadcrumbs: BreadcrumbItem[] = props.isOwn
     ? [{ title: 'Travel', href: index() }]
     : props.canViewTravelRequests
@@ -149,10 +123,7 @@ const { open: sheetOpen, setOpen: setSheetOpen } = useOverlayRoute(
     () => show(props.travelRequest.id).url,
 );
 
-/**
- * What the sheet last opened with, kept while it closes, once the page's
- * own URL no longer sends it.
- */
+/** Kept while the sheet closes, once the page's own URL no longer sends it. */
 const sheet = ref(sheetProps());
 
 function sheetProps() {

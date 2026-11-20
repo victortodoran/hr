@@ -10,14 +10,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 
-/**
- * A Travel Expense the signed-in Employee records or changes: a positive
- * amount in the company currency as people type it (such as "1990.00"),
- * the date it was paid, any day up to today, a Travel Expense Category, a
- * description and the receipt, a JPG, PNG or PDF of up to 10 MB. Recording
- * one always needs a receipt; changing one keeps the receipt unless a new
- * one is sent.
- */
 class TravelExpenseRequest extends FormRequest
 {
     /**
@@ -36,12 +28,7 @@ class TravelExpenseRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Travel Expense as it is stored, with its amount in minor units,
-     * without the receipt.
-     *
-     * @return array{amount: int, paid_on: string, category: string, description: string}
-     */
+    /** @return array{amount: int, paid_on: string, category: string, description: string} */
     public function travelExpense(): array
     {
         return [
@@ -52,9 +39,7 @@ class TravelExpenseRequest extends FormRequest
         ];
     }
 
-    /**
-     * The receipt sent, or null when a change keeps the one already kept.
-     */
+    /** Null when a change keeps the receipt already stored. */
     public function receipt(): ?UploadedFile
     {
         $receipt = $this->file('receipt');

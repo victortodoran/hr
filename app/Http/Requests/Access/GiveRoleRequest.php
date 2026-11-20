@@ -10,10 +10,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
 
-/**
- * The Employees to give a Role to, at least one: each someone who hasn't
- * left and doesn't hold the Role yet.
- */
 class GiveRoleRequest extends FormRequest
 {
     /**
@@ -27,11 +23,7 @@ class GiveRoleRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Employees being given the Role.
-     *
-     * @return Collection<int, Employee>
-     */
+    /** @return Collection<int, Employee> */
     public function employees(): Collection
     {
         return Employee::query()->whereKey($this->array('employee_ids'))->orderBy('name')->get();
@@ -53,11 +45,7 @@ class GiveRoleRequest extends FormRequest
         return ['employee_ids.required' => __('Choose someone to give the Role to.')];
     }
 
-    /**
-     * Refuses an Employee who doesn't exist, already holds the Role or has
-     * left. The Employees sent and the Role's holders are each loaded once,
-     * however many are sent.
-     */
+    /** The sent Employees and the Role's holders are loaded once, not once per Employee sent. */
     private function canBeGiven(): Closure
     {
         /** @var Collection<int, Employee>|null $sent */

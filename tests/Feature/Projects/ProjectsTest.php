@@ -16,17 +16,12 @@ use function Pest\Laravel\actingAs;
 
 covers(ProjectController::class, ProjectRequest::class, ProjectPolicy::class, Project::class, AssignmentsFit::class);
 
-/**
- * An Employee who may create, edit and delete Projects.
- */
 function projectManager(): Employee
 {
     return employeeWith([Permission::ManageProjects->value => null]);
 }
 
 /**
- * A valid Project form, with any fields overridden.
- *
  * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
  */

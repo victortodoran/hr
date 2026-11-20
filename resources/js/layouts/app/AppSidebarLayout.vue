@@ -15,7 +15,6 @@ withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
 });
 
-/** Toasts sit bottom-right on desktop and top-centre on a phone (rule X2). */
 const isPhone = useMediaQuery('(max-width: 639px)');
 </script>
 

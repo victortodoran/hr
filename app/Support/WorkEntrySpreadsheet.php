@@ -8,12 +8,6 @@ use App\Models\WorkEntry;
 use OpenSpout\Common\Entity\Cell;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/**
- * Work Entries as a file to download: a header row, then one row per Work
- * Entry with its date, Employee, Project, Client, hours, description, state,
- * and who approved or declined it, when, and why it was declined.
- * The file is written row by row, so a long list never sits in memory.
- */
 class WorkEntrySpreadsheet
 {
     private const array HEADERS = [
@@ -21,22 +15,13 @@ class WorkEntrySpreadsheet
         'Approved by', 'Approved on', 'Declined by', 'Declined on', 'Decline reason',
     ];
 
-    /**
-     * The Work Entries, in the query's order, as a download named after the
-     * Period, such as "work-entries-2026-11-01-to-2026-11-30.csv". The query
-     * needs each Work Entry's Employee, Project, Client, approver and decliner
-     * loaded.
-     */
+    /** The query needs each Work Entry's Employee, Project, Client, approver and decliner loaded. */
     public static function download(WorkEntryBuilder $entries, SpreadsheetFormat $format, Period $period): StreamedResponse
     {
         return Spreadsheet::download('work-entries', $period, $format, self::HEADERS, $entries, fn (WorkEntry $entry): array => self::cells($entry, $format));
     }
 
-    /**
-     * One Work Entry's cells, in the order of the headers.
-     *
-     * @return list<Cell>
-     */
+    /** @return list<Cell> */
     private static function cells(WorkEntry $entry, SpreadsheetFormat $format): array
     {
         return [

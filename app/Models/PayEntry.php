@@ -11,10 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * One entry in an Assignment's Pay history: Fixed Pay or Hourly Pay of an
- * amount, taking effect from a date (which may still be ahead) until the
- * next entry does.
- *
  * @property int $id
  * @property int $assignment_id
  * @property Carbon $effective_from
@@ -30,11 +26,7 @@ class PayEntry extends Model
     /** @use HasFactory<PayEntryFactory> */
     use HasFactory;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

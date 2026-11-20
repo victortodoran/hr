@@ -6,15 +6,9 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-/**
- * An icon-only `ghost` button that names itself twice, in its `aria-label`
- * and in a Tooltip with the same words (rule F20). Its other attributes,
- * such as `@click` and `disabled`, go to the button.
- */
 defineOptions({ inheritAttrs: false });
 
 defineProps<{
-    /** What the button does, such as "Next day". */
     label: string;
 }>();
 </script>

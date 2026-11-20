@@ -3,25 +3,11 @@ import { toast } from 'vue-sonner';
 import type { Ref } from 'vue';
 import { onBeforeUnmount, ref, watch } from 'vue';
 
-/**
- * Saves a single dropdown's value as soon as it is picked, sending it as
- * `field` in a PUT to `url`; the page shows the Saved tick from
- * `justSaved`. `chosen` is what the dropdown shows: the saved value
- * until another is picked, and the saved one again whenever the page's
- * props change it. A save keeps the page's scroll and state, and
- * `justSaved` turns true for two seconds after it. When saving fails,
- * for example because the Performance Evaluation was Completed
- * meanwhile, the dropdown goes back to the saved value and an error
- * toast says why; a refusal (403) also reloads the page, so it stops
- * offering the change.
- */
+/** A refusal (403) also reloads the page, so it stops offering the change. */
 export function useSaveOnPick<Value extends string | null>(options: {
-    /** The value as saved, from the page's props. */
     saved: () => Value;
     url: () => string;
-    /** The name the server takes the value under. */
     field: string;
-    /** What the value is, as the error toasts name it, e.g. "Progress". */
     label: string;
 }): {
     chosen: Ref<Value>;

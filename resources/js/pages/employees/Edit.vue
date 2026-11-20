@@ -17,13 +17,6 @@ import { employeeFields, employeePayload } from '@/lib/employees';
 import { edit, index, show } from '@/routes/employees';
 import type { Choice, EmployeeRecord, ManagerChoice } from '@/types';
 
-/**
- * Editing an Employee's record (rule L13), with their status after the
- * title. Above the form, one Callout at most (K12): an Employee who has
- * left with reports still under them asks for those reports' new Manager
- * (attention); one who hasn't set a password yet offers to resend the
- * invitation (info). Leaving with unsaved changes asks first (V9).
- */
 const props = defineProps<{
     employee: EmployeeRecord;
     departments: Choice[];

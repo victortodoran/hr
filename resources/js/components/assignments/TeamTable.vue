@@ -9,13 +9,6 @@ import { formatPeriod } from '@/lib/dates';
 import { show } from '@/routes/employees';
 import type { TableColumn, TeamAssignment } from '@/types';
 
-/**
- * A team as a Project's or a Client's page lists it: each Assignment's
- * Employee (K13), Job Title, dates and Capacity, the Capacity as a
- * `CapacityBar` (F11). Given `groupBy` and `groups`, it groups
- * the Assignments, such as by Project on a Client's page, each group row
- * filled by the `group` slot.
- */
 defineProps<{
     assignments: Row[];
     empty: string;

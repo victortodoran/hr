@@ -16,24 +16,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
-/**
- * Home as the props it renders: a summary of the Employee's hours this
- * month and this year, their Time Off, what of theirs was declined and
- * what waits for them to decide.
- * Each block is null when it doesn't apply to them; `hasNoManager` says
- * when the hours are left out because the Employee has no Manager, and is
- * only true when they can see Work Entries.
- */
 final class HomePage
 {
-    /**
-     * How many of each kind Needs your attention lists at most.
-     */
     private const int NEEDS_ATTENTION_LIMIT = 10;
 
     /**
-     * The signed-in Employee's summary.
-     *
      * `hasNoManager` is only true when the Employee can see Work Entries.
      *
      * @return array{hasNoManager: bool, hoursThisMonth: array<string, mixed>|null, hoursThisYear: array<string, mixed>|null, paidDaysLeft: list<array{year: int, days: int}>, nextTimeOff: array<string, mixed>|null, needsAttention: array{items: list<array<string, mixed>>, more: int}|null, waitingForYou: array{workEntries: int, timeOff: int, travelRequests: int, travelExpenses: int}|null}
@@ -62,14 +49,7 @@ final class HomePage
     }
 
     /**
-     * What the Employee should look at again, each with the reason it was
-     * declined, in this order and each kind by date: their Declined Work
-     * Entries (when they can see them), Travel Requests still to come,
-     * Travel Expenses and Time Off still to come. A Work Entry or
-     * Travel Expense leaves once changed or deleted, Time Off and a Travel
-     * Request once they have started. Each kind lists at most
-     * NEEDS_ATTENTION_LIMIT, the rest counted in `more`; null when there is
-     * nothing.
+     * A Work Entry or Travel Expense leaves once changed or deleted, Time Off and a Travel Request once they have started.
      *
      * @return array{items: list<array<string, mixed>>, more: int}|null
      */
@@ -134,9 +114,6 @@ final class HomePage
     }
 
     /**
-     * The first NEEDS_ATTENTION_LIMIT of a query by a date column, each
-     * shaped for the page, and how many more there are.
-     *
      * @template TModel of Model
      *
      * @param  Builder<TModel>|Relation<TModel, *, *>  $query
@@ -157,11 +134,7 @@ final class HomePage
     }
 
     /**
-     * The Employee's hours this month, from its first day to today, as this
-     * month's bar in hours this year counts them, leaving out Declined Work
-     * Entries, and how many of those hours are Pending. Only for an
-     * Employee who records hours and can see them: not one with no
-     * Manager, who records no Work Entries.
+     * Counts as this month's bar in hours this year does, so the two agree.
      *
      * @return array{month: string, hours: float|int, pendingHours: float|int}
      */
@@ -181,16 +154,7 @@ final class HomePage
         ];
     }
 
-    /**
-     * The Employee's hours for each month of this year, leaving out Declined
-     * Work Entries, with how many of those hours are Pending, and the year's
-     * totals. The months run from January, or from their Start Date's month
-     * when they started this year, to this month, those with no hours at 0;
-     * the totals cover the same months. For the same Employees as hours
-     * this month.
-     *
-     * @return array{year: int, hours: float|int, pendingHours: float|int, months: array<int, array{month: string, hours: float|int, pendingHours: float|int}>}
-     */
+    /** @return array{year: int, hours: float|int, pendingHours: float|int, months: array<int, array{month: string, hours: float|int, pendingHours: float|int}>} */
     private static function hoursThisYear(Employee $employee): array
     {
         $today = CarbonImmutable::today();

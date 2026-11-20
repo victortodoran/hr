@@ -30,22 +30,9 @@ defineOptions({
     },
 });
 
-/**
- * The Employee's own Performance Evaluation for this year on top, shown
- * as its own page shows it: its Goals as cards, whose Progress they change
- * while it is Open, under its Outcome and summary once Completed. While
- * there is none, the top says the Manager hasn't set the year's Goals yet.
- * Their other years are listed below, each linking to its own page.
- * Once there are more than three years, the years become Tabs (K3)
- * instead: this year's shows its Goals, each other year's its facts and a
- * link to its own page.
- */
 const props = defineProps<{
-    /** This calendar year. */
     year: number;
-    /** The Employee's Performance Evaluation for this year, or null while they have none. */
     current: PerformanceEvaluationView | null;
-    /** Their Performance Evaluations for every other year, newest first. */
     evaluations: OwnPerformanceEvaluation[];
 }>();
 
@@ -55,27 +42,22 @@ const columns: TableColumn[] = [
     { key: 'state', label: 'Status', align: 'end' },
 ];
 
-/** Every year with a Performance Evaluation, and this one, newest first. */
 const allYears = computed(() =>
     [props.year, ...props.evaluations.map((evaluation) => evaluation.year)]
         .sort((a, b) => b - a)
         .map(String),
 );
 
-/** Whether the years show as Tabs, once there are more than three. */
 const usesYearTabs = computed(() => allYears.value.length > 3);
 
-/** The year whose Tab is open. */
 const selectedYear = ref(String(props.year));
 
-/** The other year whose Tab is open, if it isn't this year's. */
 const selectedOther = computed(() =>
     props.evaluations.find(
         (evaluation) => String(evaluation.year) === selectedYear.value,
     ),
 );
 
-/** "Past years", or "Other years" once next year's is listed too. */
 const otherYearsTitle = computed(() =>
     props.evaluations.some((evaluation) => evaluation.year > props.year)
         ? 'Other years'

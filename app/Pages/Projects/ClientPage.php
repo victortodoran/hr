@@ -9,16 +9,10 @@ use App\Models\Project;
 use App\Support\TeamMember;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/**
- * A Client's page as the props it renders: its Projects and who works on
- * them today.
- */
 final class ClientPage
 {
     /**
-     * The Client's Projects by name, empty ones included, each with the
-     * Employees assigned to it today whose Assignments the viewer may see.
-     * Each Project's page keeps its full team.
+     * Only today's team, of Assignments the viewer may see; each Project's page keeps its full team.
      *
      * @return array<string, mixed>
      */

@@ -12,15 +12,8 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-/**
- * Lets an Employee's effective Manager decline their Pending Time Off.
- */
 class TimeOffDeclineController extends Controller
 {
-    /**
-     * Decline the Time Off, recording who declined it, when and why. It is
-     * kept on record, uses no Paid Days and the Employee sees the reason.
-     */
     public function store(TimeOffDeclineRequest $request, TimeOff $timeOff, #[CurrentUser] Employee $actor, DeclineTimeOff $declineTimeOff): RedirectResponse
     {
         $changed = $declineTimeOff->decline($actor, $timeOff, $request->reason());

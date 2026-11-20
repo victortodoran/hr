@@ -10,16 +10,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { addMonths, formatMonth, today } from '@/lib/dates';
 
-/**
- * A month, such as "‹ November 2026 ›": the arrows step one month back or
- * forward, the label opens a month-and-year picker, and "This month"
- * returns to the current one. Months after the current one can't be
- * chosen unless the future is allowed. Emits the chosen month as YYYY-MM.
- */
 const props = defineProps<{
-    /** The month shown, as YYYY-MM. */
+    /** YYYY-MM. */
     month: string;
-    /** Whether months after the current one can be chosen. */
     allowFuture?: boolean;
 }>();
 
@@ -32,11 +25,9 @@ const currentYear = Number(currentMonth.slice(0, 4));
 
 const isCurrentMonth = computed(() => props.month === currentMonth);
 
-/** Whether a month can't be chosen because it is still to come. */
 const isTooLate = (month: string): boolean =>
     !props.allowFuture && month > currentMonth;
 
-/** The year the picker shows, starting on the month's own. */
 const pickerYear = ref(Number(props.month.slice(0, 4)));
 
 const monthsOfPickerYear = computed(() =>

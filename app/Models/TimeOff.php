@@ -17,11 +17,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * One or more whole days an Employee asks to be away from work, from a
- * first to a last date, Paid or Unpaid. Only weekdays count as days. It is
- * Pending until approved or declined, and can be Cancelled before its first
- * day.
- *
  * @property int $id
  * @property int $employee_id
  * @property Carbon $first_date
@@ -45,20 +40,12 @@ class TimeOff extends Model
     /** @use HasFactory<TimeOffFactory> */
     use HasFactory;
 
-    /**
-     * All Time Off starts Pending.
-     *
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     protected $attributes = [
         'state' => 'pending', // @pest-mutate-ignore (the column defaults to pending too, so stored Time Off looks the same)
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -71,11 +58,7 @@ class TimeOff extends Model
         ];
     }
 
-    /**
-     * How many weekdays (Monday to Friday) fall from the first to the last
-     * date, both included. Weekends never count; public holidays count like
-     * any other weekday.
-     */
+    /** Public holidays count like any other weekday. */
     public static function weekdaysBetween(CarbonInterface $first, CarbonInterface $last): int
     {
         $weekdays = 0;
@@ -89,17 +72,11 @@ class TimeOff extends Model
         return $weekdays;
     }
 
-    /**
-     * How many days of Time Off it is: its weekdays.
-     */
     public function weekdays(): int
     {
         return self::weekdaysBetween($this->first_date, $this->last_date);
     }
 
-    /**
-     * How many of its weekdays fall in a calendar year.
-     */
     public function weekdaysIn(int $year): int
     {
         $first = CarbonImmutable::createFromDate($year, 1, 1)->startOfDay()->max($this->first_date);
@@ -108,13 +85,7 @@ class TimeOff extends Model
         return self::weekdaysBetween($first, $last);
     }
 
-    /**
-     * What a list of Time Off shows of it: its dates, the weekdays it
-     * counts, whether it is Paid, its state, who decided it and why it was
-     * declined.
-     *
-     * @return array{id: int, first_date: string, last_date: string, days: int, is_paid: bool, state: string, decided_by: string|null, decline_reason: string|null}
-     */
+    /** @return array{id: int, first_date: string, last_date: string, days: int, is_paid: bool, state: string, decided_by: string|null, decline_reason: string|null} */
     public function details(): array
     {
         return [
@@ -129,10 +100,6 @@ class TimeOff extends Model
         ];
     }
 
-    /**
-     * Whether the Employee can still cancel it: it is Pending or Approved,
-     * and its first date is still to come.
-     */
     public function isCancellable(): bool
     {
         return in_array($this->state, TimeOffState::standing(), true)
@@ -148,8 +115,7 @@ class TimeOff extends Model
     }
 
     /**
-     * The Manager who approved or declined it, once decided. The top
-     * Employee's Time Off is Approved with no one deciding.
+     * Null for the top Employee, whose Time Off is Approved with no one deciding.
      *
      * @return BelongsTo<Employee, $this>
      */

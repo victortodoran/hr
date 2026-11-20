@@ -7,10 +7,6 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Refuses signing in to an Employee before their Start Date or after their
- * Leaving Date.
- */
 class RefuseSignInOutsideEmployment
 {
     public function handle(Login $event): void

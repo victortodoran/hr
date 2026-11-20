@@ -10,13 +10,7 @@ import {
 } from 'reka-ui';
 import { Button, buttonVariants } from '@/components/ui/button';
 
-/**
- * Asks whether to give up unsaved changes, the one such question across the
- * app. The keep button ("Keep editing" unless told otherwise) is focused
- * first, so the safe choice is the easy one; it and Escape both keep. The
- * discard button only discards, leaving the page to close the dialog as it
- * leaves or moves on.
- */
+/** The keep button is focused first, so the safe choice is the easy one. */
 withDefaults(
     defineProps<{
         open: boolean;

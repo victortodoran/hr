@@ -3,16 +3,10 @@ import { useDebounceFn } from '@vueuse/core';
 import { ref, watch } from 'vue';
 import { Input } from '@/components/ui/input';
 
-/**
- * A list's search box, for a `FilterBar`: shows what is typed straight
- * away, and emits it once typing pauses, so the list reloads once per
- * search rather than once per key. Shows the search again whenever the
- * page's props change it.
- */
+/** Emits once typing pauses, so the list reloads once per search rather than once per key. */
 const props = withDefaults(
     defineProps<{
         modelValue: string;
-        /** What the box searches, as its placeholder and label say it. */
         label?: string;
     }>(),
     { label: 'Search by name' },

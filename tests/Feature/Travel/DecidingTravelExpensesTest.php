@@ -29,10 +29,6 @@ beforeEach(function () {
     Storage::fake(TravelExpense::RECEIPT_DISK);
 });
 
-/**
- * Cara's Approved trip to Berlin from 3 to 5 Dec 2026, with the given
- * Manager.
- */
 function carasBerlinTrip(Employee $manager): TravelRequest
 {
     $cara = Employee::factory()->startedLongAgo()->reportingTo($manager)->create(['name' => 'Cara']);
@@ -40,12 +36,7 @@ function carasBerlinTrip(Employee $manager): TravelRequest
     return TravelRequest::factory()->on(assignmentOf($cara))->approved()->create(['destination' => 'Berlin', 'first_date' => '2026-12-03', 'last_date' => '2026-12-05']);
 }
 
-/**
- * A Travel Expense on the Travel Request, Pending unless given another
- * factory state, its receipt stored on the disk.
- *
- * @param  array<string, mixed>  $attributes
- */
+/** @param  array<string, mixed>  $attributes */
 function expenseOn(TravelRequest $travelRequest, string $state = 'pending', array $attributes = []): TravelExpense
 {
     $path = TravelExpense::RECEIPT_FOLDER.'/'.fake()->uuid().'.pdf';

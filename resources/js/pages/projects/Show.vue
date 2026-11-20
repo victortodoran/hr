@@ -18,23 +18,14 @@ import { deleteProjectDescription } from '@/lib/projects';
 import { index, show } from '@/routes/projects';
 import type { Choice, ProjectRecord, TeamAssignment, TeamToday } from '@/types';
 
-/**
- * A Project and its team (rule L12): its name, who it is for and when it
- * runs, then how many run on it today and with how much Capacity, then
- * its team. Whoever manages Projects edits it in a sheet (L14) or deletes
- * it from the ⋯ menu (X6); the Internal Project stays as it is.
- */
 const props = defineProps<{
     project: ProjectRecord;
     team: TeamAssignment[];
     teamToday: TeamToday;
-    /** Whether the viewer may edit or delete the Project. */
     canManage: boolean;
-    /** The Clients it can be for, when the viewer may edit it. */
     clients: Choice[];
 }>();
 
-/** Who the Project is for and when it runs, in one line (C9). */
 const meta = computed(() => {
     if (props.project.is_internal || !props.project.start_date) {
         return 'Always running';

@@ -11,14 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
-/**
- * Keeps dates around the Pending and Approved Travel Requests they hold, so
- * none ever has days outside its Assignment: a start can't be later than
- * the first day of travel, and an end can't be earlier than the last.
- * Ending an Employee or a Project cuts its Assignments off, so their ends
- * count too. Declined and Cancelled Travel Requests never block. With
- * nothing to hold yet (when adding one), anything fits.
- */
+/** Ending an Employee or a Project cuts its Assignments off, so their ends count too. */
 class TravelRequestsFit implements ValidationRule
 {
     /**
@@ -31,29 +24,19 @@ class TravelRequestsFit implements ValidationRule
         private string $message,
     ) {}
 
-    /**
-     * A start no later than the first day of the standing Travel Requests.
-     *
-     * @param  HasMany<TravelRequest, *>|HasManyThrough<TravelRequest, *, *>|null  $travelRequests
-     */
+    /** @param  HasMany<TravelRequest, *>|HasManyThrough<TravelRequest, *, *>|null  $travelRequests */
     public static function startOf(HasMany|HasManyThrough|null $travelRequests, string $message): self
     {
         return new self($travelRequests, isStart: true, message: $message);
     }
 
-    /**
-     * An end no earlier than the last day of the standing Travel Requests.
-     *
-     * @param  HasMany<TravelRequest, *>|HasManyThrough<TravelRequest, *, *>|null  $travelRequests
-     */
+    /** @param  HasMany<TravelRequest, *>|HasManyThrough<TravelRequest, *, *>|null  $travelRequests */
     public static function endOf(HasMany|HasManyThrough|null $travelRequests, string $message): self
     {
         return new self($travelRequests, isStart: false, message: $message);
     }
 
-    /**
-     * @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail
-     */
+    /** @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if ($this->travelRequests === null) {

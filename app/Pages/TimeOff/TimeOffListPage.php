@@ -9,20 +9,9 @@ use App\Models\TimeOff;
 use App\Support\PageWithin;
 use App\Support\Period;
 
-/**
- * The Time Off page across Employees as the props it renders: the Time Off
- * of the Employees the viewer may see Time Off for, one Period at a time,
- * for every Employee or one.
- */
 final class TimeOffListPage
 {
     /**
-     * The Time Off matching the filters, that with a date in the Period, in
-     * every state unless one is chosen, by first date, 25 to a page. The
-     * Employees to choose from are those the viewer may see with Time Off
-     * in the Period in the chosen state, by name with how many; one not
-     * among them falls back to every Employee.
-     *
      * @param  array{period: Period, employee: int|'all', state: string|null}  $requested
      * @return array<string, mixed>
      */

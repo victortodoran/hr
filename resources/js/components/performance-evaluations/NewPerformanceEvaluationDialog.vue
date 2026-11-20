@@ -24,15 +24,7 @@ import {
 } from '@/components/ui/select';
 import type { CreatableYear } from '@/types';
 
-/**
- * A new Performance Evaluation in a dialog over the Performance
- * Evaluations page (rules L14, K7): its year, the current or the next, as
- * a SegmentedControl (V8), and one of the Employees the viewer manages who
- * has none for it yet. It submits as "New Performance Evaluation", the
- * button that opened it (C13), and opens the new one's page, Open at once.
- */
 const props = defineProps<{
-    /** The current year, then the next, each with who may get one. */
     creatableYears: CreatableYear[];
 }>();
 
@@ -43,7 +35,6 @@ const form = useForm({
     employee_id: '',
 });
 
-/** Starts each opening on the current year with no Employee chosen. */
 watch(open, (isOpen) => {
     if (isOpen) {
         form.year = props.creatableYears[0]?.year ?? form.year;
@@ -65,7 +56,6 @@ const employees = computed(
             ?.employees ?? [],
 );
 
-/** Choose the year, dropping an Employee chosen for the other one. */
 function chooseYear(year: string): void {
     form.year = Number(year);
     form.employee_id = '';

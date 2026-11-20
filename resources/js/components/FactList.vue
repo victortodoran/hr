@@ -1,10 +1,4 @@
 <script setup lang="ts">
-/**
- * One record's fields as label and value pairs (rule K11), such as in a
- * RecordSheet. An empty value shows "Not set" in the subtle colour; a
- * `fact-<label>` slot replaces a value that needs more than text, such as
- * a link.
- */
 defineProps<{
     facts: { label: string; value: string | null }[];
 }>();

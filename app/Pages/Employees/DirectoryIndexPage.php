@@ -7,11 +7,7 @@ use App\Enums\Permission;
 use App\Models\Employee;
 use App\Support\ReportingChain;
 
-/**
- * The Directory page as the props it renders: which tab is open, the tabs
- * the viewer may open, only the open tab's rows (rule K4), and the person
- * open in a sheet over the list (rule K8).
- */
+/** Only the open tab's rows are loaded (rule K4). */
 final class DirectoryIndexPage
 {
     /**
@@ -32,10 +28,7 @@ final class DirectoryIndexPage
     }
 
     /**
-     * The asked-for Employee's Reporting Chain: everyone above them up to
-     * one with no Manager, and the Employees they are the Manager of. Null
-     * when nobody is asked for, when the viewer lacks view directory, and
-     * for a Former Employee, who has left the directory.
+     * Null for a Former Employee, who has left the directory.
      *
      * @return array<string, mixed>|null
      */

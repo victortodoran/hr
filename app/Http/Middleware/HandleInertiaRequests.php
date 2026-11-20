@@ -13,32 +13,17 @@ use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that's loaded on the first page visit.
-     *
-     * @see https://inertiajs.com/server-side-setup#root-template
-     *
-     * @var string
-     */
+    /** @var string */
     protected $rootView = 'app';
 
-    /**
-     * Determines the current asset version.
-     *
-     * @see https://inertiajs.com/asset-versioning
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
     /**
-     * Define the props that are shared by default. The sidebar's Team,
-     * Approvals and count all come from one read of whom the Employee
-     * manages, which the Employee keeps for the page to reuse. Of the
-     * Employee, only what the user menu shows is sent.
-     *
-     * @see https://inertiajs.com/shared-data
+     * The sidebar's Team, Approvals and count all come from one read of whom the
+     * Employee manages, which the Employee keeps for the page to reuse.
      *
      * @return array<string, mixed>
      */

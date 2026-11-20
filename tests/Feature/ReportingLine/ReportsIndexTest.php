@@ -3,10 +3,7 @@
 use App\Models\Employee;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Finding someone's Reports walks down the reporting line by Manager at
- * every level, so that walk must be able to use the index on manager_id.
- */
+/** Finding someone's Reports walks down by Manager at every level, so it must use the index on manager_id. */
 it('lets the Reports query find each level by Manager through its index', function () {
     $ada = Employee::factory()->create();
     Employee::factory()->reportingTo($ada)->create();
@@ -20,10 +17,7 @@ it('lets the Reports query find each level by Manager through its index', functi
     expect($plan)->toContain('employees_manager_id_index');
 });
 
-/**
- * Finding whom someone is the effective Manager of walks down from them the
- * same way, so it must not read the whole employees table either.
- */
+/** Finding whom someone is the effective Manager of walks down the same way, so it must not read the whole employees table either. */
 it('lets the effective-Manager query find each level by Manager through its index', function () {
     $ada = Employee::factory()->create();
     Employee::factory()->reportingTo($ada)->create();

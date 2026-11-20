@@ -5,11 +5,6 @@ import NameDialog from '@/components/NameDialog.vue';
 import { projectCount } from '@/lib/projects';
 import type { ClientRecord } from '@/types';
 
-/**
- * A Client's Rename and Delete dialogs, shared by the Clients' ⋯ menus and
- * the Client's page (K7, C7). Delete confirms first, and explains instead
- * when the Client's Projects keep it (X3).
- */
 defineProps<{
     client: ClientRecord;
 }>();
@@ -17,7 +12,6 @@ defineProps<{
 const renameOpen = defineModel<boolean>('renameOpen', { default: false });
 const deleteOpen = defineModel<boolean>('deleteOpen', { default: false });
 
-/** What deleting the Client asks about, or why it can't be deleted (X3). */
 function deleteDescription(client: ClientRecord): string {
     return client.projects_count === 0
         ? "This can't be undone."

@@ -7,10 +7,6 @@ use App\Support\Period;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 
-/**
- * The Work Entries page's filters: a Period, an Employee or "all" for any
- * Employee, a Project and a state, any state when none is chosen.
- */
 class WorkEntryListRequest extends WorkEntryFiltersRequest
 {
     /**
@@ -25,12 +21,7 @@ class WorkEntryListRequest extends WorkEntryFiltersRequest
         ];
     }
 
-    /**
-     * The filters asked for, null where none is set; the Employee is "all"
-     * when any Employee is asked for.
-     *
-     * @return array{period: Period, employee: int|'all'|null, project: int|null, state: string|null}
-     */
+    /** @return array{period: Period, employee: int|'all'|null, project: int|null, state: string|null} */
     public function filters(): array
     {
         $filters = parent::filters();

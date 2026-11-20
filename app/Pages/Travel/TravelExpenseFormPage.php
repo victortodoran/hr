@@ -8,19 +8,9 @@ use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Support\Currency;
 
-/**
- * The Travel Request's page with the Add or Edit Travel Expense sheet open
- * over it (rule L14), as the props it renders.
- */
 final class TravelExpenseFormPage
 {
-    /**
-     * The Travel Request's page (TravelRequestPage) with the sheet for
-     * adding a Travel Expense, the company currency and today, the latest
-     * date one can be paid on.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function create(TravelRequest $travelRequest, Employee $actor): array
     {
         return [
@@ -31,12 +21,7 @@ final class TravelExpenseFormPage
     }
 
     /**
-     * The Travel Request's page (TravelRequestPage) with the sheet for
-     * editing a Travel Expense, filled in as it would be
-     * typed, with its receipt's file name, the receipt kept unless a new file is chosen; for a
-     * Declined one, who declined it and why, and the effective Manager it
-     * goes back to as Pending once saved, or null when nobody is left to
-     * decide and saving Approves it at once.
+     * For a Declined one, the Manager it goes back to is null when nobody is left to decide and saving Approves it at once.
      *
      * @return array<string, mixed>
      */
@@ -64,7 +49,7 @@ final class TravelExpenseFormPage
     }
 
     /**
-     * What both sheets carry: the company currency and today.
+     * Today is the latest date a Travel Expense can be paid on.
      *
      * @return array{currency: array{code: string, decimals: int}, today: string}
      */

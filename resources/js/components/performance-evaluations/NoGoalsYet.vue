@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { Target } from '@lucide/vue';
 
-/**
- * The dashed box that stands in for a year's Goal cards while there are
- * none: a sentence on whose Goals appear there, and the action to give the
- * first one when the viewer may.
- */
 defineSlots<{
     default: () => unknown;
     action?: () => unknown;

@@ -11,22 +11,9 @@ use App\Support\WorkEntryDays;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 
-/**
- * The Work Entries week page as the props it renders: one Employee's Work
- * Entries for one Period, a week from Monday to Sunday, a month or a custom
- * period, day by day, with totals for each day, each Assignment and the
- * Period.
- */
 final class WeekPage
 {
-    /**
-     * The Employee's Work Entries in the Period, as the open tab lays them
-     * out, with the totals that count (and how much of them is Approved or
-     * still Pending) and those Declined, who approves them, and what the
-     * viewer may act on.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public static function props(Employee $actor, Employee $employee, Period $period, WorkEntriesTab $tab, bool $canManage, bool $canDelete): array
     {
         $entries = $employee->workEntries()
@@ -61,13 +48,7 @@ final class WeekPage
         ];
     }
 
-    /**
-     * The Employee's Assignments that run during the Period, by Project
-     * name, for adding and changing Work Entries; only sent to a viewer who
-     * can record the Employee's hours.
-     *
-     * @return SupportCollection<int, array{id: int, project: string, job_title: string|null, start_date: string, end_date: string|null}>
-     */
+    /** @return SupportCollection<int, array{id: int, project: string, job_title: string|null, start_date: string, end_date: string|null}> */
     private static function assignments(Employee $employee, Period $period): SupportCollection
     {
         return $employee->assignments()
@@ -87,9 +68,6 @@ final class WeekPage
     }
 
     /**
-     * The hours on each Assignment in the Period, most hours first, then by
-     * Project name.
-     *
      * @param  Collection<int, WorkEntry>  $entries
      * @return SupportCollection<int, array{assignment_id: int, project: string, hours: float|int}>
      */

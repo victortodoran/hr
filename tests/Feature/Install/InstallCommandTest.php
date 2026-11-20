@@ -21,12 +21,7 @@ use function Pest\Laravel\artisan;
 
 covers(InstallCommand::class, InstallCompany::class, CompanySettings::class, Role::class, ChangeAccess::class, CurrencyInUse::class);
 
-/**
- * Run hr:install with the given options and return the pending command
- * so its outcome can be asserted.
- *
- * @param  array<string, string>  $options
- */
+/** @param  array<string, string>  $options */
 function install(array $options = []): PendingCommand
 {
     $command = artisan('hr:install', $options);

@@ -5,10 +5,6 @@ namespace App\Http\Requests\Travel;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-/**
- * Declining a Pending Travel Request, which always needs a reason the
- * Employee will see.
- */
 class TravelRequestDeclineRequest extends FormRequest
 {
     /**
@@ -21,9 +17,6 @@ class TravelRequestDeclineRequest extends FormRequest
         ];
     }
 
-    /**
-     * The reason given for declining.
-     */
     public function reason(): string
     {
         return $this->string('decline_reason')->value();

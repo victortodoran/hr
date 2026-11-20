@@ -8,10 +8,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/**
- * The Employees page's filters: part of a name, a Department, a Manager
- * and an employment status, any of each when none is chosen.
- */
 class EmployeeListRequest extends FormRequest
 {
     /**
@@ -27,12 +23,7 @@ class EmployeeListRequest extends FormRequest
         ];
     }
 
-    /**
-     * The filters asked for, null where none is set, the part of a name
-     * empty when none is.
-     *
-     * @return array{search: string, status: EmploymentStatus|null, department: int|null, manager: Employee|null}
-     */
+    /** @return array{search: string, status: EmploymentStatus|null, department: int|null, manager: Employee|null} */
     public function filters(): array
     {
         return [

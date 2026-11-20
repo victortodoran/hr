@@ -17,19 +17,10 @@ defineOptions({
     },
 });
 
-/**
- * The Employee's own travel (rule L11): one table of their Travel
- * Requests, Upcoming first. Request Travel, the one primary (B2), opens
- * its sheet over the page; the sheet's own URL, `travel-requests/create`,
- * renders this page with `requesting` set (L14).
- */
 const props = defineProps<{
     travelRequests: TravelHistory;
-    /** Whether the Request Travel sheet is open. */
     requesting?: boolean;
-    /** The earliest first date, sent with the sheet. */
     today?: string;
-    /** The Assignments the Employee can still travel on, sent with the sheet. */
     assignments?: TravelAssignment[];
 }>();
 

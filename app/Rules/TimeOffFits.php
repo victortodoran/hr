@@ -10,13 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
-/**
- * Keeps an Employee's dates around their Pending and Approved Time Off, so
- * none ever has days outside the employment: a Start Date can't be later
- * than the first day of Time Off, and a Leaving Date can't be earlier than
- * the last. Declined and Cancelled Time Off never blocks. With no Employee
- * yet (when adding one), anything fits.
- */
+/** Declined and Cancelled Time Off never blocks. */
 class TimeOffFits implements ValidationRule
 {
     /**
@@ -29,29 +23,19 @@ class TimeOffFits implements ValidationRule
         private string $message,
     ) {}
 
-    /**
-     * A start no later than the first day of the standing Time Off.
-     *
-     * @param  HasMany<TimeOff, *>|null  $timeOff
-     */
+    /** @param  HasMany<TimeOff, *>|null  $timeOff */
     public static function startOf(?HasMany $timeOff, string $message): self
     {
         return new self($timeOff, isStart: true, message: $message);
     }
 
-    /**
-     * An end no earlier than the last day of the standing Time Off.
-     *
-     * @param  HasMany<TimeOff, *>|null  $timeOff
-     */
+    /** @param  HasMany<TimeOff, *>|null  $timeOff */
     public static function endOf(?HasMany $timeOff, string $message): self
     {
         return new self($timeOff, isStart: false, message: $message);
     }
 
-    /**
-     * @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail
-     */
+    /** @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if ($this->timeOff === null) {

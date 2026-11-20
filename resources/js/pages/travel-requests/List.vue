@@ -31,21 +31,12 @@ defineOptions({
     },
 });
 
-/**
- * The Travel Requests of the Employees the viewer may see travel of, a
- * Period at a time, for every Employee or one, each with what was spent
- * on it. Its Travel Expenses, their receipts and reopening them are on the
- * Travel Request's own page.
- */
 const props = defineProps<{
     filters: TravelRequestListFilters;
     today: string;
     travelRequests: Paginated<ListedTravelRequest>;
-    /** The total of the matching Travel Requests' Travel Expenses that aren't Declined, in the company currency. */
     total: string;
-    /** Who has Travel Requests in the Period, by name, with how many. */
     employees: EmployeeWithCount[];
-    /** The Projects the Employee shown, or anyone, has Travel Requests on in the Period. */
     projects: Choice[];
 }>();
 

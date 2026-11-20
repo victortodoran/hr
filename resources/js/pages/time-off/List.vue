@@ -29,16 +29,10 @@ defineOptions({
     },
 });
 
-/**
- * The Time Off of the Employees the viewer may see Time Off for, a Period
- * at a time, for every Employee or one. Each Employee's Paid Days and all
- * their Time Off are on the Time Off tab of their page.
- */
 const props = defineProps<{
     filters: TimeOffListFilters;
     today: string;
     timeOff: Paginated<ListedTimeOff>;
-    /** Who has Time Off in the Period, by name, with how many. */
     employees: EmployeeWithCount[];
 }>();
 

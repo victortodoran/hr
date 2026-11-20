@@ -5,9 +5,6 @@ namespace App\Http\Requests\Performance;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-/**
- * Giving or changing a Goal: its title and description, both required.
- */
 class GoalRequest extends FormRequest
 {
     /**
@@ -21,11 +18,7 @@ class GoalRequest extends FormRequest
         ];
     }
 
-    /**
-     * The Goal as it is stored.
-     *
-     * @return array{title: string, description: string}
-     */
+    /** @return array{title: string, description: string} */
     public function goal(): array
     {
         return [

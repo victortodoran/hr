@@ -8,10 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * A short written message on a Goal from the Employee or their Manager.
- * It keeps its author after they stop being the Manager, and is never
- * changed or removed on its own: it goes only with its Goal.
- *
  * @property int $id
  * @property int $goal_id
  * @property int $author_id
@@ -33,11 +29,7 @@ class Comment extends Model
         return $this->belongsTo(Goal::class);
     }
 
-    /**
-     * The Employee or Manager who wrote it.
-     *
-     * @return BelongsTo<Employee, $this>
-     */
+    /** @return BelongsTo<Employee, $this> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'author_id');

@@ -9,13 +9,6 @@ import { formatDateRange } from '@/lib/dates';
 import { show } from '@/routes/travel-requests';
 import type { TableColumn, TravelHistory, TravelRequestSummary } from '@/types';
 
-/**
- * An Employee's Travel Requests in one table (rule K1): Upcoming first,
- * then Past, each under a group row. A row opens its Travel Request's
- * page. Expenses is the total entered and not Declined, with how many are
- * Declined; Approved the total Approved; both only for one that takes
- * Travel Expenses. On a phone each row stacks (P4).
- */
 const props = defineProps<{
     travelRequests: TravelHistory;
 }>();

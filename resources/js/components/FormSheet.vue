@@ -9,19 +9,9 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 
-/**
- * An overlay form (rule L14): a form of up to six fields in a 480px sheet
- * from the right, over the page it came from; on a phone a full-height
- * sheet from the bottom (P7). The body scrolls under the title, and the
- * `footer` slot's buttons stay at the bottom.
- *
- * The sheet doesn't render the form: put `<form id="…">` with its fields in
- * the default slot, and give the footer's buttons `form="…"` with the same
- * id, so the submit button sends it and Enter in a field does too.
- */
+/** The sheet doesn't render the form: the footer's buttons reach the slot's `<form id>` through `form="…"`, so Enter in a field submits it too. */
 defineProps<{
     title: string;
-    /** One line under the title, such as what the form belongs to. */
     description?: string;
 }>();
 
@@ -34,7 +24,6 @@ const open = defineModel<boolean>('open', { required: true });
 
 const isPhone = useMediaQuery('(max-width: 639px)');
 
-/** The kinds of element a person types or picks a value in. */
 const fieldSelector = [
     'input:not([type="hidden"]):not([type="file"]):not([disabled]):not([tabindex="-1"])',
     'textarea:not([disabled])',
@@ -42,11 +31,7 @@ const fieldSelector = [
     'button[role="combobox"]',
 ].join(', ');
 
-/**
- * Opens with the cursor in the first field rather than on the first
- * focusable control, which is often a picker's icon button whose Tooltip
- * would cover the field's label.
- */
+/** Focuses the first field rather than the first focusable control, often a picker's icon button whose Tooltip would cover the field's label. */
 function focusFirstField(event: Event): void {
     const field = (
         event.target as HTMLElement | null

@@ -8,11 +8,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-/**
- * An Export button offering a list's file as CSV or Excel, downloaded
- * straight away from the address the list gives for each format. The
- * label says what is exported when it isn't the list's own rows.
- */
 withDefaults(
     defineProps<{
         fileUrl: (format: 'csv' | 'xlsx') => string;

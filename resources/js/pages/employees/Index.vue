@@ -35,12 +35,6 @@ defineOptions({
     },
 });
 
-/**
- * Every Employee whose record the viewer may see (rule L11), filtered by
- * status chips with their counts, part of a name, a Department and a
- * Manager. A row opens the Employee's page; Add Employee, the one primary,
- * sits by the title.
- */
 const props = defineProps<{
     employees: Paginated<EmployeeListEntry>;
     search: string;
@@ -48,9 +42,7 @@ const props = defineProps<{
     department: number | null;
     manager: number | null;
     counts: EmploymentStatusCounts;
-    /** The Departments of the Employees the viewer may see. */
     departments: Choice[];
-    /** The Managers of the Employees the viewer may see. */
     managers: Choice[];
     canAdd: boolean;
 }>();
@@ -115,7 +107,6 @@ function clearFilters(): void {
     });
 }
 
-/** On a phone the row stacks, so the Department joins the Job Title line (P4). */
 const isPhone = useMediaQuery('(max-width: 639px)');
 
 function detailOf(row: EmployeeListEntry): string | null {
