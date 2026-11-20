@@ -70,15 +70,17 @@ it('offers the Performance Evaluations page to an Employee who effectively manag
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeePerformanceEvaluations', true));
 });
 
-it('offers last year, this year and next on the Performance Evaluations page, with each Evaluation\'s Goal count', function () {
+it('offers last year, this year and next and creating on the Performance Evaluations page, listing only the Manager\'s own Reports with each Evaluation\'s Goal count', function () {
     $ben = managerBen();
     PerformanceEvaluation::factory()->of(caraReportingTo($ben))->has(Goal::factory()->count(3))->create();
+    PerformanceEvaluation::factory()->of(Employee::factory()->startedLongAgo()->create(['name' => 'Zed']))->create();
 
     actingAs($ben)->get(route('performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/Index')
             ->where('years', [2027, 2026, 2025])
             ->where('canCreate', true)
+            ->where('employees.data', fn (Collection $rows): bool => $rows->pluck('name')->all() === ['Cara'])
             ->where('employees.data.0.evaluation.goals_count', 3));
 });
 
