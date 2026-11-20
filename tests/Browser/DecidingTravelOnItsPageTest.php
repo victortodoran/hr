@@ -44,7 +44,7 @@ it('lets the Manager decline a Pending Travel Request on its page with a reason,
     visit(route('travel-requests.show', $berlin))
         ->assertSee('Approve')
         ->click('Decline…')
-        ->assertSee('Decline this Travel Request?')
+        ->assertSee('Decline Travel Request')
         ->fill('#decline-reason', 'The release is that week.')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertSee('Travel Request declined.')

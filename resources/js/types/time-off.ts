@@ -63,6 +63,8 @@ export type TimeOffToApprove = {
     /** The weekdays it counts; weekends never do. */
     days: number;
     is_paid: boolean;
+    /** When the Employee asked. */
+    submitted_on: string | null;
     /** Paid Days left per year, already counting this Time Off when Paid. */
     paid_days_left: PaidDaysLeftInYear[];
 };

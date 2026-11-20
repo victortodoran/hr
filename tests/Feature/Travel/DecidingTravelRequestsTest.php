@@ -213,8 +213,8 @@ it('lists the Pending Travel Requests of the Employees the Manager effectively m
             ->where('tab', 'travel-requests')
             ->where('waiting', ['workEntries' => 0, 'timeOff' => 0, 'travelRequests' => 2, 'travelExpenses' => 0])
             ->where('travelRequestsToApprove', [
-                ['id' => $devs->id, 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'project' => 'Website', 'client' => null, 'destination' => 'Lisbon', 'first_date' => '2026-11-16', 'last_date' => '2026-11-16', 'days' => 1, 'purpose' => 'Design conference'],
-                ['id' => $berlin->id, 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'client' => 'Globex', 'destination' => 'Berlin', 'first_date' => '2026-12-14', 'last_date' => '2026-12-16', 'days' => 3, 'purpose' => $berlin->purpose],
+                ['id' => $devs->id, 'employee' => ['id' => $dev->id, 'name' => 'Dev'], 'project' => 'Website', 'client' => null, 'destination' => 'Lisbon', 'first_date' => '2026-11-16', 'last_date' => '2026-11-16', 'days' => 1, 'purpose' => 'Design conference', 'submitted_on' => now()->toDateString()],
+                ['id' => $berlin->id, 'employee' => ['id' => $cara->id, 'name' => 'Cara'], 'project' => 'Relaunch', 'client' => 'Globex', 'destination' => 'Berlin', 'first_date' => '2026-12-14', 'last_date' => '2026-12-16', 'days' => 3, 'purpose' => $berlin->purpose, 'submitted_on' => now()->toDateString()],
             ])
             ->missing('toApprove')
             ->missing('entries'));

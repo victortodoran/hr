@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import TimeOffTab from '@/components/approvals/TimeOffTab.vue';
 import TravelExpensesTab from '@/components/approvals/TravelExpensesTab.vue';
 import TravelRequestsTab from '@/components/approvals/TravelRequestsTab.vue';
@@ -12,6 +13,7 @@ import { index } from '@/routes/approvals';
 import type {
     ApprovalEntry,
     ApprovalFilters,
+    ApprovalWeek,
     ApprovalsTab,
     ApprovalsWaiting,
     Paginated,
@@ -33,13 +35,15 @@ defineOptions({
  * on the Travel Requests tab and `travelExpensesToApprove` on the Travel
  * Expenses tab.
  */
-defineProps<{
+const props = defineProps<{
     tab: ApprovalsTab;
     waiting: ApprovalsWaiting;
     filters?: ApprovalFilters;
     entries?: Paginated<ApprovalEntry>;
     /** Total hours of every Work Entry matching the filters. */
     total?: number;
+    /** Every week the matching Work Entries fall in, with all their hours. */
+    weeks?: ApprovalWeek[];
     /** Every matching Work Entry's ID; only sent when asked for. */
     matchingIds?: number[];
     employees?: ChoiceToApprove[];
@@ -52,6 +56,19 @@ defineProps<{
     travelExpensesToApprove?: TravelExpensesToApprove[];
 }>();
 
+/** "24 items are waiting for your decision." */
+const description = computed(() => {
+    const count =
+        props.waiting.workEntries +
+        props.waiting.timeOff +
+        props.waiting.travelRequests +
+        props.waiting.travelExpenses;
+
+    return count === 0
+        ? 'Nothing is waiting for your decision.'
+        : `${count} ${count === 1 ? 'item is' : 'items are'} waiting for your decision.`;
+});
+
 function openTab(tab: string | number): void {
     router.get(index.url({ query: { tab: String(tab) } }));
 }
@@ -61,10 +78,7 @@ function openTab(tab: string | number): void {
     <Head title="Approvals" />
 
     <PageContainer width="full">
-        <PageHeader
-            title="Approvals"
-            description="Pending Work Entries, Time Off, Travel Requests and Travel Expenses waiting for your decision"
-        />
+        <PageHeader title="Approvals" :description="description" />
 
         <Tabs :model-value="tab" @update:model-value="openTab">
             <TabsList
@@ -95,30 +109,32 @@ function openTab(tab: string | number): void {
                     }}</Badge></TabsTrigger
                 >
             </TabsList>
-            <TabsContent value="work-entries" class="mt-4">
+            <TabsContent value="work-entries" class="mt-5">
                 <WorkEntriesTab
                     v-if="tab === 'work-entries' && entries"
                     :filters="filters!"
                     :entries="entries"
                     :total="total!"
+                    :weeks="weeks!"
+                    :waiting="waiting.workEntries"
                     :matching-ids="matchingIds"
                     :employees="employees!"
                     :projects="projects!"
                 />
             </TabsContent>
-            <TabsContent value="time-off" class="mt-4">
+            <TabsContent value="time-off" class="mt-5">
                 <TimeOffTab
                     v-if="tab === 'time-off' && toApprove"
                     :to-approve="toApprove"
                 />
             </TabsContent>
-            <TabsContent value="travel-requests" class="mt-4">
+            <TabsContent value="travel-requests" class="mt-5">
                 <TravelRequestsTab
                     v-if="tab === 'travel-requests' && travelRequestsToApprove"
                     :to-approve="travelRequestsToApprove"
                 />
             </TabsContent>
-            <TabsContent value="travel-expenses" class="mt-4">
+            <TabsContent value="travel-expenses" class="mt-5">
                 <TravelExpensesTab
                     v-if="tab === 'travel-expenses' && travelExpensesToApprove"
                     :to-approve="travelExpensesToApprove"

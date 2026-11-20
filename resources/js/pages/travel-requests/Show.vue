@@ -3,7 +3,7 @@ import { Form, Head, setLayoutProps } from '@inertiajs/vue3';
 import TravelRequestApprovalController from '@/actions/App/Http/Controllers/Travel/TravelRequestApprovalController';
 import TravelRequestCancellationController from '@/actions/App/Http/Controllers/Travel/TravelRequestCancellationController';
 import TravelRequestDeclineController from '@/actions/App/Http/Controllers/Travel/TravelRequestDeclineController';
-import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
+import DecideDialog from '@/components/DecideDialog.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
@@ -104,7 +104,7 @@ setLayoutProps({
                             >Approve</SubmitButton
                         >
                     </Form>
-                    <DeclineSelectedDialog
+                    <DecideDialog
                         :action="
                             TravelRequestDeclineController.store(
                                 travelRequest.id,

@@ -1,40 +1,57 @@
 <script setup lang="ts">
-import { Form } from '@inertiajs/vue3';
-import { CheckCheck } from '@lucide/vue';
+import { router } from '@inertiajs/vue3';
+import { Check, CheckCheck, X } from '@lucide/vue';
+import { computed } from 'vue';
 import ApprovalController from '@/actions/App/Http/Controllers/WorkEntries/ApprovalController';
 import WorkEntryDeclineController from '@/actions/App/Http/Controllers/WorkEntries/WorkEntryDeclineController';
 import ApprovalFilterBar from '@/components/approvals/ApprovalFilterBar.vue';
-import DeclineSelectedDialog from '@/components/approvals/DeclineSelectedDialog.vue';
 import DataTable from '@/components/DataTable.vue';
+import DecideDialog from '@/components/DecideDialog.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import FactList from '@/components/FactList.vue';
 import Pagination from '@/components/Pagination.vue';
+import RecordSheet from '@/components/RecordSheet.vue';
+import RowActions from '@/components/RowActions.vue';
 import SelectionBar from '@/components/SelectionBar.vue';
 import SubmitButton from '@/components/SubmitButton.vue';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useBulkSelection } from '@/composables/useBulkSelection';
 import { reloadList } from '@/composables/useListFilters';
-import { formatDate } from '@/lib/dates';
+import { useRecordInUrl } from '@/composables/useRecordInUrl';
+import { formatDate, formatWeekdayAndDay, mondayOf } from '@/lib/dates';
 import { formatHours } from '@/lib/work-entries';
 import { index } from '@/routes/approvals';
 import type {
     ApprovalEntry,
     ApprovalFilters,
+    ApprovalWeek,
     ChoiceToApprove,
     Paginated,
     TableColumn,
 } from '@/types';
 
 /**
- * The Work Entries tab of the Approvals page: the Pending Work Entries
- * waiting for the viewer's approval, one Employee at a time, each approved
- * or declined from its row, or the selected ones together. With nothing
- * waiting there is no Employee to choose.
+ * The Work Entries tab of the Approvals page: the Pending Work Entries of
+ * one Employee on one Project, grouped by week with each week's hours
+ * (rule K1). Each is approved or declined from its row or its
+ * RecordSheet, or the ticked ones together from the SelectionBar. With
+ * nothing waiting there is no Employee to choose.
  */
 const props = defineProps<{
     filters: ApprovalFilters;
     entries: Paginated<ApprovalEntry>;
     /** Total hours of every Work Entry matching the filters. */
     total: number;
+    /** Every week the matching Work Entries fall in, with all their hours. */
+    weeks: ApprovalWeek[];
+    /** How many Work Entries wait for the viewer, across every Employee. */
+    waiting: number;
     /** Every matching Work Entry's ID; only sent when asked for. */
     matchingIds?: number[];
     employees: ChoiceToApprove[];
@@ -42,158 +59,329 @@ const props = defineProps<{
 }>();
 
 const columns: TableColumn[] = [
-    { key: 'select', label: 'Select' },
-    { key: 'date', label: 'Date' },
-    { key: 'employee', label: 'Employee', minor: true },
-    { key: 'project', label: 'Project', minor: true },
-    { key: 'description', label: 'Description', minor: true },
-    { key: 'hours', label: 'Hours', align: 'end', minor: true },
-    { key: 'answer', label: 'Answer', align: 'end' },
+    { key: 'date', label: 'Date', phone: 'secondary' },
+    { key: 'description', label: 'Description', phone: 'primary' },
+    { key: 'project', label: 'Project', minor: true, phone: 'secondary' },
+    { key: 'hours', label: 'Hours', align: 'end', phone: 'end' },
+    { key: 'actions', label: '', align: 'end', minor: true },
 ];
 
-const {
-    selected,
-    isPageSelected,
-    isSelected,
-    toggle,
-    togglePage,
-    selectAllMatching,
-    clear,
-    processing,
-    submit,
-} = useBulkSelection(() => props.entries.data, {
+const selection = useBulkSelection(() => props.entries.data, {
     prop: 'matchingIds',
     ids: () => props.matchingIds,
 });
+const { selected, clear, processing, submit } = selection;
 
-/** Whose Work Entry a row is and when, naming its checkbox and buttons. */
+const { recordId, openRecord, closeRecord } = useRecordInUrl();
+
+const record = computed(
+    () =>
+        props.entries.data.find((entry) => entry.id === recordId.value) ?? null,
+);
+
+const recordOpen = computed({
+    get: () => record.value !== null,
+    set: (open: boolean) => {
+        if (!open) {
+            closeRecord();
+        }
+    },
+});
+
+const employeeName = computed(
+    () =>
+        props.employees.find(
+            (employee) => employee.id === props.filters.employee,
+        )?.name ?? '',
+);
+
+const projectName = computed(
+    () =>
+        props.projects.find((project) => project.id === props.filters.project)
+            ?.name ?? '',
+);
+
+const weekOf = (monday: string): ApprovalWeek | undefined =>
+    props.weeks.find((week) => week.starts_on === monday);
+
+/** Hours of the ticked Work Entries shown on this page. */
+const selectedHours = computed(() =>
+    props.entries.data
+        .filter((entry) => selection.isSelected(entry.id))
+        .reduce((sum, entry) => sum + entry.hours, 0),
+);
+
+/** Whose Work Entry a row is and when, naming its tick-box and buttons. */
 function describe(entry: ApprovalEntry): string {
     return `${entry.employee.name}'s Work Entry on ${formatDate(entry.date)}`;
 }
+
+/** What the DecideDialog says it declines. */
+function summaryOf(entries: ApprovalEntry[]): string {
+    const hours = entries.reduce((sum, entry) => sum + entry.hours, 0);
+    const days =
+        entries.length === 1
+            ? formatDate(entries[0].date)
+            : `${entries.length} days`;
+
+    return `${employeeName.value} · ${days} · ${formatHours(hours)} on ${projectName.value}`;
+}
+
+const selectedOnPage = computed(() =>
+    props.entries.data.filter((entry) => selection.isSelected(entry.id)),
+);
 
 function showFiltered(query: Record<string, string>): void {
     clear();
     reloadList(index.url({ query: { ...query, tab: 'work-entries' } }));
 }
 
-function approve(): void {
+function approveSelected(): void {
     submit(ApprovalController.store.url());
 }
+
+function approveOne(entry: ApprovalEntry): void {
+    router.post(
+        ApprovalController.store.url(),
+        { ids: [entry.id] },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                selection.toggle(entry.id, false);
+                closeRecord();
+            },
+        },
+    );
+}
+
+function declinedOne(entry: ApprovalEntry): void {
+    selection.toggle(entry.id, false);
+    closeRecord();
+}
+
+const noun = { one: 'Work Entry', many: 'Work Entries' };
+const declineHelp =
+    "The Employee sees this reason on each one, and can edit or delete it. Declined hours aren't counted.";
+const declinePlaceholder = 'Interviews go on Internal, not Acme';
 </script>
 
 <template>
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-5">
         <ApprovalFilterBar
             v-if="employees.length > 0"
             :filters="filters"
             :employees="employees"
             :projects="projects"
             @change="showFiltered"
+        >
+            <template #summary>
+                <span class="tabular-nums"
+                    ><span class="font-semibold text-foreground">{{
+                        entries.total
+                    }}</span>
+                    of {{ waiting }} shown ·
+                    <span class="font-semibold text-foreground">{{
+                        formatHours(total)
+                    }}</span></span
+                >
+            </template>
+        </ApprovalFilterBar>
+
+        <EmptyState
+            v-if="employees.length === 0"
+            :icon="CheckCheck"
+            message="Pending Work Entries waiting for your approval appear here. None are waiting."
         />
 
-        <SelectionBar
-            :count="selected.length"
-            :matching="entries.total"
-            @select-all="selectAllMatching"
-            @clear="clear"
+        <DataTable
+            v-else
+            :columns="columns"
+            :rows="entries.data"
+            :group-by="(entry) => mondayOf(entry.date)"
+            :selection="selection"
+            :row-label="describe"
+            :on-row-click="(entry) => openRecord(entry.id)"
         >
-            <template #actions>
-                <DeclineSelectedDialog
-                    :ids="selected"
-                    :action="WorkEntryDeclineController.store()"
-                    :noun="{ one: 'Work Entry', many: 'Work Entries' }"
-                    description="The Employee sees the reason under each one, and can change or delete it. Declined hours aren't counted."
-                    placeholder="Interviews go on Internal, not Acme"
-                    @declined="clear"
-                />
-                <SubmitButton
-                    :processing="processing"
-                    type="button"
-                    :disabled="selected.length === 0"
-                    @click="approve"
-                    >Approve</SubmitButton
+            <template #lead>
+                <div
+                    class="flex items-center justify-between gap-3 px-4 py-2.5"
                 >
+                    <span
+                        ><span class="font-semibold">{{ employeeName }}</span>
+                        <span class="text-muted-foreground">
+                            · {{ projectName }} · {{ entries.total }} Pending
+                            {{
+                                entries.total === 1 ? noun.one : noun.many
+                            }}</span
+                        ></span
+                    >
+                    <span
+                        class="font-semibold whitespace-nowrap tabular-nums"
+                        >{{ formatHours(total) }}</span
+                    >
+                </div>
             </template>
-        </SelectionBar>
-
-        <DataTable :columns="columns" :rows="entries.data">
-            <template #head-select>
-                <Checkbox
-                    v-if="entries.data.length > 0"
-                    :model-value="isPageSelected"
-                    aria-label="Select this page"
-                    @update:model-value="togglePage($event === true)"
-                />
-            </template>
-            <template #cell-select="{ row }">
-                <Checkbox
-                    :model-value="isSelected(row.id)"
-                    :aria-label="`Select ${describe(row)}`"
-                    @update:model-value="toggle(row.id, $event === true)"
-                />
+            <template #group="{ group }">
+                <div class="flex items-center justify-between gap-3">
+                    <span
+                        ><span class="font-semibold"
+                            >Week {{ weekOf(group)?.number }}</span
+                        >
+                        <span class="text-muted-foreground">
+                            ·
+                            {{ formatDate(group) }} –
+                            {{
+                                formatDate(weekOf(group)?.ends_on ?? group)
+                            }}</span
+                        ></span
+                    >
+                    <span class="font-semibold tabular-nums">{{
+                        formatHours(weekOf(group)?.hours ?? 0)
+                    }}</span>
+                </div>
             </template>
             <template #cell-date="{ row }">
-                <span class="whitespace-nowrap">{{
-                    formatDate(row.date)
+                <span class="whitespace-nowrap tabular-nums">{{
+                    formatWeekdayAndDay(row.date)
                 }}</span>
-                <span
-                    class="block whitespace-nowrap text-muted-foreground tabular-nums sm:hidden"
-                    >{{ formatHours(row.hours) }}</span
-                >
             </template>
-            <template #cell-employee="{ row }">
-                {{ row.employee.name }}
+            <template #cell-description="{ row }">
+                <span class="line-clamp-2">{{ row.description }}</span>
             </template>
             <template #cell-hours="{ row }">
                 <span class="whitespace-nowrap tabular-nums">{{
                     formatHours(row.hours)
                 }}</span>
             </template>
-            <template #cell-answer="{ row }">
-                <div class="flex flex-wrap items-center justify-end gap-1">
-                    <Form
-                        v-bind="ApprovalController.store.form()"
-                        :options="{ preserveScroll: true }"
-                        v-slot="{ processing: approving }"
-                        @success="toggle(row.id, false)"
-                    >
-                        <input type="hidden" name="ids[]" :value="row.id" />
-                        <SubmitButton
-                            :processing="approving"
-                            variant="secondary"
-                            size="sm"
-                            :aria-label="`Approve ${describe(row)}`"
-                            >Approve</SubmitButton
+            <template #cell-actions="{ row }">
+                <RowActions :label="describe(row)">
+                    <Tooltip>
+                        <TooltipTrigger as-child>
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                :aria-label="`Approve ${describe(row)}`"
+                                @click="approveOne(row)"
+                                ><Check
+                            /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Approve</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <DecideDialog
+                            :ids="[row.id]"
+                            :action="WorkEntryDeclineController.store()"
+                            :noun="noun"
+                            :summary="summaryOf([row])"
+                            :description="declineHelp"
+                            :placeholder="declinePlaceholder"
+                            @declined="declinedOne(row)"
                         >
-                    </Form>
-                    <DeclineSelectedDialog
-                        :ids="[row.id]"
-                        :action="WorkEntryDeclineController.store()"
-                        :noun="{ one: 'Work Entry', many: 'Work Entries' }"
-                        description="The Employee sees the reason under it, and can change or delete it. Declined hours aren't counted."
-                        placeholder="Interviews go on Internal, not Acme"
-                        size="sm"
-                        :accessible-name="`Decline ${describe(row)}`"
-                        @declined="toggle(row.id, false)"
-                    />
-                </div>
-            </template>
-            <template #empty>
-                <EmptyState
-                    :icon="CheckCheck"
-                    message="Pending Work Entries waiting for your approval appear here. None are waiting."
-                />
+                            <template #trigger>
+                                <TooltipTrigger as-child
+                                    ><Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        :aria-label="`Decline ${describe(row)}`"
+                                        ><X /></Button
+                                ></TooltipTrigger>
+                            </template>
+                        </DecideDialog>
+                        <TooltipContent>Decline…</TooltipContent>
+                    </Tooltip>
+                    <template #menu>
+                        <DropdownMenuItem @select="openRecord(row.id)"
+                            >Open</DropdownMenuItem
+                        >
+                    </template>
+                </RowActions>
             </template>
         </DataTable>
 
-        <p
-            v-if="entries.total > 0"
-            class="flex justify-between gap-4 px-4 text-sm font-medium"
-        >
-            <span>Total of all {{ entries.total }} matching</span>
-            <span class="tabular-nums">{{ formatHours(total) }}</span>
-        </p>
-
         <Pagination :page="entries" preserve-state />
+
+        <SelectionBar
+            :count="selected.length"
+            :matching="
+                selection.isPageSelected.value &&
+                entries.total > entries.data.length
+                    ? entries.total
+                    : undefined
+            "
+            :total="
+                selected.length === selectedOnPage.length
+                    ? formatHours(selectedHours)
+                    : undefined
+            "
+            @select-all="selection.selectAllMatching"
+            @clear="clear"
+        >
+            <template #actions>
+                <DecideDialog
+                    :ids="selected"
+                    :action="WorkEntryDeclineController.store()"
+                    :noun="noun"
+                    :summary="
+                        selected.length === selectedOnPage.length
+                            ? summaryOf(selectedOnPage)
+                            : `${employeeName} · ${projectName}`
+                    "
+                    :description="declineHelp"
+                    :placeholder="declinePlaceholder"
+                    size="sm"
+                    @declined="clear"
+                />
+                <SubmitButton
+                    :processing="processing"
+                    type="button"
+                    size="sm"
+                    @click="approveSelected"
+                    ><Check />Approve {{ selected.length
+                    }}<span class="max-sm:hidden">
+                        {{ selected.length === 1 ? noun.one : noun.many }}</span
+                    ></SubmitButton
+                >
+            </template>
+        </SelectionBar>
+
+        <RecordSheet
+            v-if="record"
+            v-model:open="recordOpen"
+            :title="`${formatHours(record.hours)} on ${formatDate(record.date)}`"
+            :description="`${record.employee.name}'s Work Entry · Pending`"
+        >
+            <FactList
+                :facts="[
+                    { label: 'Employee', value: record.employee.name },
+                    { label: 'Project', value: record.project },
+                    { label: 'Date', value: formatDate(record.date) },
+                    { label: 'Hours', value: formatHours(record.hours) },
+                    {
+                        label: 'Submitted',
+                        value: record.submitted_on
+                            ? formatDate(record.submitted_on)
+                            : null,
+                    },
+                ]"
+            />
+            <section class="flex flex-col gap-1.5">
+                <h3 class="text-meta text-muted-foreground">Description</h3>
+                <p class="whitespace-pre-line">{{ record.description }}</p>
+            </section>
+            <template #footer>
+                <DecideDialog
+                    :ids="[record.id]"
+                    :action="WorkEntryDeclineController.store()"
+                    :noun="noun"
+                    :summary="summaryOf([record])"
+                    :description="declineHelp"
+                    :placeholder="declinePlaceholder"
+                    @declined="declinedOne(record)"
+                />
+                <Button @click="approveOne(record)"
+                    ><Check />Approve Work Entry</Button
+                >
+            </template>
+        </RecordSheet>
     </div>
 </template>

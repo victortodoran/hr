@@ -111,13 +111,26 @@ export type ApprovalEntry = {
     project: string;
     hours: number;
     description: string;
+    /** When the Employee first recorded it. */
+    submitted_on: string | null;
+};
+
+/** A week the matching Pending Work Entries fall in, with all their hours. */
+export type ApprovalWeek = {
+    /** Its Monday. */
+    starts_on: string;
+    /** Its Sunday. */
+    ends_on: string;
+    /** Its ISO week number, such as 47. */
+    number: number;
+    hours: number;
 };
 
 /**
  * A Work Entry on the Work Entries page, with whose it is, who signed it off
  * or declined it, and whether the viewer may reopen it.
  */
-export type ListedWorkEntry = ApprovalEntry & {
+export type ListedWorkEntry = Omit<ApprovalEntry, 'submitted_on'> & {
     state: WorkEntryState;
     approved: WorkEntrySignOff | null;
     declined: WorkEntryDecline | null;
