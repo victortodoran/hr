@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\ChangeAccess;
+use App\Actions\Access\ChangeAccess;
 use App\Enums\AccessChange;
 use App\Enums\Permission;
 use App\Enums\Scope;

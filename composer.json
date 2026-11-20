@@ -121,7 +121,7 @@
         ],
         "test:mutate": [
             "Composer\\Config::disableProcessTimeout",
-            "env -u CLAUDECODE -u AI_AGENT -u CLAUDE_CODE_ENTRYPOINT XDEBUG_MODE=coverage herd coverage vendor/bin/pest --mutate --everything --parallel --min=80 --ignore=app/Http/Controllers/Settings,app/Http/Requests/Settings,app/Actions/Fortify,app/Concerns,app/Http/Middleware/HandleAppearance.php,app/Http/Middleware/HandleInertiaRequests.php,app/Providers/AppServiceProvider.php,app/Providers/FortifyServiceProvider.php,app/Http/Controllers/Controller.php"
+            "env -u CLAUDECODE -u AI_AGENT -u CLAUDE_CODE_ENTRYPOINT XDEBUG_MODE=coverage herd coverage vendor/bin/pest --mutate --everything --parallel --min=80 --ignore=app/Http/Controllers/Settings,app/Http/Requests/Settings,app/Actions/Auth/ResetEmployeePassword.php,app/Actions/Travel/WritesTravelExpenses.php,app/Concerns,app/Http/Middleware/HandleAppearance.php,app/Http/Middleware/HandleInertiaRequests.php,app/Providers/AppServiceProvider.php,app/Providers/FortifyServiceProvider.php,app/Http/Controllers/Controller.php"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

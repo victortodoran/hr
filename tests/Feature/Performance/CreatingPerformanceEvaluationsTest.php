@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\CreatePerformanceEvaluation;
+use App\Actions\Performance\CreatePerformanceEvaluation;
 use App\Enums\PerformanceEvaluationState;
 use App\Http\Controllers\Performance\PerformanceEvaluationController;
 use App\Http\Requests\Performance\PerformanceEvaluationRequest;

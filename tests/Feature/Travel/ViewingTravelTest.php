@@ -1,7 +1,7 @@
 <?php
 
-use App\Actions\AddEmployee;
-use App\Actions\InstallCompany;
+use App\Actions\Company\InstallCompany;
+use App\Actions\Employees\AddEmployee;
 use App\Enums\Permission;
 use App\Enums\Scope;
 use App\Http\Controllers\Employees\EmployeeController;

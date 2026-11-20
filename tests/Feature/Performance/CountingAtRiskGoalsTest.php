@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\AssessPerformanceEvaluation;
+use App\Actions\Performance\AssessPerformanceEvaluation;
 use App\Enums\Outcome;
 use App\Enums\Permission;
 use App\Enums\Progress;

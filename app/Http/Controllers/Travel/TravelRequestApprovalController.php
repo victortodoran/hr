@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Travel;
 
-use App\Actions\ApproveTravelRequest;
+use App\Actions\Travel\ApproveTravelRequest;
 use App\Enums\ApprovalsTab;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Travel;
 
-use App\Actions\DeclineTravelRequest;
+use App\Actions\Travel\DeclineTravelRequest;
 use App\Enums\ApprovalsTab;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Travel\TravelRequestDeclineRequest;

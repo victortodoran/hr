@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Company;
 
-use App\Actions\DeleteDepartment;
+use App\Actions\Company\DeleteDepartment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\DepartmentRequest;
 use App\Models\Department;

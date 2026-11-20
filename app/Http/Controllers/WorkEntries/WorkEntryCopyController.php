@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\WorkEntries;
 
-use App\Actions\CopyWorkEntries;
+use App\Actions\WorkEntries\CopyWorkEntries;
 use App\Enums\WorkEntriesTab;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\CopyWorkEntriesRequest;

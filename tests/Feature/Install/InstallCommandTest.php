@@ -1,7 +1,7 @@
 <?php
 
-use App\Actions\ChangeAccess;
-use App\Actions\InstallCompany;
+use App\Actions\Access\ChangeAccess;
+use App\Actions\Company\InstallCompany;
 use App\Console\Commands\InstallCommand;
 use App\Enums\AccessChange;
 use App\Enums\Permission;

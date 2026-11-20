@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\AcceptInvitation;
+use App\Actions\Auth\AcceptInvitation;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Requests\Auth\AcceptInvitationRequest;
 use App\Models\Employee;

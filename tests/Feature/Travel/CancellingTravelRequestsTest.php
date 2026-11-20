@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\CancelTravelRequest;
+use App\Actions\Travel\CancelTravelRequest;
 use App\Enums\TravelRequestState;
 use App\Http\Controllers\Travel\TravelRequestCancellationController;
 use App\Models\CompanySettings;

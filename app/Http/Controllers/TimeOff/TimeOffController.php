@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\TimeOff;
 
-use App\Actions\RequestTimeOff;
+use App\Actions\TimeOff\RequestTimeOff;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TimeOff\TimeOffRequest;
 use App\Models\Employee;

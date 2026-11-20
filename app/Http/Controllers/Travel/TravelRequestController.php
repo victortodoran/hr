@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Travel;
 
-use App\Actions\MakeTravelRequest;
+use App\Actions\Travel\MakeTravelRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Travel\TravelRequestRequest;
 use App\Models\Employee;

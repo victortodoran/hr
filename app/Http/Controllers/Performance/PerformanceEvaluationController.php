@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Performance;
 
-use App\Actions\CreatePerformanceEvaluation;
+use App\Actions\Performance\CreatePerformanceEvaluation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\PerformanceEvaluationListRequest;
 use App\Http\Requests\Performance\PerformanceEvaluationRequest;

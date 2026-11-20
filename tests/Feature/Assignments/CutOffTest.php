@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\UpdateTrimmingAssignments;
+use App\Actions\Assignments\UpdateTrimmingAssignments;
 use App\Enums\Permission;
 use App\Http\Controllers\Employees\EmployeeController;
 use App\Http\Controllers\Projects\ProjectController;

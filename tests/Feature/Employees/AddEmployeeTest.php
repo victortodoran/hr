@@ -1,7 +1,7 @@
 <?php
 
-use App\Actions\AddEmployee;
-use App\Actions\ChangeAccess;
+use App\Actions\Access\ChangeAccess;
+use App\Actions\Employees\AddEmployee;
 use App\Enums\AccessChange;
 use App\Enums\Permission;
 use App\Enums\Scope;

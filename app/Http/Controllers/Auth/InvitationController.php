@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Actions\AcceptInvitation;
+use App\Actions\Auth\AcceptInvitation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\AcceptInvitationRequest;
 use App\Pages\Auth\AcceptInvitationPage;

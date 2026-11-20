@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Performance;
 
-use App\Actions\ChangeGoalProgress;
+use App\Actions\Performance\ChangeGoalProgress;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\GoalProgressRequest;
 use App\Models\Employee;

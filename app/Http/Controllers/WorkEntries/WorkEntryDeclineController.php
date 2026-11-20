@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\WorkEntries;
 
-use App\Actions\DeclineWorkEntries;
+use App\Actions\WorkEntries\DeclineWorkEntries;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkEntries\DeclineWorkEntriesRequest;
 use App\Models\Employee;

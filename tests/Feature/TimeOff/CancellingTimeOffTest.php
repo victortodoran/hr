@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\CancelTimeOff;
+use App\Actions\TimeOff\CancelTimeOff;
 use App\Enums\TimeOffState;
 use App\Http\Controllers\TimeOff\TimeOffCancellationController;
 use App\Models\Employee;

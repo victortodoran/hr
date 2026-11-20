@@ -1,7 +1,7 @@
 <?php
 
-use App\Actions\AssessPerformanceEvaluation;
-use App\Actions\ChangeGoalProgress;
+use App\Actions\Performance\AssessPerformanceEvaluation;
+use App\Actions\Performance\ChangeGoalProgress;
 use App\Enums\Outcome;
 use App\Enums\Permission;
 use App\Enums\Progress;

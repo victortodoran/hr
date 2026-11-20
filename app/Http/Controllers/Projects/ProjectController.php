@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Projects;
 
-use App\Actions\DeleteProject;
-use App\Actions\UpdateTrimmingAssignments;
+use App\Actions\Assignments\UpdateTrimmingAssignments;
+use App\Actions\Projects\DeleteProject;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\ProjectRequest;
 use App\Http\Requests\Search\NameSearchRequest;

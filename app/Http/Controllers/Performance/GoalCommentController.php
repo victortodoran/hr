@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Performance;
 
-use App\Actions\CommentOnGoal;
+use App\Actions\Performance\CommentOnGoal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Performance\GoalCommentRequest;
 use App\Models\Employee;

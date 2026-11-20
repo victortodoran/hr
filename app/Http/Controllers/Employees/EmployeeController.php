@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Employees;
 
-use App\Actions\AddEmployee;
-use App\Actions\UpdateTrimmingAssignments;
+use App\Actions\Assignments\UpdateTrimmingAssignments;
+use App\Actions\Employees\AddEmployee;
 use App\Enums\EmployeePageTab;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employees\EmployeeListRequest;
