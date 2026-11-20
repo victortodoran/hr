@@ -40,7 +40,7 @@ setLayoutProps({
 
         <div
             v-if="reportsNeedingAManager.length > 0"
-            class="grid gap-2 rounded-lg border border-amber-300 p-4 text-sm"
+            class="grid gap-2 rounded-lg border border-status-attention-icon/30 bg-status-attention p-4 text-body text-status-attention-foreground"
         >
             <p class="font-medium">
                 {{ employee.name }} has left, but these Employees still report
@@ -69,7 +69,7 @@ setLayoutProps({
             >
                 <SubmitButton
                     :processing="processing"
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     >Resend invitation</SubmitButton
                 >

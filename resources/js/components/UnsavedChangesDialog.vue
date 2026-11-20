@@ -42,17 +42,18 @@ const emit = defineEmits<{
         @update:open="(isOpen: boolean) => !isOpen && emit('keep')"
     >
         <AlertDialogPortal>
-            <AlertDialogOverlay class="fixed inset-0 z-50 bg-black/50" />
+            <AlertDialogOverlay class="fixed inset-0 z-50 bg-overlay" />
             <AlertDialogContent
                 @close-auto-focus="emit('closeAutoFocus', $event)"
-                class="fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg sm:max-w-md"
+                class="fixed z-50 grid w-full gap-4 border bg-background p-6 shadow-overlay max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-t-xl max-sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:top-[50%] sm:left-[50%] sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-xl"
             >
-                <AlertDialogTitle class="text-lg font-semibold">{{
+                <AlertDialogTitle class="text-section">{{
                     title
                 }}</AlertDialogTitle>
-                <AlertDialogDescription class="text-sm text-muted-foreground">{{
-                    description
-                }}</AlertDialogDescription>
+                <AlertDialogDescription
+                    class="text-body text-muted-foreground"
+                    >{{ description }}</AlertDialogDescription
+                >
                 <div class="flex flex-wrap justify-end gap-2">
                     <AlertDialogCancel
                         :class="buttonVariants({ variant: 'secondary' })"

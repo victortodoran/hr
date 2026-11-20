@@ -28,7 +28,7 @@ const showAvatar = computed(
             :src="employee.avatar!"
             :alt="employee.name"
         />
-        <AvatarFallback class="rounded-lg text-black">
+        <AvatarFallback class="rounded-lg text-foreground">
             {{ getInitials(employee.name) }}
         </AvatarFallback>
     </Avatar>

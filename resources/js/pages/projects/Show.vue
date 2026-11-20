@@ -87,7 +87,9 @@ setLayoutProps({
     <PageContainer width="wide">
         <Heading :title="project.name" :description="summary()">
             <template v-if="canManage && !editing" #actions>
-                <Button variant="outline" @click="startEditing">Change</Button>
+                <Button variant="secondary" @click="startEditing"
+                    >Change</Button
+                >
                 <ConfirmDeleteDialog
                     :form="ProjectController.destroy.form(project.id)"
                     :title="`Delete ${project.name}?`"

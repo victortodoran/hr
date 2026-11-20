@@ -180,7 +180,7 @@ setLayoutProps({
                 </template>
             </template>
             <template v-if="canEdit" #actions>
-                <Button variant="outline" as-child>
+                <Button variant="secondary" as-child>
                     <Link :href="edit(employee.id)">Edit</Link>
                 </Button>
             </template>

@@ -63,7 +63,7 @@ function openPicker(isOpen: boolean): void {
 <template>
     <div class="flex items-center gap-2">
         <Button
-            variant="outline"
+            variant="secondary"
             size="icon"
             aria-label="Previous month"
             @click="emit('change', addMonths(month, -1))"
@@ -116,7 +116,7 @@ function openPicker(isOpen: boolean): void {
             </DropdownMenuContent>
         </DropdownMenu>
         <Button
-            variant="outline"
+            variant="secondary"
             size="icon"
             aria-label="Next month"
             :disabled="isTooLate(addMonths(month, 1))"

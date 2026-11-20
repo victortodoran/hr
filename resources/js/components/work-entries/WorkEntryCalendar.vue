@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
-import StatusDot from '@/components/StatusDot.vue';
+import StatusIcon from '@/components/StatusIcon.vue';
 import {
     Popover,
     PopoverContent,
@@ -16,7 +16,7 @@ import {
 import UnsavedWorkEntryDialog from '@/components/work-entries/UnsavedWorkEntryDialog.vue';
 import WorkEntryDayPanel from '@/components/work-entries/WorkEntryDayPanel.vue';
 import { formatLongDay, isWeekend } from '@/lib/dates';
-import { statusLabels } from '@/lib/status';
+import { statusLabels } from '@/lib/statusMeta';
 import { timeOffKindLabel } from '@/lib/time-off';
 import {
     formatHours,
@@ -335,7 +335,7 @@ const columns = computed(() =>
                                     :class="[
                                         'font-medium',
                                         day.date === today &&
-                                            'rounded-full bg-foreground px-1.5 text-background',
+                                            'rounded-full bg-primary px-1.5 text-primary-foreground',
                                         day.date > today &&
                                             'text-muted-foreground',
                                     ]"
@@ -351,11 +351,11 @@ const columns = computed(() =>
                                 v-if="day.entries.length > 0 || day.time_off"
                                 class="mt-1 flex flex-wrap gap-1 sm:hidden"
                             >
-                                <StatusDot
+                                <StatusIcon
                                     v-for="state in statesOf(day)"
                                     :key="state"
                                     :state="state"
-                                    class="size-2.5"
+                                    class="[&>svg]:size-3"
                                 />
                                 <span
                                     v-if="day.time_off"
@@ -378,7 +378,7 @@ const columns = computed(() =>
                                     class="flex items-center gap-1.5 text-xs"
                                     :data-state="entry.state"
                                 >
-                                    <StatusDot :state="entry.state" />
+                                    <StatusIcon :state="entry.state" />
                                     <span
                                         :class="[
                                             'min-w-0 flex-1 truncate',
@@ -434,7 +434,7 @@ const columns = computed(() =>
                 :key="state"
                 class="flex items-center gap-1.5"
             >
-                <StatusDot :state="state" labelled />
+                <StatusIcon :state="state" labelled />
                 <span>{{ statusLabels[state] }}</span>
             </li>
             <li class="flex items-center gap-1.5">

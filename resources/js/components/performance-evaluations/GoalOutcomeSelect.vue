@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/select';
 import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { outcomes } from '@/lib/outcomes';
-import { statusPillTrigger } from '@/lib/status';
+import { statusPillTrigger } from '@/lib/statusMeta';
 import type { Outcome } from '@/types';
 
 /**
@@ -58,7 +58,7 @@ const { chosen, saving, justSaved, save } = useSaveOnPick<Outcome | null>({
                     statusPillTrigger,
                     chosen
                         ? 'bg-primary text-primary-foreground'
-                        : 'bg-status-closed text-status-closed-foreground',
+                        : 'bg-status-neutral text-status-neutral-foreground',
                 ]"
             >
                 <SelectValue />

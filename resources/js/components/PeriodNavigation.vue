@@ -113,7 +113,7 @@ const errors = computed(() => usePage().props.errors);
 
         <div v-if="period.mode === 'week'" class="flex items-center gap-2">
             <Button
-                variant="outline"
+                variant="secondary"
                 size="icon"
                 aria-label="Previous week"
                 @click="emit('change', { week: addDays(period.from, -7) })"
@@ -124,7 +124,7 @@ const errors = computed(() => usePage().props.errors);
                 {{ formatDate(period.from) }} – {{ formatDate(period.to) }}
             </span>
             <Button
-                variant="outline"
+                variant="secondary"
                 size="icon"
                 aria-label="Next week"
                 :disabled="noFuture && period.to >= today"
@@ -177,7 +177,7 @@ const errors = computed(() => usePage().props.errors);
                 />
                 <InputError :message="errors.to" />
             </div>
-            <Button type="submit" variant="outline">Show</Button>
+            <Button type="submit" variant="secondary">Show</Button>
         </form>
     </div>
 </template>

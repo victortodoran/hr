@@ -152,7 +152,7 @@ const filters = useListFilters(index.url, {
                     :message="`The ${year} Performance Evaluations you write or may read appear here. None match your search and state.`"
                 >
                     <template v-if="canCreate" #action>
-                        <Button variant="outline" as-child>
+                        <Button variant="secondary" as-child>
                             <Link :href="create()">New Evaluation</Link>
                         </Button>
                     </template>

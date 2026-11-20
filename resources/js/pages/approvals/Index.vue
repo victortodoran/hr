@@ -6,6 +6,7 @@ import TravelRequestsTab from '@/components/approvals/TravelRequestsTab.vue';
 import WorkEntriesTab from '@/components/approvals/WorkEntriesTab.vue';
 import Heading from '@/components/Heading.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { index } from '@/routes/approvals';
 import type {
@@ -71,27 +72,27 @@ function openTab(tab: string | number): void {
             >
                 <TabsTrigger value="work-entries"
                     >Work Entries
-                    <span class="text-muted-foreground tabular-nums">{{
+                    <Badge variant="secondary">{{
                         waiting.workEntries
-                    }}</span></TabsTrigger
+                    }}</Badge></TabsTrigger
                 >
                 <TabsTrigger value="time-off"
                     >Time Off
-                    <span class="text-muted-foreground tabular-nums">{{
+                    <Badge variant="secondary">{{
                         waiting.timeOff
-                    }}</span></TabsTrigger
+                    }}</Badge></TabsTrigger
                 >
                 <TabsTrigger value="travel-requests"
                     >Travel Requests
-                    <span class="text-muted-foreground tabular-nums">{{
+                    <Badge variant="secondary">{{
                         waiting.travelRequests
-                    }}</span></TabsTrigger
+                    }}</Badge></TabsTrigger
                 >
                 <TabsTrigger value="travel-expenses"
                     >Travel Expenses
-                    <span class="text-muted-foreground tabular-nums">{{
+                    <Badge variant="secondary">{{
                         waiting.travelExpenses
-                    }}</span></TabsTrigger
+                    }}</Badge></TabsTrigger
                 >
             </TabsList>
             <TabsContent value="work-entries" class="mt-4">

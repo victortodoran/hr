@@ -160,7 +160,7 @@ function approve(): void {
                         <input type="hidden" name="ids[]" :value="row.id" />
                         <SubmitButton
                             :processing="approving"
-                            variant="outline"
+                            variant="secondary"
                             size="sm"
                             :aria-label="`Approve ${describe(row)}`"
                             >Approve</SubmitButton

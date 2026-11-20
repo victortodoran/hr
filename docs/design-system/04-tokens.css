@@ -202,7 +202,7 @@
         @apply border-border outline-ring/40;
     }
     body {
-        @apply text-body bg-background font-sans text-foreground antialiased;
+        @apply bg-background font-sans text-body text-foreground antialiased;
         font-feature-settings: 'ss01' on;
     }
     /* visible focus everywhere (accessibility constraint) */

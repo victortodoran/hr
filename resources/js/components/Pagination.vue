@@ -26,7 +26,7 @@ defineProps<{
                     { label: 'Next', url: page.next_page_url },
                 ]"
                 :key="pageLink.label"
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 :disabled="!pageLink.url"
                 :as="pageLink.url ? Link : 'button'"

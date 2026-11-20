@@ -85,7 +85,7 @@ const columns: TableColumn[] = [
                     </div>
                     <SubmitButton
                         :processing="processing"
-                        variant="outline"
+                        variant="secondary"
                         size="sm"
                         class="text-destructive"
                         >Decline</SubmitButton

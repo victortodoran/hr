@@ -23,10 +23,10 @@ defineSlots<{
 
 <template>
     <header v-if="variant === 'small'">
-        <h2 class="mb-0.5 text-base font-medium">
+        <h2 class="mb-0.5 text-section">
             {{ title }}
         </h2>
-        <p v-if="description" class="text-sm text-muted-foreground">
+        <p v-if="description" class="text-body text-muted-foreground">
             {{ description }}
         </p>
     </header>
@@ -35,16 +35,16 @@ defineSlots<{
         class="mb-8 flex flex-wrap items-start justify-between gap-4"
     >
         <div class="flex min-w-0 flex-col gap-0.5">
-            <h1 class="text-xl font-semibold tracking-tight">
+            <h1 class="font-display text-title-sm font-normal sm:text-title">
                 {{ title }}
             </h1>
             <div
                 v-if="$slots.description"
-                class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground"
+                class="flex flex-wrap items-center gap-x-2 gap-y-1 text-body text-muted-foreground"
             >
                 <slot name="description" />
             </div>
-            <p v-else-if="description" class="text-sm text-muted-foreground">
+            <p v-else-if="description" class="text-body text-muted-foreground">
                 {{ description }}
             </p>
         </div>

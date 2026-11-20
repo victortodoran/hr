@@ -66,7 +66,7 @@ function give(): void {
 <template>
     <Popover v-model:open="open" @update:open="opened">
         <PopoverTrigger as-child>
-            <Button variant="outline" class="min-h-11">
+            <Button variant="secondary" class="min-h-11">
                 <UserPlus class="size-4" aria-hidden="true" />
                 Add people
             </Button>

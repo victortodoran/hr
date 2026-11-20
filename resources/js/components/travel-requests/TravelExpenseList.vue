@@ -64,7 +64,7 @@ const columns = computed<TableColumn[]>(() => [
                     >· {{ expenses.total }}</span
                 >
             </h2>
-            <Button v-if="expenses.can_create" variant="outline" as-child>
+            <Button v-if="expenses.can_create" variant="secondary" as-child>
                 <Link :href="create(travelRequestId)">Add expense</Link>
             </Button>
         </div>
@@ -94,7 +94,7 @@ const columns = computed<TableColumn[]>(() => [
                     />
                     <template #trigger>
                         <Button
-                            variant="outline"
+                            variant="secondary"
                             :disabled="selected.length === 0"
                             >Reopen</Button
                         >
@@ -156,7 +156,7 @@ const columns = computed<TableColumn[]>(() => [
                             <input type="hidden" name="ids[]" :value="row.id" />
                             <SubmitButton
                                 :processing="processing"
-                                variant="outline"
+                                variant="secondary"
                                 size="sm"
                                 >Approve</SubmitButton
                             >

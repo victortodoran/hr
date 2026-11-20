@@ -35,7 +35,7 @@ defineProps<{
                 :default-value="paidDays"
                 required
             />
-            <SubmitButton :processing="processing" variant="outline"
+            <SubmitButton :processing="processing" variant="secondary"
                 >Save</SubmitButton
             >
         </div>

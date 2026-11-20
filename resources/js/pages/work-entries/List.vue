@@ -188,7 +188,7 @@ function weekOf(entry: ListedWorkEntry): string {
                         />
                         <template #trigger>
                             <Button
-                                variant="outline"
+                                variant="secondary"
                                 :disabled="selected.length === 0"
                                 >Reopen</Button
                             >

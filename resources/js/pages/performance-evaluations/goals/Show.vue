@@ -36,8 +36,9 @@ import { progresses } from '@/lib/progress';
 import {
     progressDotColours,
     statusColours,
+    statusIcon,
     statusPillTrigger,
-} from '@/lib/status';
+} from '@/lib/statusMeta';
 import { index as mine } from '@/routes/my-performance-evaluations';
 import { index, show } from '@/routes/performance-evaluations';
 import { show as showGoal } from '@/routes/performance-evaluations/goals';
@@ -195,7 +196,9 @@ setLayoutProps({
             :description="`${evaluation.employee.name} · ${evaluation.year} Performance Evaluation`"
         >
             <template v-if="canEdit && !editing" #actions>
-                <Button variant="outline" @click="startEditing">Change</Button>
+                <Button variant="secondary" @click="startEditing"
+                    >Change</Button
+                >
                 <ConfirmDeleteDialog
                     :form="GoalController.destroy.form(goalRoute)"
                     :title="`Remove “${goal.title}”?`"
@@ -350,6 +353,10 @@ setLayoutProps({
                                         statusColours[progress.chosen.value],
                                     ]"
                                 >
+                                    <component
+                                        :is="statusIcon(progress.chosen.value)"
+                                        aria-hidden="true"
+                                    />
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

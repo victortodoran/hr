@@ -88,7 +88,7 @@ const columns: TableColumn[] = [
                     message="Departments are the parts of the company each Employee belongs to. There are none yet."
                 >
                     <template #action>
-                        <Button variant="outline" as-child>
+                        <Button variant="secondary" as-child>
                             <label for="new-department">Add Department</label>
                         </Button>
                     </template>

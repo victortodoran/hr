@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core';
 import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
@@ -13,6 +14,9 @@ type Props = {
 withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
 });
+
+/** Toasts sit bottom-right on desktop and top-centre on a phone (rule X2). */
+const isPhone = useMediaQuery('(max-width: 639px)');
 </script>
 
 <template>
@@ -22,6 +26,10 @@ withDefaults(defineProps<Props>(), {
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
             <slot />
         </AppContent>
-        <Toaster close-button />
+        <Toaster
+            close-button
+            :duration="4000"
+            :position="isPhone ? 'top-center' : 'bottom-right'"
+        />
     </AppShell>
 </template>

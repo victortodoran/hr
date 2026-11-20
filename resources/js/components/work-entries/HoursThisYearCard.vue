@@ -67,7 +67,7 @@ function describe(month: MonthOfHours): string {
                 message="You haven't recorded any hours this year."
             >
                 <template #action>
-                    <Button variant="outline" as-child>
+                    <Button variant="secondary" as-child>
                         <Link
                             :href="
                                 workEntries({
