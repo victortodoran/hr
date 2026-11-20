@@ -23,7 +23,7 @@ final class DirectoryListPage
                 ->current()
                 ->withEffectiveManager()
                 ->with(['department:id,name', 'effectiveManager:id,name', 'internalAssignment:id,employee_id,project_id,job_title'])
-                ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
+                ->whereNameContains($search)
                 ->orderBy('name')
                 ->orderBy('id')
                 ->paginate(25)

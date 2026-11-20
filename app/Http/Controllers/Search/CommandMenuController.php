@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Search;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Projects\NameSearchRequest;
+use App\Http\Requests\Search\NameSearchRequest;
 use App\Models\Employee;
 use App\Pages\Search\CommandMenuResults;
 use Illuminate\Container\Attributes\CurrentUser;

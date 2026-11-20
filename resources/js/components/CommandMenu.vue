@@ -25,7 +25,7 @@ import { useNavItems } from '@/composables/useNavItems';
 import { toUrl } from '@/lib/utils';
 import { search as searchRoute } from '@/routes';
 import { show as clientPage } from '@/routes/clients';
-import { show as directoryPerson } from '@/routes/directory';
+import { index as directory } from '@/routes/directory';
 import { show as employeePage } from '@/routes/employees';
 import { show as projectPage } from '@/routes/projects';
 import type { CommandMenuResults } from '@/types';
@@ -106,25 +106,49 @@ const pages = computed(() => {
     ].filter((item) => item.title.toLowerCase().includes(wanted));
 });
 
-const choices = computed<Choice[]>(() => [
-    ...results.value.people.map((person) => ({
+/*
+ * Each group's choices, built once: the template renders these, so an
+ * item's value always matches the choice it opens.
+ */
+const personChoices = computed(() =>
+    results.value.people.map((person) => ({
         key: `person-${person.id}`,
         href: person.canViewEmployee
             ? employeePage(person.id)
-            : directoryPerson(person.id),
+            : directory({ query: { person: person.id } }),
+        person,
     })),
-    ...results.value.projects.map((project) => ({
+);
+
+const projectChoices = computed(() =>
+    results.value.projects.map((project) => ({
         key: `project-${project.id}`,
         href: projectPage(project.id),
+        project,
     })),
-    ...results.value.clients.map((client) => ({
+);
+
+const clientChoices = computed(() =>
+    results.value.clients.map((client) => ({
         key: `client-${client.id}`,
         href: clientPage(client.id),
+        client,
     })),
-    ...pages.value.map((page) => ({
+);
+
+const pageChoices = computed(() =>
+    pages.value.map((page) => ({
         key: `page-${toUrl(page.href)}`,
         href: page.href,
+        page,
     })),
+);
+
+const choices = computed<Choice[]>(() => [
+    ...personChoices.value,
+    ...projectChoices.value,
+    ...clientChoices.value,
+    ...pageChoices.value,
 ]);
 
 const nothingFound = computed(
@@ -221,14 +245,14 @@ const labelClass =
                                 a name.
                             </p>
 
-                            <ComboboxGroup v-if="results.people.length > 0">
+                            <ComboboxGroup v-if="personChoices.length > 0">
                                 <ComboboxLabel :class="labelClass"
                                     >People</ComboboxLabel
                                 >
                                 <ComboboxItem
-                                    v-for="person in results.people"
-                                    :key="`person-${person.id}`"
-                                    :value="`person-${person.id}`"
+                                    v-for="{ key, person } in personChoices"
+                                    :key="key"
+                                    :value="key"
                                     :text-value="person.name"
                                     :class="itemClass"
                                 >
@@ -239,14 +263,14 @@ const labelClass =
                                 </ComboboxItem>
                             </ComboboxGroup>
 
-                            <ComboboxGroup v-if="results.projects.length > 0">
+                            <ComboboxGroup v-if="projectChoices.length > 0">
                                 <ComboboxLabel :class="labelClass"
                                     >Projects</ComboboxLabel
                                 >
                                 <ComboboxItem
-                                    v-for="project in results.projects"
-                                    :key="`project-${project.id}`"
-                                    :value="`project-${project.id}`"
+                                    v-for="{ key, project } in projectChoices"
+                                    :key="key"
+                                    :value="key"
                                     :text-value="project.name"
                                     :class="itemClass"
                                 >
@@ -265,14 +289,14 @@ const labelClass =
                                 </ComboboxItem>
                             </ComboboxGroup>
 
-                            <ComboboxGroup v-if="results.clients.length > 0">
+                            <ComboboxGroup v-if="clientChoices.length > 0">
                                 <ComboboxLabel :class="labelClass"
                                     >Clients</ComboboxLabel
                                 >
                                 <ComboboxItem
-                                    v-for="client in results.clients"
-                                    :key="`client-${client.id}`"
-                                    :value="`client-${client.id}`"
+                                    v-for="{ key, client } in clientChoices"
+                                    :key="key"
+                                    :value="key"
                                     :text-value="client.name"
                                     :class="itemClass"
                                 >
@@ -286,14 +310,14 @@ const labelClass =
                                 </ComboboxItem>
                             </ComboboxGroup>
 
-                            <ComboboxGroup v-if="pages.length > 0">
+                            <ComboboxGroup v-if="pageChoices.length > 0">
                                 <ComboboxLabel :class="labelClass"
                                     >Pages</ComboboxLabel
                                 >
                                 <ComboboxItem
-                                    v-for="page in pages"
-                                    :key="`page-${toUrl(page.href)}`"
-                                    :value="`page-${toUrl(page.href)}`"
+                                    v-for="{ key, page } in pageChoices"
+                                    :key="key"
+                                    :value="key"
                                     :text-value="page.title"
                                     :class="itemClass"
                                 >

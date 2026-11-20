@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Projects;
 use App\Actions\DeleteClient;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\ClientRequest;
-use App\Http\Requests\Projects\NameSearchRequest;
+use App\Http\Requests\Search\NameSearchRequest;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Pages\Projects\ClientListPage;

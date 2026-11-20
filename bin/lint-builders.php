@@ -51,13 +51,14 @@ function isOnlyAnAggregate(string $body): bool
 
 foreach ($files as $file) {
     $class = 'App\\Models\\Builders\\'.basename($file, '.php');
-    $lines = file($file);
 
     foreach ((new ReflectionClass($class))->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
         if ($method->getDeclaringClass()->getName() !== $class || $method->isStatic()) {
             continue;
         }
 
+        /** A method a trait brings in is read from the trait's file. */
+        $lines = file((string) $method->getFileName());
         $body = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
         $firstStatement = trim(substr($body, strpos($body, '{') + 1));
 

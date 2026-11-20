@@ -2,6 +2,7 @@
 
 namespace App\Models\Builders;
 
+use App\Models\Concerns\SearchesByName;
 use App\Models\Project;
 
 /**
@@ -11,6 +12,8 @@ use App\Models\Project;
  */
 class ProjectBuilder extends ModelBuilder
 {
+    use SearchesByName;
+
     /**
      * Limit the query to the Internal Project.
      */

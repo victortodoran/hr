@@ -3,7 +3,6 @@
 namespace App\Pages\Search;
 
 use App\Enums\Permission;
-use App\Models\Builders\EmployeeBuilder;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Models\Project;
@@ -33,39 +32,45 @@ final class CommandMenuResults
             return ['people' => [], 'projects' => [], 'clients' => []];
         }
 
-        $pattern = '%'.addcslashes(trim($search), '\\%_').'%';
+        $search = trim($search);
 
         return [
-            'people' => self::people($viewer, $pattern),
-            'projects' => $viewer->can('viewAny', Project::class) ? self::projects($pattern) : [],
-            'clients' => $viewer->can(Permission::ManageClients->value) ? self::clients($pattern) : [],
+            'people' => self::people($viewer, $search),
+            'projects' => $viewer->can('viewAny', Project::class) ? self::projects($search) : [],
+            'clients' => $viewer->can(Permission::ManageClients->value) ? self::clients($search) : [],
         ];
     }
 
     /**
+     * Whether each person opens on their Employee page comes from the same
+     * withPageVisibleTo() that findableBy() lets them through by, so the
+     * link and the search can't disagree.
+     *
      * @return list<array{id: int, name: string, job_title: string|null, canViewEmployee: bool}>
      */
-    private static function people(Employee $viewer, string $pattern): array
+    private static function people(Employee $viewer, string $search): array
     {
-        $seesDirectory = $viewer->holds(Permission::ViewDirectory);
-
-        return array_values(Employee::query()
-            ->notFormer()
-            ->where(fn (EmployeeBuilder $openable) => $openable
-                ->whereIn('employees.id', Employee::query()->withPageVisibleTo($viewer)->select('employees.id'))
-                ->when($seesDirectory, fn (EmployeeBuilder $listed) => $listed
-                    ->orWhereIn('employees.id', Employee::query()->current()->select('employees.id'))))
-            ->whereLike('name', $pattern)
+        $people = Employee::query()
+            ->findableBy($viewer)
+            ->whereNameContains($search)
             ->with('internalAssignment:id,employee_id,project_id,job_title')
             ->orderBy('name')
             ->orderBy('id')
             ->limit(self::LIMIT)
-            ->get()
+            ->get();
+
+        $withPage = Employee::query()
+            ->withPageVisibleTo($viewer)
+            ->whereKey($people->modelKeys())
+            ->pluck('employees.id')
+            ->all();
+
+        return array_values($people
             ->map(fn (Employee $employee): array => [
                 'id' => $employee->id,
                 'name' => $employee->name,
                 'job_title' => $employee->internalAssignment?->job_title,
-                'canViewEmployee' => $viewer->can('view', $employee),
+                'canViewEmployee' => in_array($employee->id, $withPage, true),
             ])
             ->all());
     }
@@ -73,11 +78,11 @@ final class CommandMenuResults
     /**
      * @return list<array{id: int, name: string, client: string|null}>
      */
-    private static function projects(string $pattern): array
+    private static function projects(string $search): array
     {
         return array_values(Project::query()
             ->with('client:id,name')
-            ->whereLike('name', $pattern)
+            ->whereNameContains($search)
             ->orderBy('name')
             ->orderBy('id')
             ->limit(self::LIMIT)
@@ -93,10 +98,10 @@ final class CommandMenuResults
     /**
      * @return list<array{id: int, name: string}>
      */
-    private static function clients(string $pattern): array
+    private static function clients(string $search): array
     {
         return array_values(Client::query()
-            ->whereLike('name', $pattern)
+            ->whereNameContains($search)
             ->orderBy('name')
             ->orderBy('id')
             ->limit(self::LIMIT)

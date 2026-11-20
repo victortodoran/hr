@@ -30,7 +30,9 @@ it('opens Settings from the user menu on Security, its only section, and stays l
         ->fill('#password', 'password')
         ->click('internal:role=button[name="Confirm password"s]')
         ->assertPathIs(route('security.edit', absolute: false))
-        ->assertSeeLink('Security')
+        ->assertSee('Update password')
+        ->assertMissing('[data-slot="settings-frame"]')
+        ->assertDontSeeLink('Security')
         ->assertDontSeeLink('Profile')
         ->assertDontSeeLink('Appearance')
         ->assertScript("document.documentElement.classList.contains('dark')", false)
@@ -52,7 +54,7 @@ it('opens the user menu and Settings on a phone', function () {
         ->click('internal:role=button[name="Confirm password"s]')
         ->assertPathIs(route('security.edit', absolute: false))
         ->assertSeeIn('[data-test="top-bar-title"]', 'Settings')
-        ->assertAttribute('internal:role=link[name="Security"s]', 'aria-current', 'page')
+        ->assertSee('Update password')
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertNoJavaScriptErrors();
 });

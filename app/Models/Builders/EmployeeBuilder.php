@@ -5,6 +5,7 @@ namespace App\Models\Builders;
 use App\Enums\EmploymentStatus;
 use App\Enums\PerformanceEvaluationState;
 use App\Enums\Permission;
+use App\Models\Concerns\SearchesByName;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
 use Carbon\CarbonInterface;
@@ -17,6 +18,8 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class EmployeeBuilder extends ModelBuilder
 {
+    use SearchesByName;
+
     /**
      * Limit the query to Employees who can manage Roles from now on: current
      * Employees with no Leaving Date who hold Admin or a Role granting manage
@@ -122,6 +125,23 @@ class EmployeeBuilder extends ModelBuilder
             $this->where(fn (EmployeeBuilder $visible) => $visible
                 ->whereKey($viewer->id)
                 ->orWhere(fn (EmployeeBuilder $reached) => $viewer->limitToReachOf($reached, Permission::seeingEmployeePages())));
+        });
+    }
+
+    /**
+     * Limit the query to the people the given Employee can find and open,
+     * never Former Employees: those whose Employee page they may open
+     * (withPageVisibleTo()), and, when they hold view directory, everyone
+     * the Directory lists, the current Employees.
+     */
+    public function findableBy(Employee $viewer): static
+    {
+        return $this->scoped(function () use ($viewer): void {
+            $this->notFormer()
+                ->where(fn (EmployeeBuilder $findable) => $findable
+                    ->withPageVisibleTo($viewer)
+                    ->when($viewer->holds(Permission::ViewDirectory), fn (EmployeeBuilder $orListed) => $orListed
+                        ->orWhere(fn (EmployeeBuilder $listed) => $listed->current())));
         });
     }
 

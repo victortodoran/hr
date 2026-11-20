@@ -43,7 +43,7 @@ final class PerformanceEvaluationListPage
         $employees = PageWithin::paginate(Employee::query()
             ->withPerformanceEvaluationsVisibleTo($actor)
             ->withPerformanceEvaluationFor($year, $state)
-            ->whereLike('name', '%'.addcslashes($search, '\\%_').'%')
+            ->whereNameContains($search)
             ->when($askedEmployee, fn (EmployeeBuilder $one, Employee $employee) => $one->whereKey($employee->id))
             ->with(['performanceEvaluations' => fn ($evaluations) => $evaluations->where('year', $year)->withCount('goals')->withAtRiskGoalsCount()]) // @pest-mutate-ignore (eager loading only saves queries; the row reads the same year either way)
             ->orderBy('name')
