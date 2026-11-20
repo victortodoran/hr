@@ -24,10 +24,14 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\TimeOff;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Carbon\CarbonPeriod;
+use Closure;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
@@ -37,9 +41,11 @@ use Illuminate\Support\Str;
  * A small demo company with at least one of everything, so every flow can be
  * tried by hand. It installs the company the way hr:install does, then adds
  * Employees, Roles, Clients, Projects, Assignments and Pay through the same
- * actions the app uses, four weeks of Work Entries, Paid Days (none for
- * Ivan), Time Off and Travel Requests in every state, a year of Ben's
- * travel among them, Travel Expenses with small generated PDF
+ * actions the app uses, then fills the year so far, from 1 January to
+ * today: Work Entries on every working day for everyone with a Manager,
+ * Paid Days (none for Ivan), Time Off through the year, Travel Requests
+ * for most Employees, all in every state, a year of Ben's travel among
+ * them, Travel Expenses with small generated PDF
  * receipts, replacing any an earlier demo left behind, and this year's
  * Open Performance Evaluations with Goals for Ben, Cara, Lia and Ivan,
  * their Progress changed over the last two months, a few of them At Risk,
@@ -65,6 +71,20 @@ use Illuminate\Support\Str;
 class DemoSeeder extends Seeder
 {
     private const string PASSWORD = 'password';
+
+    /**
+     * Days nobody records work on, as month and day.
+     *
+     * @var list<string>
+     */
+    private const array PUBLIC_HOLIDAYS = ['01-01', '01-02', '05-01', '08-15', '11-30', '12-01', '12-25', '12-26'];
+
+    /**
+     * How many minutes a day's work strays from the usual, taken in turn.
+     *
+     * @var list<int>
+     */
+    private const array DAILY_VARIATION = [0, 30, -30, 0, 60, 15, -60, 30, 0, -15, 45, -30];
 
     /** Why a Manager declines a client dinner on a Travel Expense. */
     private const string CLIENT_DINNER_DECLINED = 'Client dinners go through the company card. Could you add only your own meal?';
@@ -153,18 +173,12 @@ class DemoSeeder extends Seeder
         $this->internal($dan, 0, []);
 
         $caraOnRelaunch = $this->assign($cara, $relaunch, 'Tech Lead', 60, $today->subYear(), null, [['hourly', 2500, null]]);
-        $this->assign($cara, $audit, 'Developer', 40, $today->subMonths(14), $today->subMonths(2), [['hourly', 2200, null]]);
+        $caraOnAudit = $this->assign($cara, $audit, 'Developer', 40, $today->subMonths(14), $today->subMonths(2), [['hourly', 2200, null]]);
         $benOnRelaunch = $this->assign($ben, $relaunch, 'Delivery Lead', 20, $today->subYear(), null, []);
-        $this->assign($eve, $audit, 'QA Engineer', 100, $today->subMonths(14), $today->subMonths(2), [['hourly', 2000, null]]);
+        $eveOnAudit = $this->assign($eve, $audit, 'QA Engineer', 100, $today->subMonths(14), $today->subMonths(2), [['hourly', 2000, null]]);
         $liaOnRelaunch = $this->assign($lia, $relaunch, 'Developer', 80, $today->subMonths(6), null, [['hourly', 1800, null]]);
         $ivanOnWebsite = $this->assign($ivan, $website, 'Designer', 50, $today->subMonths(6), $today->addMonths(4), [['hourly', 3000, null]]);
         $this->assign($dan, $mobileApp, 'Developer', 100, $today->addMonths(2), null, []);
-
-        $this->recordWeeks($caraOnRelaunch, 5, ['Reviewing pull requests', 'Checkout API', 'Sprint planning', 'Fixing payment bugs'], $ben);
-        $this->decline($caraOnRelaunch, today()->startOfWeek(CarbonInterface::MONDAY)->subWeek(), $ben, 'Sprint planning goes on Internal, not Relaunch');
-        $this->recordWeeks($liaOnRelaunch, 6, ['Product listing page', 'Unit tests for the cart', 'Pairing with Cara'], $ben);
-        $this->recordWeeks($benOnRelaunch, 2, ['Globex status call', 'Relaunch planning', 'Reviewing the release plan'], $ana);
-        $this->recordWeeks($ivanOnWebsite, 4, ['Homepage mock-ups', 'Design review with Hana', 'Icon set'], $hana);
 
         foreach ([$ana, $ben, $hana, $finn, $cara, $eve, $lia, $dan] as $employee) {
             $this->paidDays($employee, $employee->manager_id === null ? 25 : 20);
@@ -181,6 +195,11 @@ class DemoSeeder extends Seeder
         $this->timeOff($lia, $thisMonday->addWeeks(3), 1, false);
         $this->timeOff($ivan, $thisMonday->addWeeks(2), 2, false, TimeOffState::Declined, $hana, 'Launch week for the Website Revamp. Could you take the week after?');
         $this->timeOff($ivan, $thisMonday->addWeeks(3)->addDays(4), 0, false);
+        $this->yearOfTimeOff($thisMonday, $ana, $ben, $hana, $finn, $cara, $eve, $lia, $ivan);
+
+        $this->yearOfWork($ana, $ben, $hana, $finn, $eve, $lia, $caraOnRelaunch, $caraOnAudit, $benOnRelaunch, $eveOnAudit, $liaOnRelaunch, $ivanOnWebsite);
+        $this->decline($caraOnRelaunch, $thisMonday->subWeek(), $ben, 'Sprint planning goes on Internal, not Relaunch');
+        $this->decline($ivanOnWebsite, $thisMonday->subWeek()->addDays(2), $hana, 'This looks like a copy of Monday. Could you check the hours?');
 
         $workshop = $this->travelRequest($caraOnRelaunch, 'Berlin', $thisMonday->subWeeks(3)->addDay(), 2, 'Checkout API workshop with Globex', TravelRequestState::Approved, $ben);
         $this->travelRequest($caraOnRelaunch, 'Berlin', $thisMonday->addWeeks(3)->addDay(), 2, 'Relaunch go-live with Globex');
@@ -194,6 +213,7 @@ class DemoSeeder extends Seeder
         $this->travelExpense($workshop, $workshop->first_date->addDay(), TravelExpenseCategory::Meals, 14250, 'Team dinner with Globex', TravelExpenseState::Declined, $ben, self::CLIENT_DINNER_DECLINED);
         $this->travelExpense($investors, $today->subDays(3), TravelExpenseCategory::Transport, 32000, 'Flights to London, booked early', TravelExpenseState::Approved);
         $this->bensTravel($benOnRelaunch, $ben->internalAssignment()->sole(), $ana, $thisMonday, $today);
+        $this->yearOfTravel($thisMonday, $ana, $ben, $hana, $finn, $eve, $lia, $caraOnRelaunch, $caraOnAudit, $eveOnAudit, $liaOnRelaunch, $ivanOnWebsite);
 
         $this->completedPerformanceEvaluation($ben, [
             ['Take over the Engineering team', 'Run planning and one-to-ones for everyone on the team.', Outcome::Exceeded],
@@ -330,54 +350,300 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Record hours on the Assignment for every weekday of the last four
-     * weeks, up to today. This week and last are Pending. The two weeks
-     * before were Approved by the approver the following Monday.
-     *
-     * @param  list<string>  $descriptions  What was done, taken in turn
+     * The year's Work Entries for everyone who records them, which is
+     * everyone with a Manager who has started: hours on each of their
+     * Assignments by its Capacity, what they did changing as the year
+     * goes on. Ana has no Manager, so she records none, and Ben records
+     * only his Relaunch hours.
      */
-    private function recordWeeks(Assignment $assignment, int $hoursPerDay, array $descriptions, Employee $approver): void
+    private function yearOfWork(Employee $ana, Employee $ben, Employee $hana, Employee $finn, Employee $eve, Employee $lia, Assignment $caraOnRelaunch, Assignment $caraOnAudit, Assignment $benOnRelaunch, Assignment $eveOnAudit, Assignment $liaOnRelaunch, Assignment $ivanOnWebsite): void
     {
-        $thisMonday = today()->startOfWeek(CarbonInterface::MONDAY);
+        $auditEnded = $caraOnAudit->end_date?->toImmutable() ?? today();
+        $relaunchJoined = $liaOnRelaunch->start_date->toImmutable();
+        $websiteStarted = $ivanOnWebsite->start_date->toImmutable();
+        $eveLeft = $eve->leaving_date?->toImmutable() ?? today();
+        $liasManager = fn (CarbonInterface $approvedAt): Employee => $approvedAt->isAfter($eveLeft) ? $ben : $eve;
+        $liaInternal = $lia->internalAssignment()->sole();
+        $ivanInternal = $ivanOnWebsite->employee->internalAssignment()->sole();
 
-        foreach (range(0, 3) as $weeksAgo) {
-            $monday = $thisMonday->subWeeks($weeksAgo);
+        $this->recordWork($caraOnRelaunch, 300, [
+            ['Checkout API design', 'Payment provider research', 'Sprint planning', 'Reviewing pull requests'],
+            ['Checkout API endpoints', 'Token service spike', 'Reviewing pull requests', 'Sprint planning'],
+            ['Checkout API load tests', 'Fixing payment bugs', 'Pairing with Lia', 'Reviewing pull requests'],
+        ], $ben, until: $auditEnded);
+        $this->recordWork($caraOnRelaunch, 420, [
+            ['Checkout API', 'Fixing payment bugs', 'Reviewing pull requests', 'Sprint planning'],
+            ['Go-live checklist', 'Checkout API', 'Reviewing pull requests', 'Fixing payment bugs'],
+        ], $ben, from: $auditEnded->addDay());
+        $this->recordWork($caraOnAudit, 180, [
+            ['Data Audit interviews', 'Mapping Globex data sources'],
+            ['Writing audit queries', 'Data quality checks'],
+            ['Data Audit report', 'Findings review with Globex'],
+        ], $ben);
+        $this->recordWork($benOnRelaunch, 120, [
+            ['Relaunch planning', 'Globex status call', 'Staffing the Relaunch'],
+            ['Roadmap review', 'Globex status call', 'Relaunch risks review'],
+            ['Reviewing the release plan', 'Globex status call', 'Go-live planning'],
+        ], $ana);
+        $this->recordWork($eveOnAudit, 450, [
+            ['Data Audit test plan', 'Test data setup'],
+            ['Regression testing', 'Data quality checks'],
+            ['Final audit checks', 'Handover before leaving'],
+        ], $ben);
+        $this->recordWork($liaInternal, 420, [
+            ['Internal tools: fixing the build', 'Code review practice'],
+            ['Internal tools: timesheet export', 'Learning the payments stack'],
+        ], $liasManager, until: $relaunchJoined->subDay());
+        $this->recordWork($liaInternal, 90, [['Team meeting', 'Internal tools upkeep']], $liasManager, from: $relaunchJoined);
+        $this->recordWork($liaOnRelaunch, 360, [
+            ['Product listing page', 'Pairing with Cara'],
+            ['Unit tests for the cart', 'Cart design review', 'Product listing page'],
+            ['Cart checkout step', 'Pairing with Cara', 'Unit tests for the cart'],
+        ], $liasManager);
+        $this->recordWork($ivanInternal, 450, [
+            ['Brand guidelines', 'Design review with Hana'],
+            ['Design system components', 'Icon research'],
+        ], $hana, until: $websiteStarted->subDay());
+        $this->recordWork($ivanInternal, 210, [['Design system components', 'Design review with Hana', 'Team meeting']], $hana, from: $websiteStarted);
+        $this->recordWork($ivanOnWebsite, 240, [
+            ['Website research and sitemap', 'Wireframes'],
+            ['Homepage mock-ups', 'Design review with Hana'],
+            ['Icon set', 'Page templates', 'Handover notes for developers'],
+        ], $hana);
+        $this->recordWork($hana->internalAssignment()->sole(), 450, [
+            ['Hiring a product designer', 'Design team planning', 'Design review'],
+            ['Design system roadmap', 'One-to-ones', 'Design review'],
+            ['Website Revamp oversight', 'One-to-ones', 'Design review'],
+        ], $ana);
+        $this->recordWork($finn->internalAssignment()->sole(), 450, [
+            ['Year-end payroll close', 'Tax forms for last year'],
+            ['Monthly payroll run', 'Pay reviews'],
+            ['Monthly payroll run', 'Travel Expense reimbursements', 'Pay change paperwork'],
+        ], $ana);
+    }
 
-            foreach (range(0, 4) as $weekday) {
-                $date = $monday->addDays($weekday);
+    /**
+     * Record Work Entries on the Assignment for every working day from the
+     * start of the year, or four weeks back if that is earlier, or from the
+     * given day, to today, or the given day,
+     * within the Assignment's and the Employee's dates. Working days are
+     * weekdays that aren't public holidays or the Employee's Pending or
+     * Approved Time Off. Each day takes around the given minutes, give or
+     * take an hour, and one of the descriptions of its phase: the
+     * phases split the days evenly, in order. This week and last are
+     * Pending; earlier weeks were Approved the following Monday, by the
+     * approver, or by whoever the closure names for that time.
+     *
+     * @param  list<list<string>>  $phases
+     * @param  Employee|Closure(CarbonInterface): Employee  $approver
+     */
+    private function recordWork(Assignment $assignment, int $minutes, array $phases, Employee|Closure $approver, ?CarbonInterface $from = null, ?CarbonInterface $until = null): void
+    {
+        $employee = $assignment->employee;
+        $first = collect([today()->startOfYear()->min(today()->startOfWeek(CarbonInterface::MONDAY)->subWeeks(3)), $assignment->start_date->toImmutable(), $employee->start_date->toImmutable(), $from])->filter()->max();
+        $last = collect([today(), $assignment->end_date?->toImmutable(), $employee->leaving_date?->toImmutable(), $until])->filter()->min();
+        $daysOff = $employee->timeOff()->standing()->get()
+            ->flatMap(fn (TimeOff $timeOff): array => array_map(fn (CarbonInterface $day): string => $day->toDateString(), CarbonPeriod::create($timeOff->first_date, $timeOff->last_date)->toArray()))
+            ->flip();
+        $days = collect(CarbonPeriod::create($first, $last)->toArray())
+            ->map(fn (CarbonInterface $day): CarbonImmutable => CarbonImmutable::parse($day))
+            ->reject(fn (CarbonImmutable $day): bool => $day->isWeekend() || in_array($day->format('m-d'), self::PUBLIC_HOLIDAYS, true) || $daysOff->has($day->toDateString()))
+            ->values();
+        $pendingFrom = today()->startOfWeek(CarbonInterface::MONDAY)->subWeek();
+        $rows = [];
 
-                if ($date->isAfter(today())) {
-                    continue;
-                }
+        foreach ($days as $position => $day) {
+            $descriptions = $phases[intdiv($position * count($phases), $days->count())];
+            $approvedAt = $day->startOfWeek(CarbonInterface::MONDAY)->addWeek()->setTime(10, 0);
+            $isApproved = $day->isBefore($pendingFrom);
+            $approvedBy = $approver instanceof Closure ? $approver($approvedAt) : $approver;
 
-                $workEntry = WorkEntry::query()->create([
-                    'assignment_id' => $assignment->id,
-                    'date' => $date,
-                    'minutes' => $hoursPerDay * 60,
-                    'description' => $descriptions[($weeksAgo * 5 + $weekday) % count($descriptions)],
-                ]);
+            $rows[] = [
+                'assignment_id' => $assignment->id,
+                'date' => $day->toDateString(),
+                'minutes' => max(60, $minutes + self::DAILY_VARIATION[($day->dayOfYear + $assignment->id) % count(self::DAILY_VARIATION)]),
+                'description' => $descriptions[($day->weekOfYear + $day->dayOfWeek) % count($descriptions)],
+                'state' => ($isApproved ? WorkEntryState::Approved : WorkEntryState::Pending)->value,
+                'approved_by' => $isApproved ? $approvedBy->id : null,
+                'approved_at' => $isApproved ? $approvedAt : null,
+                'created_at' => $day->setTime(17, 30)->min(now()),
+                'updated_at' => $isApproved ? $approvedAt : $day->setTime(17, 30)->min(now()),
+            ];
+        }
 
-                if ($weeksAgo >= 2) {
-                    $workEntry->forceFill([
-                        'state' => WorkEntryState::Approved,
-                        'approved_by' => $approver->id,
-                        'approved_at' => $monday->addWeek()->setTime(10, 0),
-                    ])->save();
-                }
+        foreach (array_chunk($rows, 500) as $chunk) {
+            WorkEntry::query()->insert($chunk);
+        }
+    }
+
+    /**
+     * Time Off through the year so far, past the last few weeks: a week
+     * or two in summer for most, a long weekend here and there, some
+     * Unpaid days, one Declined and one Cancelled. Anything that would
+     * start before this year is left out. With the Time Off still to come,
+     * nobody uses more Paid Days than they have.
+     */
+    private function yearOfTimeOff(CarbonInterface $thisMonday, Employee $ana, Employee $ben, Employee $hana, Employee $finn, Employee $cara, Employee $eve, Employee $lia, Employee $ivan): void
+    {
+        $approved = TimeOffState::Approved;
+
+        /**
+         * Each: Employee, weeks before this Monday, weekday (0 for
+         * Monday), days after it, Paid, state, decider, decline reason.
+         *
+         * @var list<array{Employee, int, int, int, bool, TimeOffState, Employee|null, string|null}> $timeOff
+         */
+        $timeOff = [
+            [$ana, 45, 0, 2, true, $approved, null, null],
+            [$ana, 15, 0, 11, true, $approved, null, null],
+            [$ben, 33, 4, 0, true, $approved, $ana, null],
+            [$ben, 19, 0, 11, true, $approved, $ana, null],
+            [$hana, 36, 0, 4, true, $approved, $ana, null],
+            [$hana, 13, 0, 11, true, $approved, $ana, null],
+            [$hana, 4, 4, 0, true, $approved, $ana, null],
+            [$finn, 40, 0, 4, true, $approved, $ana, null],
+            [$finn, 26, 0, 1, false, $approved, $ana, null],
+            [$finn, 17, 0, 11, true, $approved, $ana, null],
+            [$finn, 8, 2, 0, true, TimeOffState::Cancelled, null, null],
+            [$cara, 30, 0, 4, true, $approved, $ben, null],
+            [$cara, 22, 0, 1, true, TimeOffState::Declined, $ben, 'The Relaunch beta goes out that week. Could you move it to July?'],
+            [$cara, 14, 0, 4, true, $approved, $ben, null],
+            [$eve, 28, 0, 4, true, $approved, $ben, null],
+            [$eve, 17, 0, 4, true, $approved, $ben, null],
+            [$lia, 24, 0, 4, true, $approved, $eve, null],
+            [$lia, 10, 0, 4, true, $approved, $eve, null],
+            [$lia, 1, 4, 0, true, $approved, $ben, null],
+            [$ivan, 20, 0, 4, false, $approved, $hana, null],
+            [$ivan, 6, 4, 0, false, $approved, $hana, null],
+        ];
+
+        foreach ($timeOff as [$employee, $weeksAgo, $weekday, $daysAfter, $isPaid, $state, $decider, $declineReason]) {
+            $first = $thisMonday->subWeeks($weeksAgo)->addDays($weekday);
+
+            if ($first->isBefore(today()->startOfYear())) {
+                continue;
+            }
+
+            $this->timeOff($employee, $first, $daysAfter, $isPaid, $state, $decider, $declineReason);
+        }
+    }
+
+    /**
+     * Travel through the year so far for everyone besides Ben, whose
+     * year of travel has its own method: Client visits on Relaunch, the
+     * Data Audit and the Website Revamp, and conferences, courses and a
+     * board meeting on Internal Assignments, with their Travel Expenses,
+     * almost all of them Approved by now. Anything that would start
+     * before this year is left out. None shares a day with the
+     * traveller's Time Off.
+     */
+    private function yearOfTravel(CarbonInterface $thisMonday, Employee $ana, Employee $ben, Employee $hana, Employee $finn, Employee $eve, Employee $lia, Assignment $caraOnRelaunch, Assignment $caraOnAudit, Assignment $eveOnAudit, Assignment $liaOnRelaunch, Assignment $ivanOnWebsite): void
+    {
+        $approvedTrip = TravelRequestState::Approved;
+        [$transport, $accommodation, $meals, $other] = [TravelExpenseCategory::Transport, TravelExpenseCategory::Accommodation, TravelExpenseCategory::Meals, TravelExpenseCategory::Other];
+        [$pendingExpense, $approvedExpense, $declinedExpense] = [TravelExpenseState::Pending, TravelExpenseState::Approved, TravelExpenseState::Declined];
+        $ivanInternal = $ivanOnWebsite->employee->internalAssignment()->sole();
+
+        /**
+         * Each trip: Assignment, weeks before this Monday, weekday (0 for
+         * Monday), days after it, destination, purpose, state, who decided
+         * it, who decided its Travel Expenses, and the Travel Expenses as
+         * [day of the trip it was paid, category, amount in cents,
+         * description, state, decline reason].
+         *
+         * @var list<array{Assignment, int, int, int, string, string, TravelRequestState, Employee|null, Employee|null, list<array{int, TravelExpenseCategory, int, string, TravelExpenseState, string|null}>}> $trips
+         */
+        $trips = [
+            [$ana->internalAssignment()->sole(), 34, 0, 2, 'Paris', 'Board meeting', $approvedTrip, null, null, [
+                [0, $transport, 31000, 'Flights to Paris and back', $approvedExpense, null],
+                [2, $accommodation, 52000, 'Hotel, two nights', $approvedExpense, null],
+            ]],
+            [$caraOnAudit, 38, 1, 1, 'Frankfurt', 'Data Audit interviews with Globex finance', $approvedTrip, $ben, $ben, [
+                [0, $transport, 17400, 'Train to Frankfurt and back', $approvedExpense, null],
+                [1, $accommodation, 13900, 'Hotel, one night', $approvedExpense, null],
+                [0, $meals, 3800, 'Dinner on the road', $approvedExpense, null],
+            ]],
+            [$liaOnRelaunch->employee->internalAssignment()->sole(), 35, 3, 1, 'Cluj', 'Speaking at a JavaScript meetup', $approvedTrip, $eve, $eve, [
+                [0, $transport, 6200, 'Train to Cluj and back', $approvedExpense, null],
+                [1, $accommodation, 8500, 'Hotel, one night', $approvedExpense, null],
+            ]],
+            [$ivanInternal, 32, 2, 2, 'Amsterdam', 'Design systems conference', $approvedTrip, $hana, $hana, [
+                [0, $other, 45000, 'Conference ticket', $approvedExpense, null],
+                [0, $transport, 28000, 'Flights to Amsterdam and back', $approvedExpense, null],
+                [2, $accommodation, 39000, 'Hotel, two nights', $approvedExpense, null],
+            ]],
+            [$finn->internalAssignment()->sole(), 29, 1, 1, 'Vienna', 'Payroll compliance course', $approvedTrip, $ana, $ana, [
+                [0, $other, 52000, 'Course fee', $approvedExpense, null],
+                [0, $transport, 24000, 'Flights to Vienna and back', $approvedExpense, null],
+                [1, $accommodation, 12000, 'Hotel, one night', $approvedExpense, null],
+            ]],
+            [$caraOnRelaunch, 27, 2, 2, 'Berlin', 'Checkout API kickoff with Globex', $approvedTrip, $ben, $ben, [
+                [0, $transport, 19400, 'Train to Berlin and back', $approvedExpense, null],
+                [2, $accommodation, 37000, 'Hotel, two nights', $approvedExpense, null],
+                [1, $meals, 4600, 'Lunch with the Globex team', $approvedExpense, null],
+            ]],
+            [$eveOnAudit, 25, 1, 1, 'Frankfurt', 'Data Audit test plan review', $approvedTrip, $ben, $ben, [
+                [0, $transport, 16800, 'Train to Frankfurt and back', $approvedExpense, null],
+                [1, $accommodation, 14500, 'Hotel, one night', $approvedExpense, null],
+            ]],
+            [$hana->internalAssignment()->sole(), 21, 1, 2, 'Berlin', 'Design leadership summit', $approvedTrip, $ana, $ana, [
+                [0, $other, 65000, 'Summit ticket', $approvedExpense, null],
+                [0, $transport, 18000, 'Flights to Berlin and back', $approvedExpense, null],
+                [2, $accommodation, 42000, 'Hotel, two nights', $approvedExpense, null],
+            ]],
+            [$caraOnAudit, 12, 1, 1, 'Frankfurt', 'Data Audit findings presentation', $approvedTrip, $ben, $ben, [
+                [0, $transport, 16800, 'Train to Frankfurt and back', $approvedExpense, null],
+                [1, $accommodation, 14500, 'Hotel, one night', $approvedExpense, null],
+                [1, $other, 2400, 'Taxi from the station', $pendingExpense, null],
+            ]],
+            [$ivanOnWebsite, 11, 2, 1, 'Vienna', 'Website user testing sessions', $approvedTrip, $hana, $hana, [
+                [0, $transport, 22000, 'Flights to Vienna and back', $approvedExpense, null],
+                [1, $accommodation, 16000, 'Hotel, one night', $approvedExpense, null],
+                [1, $meals, 4500, 'Lunch for the test participants', $declinedExpense, 'The participants\' lunch went on the company card. Could you remove it?'],
+            ]],
+            [$liaOnRelaunch, 9, 1, 2, 'Berlin', 'Cart pairing with the Globex team', $approvedTrip, $eve, $ben, [
+                [0, $transport, 19900, 'Train to Berlin and back', $approvedExpense, null],
+                [2, $accommodation, 35000, 'Hotel, two nights', $approvedExpense, null],
+            ]],
+            [$ivanOnWebsite, 4, 2, 1, 'Vienna', 'Second round of user testing, moved online', TravelRequestState::Cancelled, $hana, null, []],
+        ];
+
+        foreach ($trips as [$assignment, $weeksAgo, $weekday, $daysAfter, $destination, $purpose, $state, $decider, $expenseDecider, $expenses]) {
+            $first = $thisMonday->subWeeks($weeksAgo)->addDays($weekday);
+
+            if ($first->isBefore(today()->startOfYear())) {
+                continue;
+            }
+
+            $travelRequest = $this->travelRequest($assignment, $destination, $first, $daysAfter, $purpose, $state, $decider);
+
+            foreach ($expenses as [$paidOn, $category, $amount, $description, $expenseState, $declineReason]) {
+                $this->travelExpense($travelRequest, $first->addDays($paidOn), $category, $amount, $description, $expenseState, $expenseDecider, $declineReason);
             }
         }
     }
 
     /**
-     * Decline the Pending Work Entry on the Assignment on the date, as the
-     * decliner, with the reason.
+     * The given moment, or the given number of days ago if that is
+     * earlier, so a demo decision never lands in the future.
+     */
+    private function notAfter(CarbonInterface $moment, int $daysAgo = 1): CarbonInterface
+    {
+        return $moment->min(now()->subDays($daysAgo));
+    }
+
+    /**
+     * Decline the first Pending Work Entry on the Assignment on or after
+     * the date, as the decliner, with the reason.
      */
     private function decline(Assignment $assignment, CarbonInterface $date, Employee $decliner, string $reason): void
     {
-        $assignment->workEntries()->whereDate('date', $date)->sole()->forceFill([
+        $workEntry = $assignment->workEntries()->where('state', WorkEntryState::Pending)->whereDate('date', '>=', $date)->orderBy('date')->firstOrFail();
+
+        $workEntry->forceFill([
             'state' => WorkEntryState::Declined,
             'declined_by' => $decliner->id,
-            'declined_at' => $date->addDay()->setTime(9, 0),
+            'declined_at' => $this->notAfter($workEntry->date->toImmutable()->addDay()->setTime(9, 0), 0),
             'decline_reason' => $reason,
         ])->save();
     }
@@ -395,6 +661,8 @@ class DemoSeeder extends Seeder
      * Add Time Off from a first date to the given number of days after it,
      * Pending unless given another state. Approved and Declined Time Off is
      * decided by the decider, or by nobody for an Employee with no Manager.
+     * It was requested two weeks before its first day and decided the day
+     * after, or cancelled three days before it, never later than recently.
      */
     private function timeOff(Employee $employee, CarbonInterface $first, int $daysAfter, bool $isPaid, TimeOffState $state = TimeOffState::Pending, ?Employee $decider = null, ?string $declineReason = null): void
     {
@@ -407,9 +675,10 @@ class DemoSeeder extends Seeder
         $timeOff->forceFill([
             'state' => $state,
             'decided_by' => $decider?->id,
-            'decided_at' => in_array($state, [TimeOffState::Approved, TimeOffState::Declined], true) ? now()->subDay() : null,
+            'decided_at' => in_array($state, [TimeOffState::Approved, TimeOffState::Declined], true) ? $this->notAfter($first->subDays(13)->setTime(11, 0)) : null,
             'decline_reason' => $declineReason,
-            'cancelled_at' => $state === TimeOffState::Cancelled ? now()->subDay() : null,
+            'cancelled_at' => $state === TimeOffState::Cancelled ? $this->notAfter($first->subDays(3)->setTime(15, 0)) : null,
+            'created_at' => $this->notAfter($first->subDays(14)->setTime(9, 0), 2),
         ])->save();
     }
 
@@ -569,7 +838,9 @@ class DemoSeeder extends Seeder
      * number of days after it, Pending unless given another state. Approved
      * and Declined ones are decided by the decider, or by nobody for an
      * Employee with no Manager; a Cancelled one given a decider was Approved
-     * by them first.
+     * by them first. It was made two weeks before its first day and
+     * decided the day after, or cancelled three days before it, never
+     * later than recently.
      */
     private function travelRequest(Assignment $assignment, string $destination, CarbonInterface $first, int $daysAfter, string $purpose, TravelRequestState $state = TravelRequestState::Pending, ?Employee $decider = null, ?string $declineReason = null): TravelRequest
     {
@@ -584,9 +855,10 @@ class DemoSeeder extends Seeder
         $travelRequest->forceFill([
             'state' => $state,
             'decided_by' => $decider?->id,
-            'decided_at' => in_array($state, [TravelRequestState::Approved, TravelRequestState::Declined], true) || ($state === TravelRequestState::Cancelled && $decider !== null) ? now()->subDay() : null,
+            'decided_at' => in_array($state, [TravelRequestState::Approved, TravelRequestState::Declined], true) || ($state === TravelRequestState::Cancelled && $decider !== null) ? $this->notAfter($first->subDays(13)->setTime(11, 0)) : null,
             'decline_reason' => $declineReason,
-            'cancelled_at' => $state === TravelRequestState::Cancelled ? now()->subDay() : null,
+            'cancelled_at' => $state === TravelRequestState::Cancelled ? $this->notAfter($first->subDays(3)->setTime(15, 0)) : null,
+            'created_at' => $this->notAfter($first->subDays(14)->setTime(9, 0), 2),
         ])->save();
 
         return $travelRequest;
@@ -597,7 +869,8 @@ class DemoSeeder extends Seeder
      * Request, with a one-page PDF receipt naming it, Pending unless given
      * another state. Approved ones are approved by the decider, or by
      * nobody for an Employee with no Manager; Declined ones are declined by
-     * the decider with the reason.
+     * the decider with the reason, a few days after the trip, or after
+     * it was paid if later, but never later than recently.
      */
     private function travelExpense(TravelRequest $travelRequest, CarbonInterface $paidOn, TravelExpenseCategory $category, int $amount, string $description, TravelExpenseState $state = TravelExpenseState::Pending, ?Employee $decider = null, ?string $declineReason = null): void
     {
@@ -612,12 +885,14 @@ class DemoSeeder extends Seeder
             'receipt_path' => $receiptPath,
         ]);
 
+        $decidedAt = $this->notAfter($paidOn->max($travelRequest->last_date->toImmutable())->addDays(3)->setTime(10, 0));
+
         $travelExpense->forceFill([
             'state' => $state,
             'approved_by' => $state === TravelExpenseState::Approved ? $decider?->id : null,
-            'approved_at' => $state === TravelExpenseState::Approved ? now()->subDay() : null,
+            'approved_at' => $state === TravelExpenseState::Approved ? $decidedAt : null,
             'declined_by' => $state === TravelExpenseState::Declined ? $decider?->id : null,
-            'declined_at' => $state === TravelExpenseState::Declined ? now()->subDay() : null,
+            'declined_at' => $state === TravelExpenseState::Declined ? $decidedAt : null,
             'decline_reason' => $declineReason,
         ])->save();
     }
