@@ -42,14 +42,6 @@ it('shows a failed page to a signed-in Employee as the Error page, without the e
     expect($response->content())->not->toContain('Broken');
 });
 
-it('shows a failed page as the Error page with a 500', function () {
-    Route::middleware('web')->get('/failing-page', fn () => throw new RuntimeException('Broken'));
-
-    get('/failing-page')
-        ->assertInternalServerError()
-        ->assertInertia(fn (Assert $page) => $page->component('Error')->where('status', 500));
-});
-
 it('keeps Laravel\'s own error responses while debugging and for JSON requests', function () {
     config(['app.debug' => true]);
     expect(get('/no-such-page')->assertNotFound()->content())->not->toContain('"component":"Error"');

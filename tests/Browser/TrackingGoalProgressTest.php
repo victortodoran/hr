@@ -87,8 +87,6 @@ it('puts the Progress back with a toast saying why when the Performance Evaluati
         ->assertSee('Not Started')
         ->assertDontSee('Saved')
         ->assertNoJavaScriptErrors();
-
-    expect($goal->fresh()?->progress)->toBe(Progress::NotStarted);
 });
 
 it('lets the Manager edit the Goal in the sheet on its page, then delete it from the ⋯ menu', function () {

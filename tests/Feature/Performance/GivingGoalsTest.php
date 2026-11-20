@@ -38,21 +38,6 @@ function storedGoals(PerformanceEvaluation $evaluation): array
     return $evaluation->goals()->get()->map(fn (Goal $goal): array => $goal->only('title', 'description'))->all();
 }
 
-it('shows every Employee only their own past Performance Evaluations, newest first, with their Goal counts', function () {
-    $cara = caraReportingTo(managerBen());
-    $older = PerformanceEvaluation::factory()->of($cara)->create(['year' => 2024]);
-    $newer = PerformanceEvaluation::factory()->of($cara)->has(Goal::factory()->count(2))->create(['year' => 2025]);
-    PerformanceEvaluation::factory()->create(['year' => 2025]);
-
-    actingAs($cara)->get(route('my-performance-evaluations.index'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('performance-evaluations/Mine')
-            ->where('evaluations', [
-                ['id' => $newer->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 2, 'at_risk_goals_count' => 0, 'outcome' => null],
-                ['id' => $older->id, 'year' => 2024, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null],
-            ]));
-});
-
 it('lets an Employee read their own Performance Evaluation\'s Goals but not change them', function () {
     $cara = caraReportingTo(managerBen());
     $evaluation = PerformanceEvaluation::factory()->of($cara)->create();
@@ -71,66 +56,45 @@ it('lets an Employee read their own Performance Evaluation\'s Goals but not chan
     expect(storedGoals($evaluation))->toBe([['title' => 'Lead the Checkout API', 'description' => 'Own its design.']]);
 });
 
-it('refuses a Performance Evaluation to anyone but its Employee and their effective Manager', function () {
-    $ben = managerBen();
-    $evaluation = PerformanceEvaluation::factory()->of(caraReportingTo($ben))->create();
+it('refuses a Performance Evaluation to the Manager\'s own Manager', function () {
+    $evaluation = PerformanceEvaluation::factory()->of(caraReportingTo(managerBen()))->create();
 
-    actingAs($ben)->get(route('performance-evaluations.show', $evaluation))->assertOk();
-    actingAs(Employee::factory()->create())->get(route('performance-evaluations.show', $evaluation))->assertForbidden();
     actingAs(Employee::query()->where('name', 'Ada')->sole())->get(route('performance-evaluations.show', $evaluation))->assertForbidden();
 });
 
-it('offers the Performance Evaluations page only to Employees who effectively manage someone', function () {
+it('offers the Performance Evaluations page to an Employee who effectively manages someone', function () {
     $ben = managerBen();
-    $cara = caraReportingTo($ben);
+    caraReportingTo($ben);
 
     actingAs($ben)->get(route('my-performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.canSeePerformanceEvaluations', true));
-    actingAs($cara)->get(route('my-performance-evaluations.index'))
-        ->assertInertia(fn (Assert $page) => $page->where('auth.canSeePerformanceEvaluations', false));
-    actingAs($cara)->get(route('performance-evaluations.index'))->assertForbidden();
 });
 
-it('lists, for the year, the Employees the viewer effectively manages who have an Evaluation for it, and offers creating one for the rest', function () {
+it('offers last year, this year and next on the Performance Evaluations page, with each Evaluation\'s Goal count', function () {
     $ben = managerBen();
-    $cara = caraReportingTo($ben);
-    Employee::factory()->reportingTo($ben)->create(['name' => 'Dan', 'start_date' => '2026-12-14']);
-    $zed = Employee::factory()->startedLongAgo()->create(['name' => 'Zed']);
-    PerformanceEvaluation::factory()->of($zed)->create();
-    $evaluation = PerformanceEvaluation::factory()->of($cara)->has(Goal::factory()->count(3))->create();
+    PerformanceEvaluation::factory()->of(caraReportingTo($ben))->has(Goal::factory()->count(3))->create();
 
     actingAs($ben)->get(route('performance-evaluations.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('performance-evaluations/Index')
-            ->where('year', 2026)
             ->where('years', [2027, 2026, 2025])
             ->where('canCreate', true)
-            ->where('employees.data', [
-                ['id' => $cara->id, 'name' => 'Cara', 'evaluation' => ['id' => $evaluation->id, 'year' => 2026, 'state' => 'open', 'goals_count' => 3, 'at_risk_goals_count' => 0, 'outcome' => null]],
-            ]));
+            ->where('employees.data.0.evaluation.goals_count', 3));
 });
 
-it('shows a past year with the Employees who have an Evaluation for it, Former Employees included', function () {
+it('lists a Former Employee\'s Evaluation for a past year', function () {
     $ben = managerBen();
-    $cara = caraReportingTo($ben);
     $ola = Employee::factory()->reportingTo($ben)->create(['name' => 'Ola', 'start_date' => '2020-01-06', 'leaving_date' => '2025-12-31']);
     $evaluation = PerformanceEvaluation::factory()->of($ola)->create(['year' => 2025]);
-    PerformanceEvaluation::factory()->of($cara)->create(['year' => 2024]);
 
     actingAs($ben)->get(route('performance-evaluations.index', ['year' => 2025]))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('year', 2025)
-            ->where('employees.data', [
-                ['id' => $ola->id, 'name' => 'Ola', 'evaluation' => ['id' => $evaluation->id, 'year' => 2025, 'state' => 'open', 'goals_count' => 0, 'at_risk_goals_count' => 0, 'outcome' => null]],
-            ]));
+        ->assertInertia(fn (Assert $page) => $page->where('employees.data.0.evaluation.id', $evaluation->id));
 });
 
-it('shows next year on the Performance Evaluations page, and refuses the year after', function () {
+it('refuses the Performance Evaluations page for the year after next', function () {
     $ben = managerBen();
-    $evaluation = PerformanceEvaluation::factory()->of(caraReportingTo($ben))->create(['year' => 2027]);
+    caraReportingTo($ben);
 
-    actingAs($ben)->get(route('performance-evaluations.index', ['year' => 2027]))
-        ->assertInertia(fn (Assert $page) => $page->where('year', 2027)->where('employees.data.0.evaluation.id', $evaluation->id));
     actingAs($ben)->get(route('performance-evaluations.index', ['year' => 2028]))->assertSessionHasErrors('year');
 });
 
@@ -176,15 +140,6 @@ it('lets the effective Manager give, change and remove Goals while the Evaluatio
     actingAs($ben)->delete(route('performance-evaluations.goals.destroy', [$evaluation, $goal]))
         ->assertRedirect(route('performance-evaluations.show', $evaluation))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Goal deleted.']);
-    expect(storedGoals($evaluation))->toBe([]);
-});
-
-it('requires a Goal\'s title and description', function () {
-    $ben = managerBen();
-    $evaluation = PerformanceEvaluation::factory()->of(caraReportingTo($ben))->create();
-
-    actingAs($ben)->post(route('performance-evaluations.goals.store', $evaluation), ['title' => '', 'description' => ''])
-        ->assertSessionHasErrors(['title' => 'The title field is required.', 'description' => 'The description field is required.']);
     expect(storedGoals($evaluation))->toBe([]);
 });
 

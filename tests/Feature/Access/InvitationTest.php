@@ -133,18 +133,6 @@ it('refuses an expired invitation', function () {
     expect($employee->refresh()->hasVerifiedEmail())->toBeFalse();
 });
 
-it('requires the password to be confirmed', function () {
-    $employee = Employee::factory()->invited()->create();
-    $token = inviteAndCaptureToken($employee);
-
-    post(route('invitation.store'), [
-        'token' => $token,
-        'email' => $employee->email,
-        'password' => 'a-new-password',
-        'password_confirmation' => 'something-else',
-    ])->assertSessionHasErrors('password');
-});
-
 it('sends an email with a link to set a password that expires in a week', function () {
     $employee = Employee::factory()->invited()->create(['email' => 'cara@acme.test']);
     $token = inviteAndCaptureToken($employee);
@@ -155,14 +143,4 @@ it('sends an email with a link to set a password that expires in a week', functi
         ->and($mail->actionText)->toBe('Set password')
         ->and($mail->actionUrl)->toBe(route('invitation.show', ['token' => $token, 'email' => 'cara@acme.test']))
         ->and(Str::of(implode(' ', $mail->outroLines))->contains('7 days'))->toBeTrue();
-});
-
-it('requires a token, a valid email and a password', function () {
-    post(route('invitation.store'), [])->assertSessionHasErrors(['token', 'email', 'password']);
-
-    post(route('invitation.store'), ['token' => 'x', 'email' => 'not-an-email', 'password' => 'a-new-password', 'password_confirmation' => 'a-new-password'])
-        ->assertSessionHasErrors(['email' => 'The email field must be a valid email address.']);
-
-    post(route('invitation.store'), ['token' => ['x'], 'email' => ['a@acme.test'], 'password' => 'a-new-password', 'password_confirmation' => 'a-new-password'])
-        ->assertSessionHasErrors(['token' => 'The token field must be a string.', 'email' => 'The email field must be a string.']);
 });

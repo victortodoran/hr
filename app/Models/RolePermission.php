@@ -6,7 +6,6 @@ use App\Enums\Permission;
 use App\Enums\Scope;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -23,14 +22,6 @@ use Illuminate\Support\Carbon;
 #[Fillable(['permission', 'scope'])] // @pest-mutate-ignore (class attributes never show as covered)
 class RolePermission extends Model
 {
-    /**
-     * @return BelongsTo<Role, $this>
-     */
-    public function role(): BelongsTo
-    {
-        return $this->belongsTo(Role::class);
-    }
-
     /**
      * @return array<string, string>
      */

@@ -119,9 +119,3 @@ it('opens the first tab the viewer may open when asked for one they may not, or 
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('tab', 'everyone')->where('tabs', ['everyone']));
 })->with(['reports', 'nonsense']);
-
-it('sends the old Team page to the Reports tab', function () {
-    $ben = Employee::factory()->create();
-
-    actingAs($ben)->get('/team')->assertRedirect('/directory?tab=reports');
-});

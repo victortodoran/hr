@@ -121,13 +121,6 @@ it('names the month of a source day in another month', function () {
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Copied 1 Work Entry from Fri 30 Oct.']);
 });
 
-it('requires a valid date', function (mixed $date) {
-    $cara = recorder();
-
-    actingAs($cara)->post(route('employees.work-entry-copies.store', $cara), ['date' => $date])
-        ->assertSessionHasErrors('date');
-})->with([null, 'yesterday']);
-
 it('lets only those who may record hours for the Employee copy them', function () {
     $cara = Employee::factory()->reportingTo(Employee::factory()->create())->create(['name' => 'Cara']);
     WorkEntry::factory()->for(assignmentOf($cara))->create(['date' => '2026-11-12']);

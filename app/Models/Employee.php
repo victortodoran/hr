@@ -333,16 +333,6 @@ class Employee extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Whether the Employee has something only their Manager can settle:
-     * Pending Work Entries, Time Off, Travel Requests or Travel Expenses,
-     * or an Open Performance Evaluation.
-     */
-    public function hasWorkForTheirManager(): bool
-    {
-        return self::query()->whereKey($this->id)->withWorkForTheirManager()->exists();
-    }
-
-    /**
      * Whether the Employee is the effective Manager of anyone, Former
      * Employees included, and so approves someone's Work Entries.
      */

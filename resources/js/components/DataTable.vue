@@ -30,7 +30,6 @@ import type { TableColumn } from '@/types';
 const props = defineProps<{
     columns: TableColumn[];
     rows: Row[];
-    rowKey?: (row: Row) => PropertyKey;
     groupBy?: (row: Row) => string;
     /** Every group in order, so a group with no rows still shows its group row. */
     groups?: string[];
@@ -122,10 +121,6 @@ const columnCount = computed(
 );
 
 function keyOf(row: Row, index: number): PropertyKey {
-    if (props.rowKey) {
-        return props.rowKey(row);
-    }
-
     return 'id' in row ? (row.id as PropertyKey) : index;
 }
 

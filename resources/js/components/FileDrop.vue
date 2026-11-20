@@ -27,8 +27,6 @@ const props = defineProps<{
     current?: { name: string; url: string; size?: number | null } | null;
     /** What the file is, such as "receipt", for "Remove receipt". */
     noun?: string;
-    /** Replaces the help text built from `accept` and `maxMb`. */
-    hint?: string;
     /** Marks the field as refused, such as when its error shows. */
     invalid?: boolean;
 }>();
@@ -63,7 +61,7 @@ const typesLabel = computed(() => {
 });
 
 const helpText = computed(() => {
-    const text = props.hint ?? `${typesLabel.value}, up to ${props.maxMb} MB.`;
+    const text = `${typesLabel.value}, up to ${props.maxMb} MB.`;
 
     return shown.value ? `${text} Drop a new file here to replace it.` : text;
 });
