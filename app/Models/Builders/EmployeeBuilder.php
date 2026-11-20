@@ -16,7 +16,7 @@ class EmployeeBuilder extends ModelBuilder
 {
     use SearchesByName;
 
-    /** Anyone with a Leaving Date soon can't sign in, so doesn't count. */
+    /** Future Employees and anyone with a Leaving Date can't sign in, or soon won't, so they don't count. */
     public function lastingRoleManagers(): static
     {
         return $this->scoped(function (): void {

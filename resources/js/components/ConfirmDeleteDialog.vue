@@ -24,6 +24,7 @@ withDefaults(
         errorBag?: string;
         confirmLabel?: string;
         dismissLabel?: string;
+        /** For a dialog opened from elsewhere, such as a menu item that would unmount a trigger inside it; open it through v-model:open. */
         withoutTrigger?: boolean;
     }>(),
     {

@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Carbon;
 
 /**
+ * Approved per Work Entry, and stays Approved until Reopened (ADR 0005).
+ *
  * @property int $id
  * @property int $assignment_id
  * @property Carbon $date

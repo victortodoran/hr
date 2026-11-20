@@ -7,6 +7,7 @@ import type { TableColumn } from '@/types';
 const props = defineProps<{
     columns: TableColumn[];
     rows: Row[];
+    /** Rows must come in group order: a group row starts wherever the key changes. */
     groupBy?: (row: Row) => string;
     /** Every group in order, so a group with no rows still shows its group row. */
     groups?: string[];

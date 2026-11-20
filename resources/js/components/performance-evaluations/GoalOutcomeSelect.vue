@@ -13,7 +13,7 @@ import { useSaveOnPick } from '@/composables/useSaveOnPick';
 import { outcomes } from '@/lib/outcomes';
 import type { Outcome } from '@/types';
 
-/** A plain Select, not a badge: an Outcome is a rating, not a state (S11). */
+/** A plain Select, not a badge: an Outcome is an assessment, not a state (S11). */
 const props = defineProps<{
     outcome: Outcome | null;
     performanceEvaluationId: number;

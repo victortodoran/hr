@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
+ * Belongs to an Approved Travel Request (ADR 0007).
+ *
  * @property int $id
  * @property int $travel_request_id
  * @property Carbon $paid_on

@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
+ * Custom Roles with scoped Permissions instead of a package (ADR 0004).
+ *
  * @property int $id
  * @property string $name
  * @property bool $is_admin

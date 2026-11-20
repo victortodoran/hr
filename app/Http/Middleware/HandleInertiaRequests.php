@@ -23,7 +23,8 @@ class HandleInertiaRequests extends Middleware
 
     /**
      * The sidebar's Team, Approvals and count all come from one read of whom the
-     * Employee manages, which the Employee keeps for the page to reuse.
+     * Employee manages, which the Employee keeps for the page to reuse. Of the Employee, only what the
+     * user menu shows is sent.
      *
      * @return array<string, mixed>
      */

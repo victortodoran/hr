@@ -13,7 +13,7 @@ class ChangeTravelExpense
 
     /**
      * Only a Pending or Declined row changes, so an approval made since the
-     * policy check wins; then the new receipt is deleted again.
+     * policy check wins, and the new receipt is then deleted again.
      *
      * @param  array{amount: int, paid_on: string, category: string, description: string}  $changes
      */

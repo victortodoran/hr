@@ -109,7 +109,6 @@ class Assignment extends Model
         return ! $this->isInternal() && ! $hasWorkEntries && ! $hasTravelRequests;
     }
 
-    /** Keeps its Pay inside it once its end moves earlier. */
     public function dropPayAfterEnd(): void
     {
         if ($this->end_date === null) {
@@ -119,7 +118,6 @@ class Assignment extends Model
         $this->payEntries()->whereDate('effective_from', '>', $this->end_date)->delete();
     }
 
-    /** Keeps its Pay beginning on its first day once its start moves later. */
     public function movePayToStart(): void
     {
         $inForce = $this->payEntries()

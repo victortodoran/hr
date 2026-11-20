@@ -12,6 +12,7 @@ use Inertia\Inertia;
 
 class TravelExpenseApprovalController extends Controller
 {
+    /** Expenses the actor may not approve are skipped, so resending an approval changes nothing more (ADR 0005). */
     public function store(#[CurrentUser] Employee $actor, SelectedTravelExpensesRequest $request, ApproveTravelExpenses $approveTravelExpenses): RedirectResponse
     {
         $ids = $request->ids();
