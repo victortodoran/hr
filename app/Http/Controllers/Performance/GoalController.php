@@ -29,11 +29,12 @@ use Inertia\Response;
 class GoalController extends Controller
 {
     /**
-     * Show the form for giving a Goal.
+     * Show the Performance Evaluation with the Add Goal sheet open over it
+     * (rule L14), so the form has a URL of its own.
      */
-    public function create(PerformanceEvaluation $performanceEvaluation): Response
+    public function create(PerformanceEvaluation $performanceEvaluation, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/goals/Create', GoalFormPage::create($performanceEvaluation));
+        return Inertia::render('performance-evaluations/Show', GoalFormPage::create($performanceEvaluation, $actor));
     }
 
     /**
@@ -45,7 +46,7 @@ class GoalController extends Controller
         $given = $giveGoal->give($performanceEvaluation, $request->goal());
         abort_if(! $given, 403); // @pest-mutate-ignore (only reached when the Performance Evaluation is Completed between the policy check and this write)
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal given.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal added.')]);
 
         return to_route('performance-evaluations.show', $performanceEvaluation);
     }
@@ -54,7 +55,7 @@ class GoalController extends Controller
      * Show the Goal with its Progress and every change to it, newest
      * first, and its Comments, oldest first, and whether the viewer may
      * change the Progress, write Comments, and change or remove the Goal.
-     * `?editing=1` opens it with the title and description as fields.
+     * `?editing=1` opens it with the Edit Goal sheet open over it (rule L14).
      */
     public function show(PerformanceEvaluation $performanceEvaluation, Goal $goal, #[CurrentUser] Employee $actor, Request $request): Response
     {
@@ -71,7 +72,7 @@ class GoalController extends Controller
         $changed = $changeGoal->change($goal, $request->goal());
         abort_if(! $changed, 403); // @pest-mutate-ignore (only reached when the Performance Evaluation is Completed between the policy check and this write)
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal changed.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal saved.')]);
 
         return to_route('performance-evaluations.goals.show', [$performanceEvaluation, $goal]);
     }
@@ -86,7 +87,7 @@ class GoalController extends Controller
         $removed = $removeGoal->remove($goal);
         abort_if(! $removed, 403); // @pest-mutate-ignore (only reached when the Performance Evaluation is Completed between the policy check and this write)
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal removed.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Goal deleted.')]);
 
         return to_route('performance-evaluations.show', $performanceEvaluation);
     }

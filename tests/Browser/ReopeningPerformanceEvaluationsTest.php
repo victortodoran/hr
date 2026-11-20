@@ -26,9 +26,9 @@ it('asks before reopening a Completed Evaluation, then shows it Open', function 
 
     visit(route('performance-evaluations.show', $evaluation))
         ->assertSee('Completed')
-        ->click('internal:role=button[name="Reopen"s]')
-        ->assertSee('Reopen Cara\'s 2026 Performance Evaluation?')
-        ->click('internal:role=dialog >> internal:role=button[name="Reopen"s]')
+        ->click('internal:role=button[name="Reopen…"s]')
+        ->assertSee('Reopen Cara\'s 2026 Performance Evaluation')
+        ->click('internal:role=dialog >> internal:role=button[name="Reopen Performance Evaluation"s]')
         ->assertSee('Performance Evaluation reopened.')
         ->assertDontSee('Reopen')
         ->assertNoJavaScriptErrors();
@@ -36,7 +36,7 @@ it('asks before reopening a Completed Evaluation, then shows it Open', function 
     expect($evaluation->refresh()->state)->toBe(PerformanceEvaluationState::Open);
 });
 
-it('shows the Manager the kept Outcome after a Reopen, and Completes it again when the same one is picked', function () {
+it('shows the Manager the kept Outcome after a Reopen, and Completes it again with that one', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara']);
     $evaluation = PerformanceEvaluation::factory()->of($cara)->completed()->create();
@@ -46,15 +46,13 @@ it('shows the Manager the kept Outcome after a Reopen, and Completes it again wh
 
     visit(route('performance-evaluations.show', $evaluation))
         ->assertSeeIn('#evaluation-outcome', 'Met')
-        ->assertDontSee('Give every Goal an Outcome and write the summary to complete it.')
-        ->click('#evaluation-outcome')
-        ->click('internal:role=option[name="Met"s]')
-        ->assertSee('Complete Cara\'s 2026 Performance Evaluation as Met?')
+        ->assertDontSee('Pick an Outcome for every Goal and save the summary to Complete it.')
+        ->click('internal:role=button[name="Complete…"s]')
+        ->assertSee('Complete Cara\'s 2026 Performance Evaluation as Met')
         ->click('Keep it Open')
         ->assertSeeIn('#evaluation-outcome', 'Met')
-        ->click('#evaluation-outcome')
-        ->click('internal:role=option[name="Met"s]')
-        ->click('internal:role=dialog >> internal:role=button[name="Complete"s]')
+        ->click('internal:role=button[name="Complete…"s]')
+        ->click('internal:role=dialog >> internal:role=button[name="Complete Performance Evaluation"s]')
         ->assertSee('Performance Evaluation completed.')
         ->assertNoJavaScriptErrors();
 

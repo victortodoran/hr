@@ -2,32 +2,41 @@
 
 namespace App\Pages\Performance;
 
+use App\Enums\PerformanceEvaluationState;
 use App\Models\Employee;
 use App\Models\PerformanceEvaluation;
 
 /**
- * The New Performance Evaluation page as the props it renders.
+ * The Performance Evaluations page with the New Performance Evaluation
+ * dialog open over it (rule L14), as the props it renders.
  */
 final class PerformanceEvaluationFormPage
 {
     /**
-     * The years a Performance Evaluation may be created for, the current
-     * one first, each with the Employees the viewer effectively manages
-     * who still lack one for it, by name.
+     * The Performance Evaluations page's props (PerformanceEvaluationListPage)
+     * for the list it had, that the dialog is open, and the years a
+     * Performance Evaluation may be created for, the current one first,
+     * each with the Employees the viewer effectively manages who still
+     * lack one for it, by name.
      *
-     * @return array{years: list<array{year: int, employees: array<int, array{id: int, name: string}>}>}
+     * @param  array{year: int, search: string, state: PerformanceEvaluationState|null, employee: int|null}  $filters
+     * @return array<string, mixed>
      */
-    public static function create(Employee $actor): array
+    public static function create(Employee $actor, array $filters): array
     {
-        return ['years' => array_map(fn (int $year): array => [
-            'year' => $year,
-            'employees' => Employee::query()
-                ->awaitingPerformanceEvaluationFrom($actor, $year)
-                ->orderBy('name')
-                ->orderBy('id')
-                ->get(['id', 'name'])
-                ->map(fn (Employee $employee): array => ['id' => $employee->id, 'name' => $employee->name])
-                ->all(),
-        ], PerformanceEvaluation::creatableYears())];
+        return [
+            ...PerformanceEvaluationListPage::props($actor, $filters),
+            'creating' => true,
+            'creatableYears' => array_map(fn (int $creatable): array => [
+                'year' => $creatable,
+                'employees' => Employee::query()
+                    ->awaitingPerformanceEvaluationFrom($actor, $creatable)
+                    ->orderBy('name')
+                    ->orderBy('id')
+                    ->get(['id', 'name'])
+                    ->map(fn (Employee $employee): array => ['id' => $employee->id, 'name' => $employee->name])
+                    ->all(),
+            ], PerformanceEvaluation::creatableYears()),
+        ];
     }
 }

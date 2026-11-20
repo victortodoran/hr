@@ -27,10 +27,13 @@ final class PerformanceEvaluationListPage
      * page. The years to choose from run back from the next one to the
      * earliest Start Date among those Employees.
      *
+     * @param  array{year: int, search: string, state: PerformanceEvaluationState|null, employee: int|null}  $filters
      * @return array<string, mixed>
      */
-    public static function props(Employee $actor, int $year, string $search, ?PerformanceEvaluationState $state, ?int $employeeId): array
+    public static function props(Employee $actor, array $filters): array
     {
+        ['year' => $year, 'search' => $search, 'state' => $state, 'employee' => $employeeId] = $filters;
+
         $askedEmployee = $employeeId === null ? null : Employee::query()->withPerformanceEvaluationsVisibleTo($actor)->whereKey($employeeId)->first(['employees.id', 'name']);
 
         $latestYear = max(PerformanceEvaluation::creatableYears());

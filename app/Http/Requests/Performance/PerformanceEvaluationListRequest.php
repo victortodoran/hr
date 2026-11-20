@@ -29,35 +29,19 @@ class PerformanceEvaluationListRequest extends FormRequest
     }
 
     /**
-     * The year asked for, or the current one.
+     * The filters asked for: the year, or the current one; the part of a
+     * name, empty when none is; the state, null when none is or it isn't a
+     * Performance Evaluation state; and the one Employee, null when none is.
+     *
+     * @return array{year: int, search: string, state: PerformanceEvaluationState|null, employee: int|null}
      */
-    public function year(): int
+    public function filters(): array
     {
-        return $this->filled('year') ? $this->integer('year') : today()->year;
-    }
-
-    /**
-     * The part of a name asked for, empty when none is.
-     */
-    public function search(): string
-    {
-        return $this->string('search')->value();
-    }
-
-    /**
-     * The one Employee asked for, null when none is.
-     */
-    public function employeeId(): ?int
-    {
-        return $this->filled('employee') ? $this->integer('employee') : null;
-    }
-
-    /**
-     * The state asked for, null when none is or it isn't a Performance
-     * Evaluation state.
-     */
-    public function state(): ?PerformanceEvaluationState
-    {
-        return $this->enum('state', PerformanceEvaluationState::class);
+        return [
+            'year' => $this->filled('year') ? $this->integer('year') : today()->year,
+            'search' => $this->string('search')->value(),
+            'state' => $this->enum('state', PerformanceEvaluationState::class),
+            'employee' => $this->filled('employee') ? $this->integer('employee') : null,
+        ];
     }
 }

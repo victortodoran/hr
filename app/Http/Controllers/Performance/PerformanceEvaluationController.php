@@ -20,8 +20,9 @@ use Inertia\Response;
  * The Performance Evaluations page, where a Manager creates and writes the
  * Performance Evaluations of the Employees they effectively manage, and
  * whoever one of the Permissions for reading them
- * (Permission::seeingPerformanceEvaluations()) reaches reads them; the New
- * Performance Evaluation page; and the page of each Performance Evaluation.
+ * (Permission::seeingPerformanceEvaluations()) reaches reads them, with
+ * the New Performance Evaluation dialog over it; and the page of each
+ * Performance Evaluation.
  */
 class PerformanceEvaluationController extends Controller
 {
@@ -34,16 +35,18 @@ class PerformanceEvaluationController extends Controller
      */
     public function index(PerformanceEvaluationListRequest $request, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationListPage::props($actor, $request->year(), $request->search(), $request->state(), $request->employeeId()));
+        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationListPage::props($actor, $request->filters()));
     }
 
     /**
-     * Show the New Performance Evaluation page: the current and the next
-     * year, each with the Employees the viewer may create one for.
+     * Show the Performance Evaluations with the New Performance Evaluation
+     * dialog open over them (rule L14), so the form has a URL of its own:
+     * the current and the next year, each with the Employees the viewer may
+     * create one for. The list behind the dialog keeps its year and filters.
      */
-    public function create(#[CurrentUser] Employee $actor): Response
+    public function create(PerformanceEvaluationListRequest $request, #[CurrentUser] Employee $actor): Response
     {
-        return Inertia::render('performance-evaluations/Create', PerformanceEvaluationFormPage::create($actor));
+        return Inertia::render('performance-evaluations/Index', PerformanceEvaluationFormPage::create($actor, $request->filters()));
     }
 
     /**

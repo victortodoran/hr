@@ -61,7 +61,7 @@ it('shows an Open Evaluation in the neutral grey with its hollow-circle icon, no
         ->assertNoJavaScriptErrors();
 });
 
-it('leaves out a Report without an Evaluation, finds Completed ones by state, and starts the missing one from New Evaluation', function () {
+it('leaves out a Report without an Evaluation, finds Completed ones by state, and starts the missing one from New Performance Evaluation, keeping the filters behind the dialog', function () {
     $ben = managerBen();
     $cara = Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara Missing']);
     PerformanceEvaluation::factory()->of(Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Eva Done']))->completed()->create();
@@ -78,12 +78,31 @@ it('leaves out a Report without an Evaluation, finds Completed ones by state, an
         ->assertQueryStringHas('state', 'completed')
         ->assertSee('Eva Done')
         ->assertDontSee('Dan Open')
-        ->click('internal:role=link[name="New Evaluation"s]')
+        ->click('internal:role=link[name="New Performance Evaluation…"s]')
         ->assertPathIs(route('performance-evaluations.create', absolute: false))
+        ->assertQueryStringHas('state', 'completed')
+        ->assertSee('Eva Done')
         ->click('#evaluation-employee')
         ->click('internal:role=option[name="Cara Missing"s]')
-        ->click('Create Evaluation')
+        ->click('internal:role=dialog >> internal:role=button[name="New Performance Evaluation"s]')
         ->assertSee("Cara Missing's 2026 Performance Evaluation")
         ->assertPathIs(route('performance-evaluations.show', $cara->performanceEvaluations()->firstOrFail(), false))
+        ->assertNoJavaScriptErrors();
+});
+
+it('opens the New Performance Evaluation dialog from its own URL on a phone without scrolling sideways, and closing it returns to the list', function () {
+    $ben = managerBen();
+    Employee::factory()->startedLongAgo()->reportingTo($ben)->create(['name' => 'Cara Alexandrescu-Whitfield-Lindqvist']);
+
+    actingAs($ben);
+
+    visit(route('performance-evaluations.create'))
+        ->resize(390, 844)
+        ->assertSee('New Performance Evaluation')
+        ->assertVisible('#evaluation-employee')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('internal:role=dialog >> internal:role=button[name="Cancel"s]')
+        ->assertMissing('#evaluation-employee')
+        ->assertPathIs(route('performance-evaluations.index', absolute: false))
         ->assertNoJavaScriptErrors();
 });

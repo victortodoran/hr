@@ -27,7 +27,7 @@ function caraForANewEvaluation(Employee $manager): Employee
     return Employee::factory()->startedLongAgo()->reportingTo($manager)->create(['name' => 'Cara']);
 }
 
-it('offers this year and next, each with the Employees the viewer effectively manages who have no Evaluation for it yet', function () {
+it('opens the New Performance Evaluation dialog over the list, offering this year and next, each with the Employees the viewer effectively manages who have no Evaluation for it yet', function () {
     $ben = managerBen();
     $cara = caraForANewEvaluation($ben);
     $dan = Employee::factory()->reportingTo($ben)->create(['name' => 'Dan', 'start_date' => '2026-12-14']);
@@ -36,10 +36,14 @@ it('offers this year and next, each with the Employees the viewer effectively ma
     Employee::factory()->startedLongAgo()->create(['name' => 'Zed']);
     PerformanceEvaluation::factory()->of($cara)->create(['year' => 2026]);
 
-    actingAs($ben)->get(route('performance-evaluations.create'))
+    actingAs($ben)->get(route('performance-evaluations.create', ['year' => 2027, 'search' => 'Ca']))
         ->assertInertia(fn (Assert $page) => $page
-            ->component('performance-evaluations/Create')
-            ->where('years', [
+            ->component('performance-evaluations/Index')
+            ->where('creating', true)
+            ->where('year', 2027)
+            ->where('search', 'Ca')
+            ->where('employees.data', [])
+            ->where('creatableYears', [
                 ['year' => 2026, 'employees' => [['id' => $dan->id, 'name' => 'Dan'], ['id' => $ola->id, 'name' => 'Ola']]],
                 ['year' => 2027, 'employees' => [['id' => $cara->id, 'name' => 'Cara'], ['id' => $dan->id, 'name' => 'Dan'], ['id' => $gus->id, 'name' => 'Gus']]],
             ]));

@@ -18,9 +18,9 @@ final class GoalPage
     /**
      * The Goal with its Progress and every change to it, newest first, and
      * its Comments, oldest first, and whether the viewer may change the
-     * Progress, write Comments, and change or remove the Goal, and whether
-     * it opens with the title and description as fields, which only
-     * someone who may change it gets.
+     * Progress, write Comments, and edit or delete the Goal, and whether
+     * it opens with the Edit Goal sheet open (rule L14), which only someone
+     * who may edit it gets.
      *
      * @return array<string, mixed>
      */

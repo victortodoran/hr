@@ -141,7 +141,7 @@ it('lists the Reports of a Manager who has left under the next Manager up', func
     PerformanceEvaluation::factory()->of($ben)->create();
 
     actingAs($ana)->get(route('performance-evaluations.create'))
-        ->assertInertia(fn (Assert $page) => $page->where('years.0.employees', [['id' => $cara->id, 'name' => 'Cara']]));
+        ->assertInertia(fn (Assert $page) => $page->where('creatableYears.0.employees', [['id' => $cara->id, 'name' => 'Cara']]));
     actingAs($ana)->post(route('performance-evaluations.store'), ['year' => 2026, 'employee_id' => $cara->id])->assertRedirect();
     expect($cara->performanceEvaluations()->sole()->year)->toBe(2026);
     actingAs($ana)->get(route('performance-evaluations.index'))
@@ -157,22 +157,25 @@ it('lets the effective Manager give, change and remove Goals while the Evaluatio
         ->assertInertia(fn (Assert $page) => $page->where('isOwn', false)->where('canEdit', true));
     actingAs($ben)->get(route('performance-evaluations.goals.create', $evaluation))
         ->assertInertia(fn (Assert $page) => $page
-            ->component('performance-evaluations/goals/Create')
-            ->where('evaluation', ['id' => $evaluation->id, 'year' => 2026, 'employee' => ['id' => $evaluation->employee_id, 'name' => 'Cara']]));
+            ->component('performance-evaluations/Show')
+            ->where('addingGoal', true)
+            ->where('canEdit', true)
+            ->where('evaluation.id', $evaluation->id)
+            ->where('evaluation.employee', ['id' => $evaluation->employee_id, 'name' => 'Cara']));
 
     actingAs($ben)->post(route('performance-evaluations.goals.store', $evaluation), ['title' => ' Lead the Checkout API ', 'description' => 'Own its design.'])
         ->assertRedirect(route('performance-evaluations.show', $evaluation))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Goal given.']);
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Goal added.']);
     $goal = $evaluation->goals()->sole();
 
     actingAs($ben)->put(route('performance-evaluations.goals.update', [$evaluation, $goal]), ['title' => 'Lead the Payments API', 'description' => 'Own its delivery.'])
         ->assertRedirect(route('performance-evaluations.goals.show', [$evaluation, $goal]))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Goal changed.']);
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Goal saved.']);
     expect(storedGoals($evaluation))->toBe([['title' => 'Lead the Payments API', 'description' => 'Own its delivery.']]);
 
     actingAs($ben)->delete(route('performance-evaluations.goals.destroy', [$evaluation, $goal]))
         ->assertRedirect(route('performance-evaluations.show', $evaluation))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Goal removed.']);
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Goal deleted.']);
     expect(storedGoals($evaluation))->toBe([]);
 });
 
