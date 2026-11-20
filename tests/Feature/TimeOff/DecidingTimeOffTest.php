@@ -13,6 +13,7 @@ use App\Models\Employee;
 use App\Models\Role;
 use App\Models\TimeOff;
 use App\Policies\TimeOffPolicy;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -229,6 +230,24 @@ it('shows the Employee who declined their Time Off and why', function () {
             ->where('timeOff.0.state', 'declined')
             ->where('timeOff.0.decided_by', 'Ben')
             ->where('timeOff.0.decline_reason', 'The release is that week.'));
+});
+
+it('reads the Paid Days left for the Approvals Time Off tab in as many queries for three Direct Reports as for one', function () {
+    $queriesToOpen = function (int $directReports): int {
+        $ben = managerBen();
+        foreach (range(1, $directReports) as $report) {
+            TimeOff::factory()->for(Employee::factory()->reportingTo($ben)->create())->create(['first_date' => '2026-12-28', 'last_date' => '2027-01-08']);
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        actingAs($ben)->get(route('approvals.index', ['tab' => 'time-off']))
+            ->assertInertia(fn (Assert $page) => $page->has('toApprove', $directReports)->has('toApprove.0.paid_days_left', 2));
+
+        return count(DB::getQueryLog());
+    };
+
+    expect($queriesToOpen(3))->toBe($queriesToOpen(1));
 });
 
 it('lists the Pending Time Off of the Manager\'s Direct Reports on the Approvals Time Off tab, earliest first, with the Paid Days they leave', function () {

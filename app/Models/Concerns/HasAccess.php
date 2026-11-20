@@ -203,13 +203,15 @@ trait HasAccess
     }
 
     /**
-     * Forget the Roles and grants loaded so far, so the next check reads them
-     * afresh: for when Roles or who holds them change while this Employee
-     * is in hand. Refreshing the Employee does the same.
+     * Forget the Roles, grants and Reports read so far, so the next check
+     * reads them afresh: for when Roles, who holds them or the reporting
+     * line change while this Employee is in hand. Refreshing the Employee
+     * reloads the Roles but not the Reports.
      */
     public function forgetAccess(): void
     {
         $this->unsetRelation('roles');
+        $this->forgetReportingLine();
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Models\Assignment;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Policies\EmployeePolicy;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -119,3 +120,19 @@ it('opens the first tab the viewer may open when asked for one they may not, or 
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('tab', 'everyone')->where('tabs', ['everyone']));
 })->with(['reports', 'nonsense']);
+
+it('checks whether the Manager may open each Direct Report\'s page without a query per Report', function () {
+    $queriesToOpen = function (int $directReports): int {
+        $ben = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Reports]);
+        Employee::factory()->reportingTo($ben)->count($directReports)->create();
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        actingAs($ben)->get(route('directory.index', ['tab' => 'reports']))
+            ->assertInertia(fn (Assert $page) => $page->has('directReports', $directReports)->where('directReports.0.can_view', true));
+
+        return count(DB::getQueryLog());
+    };
+
+    expect($queriesToOpen(3))->toBe($queriesToOpen(1));
+});

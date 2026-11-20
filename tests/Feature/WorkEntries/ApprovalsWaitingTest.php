@@ -6,6 +6,7 @@ use App\Models\TimeOff;
 use App\Models\TravelExpense;
 use App\Models\TravelRequest;
 use App\Models\WorkEntry;
+use App\Providers\AppServiceProvider;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -14,7 +15,7 @@ use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Laravel\travelTo;
 
-covers(HandleInertiaRequests::class, Employee::class);
+covers(HandleInertiaRequests::class, Employee::class, AppServiceProvider::class);
 
 beforeEach(function () {
     travelTo('2026-11-11 09:00');
@@ -138,4 +139,30 @@ it('reads whom the Employee manages once per page for the sidebar\'s Team, Appro
 it('counts nothing for a guest', function () {
     get(route('login'))
         ->assertInertia(fn (Assert $page) => $page->where('auth.approvalsWaiting', 0));
+});
+
+it('walks the reporting line down and counts what is waiting once for both the page and the sidebar', function (string $route) {
+    ['ben' => $ben, 'cara' => $cara] = waitingTeam();
+    TimeOff::factory()->unpaid()->for($cara)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+    $walks = 0;
+    $timeOffCounts = 0;
+    DB::listen(function (QueryExecuted $query) use (&$walks, &$timeOffCounts): void {
+        $walks += str_contains($query->sql, 'WITH RECURSIVE down') && str_starts_with($query->sql, 'select "id", "start_date", "leaving_date"') ? 1 : 0;
+        $timeOffCounts += str_starts_with($query->sql, 'select count(*) as "aggregate" from "time_off"') ? 1 : 0;
+    });
+
+    actingAs($ben)->get(route($route))
+        ->assertInertia(fn (Assert $page) => $page->where('auth.approvalsWaiting', 1));
+
+    expect($walks)->toBe(1)
+        ->and($timeOffCounts)->toBe(1);
+})->with(['Home' => 'landing', 'Approvals' => 'approvals.index']);
+
+it('counts afresh on the next request for the same signed-in Employee', function () {
+    ['ben' => $ben, 'cara' => $cara] = waitingTeam();
+    assertApprovalsWaiting($ben, 0);
+
+    TimeOff::factory()->unpaid()->for($cara)->create(['first_date' => '2026-12-14', 'last_date' => '2026-12-16']);
+
+    assertApprovalsWaiting($ben, 1);
 });

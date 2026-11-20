@@ -89,6 +89,27 @@ class EmployeeBuilder extends ModelBuilder
     }
 
     /**
+     * Limit the query to everyone above the Employee in the reporting line:
+     * their Manager, that Manager's Manager, and so on, Former Employees
+     * included. The other way from reportsOf().
+     */
+    public function aboveInReportingLine(Employee $employee): static
+    {
+        return $this->scoped(function () use ($employee): void {
+            $this->whereRaw(<<<'SQL'
+                employees.id IN (
+                    WITH RECURSIVE above AS (
+                        SELECT manager_id AS id FROM employees WHERE id = ?
+                        UNION
+                        SELECT employees.manager_id FROM employees JOIN above ON employees.id = above.id
+                    )
+                    SELECT id FROM above
+                )
+                SQL, [$employee->id]);
+        });
+    }
+
+    /**
      * Limit the query to the Employees whose Work Entries, or Travel
      * Expenses, the given Employee may reopen through the reopen Permission
      * given: those its Scopes cover, never themselves. Being someone's

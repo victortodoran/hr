@@ -159,6 +159,16 @@ it('adds an Employee for anyone with add employees, whatever their Scope for man
     'manage employees and view records for everyone' => [[Permission::ManageEmployees->value => Scope::Everyone, Permission::ViewEmployeeRecords->value => Scope::Everyone], 'show'],
 ]);
 
+it('reads the actor\'s Reports afresh once an Employee is added below them, landing on the new Employee\'s page', function () {
+    $ben = employeeWith([Permission::AddEmployees->value => null, Permission::ViewEmployeeRecords->value => Scope::Reports]);
+    $zoe = Employee::factory()->reportingTo($ben)->create();
+    actingAs($ben)->get(route('employees.show', $zoe))->assertOk();
+
+    $response = actingAs($ben)->post(route('employees.store'), newEmployeeDetails(['manager_id' => $ben->id]));
+
+    $response->assertRedirect(route('employees.show', Employee::query()->where('email', 'cara@acme.test')->sole()));
+});
+
 it('refuses adding Employees to anyone without add employees, even if they manage every Employee', function (array $grants) {
     $manager = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Everyone, ...$grants]);
 

@@ -15,6 +15,7 @@ use App\Pages\Employees\EmployeePage;
 use App\Policies\EmployeePolicy;
 use App\Support\ReportingChain;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -384,4 +385,70 @@ it('lists on the Performance tab the Employee\'s Performance Evaluations for eve
             ->where('performanceEvaluations.1.id', $older->id)
             ->where('performanceEvaluations.1.state', 'completed')
             ->count('performanceEvaluations', 2));
+});
+
+it('reads the viewer\'s Reports once, however many Employees the Overview shows', function () {
+    $viewer = employeeWith([
+        Permission::ViewEmployeeRecords->value => Scope::Reports,
+        Permission::ManageEmployees->value => Scope::Reports,
+        Permission::ViewAssignments->value => Scope::Reports,
+        Permission::ViewTimeOff->value => Scope::Reports,
+    ]);
+    $queriesToOpen = function (int $reports) use ($viewer): array {
+        $ben = Employee::factory()->reportingTo($viewer)->create();
+        Employee::factory()->reportingTo($ben)->count($reports)->create();
+        $signedIn = Employee::query()->findOrFail($viewer->id);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        actingAs($signedIn)->get(route('employees.show', $ben))
+            ->assertInertia(fn (Assert $page) => $page->has('reportingChain.below', $reports)->where('reportingChain.below.0.link', 'employee'));
+        $queries = collect(DB::getQueryLog());
+
+        return [
+            'queries' => $queries->count(),
+            'readsOfReports' => $queries->filter(fn (array $query): bool => str_contains($query['query'], 'WITH RECURSIVE below'))->count(),
+        ];
+    };
+
+    $forOne = $queriesToOpen(1);
+
+    expect($queriesToOpen(3))->toBe($forOne)
+        ->and($forOne['readsOfReports'])->toBe(1);
+});
+
+it('reads the Reporting Chain in as many queries for five Managers above as for one', function () {
+    $queriesToOpen = function (int $managersAbove): int {
+        $manager = Employee::factory()->create();
+        for ($level = 2; $level <= $managersAbove; $level++) {
+            $manager = Employee::factory()->reportingTo($manager)->create();
+        }
+        $cara = Employee::factory()->reportingTo($manager)->create();
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        actingAs($cara)->get(route('employees.show', $cara))
+            ->assertInertia(fn (Assert $page) => $page->has('reportingChain.above', $managersAbove));
+
+        return count(DB::getQueryLog());
+    };
+
+    expect($queriesToOpen(5))->toBe($queriesToOpen(1));
+});
+
+it('checks whether the viewer may edit each Report needing a new Manager without a query per Report', function () {
+    $queriesToOpen = function (int $reports): int {
+        $viewer = employeeWith([Permission::ViewEmployeeRecords->value => Scope::Reports, Permission::ManageEmployees->value => Scope::Reports]);
+        $ana = Employee::factory()->former()->reportingTo($viewer)->create();
+        Employee::factory()->reportingTo($ana)->count($reports)->create();
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        actingAs($viewer)->get(route('employees.show', $ana))
+            ->assertInertia(fn (Assert $page) => $page->has('reportsNeedingAManager', $reports)->where('reportsNeedingAManager.0.can_edit', true));
+
+        return count(DB::getQueryLog());
+    };
+
+    expect($queriesToOpen(3))->toBe($queriesToOpen(1));
 });
