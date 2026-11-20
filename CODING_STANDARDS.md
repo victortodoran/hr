@@ -19,7 +19,7 @@ List each piece of a diff that sits in the wrong layer. These hold from the firs
 
 ## UI rules (Ledger)
 
-Apply every rule in `docs/design-system/03-design-system.md` to a UI diff, and cite each by ID in review comments ("breaks L8").
+Apply every rule in `docs/design-system/03-design-system.md` to a UI diff.
 
 ## Browser tests
 

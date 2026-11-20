@@ -30,6 +30,11 @@ usage() {
 command=$1
 branch=$2
 
+if ! command -v jq > /dev/null; then
+    echo "bin/worktree.sh needs jq to edit .claude/launch.json; install it with: brew install jq" >&2
+    exit 1
+fi
+
 main=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 path="$main/.claude/worktrees/$branch"
 # Lowercase letters, digits and underscores only, short enough that the
@@ -55,7 +60,14 @@ launch_json="$main/.claude/launch.json"
 # Rewrites launch.json through a jq filter, given the filter's arguments.
 edit_launch_json() {
     [ -f "$launch_json" ] || echo '{"version": "0.0.1", "configurations": []}' > "$launch_json"
-    jq "$@" "$launch_json" > "$launch_json.tmp" && mv "$launch_json.tmp" "$launch_json"
+    local edited
+    edited=$(mktemp "$launch_json.XXXXXX")
+    if jq "$@" "$launch_json" > "$edited"; then
+        mv "$edited" "$launch_json"
+    else
+        rm -f "$edited"
+        return 1
+    fi
 }
 
 psql_admin() {

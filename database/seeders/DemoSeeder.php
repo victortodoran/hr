@@ -62,27 +62,15 @@ use Illuminate\Support\Str;
  *   │   └── Ivan (leaving in six months)
  *   └── Finn (Payroll: everyone's Pay; Auditor)
  *
- * Demo logins, each with the password above:
+ * What each login shows:
  *
- *   ana@acme.test   Admin (CTO), no Manager. Decides Ben's, Hana's and Finn's
- *                   Pending items, Ben's latest Travel among them; starts
- *                   Hana's and Finn's Performance Evaluations.
- *   ben@acme.test   Manager, reports to Ana. Pending Work Entries, Time Off and
- *                   Travel from Cara and Lia; a year of his own Travel in every
- *                   state; an Open Evaluation with an At Risk Goal.
- *   hana@acme.test  Manager, reports to Ana. Ivan's Pending Work Entries and
- *                   Time Off; she Declined his Time Off and a trip.
- *   finn@acme.test  Payroll and Auditor, reports to Ana. Sees and changes
- *                   everyone's Pay.
- *   cara@acme.test  Employee, reports to Ben. Client work, a Declined Work
- *                   Entry and Travel Expense, Pending Time Off and Travel, a
- *                   planned raise.
- *   lia@acme.test   Employee, reports to Eve (Former), so Ben decides. Pending
- *                   unpaid Time Off and Travel.
- *   ivan@acme.test  Employee, reports to Hana, leaving in six months, no Paid
- *                   Days. Declined Time Off and Travel, more Pending.
- *
- * Dan (Future) can't sign in yet and Eve (Former) is signed out.
+ *   ana@acme.test   Ben's Pending Work Entries and Travel to decide; Hana's and Finn's Evaluations to start
+ *   ben@acme.test   Cara's and Lia's Pending items to decide; his own Travel in every state; an At Risk Goal
+ *   hana@acme.test  Ivan's Pending items, and his Time Off and trip she Declined
+ *   finn@acme.test  everyone's Pay
+ *   cara@acme.test  a Declined Work Entry and Travel Expense; Pending Time Off and Travel
+ *   lia@acme.test   items decided by Ben though Eve is her Manager
+ *   ivan@acme.test  Declined Time Off and Travel; no Paid Days
  */
 class DemoSeeder extends Seeder
 {

@@ -32,7 +32,7 @@ Regenerate Wayfinder's route files with `npm run build`, which passes the form-h
 
 ### Design system
 
-Every UI change follows `docs/design-system/03-design-system.md`, the only home of the UI rules; `CODING_STANDARDS.md` points reviewers there.
+Every UI change follows `docs/design-system/03-design-system.md`.
 
 - Cite rule IDs in PR descriptions and review comments ("follows L11, K9").
 - Start every new page from one of the five templates (L11–L17) and copy the matching mockup in `docs/design-system/mockups/`.
