@@ -33,11 +33,13 @@ class ProjectController extends Controller
     }
 
     /**
-     * Show the form for adding a Project, with the Clients it can be for.
+     * Show the Projects with the sheet for a new Project open over them
+     * (rule L14), so the form has a URL of its own, with the Clients it
+     * can be for. The list behind the sheet keeps its search.
      */
-    public function create(): Response
+    public function create(NameSearchRequest $request): Response
     {
-        return Inertia::render('projects/Create', ProjectFormPage::create());
+        return Inertia::render('projects/Index', ProjectFormPage::create($request->search()));
     }
 
     /**

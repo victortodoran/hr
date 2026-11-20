@@ -95,18 +95,35 @@ it('rejects a Project search that is not text or is too long', function (mixed $
     'too long' => [str_repeat('a', 256), 'The search field must not be greater than 255 characters.'],
 ]);
 
-it('offers the Clients by name on the page for creating a Project', function () {
+it('opens the New Project sheet over the Projects, offering the Clients by name', function () {
+    $internal = Project::factory()->internal()->create();
     $initech = Client::factory()->create(['name' => 'Initech']);
     $globex = Client::factory()->create(['name' => 'Globex']);
 
     actingAs(projectManager())->get(route('projects.create'))
         ->assertInertia(fn (Assert $page) => $page
-            ->component('projects/Create')
+            ->component('projects/Index')
+            ->where('creating', true)
+            ->where('search', '')
+            ->where('projects.data.0.id', $internal->id)
             ->where('clients', [['id' => $globex->id, 'name' => 'Globex'], ['id' => $initech->id, 'name' => 'Initech']]),
         );
 });
 
-it('refuses the page for creating a Project to an Employee who can only view Projects', function () {
+it('keeps the Projects search behind the New Project sheet', function () {
+    Project::factory()->internal()->create(['name' => 'Acme Software']);
+    $audit = Project::factory()->create(['name' => 'Audit']);
+
+    actingAs(projectManager())->get(route('projects.create', ['search' => 'aud']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('creating', true)
+            ->where('search', 'aud')
+            ->has('projects.data', 1)
+            ->where('projects.data.0.id', $audit->id),
+        );
+});
+
+it('refuses the New Project sheet to an Employee who can only view Projects', function () {
     actingAs(employeeWith([Permission::ViewProjects->value => null]))
         ->get(route('projects.create'))
         ->assertForbidden();
@@ -136,6 +153,27 @@ it('offers no changes on a Project\'s page to an Employee who can only view it, 
     'viewer' => [fn (): Employee => employeeWith([Permission::ViewProjects->value => null]), fn (): Project => Project::factory()->create()],
     'Internal Project' => [fn (): Employee => projectManager(), fn (): Project => Project::factory()->internal()->create()],
 ]);
+
+it('counts the Employees on a Project\'s team today and their Capacity in all, among those the viewer may see', function () {
+    $project = Project::factory()->create(['start_date' => today()->subYear()]);
+    $cara = Employee::factory()->startedLongAgo()->create();
+    $dan = Employee::factory()->startedLongAgo()->create();
+    Assignment::factory()->for($cara)->for($project)->create(['start_date' => today()->subMonth(), 'end_date' => today()->addMonth(), 'capacity' => 60]);
+    Assignment::factory()->for($cara)->for($project)->create(['start_date' => today()->addMonths(2), 'end_date' => null, 'capacity' => 20]);
+    Assignment::factory()->for($dan)->for($project)->create(['start_date' => today()->subMonth(), 'end_date' => null, 'capacity' => 40]);
+    Assignment::factory()->for($dan)->for($project)->create(['start_date' => today()->subMonths(6), 'end_date' => today()->subMonths(2), 'capacity' => 100]);
+
+    actingAs(employeeWith([Permission::ViewProjects->value => null, Permission::ViewAssignments->value => Scope::Everyone]))
+        ->get(route('projects.show', $project))
+        ->assertInertia(fn (Assert $page) => $page
+            ->count('team', 4)
+            ->where('teamToday', ['employees' => 2, 'capacity' => 100]),
+        );
+
+    actingAs(employeeWith([Permission::ViewProjects->value => null]))
+        ->get(route('projects.show', $project))
+        ->assertInertia(fn (Assert $page) => $page->where('teamToday', ['employees' => 0, 'capacity' => 0]));
+});
 
 it('refuses the Projects page to an Employee who can neither view nor manage Projects', function () {
     actingAs(employeeWith([Permission::ManageClients->value => null]))

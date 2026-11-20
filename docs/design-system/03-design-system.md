@@ -143,9 +143,9 @@
 - **V5** On error, the field gets `aria-invalid`, a red border and the message in place of the help text (icon + sentence, `aria-describedby`); on submit, focus moves to the first invalid field.
 - **V6** Fields are full-width in the form column; short related fields pair up on one row at ≥640px (First and Last date, Kind and Amount, Date paid and Amount).
 - **V7** Money fields show the Company currency as a prefix and use `inputmode="decimal"`; hours use `inputmode="decimal"` and the step the server validates.
-- **V8** Choices of ≤3 options use a `SegmentedControl` (Paid · Unpaid; Fixed · Hourly); 4+ options use a `Select`.
+- **V8** Choices of ≤3 options use a `SegmentedControl` (Paid · Unpaid; Fixed · Hourly); 4+ options use a `Select`. The Role matrix's ScopeControl shows all four Scopes (None · Own · Reports · Everyone) as a segmented control, Scopes a Permission can't take disabled, so a row's Scope reads at a glance.
 - **V9** Forms that edit an existing record warn on leave with `UnsavedChangesDialog` when dirty.
-- **V10** Inline-editable sections (Company settings, Role editor) show a sticky save bar with "N unsaved changes · Cancel · Save changes" and a `SavedTick` after success.
+- **V10** Inline-editable sections with many changes (the Role editor) show a sticky save bar with "N unsaved changes · Cancel · Save changes" and a `SavedTick` after success. Company settings is not one: its sections are forms with their own Save, Cancel and `SavedTick` (L16).
 - **V11** Defaults are smart, not empty: the Work day panel preselects the last-used Assignment; Request Travel preselects the only Assignment if there is one; dates default to the selected day.
 
 ---
@@ -177,6 +177,7 @@
 - **C10** Column headers are nouns ("Status", "Decided by"), never verbs or questions ("Answer").
 - **C11** **Open** shows a record or file without changing it: the ⋯ menu's "Open" opens a row's RecordSheet (the keyboard route to it, as a row click is mouse-only), and "Open receipt" shows a Travel Expense's receipt. It never labels a button that changes anything.
 - **C12** **Copy** duplicates records onto another place without changing the originals: the Work day panel's "Copy Thursday's Work Entries" (or "Copy Work Entries from Thu 12" when the day is a week or more back) adds that day's Work Entries to the day open, as Pending.
+- **C13** A form that adds a record submits with the same label as the button that opened it ("Add Employee", "Request Time Off", "New Project", "New Role"); **Save** stays for changes to an existing record (C3).
 
 ---
 

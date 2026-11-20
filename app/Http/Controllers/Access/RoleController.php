@@ -28,7 +28,7 @@ class RoleController extends Controller
     }
 
     /**
-     * The Roles page on one Role.
+     * The Roles page on one Role, editable in place.
      */
     public function show(Role $role): Response
     {
@@ -41,14 +41,6 @@ class RoleController extends Controller
     public function create(): Response
     {
         return Inertia::render('roles/Index', RolesPage::create());
-    }
-
-    /**
-     * The Roles page with one Role being edited.
-     */
-    public function edit(Role $role): Response
-    {
-        return Inertia::render('roles/Index', RolesPage::edit($role));
     }
 
     /**

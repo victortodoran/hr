@@ -8,9 +8,9 @@ use App\Models\Role;
 
 /**
  * The Roles page as the props it renders: every Role, by name, with its
- * Permissions and holders, the one selected, and whether it is viewed,
- * edited or a new one is being made; plus every Permission a Role can
- * contain, and every Employee who hasn't left, to give Roles to.
+ * Permissions and holders, the one selected (edited in place), or a new
+ * one being made; plus every Permission a Role can contain, and every
+ * Employee who hasn't left, to give Roles to.
  */
 final class RolesPage
 {
@@ -45,17 +45,7 @@ final class RolesPage
     }
 
     /**
-     * The Roles page with one Role being edited.
-     *
-     * @return array<string, mixed>
-     */
-    public static function edit(Role $role): array
-    {
-        return self::props('edit', $role);
-    }
-
-    /**
-     * @param  'view'|'edit'|'create'  $mode
+     * @param  'view'|'create'  $mode
      * @return array<string, mixed>
      */
     private static function props(string $mode, ?Role $selected): array

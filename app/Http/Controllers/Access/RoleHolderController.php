@@ -28,8 +28,8 @@ class RoleHolderController extends Controller
         $changeAccess->giveRoleToEach($actor, $role, $employees);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => $employees->count() === 1
-            ? __(':role given to :name.', ['role' => $role->name, 'name' => $employees->sole()->name])
-            : __(':role given to :count people.', ['role' => $role->name, 'count' => $employees->count()])]);
+            ? __(':name added to :role.', ['role' => $role->name, 'name' => $employees->sole()->name])
+            : __(':count people added to :role.', ['role' => $role->name, 'count' => $employees->count()])]);
 
         return to_route('roles.show', $role);
     }
@@ -41,7 +41,7 @@ class RoleHolderController extends Controller
     {
         $changeAccess->takeRole($actor, $role, $employee);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __(':role taken from :name.', ['role' => $role->name, 'name' => $employee->name])]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __(':name removed from :role.', ['role' => $role->name, 'name' => $employee->name])]);
 
         return to_route('roles.show', $role);
     }

@@ -3,7 +3,6 @@
 namespace App\Pages\Employees;
 
 use App\Enums\EmploymentStatus;
-use App\Enums\Permission;
 use App\Models\Builders\EmployeeBuilder;
 use App\Models\Department;
 use App\Models\Employee;
@@ -79,7 +78,7 @@ final class EmployeeListPage
     private static function visibleTo(Employee $actor): EmployeeBuilder
     {
         $visible = Employee::query()
-            ->where(fn (EmployeeBuilder $query) => $actor->limitToReachOf($query, [Permission::ViewEmployeeRecords]))
+            ->withRecordVisibleTo($actor)
             ->withEffectiveManager();
 
         return Employee::query()->fromSub($visible, 'employees');

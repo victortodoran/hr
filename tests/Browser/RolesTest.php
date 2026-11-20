@@ -33,16 +33,15 @@ it('selects and searches Roles, keeping the selected one in the URL', function (
 
     visit(route('roles.index'))
         ->assertPathIs('/roles')
-        ->assertSee('Auditor')
         ->assertSee('Nobody holds this Role yet.')
-        ->click('Payroll')
+        ->click('internal:role=link[name="Payroll"i]')
         ->assertPathIs("/roles/{$payroll->id}")
-        ->assertSee('2 permissions · held by 1 person')
+        ->assertSee('2 of 23 Permissions · held by 1 person')
         ->assertSee('View pay')
         ->assertSee('Ben Brown')
-        ->fill('[aria-label="Search roles"]', 'aud')
+        ->fill('[aria-label="Search Roles"]', 'aud')
         ->assertCount('[data-test="role-item"]', 1)
-        ->click('Auditor')
+        ->click('internal:role=link[name="Auditor"i]')
         ->assertPathIs("/roles/{$auditor->id}")
         ->back()
         ->assertPathIs("/roles/{$payroll->id}")
@@ -54,45 +53,62 @@ it('edits a Role\'s Permissions and Scopes in place, counting the changes, and s
     [, $payroll] = rolesToManage();
 
     visit(route('roles.show', $payroll))
-        ->click('Edit')
-        ->assertPathIs("/roles/{$payroll->id}/edit")
-        ->assertSee('Editing…')
-        ->assertSee('0 unsaved changes')
-        ->click('View time off')
+        ->assertMissing('[data-slot="save-bar"]')
+        ->click('[aria-label="Scope for View time off"] >> text=Own')
         ->assertSee('1 unsaved change')
+        ->assertSee('Changed')
         ->click('[aria-label="Scope for View time off"] >> text=Reports')
-        ->click('View projects')
+        ->click('[aria-label="View projects"]')
         ->assertSee('2 unsaved changes')
         ->click('Save changes')
-        ->assertPathIs("/roles/{$payroll->id}")
         ->assertSee('Role saved.')
+        ->assertSee('Saved')
+        ->assertMissing('[data-slot="save-bar"]')
+        ->assertPathIs("/roles/{$payroll->id}")
         ->assertNoJavaScriptErrors();
 
     expect($payroll->refresh()->grants())->toBe(['view-pay' => 'everyone', 'view-time-off' => 'reports']);
 });
 
-it('adds someone to a Role while editing it with Enter in the people search, saving them with the Role', function () {
+it('puts back the Role as saved on Cancel', function () {
+    [, $payroll] = rolesToManage();
+
+    visit(route('roles.show', $payroll))
+        ->fill('#role-name', 'Pay Team')
+        ->click('[aria-label="Scope for View pay"] >> text=None')
+        ->assertSee('2 unsaved changes')
+        ->click('Cancel')
+        ->assertValue('#role-name', 'Payroll')
+        ->assertMissing('[data-slot="save-bar"]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('adds someone to a Role and removes them, each saved at once, keeping unsaved changes above', function () {
     [, $payroll] = rolesToManage();
     Employee::factory()->create(['name' => 'Cara Lane']);
 
-    visit(route('roles.edit', $payroll))
-        ->fill('[aria-label="Add an Employee"]', 'cara')
-        ->keys('[aria-label="Add an Employee"]', 'Enter')
-        ->assertPathIs("/roles/{$payroll->id}/edit")
-        ->assertSee('Will be added')
-        ->assertSee('1 unsaved change')
-        ->click('Save changes')
-        ->assertPathIs("/roles/{$payroll->id}")
-        ->assertSee('Cara Lane')
+    visit(route('roles.show', $payroll))
+        ->fill('#role-name', 'Pay Team')
+        ->click('Add people')
+        ->fill('[aria-label="Search Employees to add to Payroll"]', 'cara')
+        ->click('internal:role=checkbox')
+        ->click('Add 1 person')
+        ->assertSee('Cara Lane added to Payroll.')
+        ->assertSeeIn('[data-test="role-holders"]', 'Cara Lane')
+        ->assertValue('#role-name', 'Pay Team')
+        ->click('[aria-label="Remove Ben Brown from Payroll"]')
+        ->assertSee('Ben Brown removed from Payroll.')
+        ->assertValue('#role-name', 'Pay Team')
         ->assertNoJavaScriptErrors();
 
-    expect($payroll->employees()->orderBy('name')->pluck('name')->all())->toBe(['Ben Brown', 'Cara Lane']);
+    expect($payroll->employees()->pluck('name')->all())->toBe(['Cara Lane'])
+        ->and($payroll->refresh()->name)->toBe('Payroll');
 });
 
 it('refuses a name another Role already has before saving', function () {
     [, $payroll] = rolesToManage();
 
-    visit(route('roles.edit', $payroll))
+    visit(route('roles.show', $payroll))
         ->fill('#role-name', 'Auditor')
         ->assertSee('A Role called Auditor already exists. Choose another name.')
         ->assertButtonDisabled('Save changes')
@@ -101,21 +117,20 @@ it('refuses a name another Role already has before saving', function () {
         ->assertNoJavaScriptErrors();
 });
 
-it('creates a Role copying another\'s Permissions, landing on it with a message', function () {
+it('makes a Role copying another\'s Permissions, landing on it with a message', function () {
     [, $payroll] = rolesToManage();
 
     visit(route('roles.index'))
-        ->click('New Role')
+        ->click('internal:role=link[name="New Role"s]')
         ->assertPathIs('/roles/create')
         ->assertSee('Untitled Role')
-        ->assertButtonDisabled('Create Role')
-        ->assertSee('Give the Role a name to create it.')
+        ->assertButtonDisabled('internal:role=button[name="New Role"s]')
         ->fill('#role-name', 'Pay Leads')
         ->assertSeeIn('nav[aria-label="Roles"]', 'Pay Leads')
         ->click('#role-copy')
         ->click('[role="option"] >> text=Payroll')
-        ->assertSee('2 of 23')
-        ->click('Create Role')
+        ->assertSee('2 of 23 Permissions')
+        ->click('internal:role=button[name="New Role"s]')
         ->assertSee('Pay Leads created')
         ->assertNoJavaScriptErrors();
 
@@ -124,25 +139,33 @@ it('creates a Role copying another\'s Permissions, landing on it with a message'
         ->and($payLeads->employees()->exists())->toBeFalse();
 });
 
-it('asks before leaving unsaved changes, from Cancel or the sidebar, and leaves straight away without any', function () {
+it('shows Admin\'s Permissions collapsed under a Callout', function () {
+    rolesToManage();
+    Role::factory()->admin()->create(['name' => 'Admin']);
+
+    visit(route('roles.index'))
+        ->assertSee('Admin always holds every Permission, with Scope Everyone.')
+        ->assertMissing('[data-test="permission-row"]')
+        ->click('Show Permissions')
+        ->assertCount('[data-test="permission-row"]', 23)
+        ->assertNoJavaScriptErrors();
+});
+
+it('asks before leaving unsaved changes, from Cancel on a new Role or the sidebar, and leaves straight away without any', function () {
     [, $payroll] = rolesToManage();
 
-    visit(route('roles.edit', $payroll))
+    visit(route('roles.show', $payroll))
+        ->click('internal:role=link[name="New Role"s]')
         ->click('Cancel')
         ->assertPathIs("/roles/{$payroll->id}")
-        ->click('New Role')
-        ->click('Cancel')
-        ->assertPathIs("/roles/{$payroll->id}")
-        ->click('Edit')
         ->fill('#role-name', 'Pay Team')
-        ->click('Cancel')
+        ->click('Home')
         ->assertSee('Discard changes?')
         ->assertSee('You have 1 unsaved change to Payroll.')
         ->click('Keep editing')
-        ->assertPathIs("/roles/{$payroll->id}/edit")
+        ->assertPathIs("/roles/{$payroll->id}")
         ->assertValue('#role-name', 'Pay Team')
         ->click('Home')
-        ->assertSee('Discard changes?')
         ->click('Discard')
         ->assertPathIs('/home')
         ->assertNoJavaScriptErrors();
@@ -150,12 +173,18 @@ it('asks before leaving unsaved changes, from Cancel or the sidebar, and leaves 
     expect($payroll->refresh()->name)->toBe('Payroll');
 });
 
-it('fits the Roles page on a phone without scrolling sideways', function () {
+it('changes a Role\'s Scope and saves it on a phone without scrolling sideways', function () {
     [, $payroll] = rolesToManage();
 
-    visit(route('roles.edit', $payroll))
+    visit(route('roles.show', $payroll))
         ->resize(390, 844)
-        ->assertSee('Save changes')
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('[aria-label="Scope for View pay"] >> text=Reports')
+        ->assertSee('1 unsaved change')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click('Save changes')
+        ->assertSee('Role saved.')
         ->assertNoJavaScriptErrors();
+
+    expect($payroll->refresh()->grants())->toBe(['view-pay' => 'reports', 'view-projects' => null]);
 });

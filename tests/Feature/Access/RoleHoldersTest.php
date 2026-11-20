@@ -28,7 +28,7 @@ it('lets an Employee who manages Roles give a Role, and its Scope combines with 
     actingAs($admin)
         ->post(route('roles.holders.store', $payroll), ['employee_ids' => [$ben->id]])
         ->assertRedirect(route('roles.show', $payroll))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Payroll given to '.$ben->name.'.']);
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => $ben->name.' added to Payroll.']);
 
     expect($ben->fresh()?->can(Permission::ViewPay->value, $cara))->toBeTrue();
 
@@ -88,7 +88,7 @@ it('gives a Role to several Employees at once, or to none of them when one can\'
     actingAs($admin)
         ->post(route('roles.holders.store', $payroll), ['employee_ids' => [$ben->id, $zoe->id]])
         ->assertRedirect(route('roles.show', $payroll))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Payroll given to 2 people.']);
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => '2 people added to Payroll.']);
 
     expect($payroll->employees()->count())->toBe(2)
         ->and(AccessLogEntry::query()->count())->toBe(2);
@@ -108,7 +108,7 @@ it('lets an Employee who manages Roles take a Role away', function () {
     actingAs($admin)
         ->delete(route('roles.holders.destroy', [$payroll, $ben]))
         ->assertRedirect(route('roles.show', $payroll))
-        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => $payroll->name.' taken from '.$ben->name.'.']);
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => $ben->name.' removed from '.$payroll->name.'.']);
 
     expect($ben->can(Permission::ViewPay->value, $ben))->toBeFalse();
 

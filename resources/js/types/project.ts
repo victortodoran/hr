@@ -8,3 +8,12 @@ export type ProjectRecord = {
     end_date: string | null;
     is_internal: boolean;
 };
+
+/**
+ * A Project's team today, among the Assignments the viewer may see: how
+ * many Employees run on it and their Capacity in all, in percent.
+ */
+export type TeamToday = {
+    employees: number;
+    capacity: number;
+};

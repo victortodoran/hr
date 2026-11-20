@@ -11,25 +11,25 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { countOf } from '@/lib/roles';
 import type { RoleCandidate } from '@/types';
 
 /**
- * Picks Employees to give a Role to: a searchable checklist of those who
+ * Picks Employees to add to a Role: a searchable checklist of those who
  * don't hold it, each with their status when they haven't started yet.
- * Emits the chosen ones on "Give Role" (or the `action` label).
+ * Emits the chosen ones on "Add N people".
  */
 const props = withDefaults(
     defineProps<{
         roleName: string;
         candidates: RoleCandidate[];
-        action?: string;
         processing?: boolean;
     }>(),
-    { action: 'Give Role', processing: false },
+    { processing: false },
 );
 
 const emit = defineEmits<{
-    give: [ids: number[]];
+    add: [ids: number[]];
 }>();
 
 const open = ref(false);
@@ -57,8 +57,14 @@ function toggle(id: number, checked: boolean): void {
         : chosen.value.filter((chosenId) => chosenId !== id);
 }
 
-function give(): void {
-    emit('give', chosen.value);
+const addLabel = computed(() =>
+    chosen.value.length === 0
+        ? 'Add people'
+        : `Add ${countOf(chosen.value.length, 'person', 'people')}`,
+);
+
+function add(): void {
+    emit('add', chosen.value);
     open.value = false;
 }
 </script>
@@ -66,8 +72,8 @@ function give(): void {
 <template>
     <Popover v-model:open="open" @update:open="opened">
         <PopoverTrigger as-child>
-            <Button variant="secondary" class="min-h-11">
-                <UserPlus class="size-4" aria-hidden="true" />
+            <Button variant="secondary" class="max-sm:h-11">
+                <UserPlus aria-hidden="true" />
                 Add people
             </Button>
         </PopoverTrigger>
@@ -76,7 +82,7 @@ function give(): void {
                 v-model="search"
                 type="search"
                 placeholder="Search Employees"
-                :aria-label="`Search Employees to give ${roleName} to`"
+                :aria-label="`Search Employees to add to ${roleName}`"
                 class="h-11"
             />
             <ul
@@ -107,22 +113,22 @@ function give(): void {
             <p v-else class="px-2 py-3 text-sm text-muted-foreground">
                 {{
                     candidates.length === 0
-                        ? `Everyone who can be given ${roleName} already holds it.`
+                        ? `Everyone who can hold ${roleName} already does.`
                         : 'Nobody matches that search.'
                 }}
             </p>
             <div class="flex flex-wrap justify-end gap-2">
                 <Button
                     variant="secondary"
-                    class="min-h-11"
+                    class="max-sm:h-11"
                     @click="open = false"
                     >Cancel</Button
                 >
                 <Button
-                    class="min-h-11"
+                    class="max-sm:h-11"
                     :disabled="chosen.length === 0 || processing"
-                    @click="give"
-                    >{{ action }}</Button
+                    @click="add"
+                    >{{ addLabel }}</Button
                 >
             </div>
         </PopoverContent>

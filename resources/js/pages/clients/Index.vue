@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import { Form, Head, Link } from '@inertiajs/vue3';
-import { Briefcase } from '@lucide/vue';
+import { Head, Link } from '@inertiajs/vue3';
+import { Briefcase, Plus } from '@lucide/vue';
+import { ref } from 'vue';
 import ClientController from '@/actions/App/Http/Controllers/Projects/ClientController';
-import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FilterBar from '@/components/FilterBar.vue';
 import FilterSearch from '@/components/FilterSearch.vue';
-import PageHeader from '@/components/PageHeader.vue';
-import InputError from '@/components/InputError.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import ClientDialogs from '@/components/projects/ClientDialogs.vue';
 import Pagination from '@/components/Pagination.vue';
-import RenameDialog from '@/components/RenameDialog.vue';
-import SubmitButton from '@/components/SubmitButton.vue';
+import NameDialog from '@/components/NameDialog.vue';
+import RowActions from '@/components/RowActions.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { useListFilters } from '@/composables/useListFilters';
+import { projectCount } from '@/lib/projects';
 import { index, show } from '@/routes/clients';
 import type { ClientRecord, Paginated, TableColumn } from '@/types';
 
@@ -26,6 +29,12 @@ defineOptions({
     },
 });
 
+/**
+ * The Clients the company does Projects for (rule L11). Add Client, the one
+ * primary, opens a one-field dialog (L14, K7); each row's ⋯ menu renames
+ * it in the same dialog or deletes it, confirming first and explaining
+ * when its Projects keep it (K2, X3, X6).
+ */
 const props = defineProps<{
     clients: Paginated<ClientRecord>;
     search: string;
@@ -34,10 +43,32 @@ const props = defineProps<{
 const filters = useListFilters(index.url, { search: props.search });
 
 const columns: TableColumn[] = [
-    { key: 'name', label: 'Name' },
-    { key: 'projects_count', label: 'Projects', minor: true },
-    { key: 'actions', label: 'Actions', align: 'end' },
+    { key: 'name', label: 'Name', phone: 'primary' },
+    {
+        key: 'projects_count',
+        label: 'Projects',
+        align: 'end',
+        phone: 'secondary',
+    },
+    { key: 'actions', label: '', align: 'end', phone: 'end' },
 ];
+
+const addOpen = ref(false);
+
+/** The Client the Rename or Delete dialog is about. */
+const chosen = ref<ClientRecord | null>(null);
+const renameOpen = ref(false);
+const deleteOpen = ref(false);
+
+function askToRename(client: ClientRecord): void {
+    chosen.value = client;
+    renameOpen.value = true;
+}
+
+function askToDelete(client: ClientRecord): void {
+    chosen.value = client;
+    deleteOpen.value = true;
+}
 </script>
 
 <template>
@@ -46,28 +77,12 @@ const columns: TableColumn[] = [
     <PageContainer width="full">
         <PageHeader
             title="Clients"
-            description="The outside organisations the company does Projects for"
-        />
-
-        <Form
-            v-bind="ClientController.store.form()"
-            reset-on-success
-            :options="{ preserveScroll: true }"
-            class="flex max-w-xl items-end gap-2"
-            v-slot="{ errors, processing }"
+            description="The outside organisations your company does Projects for."
         >
-            <div class="grid flex-1 gap-2">
-                <Label for="new-client">New Client</Label>
-                <Input
-                    id="new-client"
-                    name="name"
-                    placeholder="e.g. Globex"
-                    required
-                />
-                <InputError :message="errors.name" />
-            </div>
-            <SubmitButton :processing="processing">Add</SubmitButton>
-        </Form>
+            <template #actions>
+                <Button @click="addOpen = true"><Plus />Add Client…</Button>
+            </template>
+        </PageHeader>
 
         <FilterBar>
             <FilterSearch v-model="filters.search" />
@@ -82,25 +97,24 @@ const columns: TableColumn[] = [
                 >
             </template>
             <template #cell-projects_count="{ row }">
-                {{ row.projects_count }}
-                {{ row.projects_count === 1 ? 'Project' : 'Projects' }}
-            </template>
-            <template #head-actions>
-                <span class="sr-only">Actions</span>
+                <span class="tabular-nums">{{
+                    projectCount(row.projects_count)
+                }}</span>
             </template>
             <template #cell-actions="{ row }">
-                <div class="flex justify-end gap-2">
-                    <RenameDialog
-                        :form="ClientController.update.form(row)"
-                        :name="row.name"
-                        :field-id="`client-name-${row.id}`"
-                    />
-                    <ConfirmDeleteDialog
-                        :form="ClientController.destroy.form(row)"
-                        :title="`Delete ${row.name}?`"
-                        description="Only a Client with no Projects can be deleted."
-                    />
-                </div>
+                <RowActions :label="row.name">
+                    <template #menu>
+                        <DropdownMenuItem @select="askToRename(row)"
+                            >Rename…</DropdownMenuItem
+                        >
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            variant="destructive"
+                            @select="askToDelete(row)"
+                            >Delete…</DropdownMenuItem
+                        >
+                    </template>
+                </RowActions>
             </template>
             <template #empty>
                 <EmptyState
@@ -112,14 +126,31 @@ const columns: TableColumn[] = [
                     "
                 >
                     <template #action>
-                        <Button variant="secondary" as-child>
-                            <label for="new-client">Add Client</label>
-                        </Button>
+                        <Button variant="secondary" @click="addOpen = true"
+                            >Add Client…</Button
+                        >
                     </template>
                 </EmptyState>
             </template>
         </DataTable>
 
         <Pagination :page="clients" />
+
+        <NameDialog
+            v-model:open="addOpen"
+            without-trigger
+            :form="ClientController.store.form()"
+            name=""
+            field-id="client-name"
+            title="Add Client"
+            submit-label="Add Client"
+        />
+
+        <ClientDialogs
+            v-if="chosen"
+            v-model:rename-open="renameOpen"
+            v-model:delete-open="deleteOpen"
+            :client="chosen"
+        />
     </PageContainer>
 </template>

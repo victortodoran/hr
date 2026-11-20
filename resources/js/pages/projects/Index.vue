@@ -1,22 +1,28 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { FolderKanban } from '@lucide/vue';
-import { computed } from 'vue';
+import { FolderKanban, Plus } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import ProjectController from '@/actions/App/Http/Controllers/Projects/ProjectController';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FilterBar from '@/components/FilterBar.vue';
 import FilterSearch from '@/components/FilterSearch.vue';
-import PageHeader from '@/components/PageHeader.vue';
 import PageContainer from '@/components/PageContainer.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import Pagination from '@/components/Pagination.vue';
+import ProjectSheet from '@/components/projects/ProjectSheet.vue';
+import RowActions from '@/components/RowActions.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import ValueOr from '@/components/ValueOr.vue';
 import { useListFilters } from '@/composables/useListFilters';
-import { formatDate } from '@/lib/dates';
+import { useOverlayRoute } from '@/composables/useOverlayRoute';
+import { formatPeriod } from '@/lib/dates';
+import { deleteProjectDescription } from '@/lib/projects';
 import { create, index, show } from '@/routes/projects';
-import type { Paginated, ProjectRecord, TableColumn } from '@/types';
+import type { Choice, Paginated, ProjectRecord, TableColumn } from '@/types';
 
 defineOptions({
     layout: {
@@ -24,9 +30,20 @@ defineOptions({
     },
 });
 
+/**
+ * The company's Projects (rule L11), the Internal Project pinned first with
+ * an "Internal Project" badge. New Project, the one primary, opens its sheet over
+ * the page; the sheet's own URL, `projects/create`, renders this page with
+ * `creating` set (L14). Delete is in each row's ⋯ menu and confirms (K2,
+ * X3, X6); the Internal Project has none.
+ */
 const props = defineProps<{
     projects: Paginated<ProjectRecord>;
     search: string;
+    /** Whether the New Project sheet is open. */
+    creating?: boolean;
+    /** The Clients a Project can be for, sent with the sheet. */
+    clients?: Choice[];
 }>();
 
 const filters = useListFilters(index.url, { search: props.search });
@@ -37,13 +54,39 @@ const canManage = computed(() =>
 );
 
 const columns = computed<TableColumn[]>(() => [
-    { key: 'name', label: 'Name' },
-    { key: 'client', label: 'Client', minor: true },
-    { key: 'dates', label: 'Dates', minor: true },
+    { key: 'name', label: 'Name', phone: 'primary' },
+    { key: 'client', label: 'Client', phone: 'secondary' },
+    { key: 'dates', label: 'Dates', phone: 'secondary' },
     ...(canManage.value
-        ? [{ key: 'actions', label: 'Actions', align: 'end' as const }]
+        ? [
+              {
+                  key: 'actions',
+                  label: '',
+                  align: 'end' as const,
+                  phone: 'end' as const,
+              },
+          ]
         : []),
 ]);
+
+/** The list's search, kept on the way to the New Project sheet and back. */
+const searchQuery = computed(() =>
+    props.search === '' ? {} : { search: props.search },
+);
+
+const { open: sheetOpen, setOpen: setSheetOpen } = useOverlayRoute(
+    () => props.creating === true,
+    () => index({ query: searchQuery.value }).url,
+);
+
+/** The Project the Delete dialog asks about. */
+const deleting = ref<ProjectRecord | null>(null);
+const deleteOpen = ref(false);
+
+function askToDelete(project: ProjectRecord): void {
+    deleting.value = project;
+    deleteOpen.value = true;
+}
 </script>
 
 <template>
@@ -52,11 +95,16 @@ const columns = computed<TableColumn[]>(() => [
     <PageContainer width="full">
         <PageHeader
             title="Projects"
-            description="The work Employees can be assigned to"
+            description="The work your Employees can be assigned to."
         >
             <template v-if="canManage" #actions>
                 <Button as-child>
-                    <Link :href="create()">New Project</Link>
+                    <Link
+                        :href="create({ query: searchQuery })"
+                        preserve-scroll
+                        preserve-state
+                        ><Plus />New Project</Link
+                    >
                 </Button>
             </template>
         </PageHeader>
@@ -67,41 +115,36 @@ const columns = computed<TableColumn[]>(() => [
 
         <DataTable :columns="columns" :rows="projects.data">
             <template #cell-name="{ row }">
-                <Link
-                    :href="show(row.id)"
-                    class="font-medium underline-offset-4 hover:underline"
-                    >{{ row.name }}</Link
-                >
-                <Badge v-if="row.is_internal" variant="secondary" class="ml-2"
-                    >Internal Project</Badge
-                >
+                <span class="inline-flex flex-wrap items-center gap-2">
+                    <Link
+                        :href="show(row.id)"
+                        class="font-medium underline-offset-4 hover:underline"
+                        >{{ row.name }}</Link
+                    >
+                    <Badge v-if="row.is_internal" variant="secondary"
+                        >Internal Project</Badge
+                    >
+                </span>
             </template>
             <template #cell-client="{ row }">
-                <span v-if="row.client">{{ row.client.name }}</span>
-                <span v-else class="text-muted-foreground">No Client</span>
+                <ValueOr :value="row.client?.name ?? null" />
             </template>
             <template #cell-dates="{ row }">
-                <span v-if="row.is_internal" class="text-muted-foreground"
-                    >Always running</span
-                >
-                <template v-else-if="row.start_date">
-                    {{ formatDate(row.start_date) }} –
-                    {{
-                        row.end_date ? formatDate(row.end_date) : 'no end date'
-                    }}
-                </template>
-            </template>
-            <template #head-actions>
-                <span class="sr-only">Actions</span>
+                <span v-if="row.start_date" class="tabular-nums">{{
+                    formatPeriod(row.start_date, row.end_date)
+                }}</span>
+                <ValueOr v-else :value="null" />
             </template>
             <template #cell-actions="{ row }">
-                <div v-if="!row.is_internal" class="flex justify-end gap-2">
-                    <ConfirmDeleteDialog
-                        :form="ProjectController.destroy.form(row.id)"
-                        :title="`Delete ${row.name}?`"
-                        description="This can't be undone."
-                    />
-                </div>
+                <RowActions v-if="!row.is_internal" :label="row.name">
+                    <template #menu>
+                        <DropdownMenuItem
+                            variant="destructive"
+                            @select="askToDelete(row)"
+                            >Delete…</DropdownMenuItem
+                        >
+                    </template>
+                </RowActions>
             </template>
             <template #empty>
                 <EmptyState
@@ -113,8 +156,13 @@ const columns = computed<TableColumn[]>(() => [
                     "
                 >
                     <template v-if="canManage" #action>
-                        <Button as-child>
-                            <Link :href="create()">New Project</Link>
+                        <Button variant="secondary" as-child>
+                            <Link
+                                :href="create({ query: searchQuery })"
+                                preserve-scroll
+                                preserve-state
+                                >New Project</Link
+                            >
                         </Button>
                     </template>
                 </EmptyState>
@@ -122,5 +170,22 @@ const columns = computed<TableColumn[]>(() => [
         </DataTable>
 
         <Pagination :page="projects" />
+
+        <ConfirmDeleteDialog
+            v-if="deleting"
+            v-model:open="deleteOpen"
+            without-trigger
+            :form="ProjectController.destroy.form(deleting.id)"
+            :title="`Delete ${deleting.name}`"
+            :description="deleteProjectDescription"
+            confirm-label="Delete Project"
+        />
+
+        <ProjectSheet
+            v-if="canManage"
+            :open="sheetOpen"
+            :clients="clients ?? []"
+            @update:open="setSheetOpen"
+        />
     </PageContainer>
 </template>
