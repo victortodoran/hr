@@ -1,0 +1,220 @@
+/* ==========================================================================
+   HR · Ledger tokens · paste into resources/css/app.css
+   Replaces the existing :root and @theme inline blocks (keep @import "tailwindcss"
+   and your @source / @plugin lines above this).
+   Light only. Every colour is a named role, so dark mode = a .dark { } override later.
+   Fonts: self-hosted via @fontsource (see 05-components.md › Libraries).
+   ========================================================================== */
+
+@import '@fontsource-variable/instrument-sans';
+@import '@fontsource/instrument-serif/400.css';
+
+:root {
+    /* ---- Surfaces & text ---------------------------------------------- */
+    --background: hsl(0 0% 100%);
+    --foreground: hsl(0 0% 9%);
+    --surface: hsl(0 0% 98.5%); /* table headers, week column, auth page bg */
+    --surface-raised: hsl(0 0% 100%); /* popovers, sheets, dialogs */
+    --muted: hsl(0 0% 96%); /* segmented track, neutral chips */
+    --muted-foreground: hsl(
+        0 0% 43%
+    ); /* descriptions, labels, secondary lines (5.1:1) */
+    --subtle-foreground: hsl(
+        0 0% 58%
+    ); /* "Not set", future days, placeholders (3.0:1, never body text) */
+    --border: hsl(0 0% 91%);
+    --border-strong: hsl(0 0% 84%); /* inputs, outline buttons */
+    --input: hsl(0 0% 84%);
+
+    /* ---- Accent (the only brand colour) ------------------------------- */
+    --primary: hsl(
+        252 62% 54%
+    ); /* buttons, focus, selection · 6.6:1 with white */
+    --primary-hover: hsl(252 62% 47%);
+    --primary-foreground: hsl(0 0% 100%);
+    --primary-soft: hsl(
+        252 90% 97%
+    ); /* selected rows / days, active tab count */
+    --primary-line: hsl(252 70% 88%); /* borders of soft accent elements */
+    --ring: hsl(252 62% 54%);
+
+    /* ---- shadcn compatibility ----------------------------------------- */
+    --card: hsl(0 0% 100%);
+    --card-foreground: hsl(0 0% 9%);
+    --popover: hsl(0 0% 100%);
+    --popover-foreground: hsl(0 0% 9%);
+    --secondary: hsl(0 0% 100%); /* secondary button = outline on white */
+    --secondary-foreground: hsl(0 0% 9%);
+    --accent: hsl(0 0% 96%); /* shadcn hover background, NOT the brand accent */
+    --accent-foreground: hsl(0 0% 9%);
+    --destructive: hsl(0 72% 51%);
+    --destructive-foreground: hsl(0 0% 100%);
+
+    /* ---- Sidebar ------------------------------------------------------ */
+    --sidebar: hsl(40 8% 97.5%);
+    --sidebar-foreground: hsl(0 0% 25%);
+    --sidebar-primary: hsl(252 62% 54%); /* active item icon, Approvals badge */
+    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(0 0% 100%); /* active item background */
+    --sidebar-accent-foreground: hsl(0 0% 9%);
+    --sidebar-border: hsl(0 0% 91%);
+    --sidebar-ring: hsl(252 62% 54%);
+
+    /* ---- Status (bg / fg / icon) · meaning fixed by rule S7 · fg on bg ≥ 6.1:1 */
+    --status-pending: hsl(48 96% 89%);
+    --status-pending-foreground: hsl(26 90% 30%);
+    --status-pending-icon: hsl(32 90% 38%);
+    --status-approved: hsl(141 79% 90%);
+    --status-approved-foreground: hsl(143 64% 22%);
+    --status-approved-icon: hsl(143 64% 30%);
+    --status-declined: hsl(0 93% 94%);
+    --status-declined-foreground: hsl(0 70% 35%);
+    --status-declined-icon: hsl(0 70% 45%);
+    --status-neutral: hsl(0 0% 94%);
+    --status-neutral-foreground: hsl(0 0% 30%);
+    --status-neutral-icon: hsl(0 0% 45%);
+    --status-upcoming: hsl(214 95% 93%);
+    --status-upcoming-foreground: hsl(214 70% 30%);
+    --status-upcoming-icon: hsl(214 70% 42%);
+    --status-attention: hsl(33 100% 90%);
+    --status-attention-foreground: hsl(25 80% 30%);
+    --status-attention-icon: hsl(25 85% 42%);
+
+    /* ---- Charts (grayscale + accent for the current period) ----------- */
+    --chart-bar: hsl(0 0% 78%);
+    --chart-bar-strong: hsl(0 0% 30%);
+    --chart-current: hsl(252 62% 54%);
+    --chart-grid: hsl(0 0% 93%);
+
+    /* ---- Shape & elevation -------------------------------------------- */
+    --radius: 0.5rem; /* 8px: controls */
+    --elevation-popover:
+        0 1px 3px hsl(0 0% 0% / 0.06), 0 12px 32px -8px hsl(250 40% 20% / 0.18);
+    --elevation-overlay:
+        0 2px 6px hsl(0 0% 0% / 0.06), 0 24px 56px -12px hsl(250 40% 15% / 0.3);
+}
+
+@theme inline {
+    /* fonts */
+    --font-sans:
+        'Instrument Sans Variable', 'Instrument Sans', ui-sans-serif, system-ui,
+        sans-serif;
+    --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+
+    /* type scale (rule F9) */
+    --text-title: 2.25rem;
+    --text-title--line-height: 2.5rem;
+    --text-title--letter-spacing: -0.01em;
+    --text-title-sm: 1.75rem;
+    --text-title-sm--line-height: 2rem;
+    --text-section: 1rem;
+    --text-section--line-height: 1.5rem;
+    --text-section--font-weight: 600;
+    --text-body: 0.875rem;
+    --text-body--line-height: 1.25rem;
+    --text-meta: 0.8125rem;
+    --text-meta--line-height: 1.125rem;
+    --text-caption: 0.75rem;
+    --text-caption--line-height: 1rem;
+    --text-stat: 1.375rem;
+    --text-stat--line-height: 1.75rem;
+    --text-stat--font-weight: 600;
+
+    /* colours */
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-surface: var(--surface);
+    --color-surface-raised: var(--surface-raised);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-subtle-foreground: var(--subtle-foreground);
+    --color-border: var(--border);
+    --color-border-strong: var(--border-strong);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-primary: var(--primary);
+    --color-primary-hover: var(--primary-hover);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary-soft: var(--primary-soft);
+    --color-primary-line: var(--primary-line);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    --color-status-pending: var(--status-pending);
+    --color-status-pending-foreground: var(--status-pending-foreground);
+    --color-status-pending-icon: var(--status-pending-icon);
+    --color-status-approved: var(--status-approved);
+    --color-status-approved-foreground: var(--status-approved-foreground);
+    --color-status-approved-icon: var(--status-approved-icon);
+    --color-status-declined: var(--status-declined);
+    --color-status-declined-foreground: var(--status-declined-foreground);
+    --color-status-declined-icon: var(--status-declined-icon);
+    --color-status-neutral: var(--status-neutral);
+    --color-status-neutral-foreground: var(--status-neutral-foreground);
+    --color-status-neutral-icon: var(--status-neutral-icon);
+    --color-status-upcoming: var(--status-upcoming);
+    --color-status-upcoming-foreground: var(--status-upcoming-foreground);
+    --color-status-upcoming-icon: var(--status-upcoming-icon);
+    --color-status-attention: var(--status-attention);
+    --color-status-attention-foreground: var(--status-attention-foreground);
+    --color-status-attention-icon: var(--status-attention-icon);
+
+    --color-chart-bar: var(--chart-bar);
+    --color-chart-bar-strong: var(--chart-bar-strong);
+    --color-chart-current: var(--chart-current);
+    --color-chart-grid: var(--chart-grid);
+
+    /* radius (rule F16) */
+    --radius-sm: calc(var(--radius) - 2px); /* 6px  · badges inside rows, kbd */
+    --radius-md: var(--radius); /* 8px  · controls */
+    --radius-lg: calc(var(--radius) + 2px); /* 10px · tables, cards, callouts */
+    --radius-xl: calc(
+        var(--radius) + 4px
+    ); /* 12px · popovers, sheets, dialogs */
+
+    /* elevation (rule F17) */
+    --shadow-popover: var(--elevation-popover);
+    --shadow-overlay: var(--elevation-overlay);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/40;
+    }
+    body {
+        @apply text-body bg-background font-sans text-foreground antialiased;
+        font-feature-settings: 'ss01' on;
+    }
+    /* visible focus everywhere (accessibility constraint) */
+    :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+    ::selection {
+        background: var(--primary-soft);
+    }
+}
+
+@utility tabular {
+    font-variant-numeric: tabular-nums;
+}

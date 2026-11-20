@@ -1,0 +1,92 @@
+# 5 · Component inventory
+
+**Keep** = no visual change. **Restyle** = same API, new tokens and look. **Merge** = folded into another component. **Replace** = new component takes over. Rule IDs refer to `03-design-system.md`.
+
+## 5.1 Existing UI primitives (`@/components/ui`, reka-ui)
+
+| Component                | Verdict     | What changes                                                                                                                                                                                    |
+| ------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| button                   | **Restyle** | Variants `primary` · `secondary` · `ghost` · `link` · `destructive` (B1). Sizes `default` h-9, `sm` h-8, `icon`, `icon-sm`. `primary` = violet; disabled = 50% opacity of its own variant (B5). |
+| card                     | **Restyle** | Border only, `rounded-lg`, no shadow (F17). Used only for Home widgets, GoalCard and drop zones (L9).                                                                                           |
+| dialog                   | **Restyle** | `rounded-xl`, `shadow-overlay`, footer right-aligned (B7); bottom sheet on phone (P7).                                                                                                          |
+| sheet                    | **Restyle** | Right sheet 480px with header, scrolling body and sticky footer; bottom sheet on phone. Host for overlay forms (L14) and RecordSheet.                                                           |
+| sidebar                  | **Restyle** | Not inset: flat `bg-sidebar` with a right hairline. Active item = white chip with `primary` icon. Unlabelled first groups, "Company" label (L18).                                               |
+| select                   | **Restyle** | h-9, `border-border-strong`, focus ring `primary`; keeps `name` + `required` (V3).                                                                                                              |
+| popover                  | **Restyle** | `rounded-xl`, `shadow-popover`, optional arrow.                                                                                                                                                 |
+| tabs                     | **Restyle** | Underline style: 2px `primary` underline, count badge (`bg-muted` → `bg-primary-soft text-primary` when active). Scrolls with fade on phone (P5).                                               |
+| badge                    | **Restyle** | Neutral counts and labels only ("Internal", "Default"). Status uses StatusBadge (S6).                                                                                                           |
+| checkbox                 | **Restyle** | Checked/indeterminate fill `primary`.                                                                                                                                                           |
+| switch                   | **Restyle** | On = `primary`.                                                                                                                                                                                 |
+| tooltip                  | **Keep**    | Required on icon-only buttons (F20).                                                                                                                                                            |
+| dropdown-menu            | **Restyle** | Destructive item style (red text, last, after a separator) used by RowActions (K2).                                                                                                             |
+| input-otp                | **Keep**    | 2FA.                                                                                                                                                                                            |
+| skeleton                 | **Keep**    | Used per S4.                                                                                                                                                                                    |
+| sonner                   | **Restyle** | Position bottom-right / top-centre on phone (X2); success icon in `status-approved-icon`.                                                                                                       |
+| input / textarea / label | **Restyle** | h-9, label `text-meta` 500, invalid state (V5).                                                                                                                                                 |
+
+## 5.2 Existing app components
+
+| Component                                   | Verdict                               | What changes                                                                                                                                                                                                           |
+| ------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **DataTable**                               | **Restyle + extend**                  | Header `bg-surface text-caption`, rows ≥44px, numeric columns right-aligned and tabular. New: `groupBy` with group rows (subtotal, group checkbox), `selectable`, `onRowClick` → RecordSheet, stacked phone rows (P4). |
+| **FilterBar / FilterSelect / FilterSearch** | **Restyle + extend**                  | Single row; removable active-filter chips; right slot for summary + ExportMenu (K5, K17). Phone: Search + "Filters (n)" bottom sheet (P9).                                                                             |
+| ListFilterBar / `useListFilters`            | **Keep**                              | Logic unchanged.                                                                                                                                                                                                       |
+| **SelectionBar**                            | **Restyle**                           | Floating bottom-centre pill with `shadow-overlay`: "N selected · total · Clear · Decline… · Approve N …". Sticky bottom bar on phone (K9, P8).                                                                         |
+| **StatusBadge**                             | **Restyle**                           | Icon + word; icon is set by colour (S7); 12px; status mapping table lives in one `statusMeta.ts` (S9).                                                                                                                 |
+| **StatusDot**                               | **Replace** → `StatusIcon`            | Icon-only variant with sr-only word (S10).                                                                                                                                                                             |
+| **EmptyState**                              | **Restyle**                           | 20px icon in a muted circle, sentence, optional action; `variant="filtered"` with Clear filters (S2).                                                                                                                  |
+| **Heading**                                 | **Replace** → `PageHeader`            | Adds serif title, status slot, description, actions slot, phone stacking (L3, P3). Update the lint script to require `PageHeader`.                                                                                     |
+| **PageContainer**                           | **Restyle**                           | `width="full"` (fluid, max 1600) and `width="form"` (672); gutters per F13 (L2).                                                                                                                                       |
+| Pagination                                  | **Restyle**                           | Ghost buttons, "1–50 of 312" summary.                                                                                                                                                                                  |
+| **PeriodNavigation / MonthPicker**          | **Restyle + merge**                   | One `PeriodNavigation`: segmented Week · Month · Custom, ‹ label ›, Today; Custom uses DateRangePicker (K16).                                                                                                          |
+| ConfirmDialog                               | **Restyle**                           | Statement title, consequence body, `primary` confirm (X4, C7).                                                                                                                                                         |
+| ConfirmDeleteDialog                         | **Restyle**                           | `destructive` confirm; names what goes with the record (X3).                                                                                                                                                           |
+| UnsavedChangesDialog                        | **Keep**                              | V9.                                                                                                                                                                                                                    |
+| SavedTick                                   | **Keep**                              | V10, L16.                                                                                                                                                                                                              |
+| SubmitButton                                | **Keep**                              | B6.                                                                                                                                                                                                                    |
+| ExportMenu                                  | **Restyle**                           | Secondary button with download icon at the FilterBar's right (K17).                                                                                                                                                    |
+| **WorkEntryCalendar**                       | **Restyle + extend**                  | Fluid grid, week column with totals, StatusIcon per entry, today = `primary` dot, selected = `primary` ring + soft fill, keyboard navigation (←→↑↓, ↵ opens). Phone: week agenda (P10).                                |
+| **Day popover panel**                       | **Restyle + extend** → `WorkDayPanel` | Labelled fields, preselected Assignment, ↵ adds and stays open, Copy previous workday, Declined Callout with Edit; bottom sheet on phone.                                                                              |
+| WorkEntryList                               | **Restyle**                           | Week group rows, inline add row on hover, ⋯ for Edit/Delete.                                                                                                                                                           |
+| GoalCard                                    | **Restyle**                           | Card per L9; Progress as StatusBadge select; Outcome plain text (S11).                                                                                                                                                 |
+| **RoleEditor / ScopeControl**               | **Restyle**                           | Permission matrix rows grouped by area with "n of m"; ScopeControl as segmented None · Own · Reports · Everyone with invalid scopes disabled; sticky save bar (V10).                                                   |
+| **PayDialog**                               | **Replace** → `PayHistoryRow`         | Inline expandable timeline under an Assignment row, with an inline Add a Pay change form.                                                                                                                              |
+
+## 5.3 New components
+
+| Component                        | Purpose                                                                                  | Rule     |
+| -------------------------------- | ---------------------------------------------------------------------------------------- | -------- |
+| `AppMark`                        | Neutral placeholder mark (rounded square, simple glyph) + "HR"                           | G14      |
+| `PageHeader`                     | Replaces Heading                                                                         | L3       |
+| `ScopeSwitch`                    | Mine · Reports · Everyone, URL-bound, permission-filtered                                | L19      |
+| `SegmentedControl`               | View and small-choice switches (List/Calendar, Paid/Unpaid, Fixed/Hourly)                | K3, V8   |
+| `StatStrip`                      | Row of value + label stats                                                               | L10, K10 |
+| `FactList`                       | Definition list for one record                                                           | L8, K11  |
+| `Callout`                        | info · attention · declined sentence with optional action                                | K12      |
+| `RowActions`                     | Hover icon buttons + ⋯ menu                                                              | K2       |
+| `RecordSheet`                    | Full record in a side sheet (`?record=`)                                                 | K8       |
+| `DecideDialog`                   | Decline with required reason, for 1…N records of one type                                | X5       |
+| `PersonCell`                     | Avatar + name (+ Job Title)                                                              | K13      |
+| `StatusIcon`                     | Icon-only status with sr-only word                                                       | S10      |
+| `DatePicker` / `DateRangePicker` | Wrappers over reka-ui `DatePicker` / `DateRangePicker`, weekday counting for Time Off    | K14      |
+| `FileDrop`                       | Receipt upload: drag/drop, browse, camera on phone, preview, Replace/Remove              | K15      |
+| `MiniBarChart`                   | 12-month hours bars for Home (div-based, sr-only table)                                  | K18      |
+| `WorkDayPanel`                   | See above                                                                                | —        |
+| `PayHistoryRow`                  | See above                                                                                | —        |
+| `CommandMenu` (phase 6)          | ⌘K search over people, Projects, Clients, pages; built on reka-ui `Combobox` in a Dialog | G12      |
+| Error pages (403/404/500)        | EmptyState-based Inertia pages                                                           | S5       |
+
+## 5.4 Libraries (each needs approval)
+
+| Library                                         | Why                                                                                                                                                                                              | Size / risk                |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
+| `@fontsource/instrument-serif`                  | Self-hosts the page-title face (F8); no third-party font request.                                                                                                                                | One woff2 weight (~20 KB). |
+| `@fontsource-variable/instrument-sans`          | Self-hosts the UI face if it's currently loaded from a font CDN; skip if already bundled.                                                                                                        | ~45 KB variable woff2.     |
+| `@internationalized/date` (explicit dependency) | Already installed as a reka-ui dependency; app code that builds `CalendarDate` values for DatePicker/DateRangePicker should list it in `package.json` instead of relying on the transitive copy. | Already in the bundle.     |
+
+Not needed:
+
+- **Charts:** Home's single bar chart is a few divs (K18).
+- **Date picker:** reka-ui ships Calendar, DatePicker and DateRangePicker.
+- **Drag-and-drop upload:** native drag events plus `<input type="file" capture>`.
+- **Command menu:** reka-ui Combobox.
