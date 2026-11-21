@@ -12,7 +12,7 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
 
-The repo is `victortodoran/hr`. This folder isn't a git clone, so pass `-R victortodoran/hr` to every `gh` command and use `repos/victortodoran/hr/...` in `gh api` paths (in place of `<owner>/<repo>` / `{owner}/{repo}`).
+The repo is `victortodoran/hr`. Pass `-R victortodoran/hr` to every `gh` command and use `repos/victortodoran/hr/...` in `gh api` paths (in place of `<owner>/<repo>` / `{owner}/{repo}`).
 
 ## Pull requests as a triage surface
 
