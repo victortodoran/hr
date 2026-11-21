@@ -96,15 +96,17 @@
     --font-sans:
         'Instrument Sans Variable', 'Instrument Sans', ui-sans-serif, system-ui,
         sans-serif;
-    --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
     --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
     /* type scale (rule F9) */
-    --text-title: 2.25rem;
-    --text-title--line-height: 2.5rem;
-    --text-title--letter-spacing: -0.01em;
-    --text-title-sm: 1.75rem;
+    --text-title: 1.875rem;
+    --text-title--line-height: 2.25rem;
+    --text-title--letter-spacing: -0.02em;
+    --text-title--font-weight: 600;
+    --text-title-sm: 1.5rem;
     --text-title-sm--line-height: 2rem;
+    --text-title-sm--letter-spacing: -0.02em;
+    --text-title-sm--font-weight: 600;
     --text-section: 1rem;
     --text-section--line-height: 1.5rem;
     --text-section--font-weight: 600;
