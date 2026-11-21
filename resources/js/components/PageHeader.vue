@@ -36,7 +36,7 @@ onUnmounted(() => {
             <slot name="lead" />
             <div class="flex min-w-0 flex-col gap-1">
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <h1 class="font-display text-title-sm sm:text-title">
+                    <h1 class="text-title-sm sm:text-title">
                         {{ title }}
                     </h1>
                     <slot name="status" />

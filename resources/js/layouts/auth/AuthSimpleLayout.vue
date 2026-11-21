@@ -22,7 +22,7 @@ defineProps<{
                     <AppMark />
                 </Link>
                 <div class="flex flex-col gap-1.5">
-                    <h1 class="font-display text-title-sm">{{ title }}</h1>
+                    <h1 class="text-title-sm">{{ title }}</h1>
                     <p
                         v-if="description"
                         class="text-body text-muted-foreground"

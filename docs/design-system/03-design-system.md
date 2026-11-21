@@ -20,8 +20,8 @@
 
 ### Type
 
-- **F8** Two families: `font-display` (Instrument Serif) for the page `<h1>` only; `font-sans` (Instrument Sans) for everything else.
-- **F9** Use the scale tokens only: `text-title` (36/40 serif), `text-title-sm` (28/32 serif, phone), `text-section` (16/24 semibold), `text-body` (14/20), `text-meta` (13/18), `text-caption` (12/16), `text-stat` (22/28 semibold). No arbitrary `text-[15px]`.
+- **F8** One family: `font-sans` (Instrument Sans) for everything, page `<h1>` included.
+- **F9** Use the scale tokens only: `text-title` (30/36 semibold), `text-title-sm` (24/32 semibold, phone), `text-section` (16/24 semibold), `text-body` (14/20), `text-meta` (13/18), `text-caption` (12/16), `text-stat` (22/28 semibold). No arbitrary `text-[15px]`.
 - **F10** Nothing smaller than 12px (`text-caption`), including badges, column headers and legends.
 - **F11** Hours, money, dates in tables, counts and stats use `tabular-nums`; numeric columns are right-aligned.
 - **F12** Weights: 400 body, 500 labels and table headers, 600 headings, values and stats; no 700+.
